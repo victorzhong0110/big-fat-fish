@@ -251,6 +251,15 @@ kbd {
 .threat-row em { grid-area: counter; font-style: normal; color: var(--amber); opacity: .85; }
 /* 第九轮：已克制的怪标一行（克制从提示变成了机制，玩家必须能看见） */
 .threat-row .weak { grid-area: weak; font-style: normal; color: var(--green); font-size: 11.5px; margin-top: 1px; }
+/* 第十五轮：阵营标签（GPT / Claude）—— 颜色不是文字，读不出来就没有意义 */
+.faction {
+  font-style: normal; font-size: 10.5px; font-weight: 500; margin-left: 5px;
+  padding: 0 5px; border-radius: 999px; letter-spacing: .02em;
+  border: 1px solid currentColor; opacity: .9; white-space: nowrap;
+}
+.faction.gpt { color: #2fb894; }
+.faction.claude { color: #e08a6d; }
+.faction.both { color: #b6a6ff; }
 
 /* 抽卡 / 异象面板里的威胁表要紧凑：它只是"决策前的提醒"，不是主角 */
 #draft-threats, #omen-threats, #route-threats { max-height: 168px; overflow-y: auto; margin-bottom: 8px; }

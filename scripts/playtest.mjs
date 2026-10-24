@@ -146,6 +146,16 @@ check('主菜单列出五个主角', rosterCount === 5, `${rosterCount} 个`);
 const rosterNames = await page.locator('#roster .card.char .card-name').allInnerTexts();
 check('主角有名字', rosterNames.length === 5 && rosterNames.every((n) => n.trim().length > 0),
   rosterNames.join('/'));
+
+// 第十五轮：图例的阵营标签要真的出现在**DOM** 里（数据对 ≠ 屏幕对）
+const legendChips = await page.locator('.legend li[data-enemy] .faction').allInnerTexts();
+const legendNames = await page.locator('.legend li[data-enemy] .lg-name').allInnerTexts();
+check('主菜单图例标出敌怪阵营（GPT / Claude）',
+  legendChips.length >= 8 && legendChips.every((s) => /GPT|Claude/.test(s)),
+  legendChips.join(','));
+check('图例里的敌怪名字来自数据',
+  legendNames.includes('贪嘴小鱼') && legendNames.includes('墨鱼') && legendNames.includes('深渊巨鲸'),
+  legendNames.join('/'));
 await page.locator('#roster .card.char[data-id="scout"]').click();
 const selectedId = await page.locator('#roster .card.char.selected').getAttribute('data-id');
 check('可以切换主角', selectedId === 'scout', `selected=${selectedId}`);
@@ -176,6 +186,24 @@ check('深海藏品能解锁装备', metaAfter.unlocked === unlockedBefore + 1 &
 // ── 开局抽卡 ────────────────────────
 step = 'draft';
 await clickSel(page, '#btn-start');
+
+// ── BGM（社区《大肥鱼摸鱼歌《Let Me Go》》的原创合成版）──────────
+// 🔴 断言的是**现状**（音频上下文在跑、采样源在放、时钟在走），
+//    不是"我们调用过 bgm.start()" —— 后者绿了也可能根本没出声。
+const audio0 = await page.evaluate(() => window.__tulip.audioState());
+check('音频上下文在跑（用户手势之后解锁）', audio0.ctxState === 'running', JSON.stringify(audio0));
+let bgmNow = audio0;
+for (let i = 0; i < 60 && !bgmNow.playing; i++) {
+  await page.waitForTimeout(250);
+  bgmNow = await page.evaluate(() => window.__tulip.audioState());
+}
+check('BGM 真的在播放（分块合成完成后采样源已启动）', bgmNow.playing === true, JSON.stringify(bgmNow));
+check('BGM 循环长度 16 秒', bgmNow.seconds === 16, String(bgmNow.seconds));
+const clockA = bgmNow.currentTime;
+await page.waitForTimeout(600);
+const clockB = (await page.evaluate(() => window.__tulip.audioState())).currentTime;
+check('音频时钟在走（不是静音假播）', clockB > clockA, `${clockA.toFixed(2)} → ${clockB.toFixed(2)}`);
+
 // 第六轮：开局先弹路线面板
 const routeCards = await pickRoute(page);
 check('开局先弹路线面板（二选一）', routeCards === 2, `${routeCards} 条路线`);
@@ -191,7 +219,14 @@ check('抽卡面板列出本章手段需求与自己的手段',
   /手段需求/.test(draftCounters) && /你的手段/.test(draftCounters),
   draftCounters);
 // 第九轮：篝火预告（第八轮 §22 的必做项）—— 玩家在打第四章前就该知道
-check('抽卡面板预告章末篝火', /篝火/.test(draftSub), draftSub);
+check('抽卡面板预告章末珊瑚休整', /珊瑚休整/.test(draftSub), draftSub);
+// 第十五轮：威胁面板要标出**阵营**（颜色不是文字，读不出来就没意义）
+const draftThreatRows = await page.locator('#draft-threats .threat-row').count();
+const draftFactionChips = await page.locator('#draft-threats .threat-row .faction').allInnerTexts();
+check('本章威胁标出敌怪阵营（GPT / Claude）',
+  draftThreatRows > 0 && draftFactionChips.length === draftThreatRows
+    && draftFactionChips.every((s) => /GPT|Claude/.test(s)),
+  `${draftThreatRows} 行 / ${draftFactionChips.join(',')}`);
 await shot(page, '07-draft.png');
 
 // 角色数值必须在**抽卡之前**检查：抽到的装备可能加生命（dew_charm +1），
@@ -1122,7 +1157,7 @@ await page.locator('#draft-actions .act[data-id="skip"]').click();
 await page.waitForFunction(() => document.querySelector('#draft')?.hidden === true, null, { timeout: 15000 });
 const afterSkip = await state(page);
 check('跳过抽卡不拿装备', afterSkip.relics.length === relicsBeforeSkip && afterSkip.runState === 'playing',
-  `遗物 ${relicsBeforeSkip} → ${afterSkip.relics.length}，露水 ${afterSkip.dew}`);
+  `装备 ${relicsBeforeSkip} → ${afterSkip.relics.length}，潮水 ${afterSkip.dew}`);
 await page.waitForTimeout(3200); // 等终局 Boss 登场（bossAt = 2.2s）
 const bossAlive = await page.evaluate(() => window.__tulip.scene().enemies.getChildren()
   .filter((e) => e.getData('type') === 'boss').length);
@@ -1201,6 +1236,25 @@ step = 'daily-run';
 // 今日挑战的按钮在主菜单里 → 先回主菜单
 await page.evaluate(() => { window.__tulip.scene().toMenu(); });
 await page.waitForTimeout(500);
+
+// ── 音乐开关：关掉要真的停，重新开要真的再响 ──────
+const musicBefore = await page.evaluate(() => window.__tulip.audioState());
+await clickSel(page, '#btn-music');
+await page.waitForTimeout(400);
+const musicOff = await page.evaluate(() => window.__tulip.audioState());
+check('音乐按钮能关掉 BGM',
+  musicOff.on === false && musicOff.playing === false,
+  `before=${JSON.stringify(musicBefore)} after=${JSON.stringify(musicOff)}`);
+await clickSel(page, '#btn-music');
+let musicOn = await page.evaluate(() => window.__tulip.audioState());
+for (let i = 0; i < 40 && !musicOn.playing; i++) {
+  await page.waitForTimeout(250);
+  musicOn = await page.evaluate(() => window.__tulip.audioState());
+}
+check('音乐按钮能再打开 BGM', musicOn.on === true && musicOn.playing === true, JSON.stringify(musicOn));
+const musicLabel = await page.locator('#btn-music').innerText();
+check('音乐按钮显示当前状态', /音乐：(开|关)/.test(musicLabel), musicLabel);
+
 await clickSel(page, '#btn-daily');
 await handleRoute(page);
 await page.waitForTimeout(900);

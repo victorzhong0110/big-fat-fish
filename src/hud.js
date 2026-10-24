@@ -6,6 +6,8 @@ import { counterNote, ENEMY_COUNTERS, COUNTER_TAGS, COUNTER_MULT, tagsFromStats 
 import { relicValue } from './systems/relicValue.js';
 import { applyBuild } from './systems/characters.js';
 import { ARCHETYPES, countByTag } from './systems/archetypes.js';
+import { legendEntries, legendEntry } from './systems/legend.js';
+import { modelLabelOf, modelOf } from './art/avatars.js';
 
 const $ = (s) => document.querySelector(s);
 
@@ -301,14 +303,53 @@ function renderThreats(container, list, tags = []) {
     const mark = weak.length
       ? `<i class="weak">已克制 ×${COUNTER_MULT}（${weak.map((x) => COUNTER_TAGS[x]).join('/')}）</i>`
       : '';
+    // 第十五轮：标出**阵营**（GPT / Claude）。
+    // 为什么：敌种形象换成两个模型的化身之后，"哪边是哪边"就是核心信息 ——
+    // 但它只画在精灵和小圆点上，**颜色不是文字**（色觉障碍读不出来），
+    // 而这个面板正是玩家做构筑决策的地方 ⇒ 必须有一行字能读。
+    const model = modelOf(t.id);
     row.innerHTML = `
       <i class="dot ${t.id}"></i>
-      <b>${t.name}</b>
+      <b>${t.name}<i class="faction ${model}">${modelLabelOf(t.id)}</i></b>
       <span>${t.desc}</span>
       <em>${t.counter}</em>
       ${mark}`;
     container.append(row);
   }
+}
+
+/**
+ * 主菜单图例：**名字与阵营都从数据来**。
+ *
+ * 为什么：图例是玩家对战场上那些东西的第一份认知表。
+ *  ① 名字手抄一份 ⇒ 改名那天会漂（同一个事实只能有一份实现）；
+ *  ② 阵营只画成颜色 ⇒ 读不出来（颜色不是文字）。
+ * ⇒ 名字取 `ENEMIES`，阵营取 `avatars.js` 的 `modelOf()`（注入进来，
+ *    这样 systems/ 不用反过来依赖渲染层）。
+ */
+function renderLegend() {
+  const list = document.querySelectorAll('.legend li[data-enemy]');
+  if (!list.length) return;
+  const entries = legendEntries((id) => modelLabelOf(id));
+  for (const li of list) {
+    const id = li.dataset.enemy;
+    const e = legendEntry(entries, id);
+    if (!e) continue;
+    const nameEl = li.querySelector('.lg-name');
+    if (nameEl) nameEl.textContent = e.name;
+    const chip = li.querySelector('.faction');
+    if (chip) {
+      chip.className = `faction ${factionKey(e.faction)}`;
+      chip.textContent = e.faction;
+    }
+  }
+}
+
+/** 阵营标签 → 样式用的短键（'GPT × Claude' → 'both'） */
+function factionKey(label) {
+  if (!label) return 'gpt';
+  if (label.includes('×')) return 'both';
+  return label.toLowerCase();
 }
 
 /** 深海藏品：解锁面板（记忆余额 + 还没解锁的装备） */
@@ -364,6 +405,7 @@ function renderRelicChips(container, ids, deepened = {}) {
 
 export const hud = {
   init(handlers) {
+    renderLegend();
     el.btnStart.addEventListener('click', () => handlers.onStart?.());
     el.btnResume.addEventListener('click', () => handlers.onResume?.());
     el.btnRestart.addEventListener('click', () => handlers.onRestart?.());

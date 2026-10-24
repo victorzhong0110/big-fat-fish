@@ -623,7 +623,7 @@ export class GameScene extends Phaser.Scene {
       // 玩家在打第四章之前不知道"打完有篝火"，于是那条回头路形同虚设。
       camp: isFinalBossEnemy({ type: 'boss', wave: st.chapter * 5 }, { endless: this.run.endless })
         ? ''
-        : '打完本章的 Boss 后可在篝火休整（回血 / 磨刃）',
+        : '打完本章的 Boss 后可在珊瑚休整（回血 / 磨砺鱼叉）',
       // 第九轮：这一章**需要哪一招**（各手段能命中本章多少血量）+ 你已有什么手段
       counters: chapterCounterBreakdown(st.chapter, this.seed, this.modsFor(this.spawner?.pendingWave || this.spawner?.wave || 1)),
       playerTags: this.counterTags || [],
@@ -861,7 +861,7 @@ export class GameScene extends Phaser.Scene {
     hud.hideCamp();
     this.closeDraft();                      // 复用它的"恢复游戏"流程
     sfx.upgrade();
-    hud.banner(`篝火 · ${next.note}`, 1800);
+    hud.banner(`珊瑚休整 · ${next.note}`, 1800);
     this.syncHud(true);
   }
 
@@ -1847,7 +1847,7 @@ export class GameScene extends Phaser.Scene {
     return r;
   }
 
-  /** 击杀爆裂：装备「孢子爆裂」的效果 */
+  /** 击杀爆裂：装备「墨泡爆散」的效果 */
   explodeAt(x, y) {
     if (this.stats.explodeDamage <= 0 || this.explodeDepth > 2) return;
     this.explodeDepth += 1;

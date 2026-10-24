@@ -117,7 +117,7 @@ while ((Date.now() - started) / 1000 < MAX_SECONDS) {
       };
     });
     timeline.push({ wave: st.wave, at: Math.round((Date.now() - started) / 1000), ...extra });
-    console.log(`  波次 ${st.wave} · ${Math.round((Date.now() - started) / 1000)}s · 血量 ${extra.hp}/${extra.maxHp} · 火力 Lv.${extra.fire} · 露水 ${extra.dew} · DPS≈${Math.round(extra.dmg * extra.bullets / (extra.cd / 1000))}`);
+    console.log(`  波次 ${st.wave} · ${Math.round((Date.now() - started) / 1000)}s · 血量 ${extra.hp}/${extra.maxHp} · 火力 Lv.${extra.fire} · 潮水 ${extra.dew} · DPS≈${Math.round(extra.dmg * extra.bullets / (extra.cd / 1000))}`);
   }
   if (st.runState === 'over' || st.runState === 'victory') {
     result = await readState(page);

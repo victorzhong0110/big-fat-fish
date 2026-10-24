@@ -113,7 +113,7 @@ export function deathCauseName(cause) {
     case 'hazard': return '深海炸弹';
     case 'bullet': return '敌方弹幕';
     case 'boss': return '深渊巨鲸';
-    case 'spore': return '孢子的弹幕';
+    case 'spore': return '水母的弹幕';
     case 'weaver': return '墨鱼的蛛弹';
     default:
       return ENEMY_TYPES[cause]?.name || '不明之敌';

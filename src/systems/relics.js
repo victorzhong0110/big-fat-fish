@@ -112,7 +112,7 @@ relic({ id: 'migrating_root', name: '迁徙鳍', rarity: 'common', tag: '机动'
 
 // ── 稀有 ────────────────────────────────────────────────
 relic({ id: 'thorn_spike', name: '海胆棘刺', rarity: 'rare', tag: '生存', desc: '撞到敌人时反弹 3 点伤害', apply: (s) => { s.thorns += 3; } });
-relic({ id: 'spore_burst', unlockCost: 20, name: '孢子爆浆', rarity: 'rare', tag: '攻击', desc: '击杀时爆开，周围敌人受 2 点伤害；每发伤害 +1', apply: (s) => { s.explodeDamage += 2; s.explodeRadius += 62; s.damageAdd += 1; } });
+relic({ id: 'spore_burst', unlockCost: 20, name: '墨泡爆散', rarity: 'rare', tag: '攻击', desc: '击杀时爆开，周围敌人受 2 点伤害；每发伤害 +1', apply: (s) => { s.explodeDamage += 2; s.explodeRadius += 62; s.damageAdd += 1; } });
 relic({ id: 'frost_dew', unlockCost: 20, name: '霜露结晶', rarity: 'rare', tag: '生存', desc: '护盾上限 2，每章开始获得 1 点护盾', apply: (s) => { s.shieldMax += 2; s.shieldPerChapter += 1; } });
 relic({ id: 'long_root', name: '长触须', rarity: 'rare', tag: '机动', desc: '冲刺冷却 -40%', apply: (s) => { s.dashCooldownMul *= 0.6; } });
 relic({ id: 'twin_mirror', name: '双生眼镜', rarity: 'rare', tag: '攻击', desc: '弹数 +1，射速 -12%', apply: (s) => { s.bulletsAdd += 1; s.cooldownMul *= 1.12; } });
@@ -153,11 +153,11 @@ relic({ id: 'guide_flower', name: '引路灯', rarity: 'common', tag: '机动', 
 //
 // 为什么补这三张：第九轮把克制变成了真机制（伤害 ×1.6），
 // 而**每个手段必须至少有三张牌能提供** —— 否则"抽到对症的牌"就是运气，
-// 不是决策。补之前：slow 只有「霜之锋」1 张、area 只有「孢子爆裂」1 张。
+// 不是决策。补之前：slow 只有「霜之锋」1 张、area 只有「墨泡爆散」1 张。
 // 补之后：slow 3 张、area 4 张、burst 4 张、mobility 4 张。
 relic({ id: 'chill_petal', name: '霜纹鳞片', rarity: 'common', tag: '攻击', desc: '命中让敌人减速 25%，持续 0.7 秒；射击间隔 -4%', apply: (s) => { s.slowOnHit = Math.max(s.slowOnHit, 0.25); s.slowDurationMs = Math.max(s.slowDurationMs, 700); s.cooldownMul *= 0.96; } });
 relic({ id: 'frost_core', unlockCost: 35, name: '霜之心', rarity: 'legendary', tag: '攻击', desc: '命中让敌人减速 45%，持续 1.2 秒；每发伤害 +1', apply: (s) => { s.slowOnHit = Math.max(s.slowOnHit, 0.45); s.slowDurationMs = Math.max(s.slowDurationMs, 1200); s.damageAdd += 1; } });
-relic({ id: 'pollen_burst', unlockCost: 20, name: '孢子爆散', rarity: 'rare', tag: '攻击', desc: '击杀时爆开，波及范围很大；每发伤害 +1', apply: (s) => { s.explodeDamage += 3; s.explodeRadius += 110; s.damageAdd += 1; } });
+relic({ id: 'pollen_burst', unlockCost: 20, name: '墨潮爆散', rarity: 'rare', tag: '攻击', desc: '击杀时爆开，波及范围很大；每发伤害 +1', apply: (s) => { s.explodeDamage += 3; s.explodeRadius += 110; s.damageAdd += 1; } });
 
 /**
  * 「深化」：把一张已经拿到的装备再叠一层。
