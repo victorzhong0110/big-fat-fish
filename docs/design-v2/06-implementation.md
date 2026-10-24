@@ -69,18 +69,19 @@ type Profile = {
   discovered: string[]; unlockedWeapons: string[]; unlockedSkills: string[];
   unlockedCompanions: string[]; unlockedDsh: string[];
   equippedDsh: {id: string; options: Record<string, string>}[];
-  highestDifficulty: number;
+  highestDifficulty: number; apiUnlocked: boolean;
   discoveryLedger: string[]; unlockLedger: string[]; settlementLedger: string[];
   checkpoint: Checkpoint | null;
 };
 
 type Session = {
   runId: string; coreVersion: string; contentVersion: string;
-  mode: 'tutorial' | 'short' | 'expedition'; difficulty: number;
+  mode: 'tutorial' | 'short' | 'expedition' | 'api'; difficulty: number | 'api';
   seed: number; rngStates: Record<string, number>; tick: number;
   startSnapshot: {tree: string[]; dsh: unknown[]; loadout: unknown};
+  apiRuntime?: {elapsedTicks: number; bossIndex: number; materialMinute: number; fragmentsThisMinute: number; partsThisMinute: number};
   phase: 'preparing' | 'exploring' | 'boss' | 'pluginChoice' |
-    'paused' | 'victory' | 'defeat';
+    'paused' | 'victory' | 'defeat' | 'withdrawal';
   player: unknown; world: unknown; encounter: unknown;
   level: number; xpRemainder: number; totalTokens: number;
   plugins: {id: string; rank: 1 | 2; origin: PluginOrigin}[];
@@ -102,7 +103,7 @@ type DamageRequest = {
 
 实际类型应展开unknown字段，不把上述省略字段照抄进生产逻辑。普通插件最多6个`origin=run`；Pro附带5h是额外一个difficulty来源；同id只一条状态，无论origin如何。DSH是另一个集合，不在plugins里混算。只有已解锁/已实现的内容可加入牌池，缺处理器不能静默吞效果。
 
-内容记录至少包括id、displayName、descriptionParams、unlockCondition、effects、stackingPolicy、tags（只作检索）、version。启动校验重复id、未知前置、不可达技能树、缺效果处理器、缺阵营、缺sourceId继承规则、负数伤害/冷却、插件2级缺参数。技能树全树27节点160点；局内插件30种；DSH9种；MCP6把；主动8个；伙伴6位。
+内容记录至少包括id、displayName、descriptionParams、unlockCondition、effects、stackingPolicy、tags（只作检索）、version。启动校验重复id、未知前置、不可达技能树、缺效果处理器、缺阵营、缺sourceId继承规则、负数伤害/冷却、插件2级缺参数。技能树全树27节点160点；局内插件30种；DSH9项设计（8项效果明确，dsh_gpt_branch待定不可装配）；MCP6把；主动8个；伙伴6位；普通敌人9类按GPT7/Claude1/Grok1分配。
 
 ## 4. 时间、事件、伤害和控制
 
@@ -154,12 +155,12 @@ ChatGPT重置调用Boss局部reset事件，不调用检查点load。重置节点
 | T01 核心与输入 | T00 | 单一Session、固定tick、移动/瞄准/射击/冲刺、双摇杆 | 不同渲染帧率结果一致，暂停与后台不走时钟 |
 | T02 一张连续地图 | T01 | 相机、遮挡、驻守/追兵、资源/大白饭、拾取 | 出生不贴脸，掉落不丢，探索能环回 |
 | T03 等级与插件基础 | T02 | XP、指定级三选一/DSH分支预览首轮四选一、槽位、重抽、初始6个插件 | 升级队列、满槽替换、候选存档/去重正确 |
-| T04 蒸馏与5h | T03 | 三来源样本、护甲/追击泡/火箭、滚动额度、Pro附带origin | 有可见来源反馈、边界/恢复不重复生效 |
+| T04 蒸馏与5h | T03 | 三来源样本、护甲/追击泡/Bot虚影、滚动额度、Pro附带origin | 有可见来源反馈、边界/恢复不重复生效 |
 | T05 单局闭环 | T04 | Claude简版完整Boss、探索目标、胜负、检查点 | 真实可玩，退出恢复相同；不是只跑自动测试 |
 | T06 局外成长 | T05 | 算力卡/碎片/零件、27节点、小窝、DSH9种与槽位 | 收入/退款/装配/奖励去重正确 |
 | T07 全装备构筑 | T06 | 6MCP、8主动、6伙伴、30局内插件及升级/联动 | 每个效果真实可触发，不能只写卡面 |
-| T08 三阵营 | T07 | 普通/精英、ChatGPT条件重置、Grok火箭 | 05各破解路径、所有奖励排除规则成立 |
-| T09 模式与难度 | T08 | Free、短途、三海域远征、0–15/无尽难度、Pro特例 | 教程不刷奖励，模式时长靠内容验证，难度解锁正确 |
+| T08 三阵营 | T07 | 7种GPT Pet、单种强Claude蟹、单种Grok人海与简化Boss | 05各破解路径、所有奖励排除规则成立 |
+| T09 模式与难度 | T08 | Free、短途、三海域远征、0–15/API调用持续生存、Pro特例 | 教程不刷奖励，模式时长靠内容验证，难度解锁正确 |
 | T10 美术与音乐 | 可与T02后交错 | 确认形象、反馈、指定音乐、界面 | 正确资源可见/可听，音源缺失明确标未完成 |
 | T11 完整试玩 | T09、T10 | 桌面/手机真人报告、性能与平衡、回归 | 有录像/记录与缺陷修复，不以旧390测试替代 |
 
@@ -180,22 +181,23 @@ T03首批6插件建议：并行调用、批量处理、大白饭回收、蒸馏�
 7. ChatGPT三节点打断/成功/暴力击杀路径、source不换、回响无收益、无全局回档；Grok召唤样本每次最多3。
 8. 检查点不回血、不重抽、不刷新箱子/5h/DSH火箭；未过检查点退出回旧档；终局后旧档失效。
 9. 资源失败40/50%向下取整、碎片余数、免费重置27节点退款、DSH槽条件、解锁无槽可收藏、重复奖励幂等。
-10. Free固定奖励只一次、1→15→无尽解锁、Pro5→Max5x6默认5h变化、较高难度实际击败成就。
+10. Free固定奖励只一次、1→15→API调用解锁、Pro5→Max5x6默认5h变化、较高难度实际击败成就。
 11. 相同命令tick与seed重放状态摘要一致；30/60/120FPS模拟与输入一致；后台/性能暂停明确。
 12. 存档损坏、版本不兼容、storage写失败、重复结算/双击/刷新，不丢原档、不重复加货币。
+13. API长局：Boss死后继续刷怪、等级超过30、31级后插件节点、检查点保留精确时间强度、主动返回/失败比例、无重复首领奖励与材料分钟上限。
 
 ### 真人体验（不能用机器人代替）
 
 - 未读文档的玩家在Free学会射击、大白饭、插件、挣脱、检查点；能说出一次插件改变了什么。
 - 短途有效时长落在10–15分钟附近；远征有足够探索/成长达到40+，不靠空跑或堆血。
-- 三阵营能按外观和行为分辨；Claude难但可反抗，ChatGPT重置可以理解，Grok数量多但有路可走。
+- 三阵营能按外观和行为分辨；Claude数量少数值高，GPT有截图七种Pets机制，Grok普通Bot仅近身人海。API不能因Boss死亡结束，也不能靠暂停/检查点跳过时间强度。
 - 至少两种组合成型后明显横扫普通遭遇；没有全局标签检查或实时敌人补强抵消收益。
 - 桌面与一台明确型号手机均实玩完整局，记录帧时间、活实体峰值、误触与可读性；低帧率不能提高敌人相对射速。
 
 ## 9. 仍需输入与允许调参的范围
 
-需要用户提供/确认的实际资源：指定《Let Me Go》音源版本、社区大肥鱼/棕蟹/Grok Bot/Pets参考图。它们不是玩法未定，不应让实现者因此重新设计主角或替换歌曲。
+需要用户提供/确认的实际资源：指定《Let Me Go》音源版本、社区大肥鱼/棕蟹/Grok Bot精确参考。GPT七种Pets已有用户截图，名称与造型以05列出的七种为准；细节制作仍需对应素材参考。它们不是玩法未定，不应让实现者因此重新设计主角或替换歌曲。
 
-本规格给出的默认解释：5/10归前一档、无尽是无限难度阶梯而非无限波次、Pro自带5h采用既有防御效果且不占普通槽。这三条在正式实现前需在PR描述醒目列出，用户若更正应全目录同步。
+本规格给出的默认解释：5/10归前一档、Pro自带5h采用既有防御效果且不占普通槽。这三条在正式实现前需在PR描述醒目列出，用户若更正应全目录同步。
 
 可按试玩调整：经验数量/敌人血量/插件倍率/花费/掉率/地图大小/冷却。不得静默改变：唯一主角、双端手动瞄准、两种时长目标、社区概念映射、DSH解锁/槽位关系、检查点无额外效果、Boss核心机制、指定音乐。
