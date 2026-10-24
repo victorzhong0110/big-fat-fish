@@ -24,6 +24,7 @@ const BOT_OPTS = (() => {
   return v ? { reactMs: Number(v), jitter: Number(process.env.BALANCE_JITTER || 0.5) } : {};
 })();
 import { waveDpsNeed, pressureRatio, waveCounterMult } from '../src/systems/pressure.js';
+import { buildSummary } from './balanceSummary.mjs';
 
 const RUNS = Number(process.argv[2] || 6);
 // **上限按「游戏时钟」算，不是墙钟**。
@@ -199,48 +200,17 @@ for (let i = 0; i < RUNS; i++) {
   );
 }
 
-// 汇总
-const waves = runs.map((r) => r.wave);
-const finished = runs.filter((r) => r.runState === 'victory').length;
-const reachedFinal = runs.filter((r) => r.wave >= 20).length;
-const avg = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+// 汇总（**口径在 scripts/balanceSummary.mjs**：纯函数、可单测、可对旧报告重算）
+// 🔴 为什么抽出去：`deathCause` 记的是"最后一次打中你的是谁"，不是"你死于谁"
+//    （GameScene.hurtPlayer 每次受击都写它）⇒ 超时的局也会被列进"死于什么"。
+//    ⇒ 通关 / 阵亡 / 超时必须分开报，详见 balanceSummary.mjs 的注释。
 const summary = {
-  runs: runs.length,
-  skill: SKILL,
-  bot: BOT_OPTS,
-  maxSeconds: MAX_SECONDS,
-  maxSecondsKind: 'game-time',
-  victories: finished,
-  reachedWave20: reachedFinal,
-  avgWave: Math.round(avg(waves) * 10) / 10,
-  minWave: Math.min(...waves),
-  maxWave: Math.max(...waves),
-  avgSeconds: Math.round(avg(runs.map((r) => r.seconds))),
-  avgDew: Math.round(avg(runs.map((r) => r.dew))),
-  avgKills: Math.round(avg(runs.map((r) => r.kills))),
-  avgSpawned: Math.round(avg(runs.map((r) => r.spawned))),
-  avgKillRate: Math.round(avg(runs.map((r) => (r.spawned ? r.kills / r.spawned : 0))) * 100) / 100,
-  // 最后一波的 DPS 覆盖度（<1 = 打不动）
-  lastCoverage: runs.map((r) => {
-    const t = r.timeline || [];
-    return t.length ? t[t.length - 1].coverage : null;
+  ...buildSummary(runs, {
+    skill: SKILL,
+    bot: BOT_OPTS,
+    maxSeconds: MAX_SECONDS,
+    maxSecondsKind: 'game-time',
   }),
-  // **掉队点**：覆盖度第一次跌破 1 的波次（难度曲线的关键指标）。
-  // 目标：它在第 14~17 波之间 —— 保底火力撑到那里，之后由构筑决定生死。
-  dropWave: runs.map((r) => {
-    const t = (r.timeline || []).filter((x) => x.coverage !== null && x.coverage !== undefined);
-    const bad = t.find((x) => x.coverage < 1);
-    return bad ? bad.wave : null;
-  }),
-  // 硬指标：击杀数不可能超过生成数（超过 = 有重复结算的 bug）
-  killRateOk: runs.every((r) => r.kills <= r.spawned),
-  // 卡在面板上的局：这些数据不可信，必须重跑
-  stuckRuns: runs.filter((r) => r.stuckInPanel).map((r) => r.seed),
-  // 死于哪种怪（第五轮）：新敌种是不是真的在制造压力
-  deathCauses: runs.map((r) => r.deathCause || '—'),
-  avgElitesKilled: Math.round(avg(runs.map((r) => r.elitesKilled || 0)) * 10) / 10,
-  // 每一局走的路线（第六轮）：机器人按覆盖度选，强的贪、弱的稳
-  routesChosen: runs.map((r) => (r.routes || []).join('>')),
   errors,
 };
 

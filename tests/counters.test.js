@@ -147,7 +147,7 @@ describe('对症判定', () => {
     const note = counterNote('migrating_root', ['weaver']);
     expect(note).toContain('对症');
     expect(note).toContain('机动');
-    expect(note).toContain('墨鱼');
+    expect(note).toContain('章鱼');
     expect(note).toContain(`×${COUNTER_MULT}`);
   });
 });

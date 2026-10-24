@@ -36,6 +36,18 @@ export function svgGraphics() {
       els.push({ kind: 'circle', x, y, r, fill });
       parts.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}"${op(fillA)}/>`);
     },
+    fillRect(x, y, w, h) {
+      els.push({ kind: 'rect', x, y, w, h, fill });
+      parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"${op(fillA)}/>`);
+    },
+    fillEllipse(x, y, w, h) {
+      els.push({ kind: 'ellipse', x, y, w, h, fill });
+      parts.push(`<ellipse cx="${x}" cy="${y}" rx="${w / 2}" ry="${h / 2}" fill="${fill}"${op(fillA)}/>`);
+    },
+    fillTriangle(x1, y1, x2, y2, x3, y3) {
+      els.push({ kind: 'path', d: `M${x1} ${y1}L${x2} ${y2}L${x3} ${y3}Z`, fill, points: [[x1, y1], [x2, y2], [x3, y3]] });
+      parts.push(`<path d="M${x1} ${y1}L${x2} ${y2}L${x3} ${y3}Z" fill="${fill}"${op(fillA)}/>`);
+    },
     strokeCircle(x, y, r) {
       els.push({ kind: 'strokeCircle', x, y, r, stroke: lineC, width: lineW });
       parts.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${lineC}" stroke-width="${lineW}"${op(lineA)}/>`);

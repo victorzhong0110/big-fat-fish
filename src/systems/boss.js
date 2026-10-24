@@ -32,7 +32,7 @@ export const BOSS_PHASE_COUNT = 3;
 export const BOSSES = [
   {
     id: 'wither_lord',
-    name: '深渊领主',
+    name: '小龙',
     tag: '追踪 + 环形弹幕 + 深海炸弹',
     desc: '一路追着你转，第三章开始往下丢深海炸弹。',
     counter: '贴脸时它的环形弹幕会打到自己 —— 敢贴上去就能换 DPS',
@@ -46,7 +46,7 @@ export const BOSSES = [
   },
   {
     id: 'stone_warden',
-    name: '巨甲蟹',
+    name: '工头',
     tag: '结壳免伤 + 甩出海葵',
     desc: '每隔几秒就结一次壳，壳硬得打不动；壳碎时甩出两只海葵。',
     counter: '壳只挡 1.1 秒 —— 爆发够就能在壳碎前打穿它',
@@ -60,7 +60,7 @@ export const BOSSES = [
   },
   {
     id: 'pollen_queen',
-    name: '母巢',
+    name: '蘑菇王',
     tag: '召唤毒水母 + 旋转弹幕',
     desc: '身边永远飘着毒水母，弹幕是转着圈的螺旋。',
     counter: '螺旋弹幕有个缺口 —— 站对了位置就几乎不掉血',
@@ -74,7 +74,7 @@ export const BOSSES = [
   },
   {
     id: 'thorn_king',
-    name: '棘刺之王',
+    name: '六角龙',
     tag: '蓄力突进 + 瞄准三连发',
     desc: '蓄力半秒就朝你冲过来，冲完还要愣一会儿 —— 那是你的输出窗口。',
     counter: '它冲刺后有 0.9 秒硬直 —— 那半秒能打掉它一大截血',

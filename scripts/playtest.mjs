@@ -148,14 +148,18 @@ check('主角有名字', rosterNames.length === 5 && rosterNames.every((n) => n.
   rosterNames.join('/'));
 
 // 第十五轮：图例的阵营标签要真的出现在**DOM** 里（数据对 ≠ 屏幕对）
+// 🔴 断言**不写死皮肤名** —— 换皮是别人的活，名字一变这里就假红。
+//    正确口径：DOM 上的名字必须**等于数据里的名字**。
 const legendChips = await page.locator('.legend li[data-enemy] .faction').allInnerTexts();
 const legendNames = await page.locator('.legend li[data-enemy] .lg-name').allInnerTexts();
+const dataNames = await page.evaluate(() => window.__tulip.enemyNames());
 check('主菜单图例标出敌怪阵营（GPT / Claude）',
-  legendChips.length >= 8 && legendChips.every((s) => /GPT|Claude/.test(s)),
+  legendChips.length === dataNames.length && legendChips.every((s) => /GPT|Claude/.test(s)),
   legendChips.join(','));
-check('图例里的敌怪名字来自数据',
-  legendNames.includes('贪嘴小鱼') && legendNames.includes('墨鱼') && legendNames.includes('深渊巨鲸'),
-  legendNames.join('/'));
+check('图例里的敌怪名字与数据逐条一致（换皮也不会漂）',
+  legendNames.length === dataNames.length
+    && legendNames.every((n, i) => n === dataNames[i]),
+  `${legendNames.join('/')} vs ${dataNames.join('/')}`);
 await page.locator('#roster .card.char[data-id="scout"]').click();
 const selectedId = await page.locator('#roster .card.char.selected').getAttribute('data-id');
 check('可以切换主角', selectedId === 'scout', `selected=${selectedId}`);
@@ -904,7 +908,7 @@ const counterText = await page.evaluate(() => {
 });
 check('抽卡面板标出「对症」的怪（克制关系写给玩家看）',
   counterText.total >= 1 && /范围/.test(counterText.mineNote)
-    && /贪嘴小鱼|沙丁鱼群|海葵|毒水母/.test(counterText.mineNote),
+    && /快递小工|打工潮|蘑菇|水滴|企鹅|章鱼|重装工兵|小零工|猫头鹰/.test(counterText.mineNote),
   counterText.mineNote || '（没找到标注）');
 
 // 第八轮：篝火（章末的休整）

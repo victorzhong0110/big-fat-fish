@@ -1,70 +1,317 @@
-// ── 敌人的「模型化身」：GPT（OpenAI Blossom）与 Claude（Anthropic 星芒）────
+// ── 敌人的「模型化身」：Claude Buddy 的物种 × Codex Buddies 的小工人 ──
 //
-// ⚠️ **只借鉴几何构造思路，不复制任何官方图形资源。**
-// 两个标志的形状规律（来自公开的品牌分析与几何拆解）：
+// ⚠️ **不是商标，也不是 Dots 那种 agent 形象** —— 是两个产品里的**宠物（pet）**：
 //
-//  ① **GPT / OpenAI "Blossom"**
-//     · 六向旋转对称：绕中心每 60° 重复一次，六个单元完全相同；
-//     · 本质是「生命之种」式的六个圆环按六边形排布、彼此交织；
-//     · 2025 年重绘后：笔画**等宽**、中心留白更大、弧线更干净。
-//     ⇒ 本作把它画成：6 个描边圆环按六边形排布 + 交替压在上层（模拟编织）。
-//     官方色：黑白为主；ChatGPT 界面绿常被引用为 #10A37F。
+// ① **Claude Buddy**（Claude Code 终端里的电子宠物）
+//    18 个物种的**像素小动物**：鸭 / 鹅 / 猫 / 兔 / 猫头鹰 / 企鹅 / 龟 / 蜗牛 /
+//    龙 / 章鱼 / 六角恐龙 / 幽灵 / 机器人 / 水滴 / 仙人掌 / 蘑菇 / 胖球 / **水豚**
+//    （社区共识：水豚是 Claude 4.6 的内部代号）。
+//    ⇒ 画法：**像素小动物**，**陶土橙**（配 Claude 的橙发女仆）。
 //
-//  ② **Claude**
-//     · 约十二条**长短不一、略有弧度、收笔不匀**的手绘放射笔画，
-//       刻意不对称（"看起来像手画的，不像是按网格算出来的"）；
-//     · 陶土橙，Anthropic 公开品牌规范里的 primary accent = **#D97757**。
-//     ⇒ 本作把它画成：变长度的锥形笔画 + 角度抖动 + 轻微弯曲。
+// ② **Codex Buddies**（OpenAI Codex 里的宠物）
+//    一群**像素小工人**：会走、会坐在笔记本前、会做出反应、也会"失败"。
+//    ⇒ 画法：**方块小工人**，**淡紫**（配 GPT 的白发角娘）。
 //
-// 🔴 **版权边界**：这里是**自绘的原创图形**，不是官方 SVG 的复刻，也不使用任何
-// 官方图片资源。商标归属于各自公司；本项目只做「致敬式的虚构怪物」，
-// 不暗示任何授权、赞助或关联关系。玩家应当一眼看出「这是致敬」，而不是
-// 「这是官方图标」。
+// 🧭 **为什么用像素**：这两个 pet 本来就是像素画，而本项目是**零素材**游戏
+// （所有图形运行时用 Phaser Graphics 生成）⇒ 敌人用**方块格**画，
+// 与 Clawd / 小工人 的质感天然同构，而且改一个格子就能调造型。
+//
+// 🔴 **版权边界**：两个 pet 都是各自产品的**受版权保护的角色**。
+//    本项目**不复制任何官方像素图 / 官方美术资源**，而是用代码**重新画一遍同类的形体**
+//    （借鉴的是公开可见的造型规律：像素小动物的轮廓、方块工人的构造），
+//    坐标与细节全部自定。商标与角色版权归 OpenAI / Anthropic 所有；
+//    本作是**致敬式的虚构怪物**，不暗示任何授权、赞助或关联。
 //
 // 📐 **纯逻辑层**：不 import Phaser、不碰 DOM —— 只往传入的 Graphics 上画，
-// 因此可以单测（见 tests/avatars.test.js）。
+// 因此可以单测（见 tests/avatars.test.js）并离屏渲染（见 src/art/graphics-probe.js）。
 
-/** OpenAI 界面绿（ChatGPT 界面常被引用的值） */
-export const GPT_COLOR = 0x10a37f;
-/** GPT 的暗一档（画在"下层"，制造编织的层次） */
-export const GPT_DARK = 0x086a52;
-/** Anthropic 官方主色（其公开品牌规范里的 primary accent） */
-export const CLAUDE_COLOR = 0xd97757;
-/** Claude 的暗一档 */
-export const CLAUDE_DARK = 0xa8552f;
+/* ── 配色：两套品牌色 + 少量中性色 ──────────────────────────────
+ * Claude 侧：陶土橙（Anthropic 官方 primary accent #D97757 的家族）
+ * GPT 侧：淡紫（ChatGPT 界面紫 #AB68FF 的家族）
+ */
+export const CLAUDE_COLOR = 0xd97757;   // 陶土橙（主）
+export const CLAUDE_LIGHT = 0xf2a888;  // 浅橙（高光）
+export const CLAUDE_DARK = 0xa8553a;   // 深橙（描边/阴影）
+export const GPT_COLOR = 0xa98cf0;     // 淡紫（主）
+export const GPT_LIGHT = 0xcfc0f5;     // 浅紫（高光）
+export const GPT_DARK = 0x6f4fc0;      // 深紫
+export const WHITE = 0xf7f4ff;
+export const OUTLINE = 0x241b33;       // 眼/描边
+export const ACCENT = 0xffd34d;        // 一点黄（喙/灯）
 
+/** GPT 家族的主色（图例/深色描边用） */
+export const GPT_COLOR_MAIN = GPT_COLOR;
+
+/* ──────────────────────────────────────────────────────────────
+ *  像素网格系统
+ * ────────────────────────────────────────────────────────────── */
+
+const GRID = 16;   // 每个精灵画在 16×16 的格子上
 
 /**
- * 每个敌种归到哪个模型阵营，以及它在家族里的"变体"参数。
- *
- * 归阵营的逻辑（也让玩法读起来更顺）：
- *   · **GPT（青绿 · 六瓣结）** = 基础型、堆数量、肉盾 —— 靠"多"取胜；
- *   · **Claude（陶土橙 · 星芒）** = 远程、爆发、机动 —— 靠"巧"取胜。
- * 玩家扫一眼战场就能读出"这边是绿结、那边是橙芒"，对"对症/弱点"的判断也更直观。
- *
- * `variant` 只影响**外观**（尺寸/笔画/角度/齿数），**不影响任何机制**。
+ * 把「格子坐标」画到 Graphics 上。
+ * 格子坐标原点在精灵左上角，x/y 往右/往下。
+ * @param {Phaser.GameObjects.Graphics} g
+ * @param {{cx:number, cy:number, size:number}} box
+ * @param {Array<[number,number,number,number,number]>} cells [x,y,w,h,color]
  */
-export const ENEMY_AVATAR = {
-  // ── GPT 阵营 ──────────────────────────────────────────────
-  crawler: { model: 'gpt', rays: 6, phase: 0.0, weight: 0.17, dot: 0 },
-  swarm: { model: 'gpt', rays: 5, phase: 0.5, weight: 0.22, dot: 1 },
-  bud: { model: 'gpt', rays: 6, phase: 0.25, weight: 0.15, dot: 0 },
-  husk: { model: 'gpt', rays: 6, phase: 0.75, weight: 0.24, dot: 1 },
-  huskling: { model: 'gpt', rays: 4, phase: 0.0, weight: 0.26, dot: 0 },
-  // ── Claude 阵营 ───────────────────────────────────────────
-  spore: { model: 'claude', rays: 11, phase: 0.3, weight: 1.0, curve: 0.22 },
-  moth: { model: 'claude', rays: 13, phase: 1.1, weight: 1.0, curve: -0.18 },
-  weaver: { model: 'claude', rays: 9, phase: 2.2, weight: 0.85, curve: 0.3 },
-  charger: { model: 'claude', rays: 15, phase: 0.8, weight: 0.9, curve: -0.26 },
+function drawCells(g, box, cells) {
+  const u = box.size / GRID;
+  const x0 = box.cx - box.size / 2;
+  const y0 = box.cy - box.size / 2;
+  for (const [x, y, w, h, c] of cells) {
+    if (x < 0 || y < 0 || x + w > GRID || y + h > GRID) {
+      throw new Error(`精灵格子越界：x=${x} y=${y} w=${w} h=${h}（网格 ${GRID}×${GRID}）`);
+    }
+    g.fillStyle(c, 1);
+    g.fillRect(x0 + x * u, y0 + y * u, w * u, h * u);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+ *  Claude Buddy 的物种（陶土橙）
+ * ────────────────────────────────────────────────────────────── */
+
+/** 每个物种 = 16×16 的方格表：[x, y, w, h, 颜色] */
+export const BUDDY_SPECIES = {
+  // 猫 —— 追击型
+  cat: [
+    [5, 3, 2, 2, CLAUDE_COLOR], [10, 3, 2, 2, CLAUDE_COLOR],
+    [6, 4, 1, 1, CLAUDE_LIGHT], [11, 4, 1, 1, CLAUDE_LIGHT],
+    [5, 5, 6, 5, CLAUDE_COLOR],
+    [7, 7, 1, 1, OUTLINE], [10, 7, 1, 1, OUTLINE],
+    [4, 9, 8, 5, CLAUDE_COLOR],
+    [11, 12, 3, 1, CLAUDE_COLOR],
+    [5, 14, 2, 1, CLAUDE_DARK], [9, 14, 2, 1, CLAUDE_DARK],
+  ],
+  // 猫头鹰 —— 远程
+  owl: [
+    [4, 2, 2, 2, CLAUDE_COLOR], [10, 2, 2, 2, CLAUDE_COLOR],
+    [4, 4, 8, 9, CLAUDE_COLOR],
+    [6, 5, 2, 3, WHITE], [9, 5, 2, 3, WHITE],
+    [6, 6, 2, 1, OUTLINE], [9, 6, 2, 1, OUTLINE],
+    [7, 8, 2, 1, ACCENT],
+    [6, 13, 1, 1, CLAUDE_DARK], [9, 13, 1, 1, CLAUDE_DARK],
+  ],
+  // 鸭子 —— 成群
+  duck: [
+    [9, 4, 4, 4, CLAUDE_COLOR],
+    [11, 5, 1, 1, OUTLINE],
+    [13, 6, 2, 1, ACCENT],
+    [3, 8, 10, 5, CLAUDE_COLOR],
+    [5, 9, 4, 3, CLAUDE_LIGHT],
+    [5, 13, 2, 1, ACCENT], [9, 13, 2, 1, ACCENT],
+  ],
+  // 蘑菇 —— 死亡后分裂
+  mushroom: [
+    [3, 4, 10, 5, CLAUDE_COLOR],
+    [5, 5, 2, 2, WHITE], [9, 6, 2, 2, WHITE], [7, 4, 1, 1, WHITE],
+    [6, 9, 4, 6, CLAUDE_LIGHT],
+    [7, 11, 1, 1, OUTLINE], [9, 11, 1, 1, OUTLINE],
+  ],
+  // 水滴 —— 死亡留一滩（自爆）
+  blob: [
+    [5, 3, 6, 4, CLAUDE_COLOR],
+    [4, 6, 8, 5, CLAUDE_COLOR],
+    [6, 5, 2, 1, WHITE],
+    [6, 8, 1, 2, OUTLINE], [9, 8, 1, 2, OUTLINE],
+    [5, 11, 2, 3, CLAUDE_COLOR], [7, 12, 1, 3, CLAUDE_COLOR],
+    [9, 11, 2, 3, CLAUDE_COLOR],
+  ],
+  // 企鹅 —— 直线冲刺
+  penguin: [
+    [4, 3, 8, 11, CLAUDE_COLOR],
+    [6, 7, 4, 6, WHITE],
+    [6, 5, 1, 1, OUTLINE], [9, 5, 1, 1, OUTLINE],
+    [7, 7, 2, 1, ACCENT],
+    [3, 6, 1, 5, CLAUDE_DARK], [12, 6, 1, 5, CLAUDE_DARK],
+    [5, 14, 2, 1, ACCENT], [9, 14, 2, 1, ACCENT],
+  ],
+  // 章鱼 —— 喷墨黏住（减速）
+  octopus: [
+    [5, 3, 6, 6, CLAUDE_COLOR],
+    [7, 6, 1, 1, OUTLINE], [9, 6, 1, 1, OUTLINE],
+    [3, 9, 2, 5, CLAUDE_COLOR],
+    [6, 10, 1, 5, CLAUDE_COLOR],
+    [9, 10, 1, 5, CLAUDE_COLOR],
+    [11, 9, 2, 5, CLAUDE_COLOR],
+  ],
+  // 幽灵 —— 飘散的碎片
+  ghost: [
+    [5, 3, 6, 8, WHITE],
+    [5, 11, 2, 2, WHITE], [8, 11, 1, 3, WHITE], [10, 11, 2, 2, WHITE],
+    [7, 6, 1, 2, OUTLINE], [9, 6, 1, 2, OUTLINE],
+    [8, 9, 1, 1, OUTLINE],
+  ],
+  // 水豚 —— 传说稀有度（BOSS）
+  capybara: [
+    [3, 7, 9, 6, CLAUDE_COLOR],
+    [10, 6, 5, 4, CLAUDE_COLOR],
+    [10, 4, 1, 2, CLAUDE_COLOR], [13, 4, 1, 2, CLAUDE_COLOR],
+    [12, 7, 1, 1, OUTLINE],
+    [14, 8, 1, 2, CLAUDE_LIGHT],
+    [5, 13, 2, 2, CLAUDE_DARK], [8, 13, 2, 2, CLAUDE_DARK],
+  ],
+  // 龙 —— 传说稀有度（终局 BOSS）
+  dragon: [
+    [2, 4, 3, 4, CLAUDE_COLOR],          // 立起来的翼
+    [2, 12, 3, 1, CLAUDE_COLOR],         // 尾
+    [4, 9, 7, 4, CLAUDE_COLOR],          // 身体
+    [10, 6, 2, 2, CLAUDE_COLOR],         // 脖子
+    [9, 3, 5, 4, CLAUDE_COLOR],          // 头
+    [10, 2, 1, 2, CLAUDE_COLOR], [12, 2, 1, 2, CLAUDE_COLOR],  // 角
+    [12, 4, 1, 1, OUTLINE],              // 眼
+    [5, 13, 2, 1, CLAUDE_DARK], [9, 13, 2, 1, CLAUDE_DARK],
+  ],
+  // 六角恐龙 —— 稀有（BOSS）
+  axolotl: [
+    [4, 3, 2, 1, CLAUDE_LIGHT], [3, 4, 1, 2, CLAUDE_LIGHT],     // 左鳃
+    [10, 3, 2, 1, CLAUDE_LIGHT], [12, 4, 1, 2, CLAUDE_LIGHT],    // 右鳃
+    [5, 4, 6, 4, CLAUDE_COLOR],                                 // 头
+    [6, 5, 1, 1, OUTLINE], [9, 5, 1, 1, OUTLINE],
+    [4, 8, 7, 5, CLAUDE_COLOR],                                 // 身
+    [11, 9, 4, 1, CLAUDE_COLOR],                                // 尾
+    [4, 13, 2, 1, CLAUDE_DARK], [8, 13, 2, 1, CLAUDE_DARK],
+  ],
+  // 巨型蘑菇王 —— 稀有（BOSS）
+  mushroomKing: [
+    [2, 3, 12, 6, CLAUDE_COLOR],
+    [4, 4, 2, 2, WHITE], [9, 5, 2, 2, WHITE], [7, 3, 1, 1, WHITE],
+    [5, 9, 6, 6, CLAUDE_LIGHT],
+    [6, 11, 1, 1, OUTLINE], [9, 11, 1, 1, OUTLINE],
+  ],
 };
 
-/** 4 个 Boss 各自的化身（终局 Boss 是两个模型的合体） */
-export const BOSS_AVATAR = {
-  boss: { model: 'both', rays: 14, phase: 0.0, weight: 0.2, curve: 0.2 },
-  boss_stone: { model: 'gpt', rays: 6, phase: 0.5, weight: 0.26, dot: 1 },
-  boss_pollen: { model: 'claude', rays: 17, phase: 1.6, weight: 1.0, curve: 0.24 },
-  boss_thorn: { model: 'claude', rays: 20, phase: 2.8, weight: 1.15, curve: -0.14 },
+/* ──────────────────────────────────────────────────────────────
+ *  Codex Buddies 的小工人（淡紫）
+ * ────────────────────────────────────────────────────────────── */
+
+/** 小工人：方块头 +  visor 屏 + 身体 + 手臂 + 腿 */
+export const CODEX_BUDDIES = {
+  // 基础款
+  worker: [
+    [4, 2, 8, 2, GPT_COLOR],          // 帽檐
+    [5, 4, 6, 5, GPT_COLOR],          // 头
+    [6, 6, 4, 2, OUTLINE],            // visor
+    [7, 7, 1, 1, GPT_LIGHT], [9, 7, 1, 1, GPT_LIGHT],
+    [5, 10, 6, 4, GPT_COLOR],         // 身体
+    [3, 10, 1, 3, GPT_COLOR], [12, 10, 1, 3, GPT_COLOR],   // 手臂
+    [6, 14, 1, 1, GPT_DARK], [9, 14, 1, 1, GPT_DARK],     // 腿
+  ],
+  // 抱着快递箱跑（追击）
+  courier: [
+    [4, 2, 8, 2, GPT_COLOR],
+    [5, 4, 6, 5, GPT_COLOR],
+    [6, 6, 4, 2, OUTLINE],
+    [7, 7, 1, 1, GPT_LIGHT], [9, 7, 1, 1, GPT_LIGHT],
+    [5, 10, 6, 4, GPT_COLOR],
+    [3, 10, 1, 3, GPT_COLOR],
+    [11, 9, 3, 3, ACCENT],            // 快递箱
+    [12, 8, 1, 1, GPT_DARK],
+    [6, 14, 1, 1, GPT_DARK], [9, 14, 1, 1, GPT_DARK],
+  ],
+  // 成群（背后还有两个小脑袋）
+  crowd: [
+    [2, 3, 4, 3, GPT_DARK], [10, 3, 4, 3, GPT_DARK],
+    [3, 4, 1, 1, GPT_LIGHT], [11, 4, 1, 1, GPT_LIGHT],
+    [4, 2, 8, 2, GPT_COLOR],
+    [5, 4, 6, 5, GPT_COLOR],
+    [6, 6, 4, 2, OUTLINE],
+    [7, 7, 1, 1, GPT_LIGHT], [9, 7, 1, 1, GPT_LIGHT],
+    [5, 10, 6, 4, GPT_COLOR],
+    [3, 10, 1, 3, GPT_COLOR], [12, 10, 1, 3, GPT_COLOR],
+    [6, 14, 1, 1, GPT_DARK], [9, 14, 1, 1, GPT_DARK],
+  ],
+  // 重装机兵（坦克）
+  heavy: [
+    [7, 1, 1, 2, OUTLINE], [7, 1, 1, 1, ACCENT],
+    [3, 2, 10, 6, GPT_COLOR],
+    [5, 4, 6, 3, OUTLINE],
+    [6, 5, 1, 1, GPT_LIGHT], [8, 5, 1, 1, GPT_LIGHT], [10, 5, 1, 1, GPT_LIGHT],
+    [4, 9, 8, 5, GPT_COLOR],
+    [3, 9, 1, 4, GPT_DARK], [12, 9, 1, 4, GPT_DARK],
+    [5, 14, 2, 1, GPT_DARK], [9, 14, 2, 1, GPT_DARK],
+  ],
+  // 坐在笔记本前（会"工作"的小工人）
+  coder: [
+    [4, 2, 8, 2, GPT_COLOR],
+    [5, 4, 6, 5, GPT_COLOR],
+    [6, 6, 4, 2, OUTLINE],
+    [7, 7, 1, 1, GPT_LIGHT], [9, 7, 1, 1, GPT_LIGHT],
+    [5, 10, 6, 4, GPT_COLOR],
+    [3, 10, 1, 3, GPT_COLOR], [12, 10, 1, 3, GPT_COLOR],
+    [4, 12, 8, 2, OUTLINE],            // 笔记本
+    [5, 12, 6, 1, GPT_LIGHT],
+    [6, 14, 1, 1, GPT_DARK], [9, 14, 1, 1, GPT_DARK],
+  ],
+  // 大型工兵（BOSS）
+  foreman: [
+    [7, 1, 1, 2, OUTLINE], [7, 1, 1, 1, ACCENT],
+    [3, 2, 10, 7, GPT_COLOR],
+    [4, 4, 6, 4, OUTLINE],
+    [5, 5, 1, 1, GPT_LIGHT], [7, 5, 1, 1, GPT_LIGHT],
+    [8, 5, 1, 1, GPT_LIGHT], [10, 5, 1, 1, GPT_LIGHT],
+    [4, 10, 8, 4, GPT_COLOR],
+    [3, 10, 1, 4, GPT_DARK], [12, 10, 1, 4, GPT_DARK],
+    [5, 14, 2, 1, GPT_DARK], [9, 14, 2, 1, GPT_DARK],
+  ],
 };
+
+/* ──────────────────────────────────────────────────────────────
+ *  敌种 → 化身
+ * ────────────────────────────────────────────────────────────── */
+
+/**
+ * 每个敌种归到哪个阵营，以及它是哪个宠物。
+ *
+ * 阵营的视觉标识用**形状 + 配色**两件事：
+ *   · **Claude 系** = Claude Buddy 的小动物（**陶土橙**、圆滚滚）；
+ *   · **GPT 系** = Codex Buddies 的小工人（**淡紫**、方块头 visor）。
+ * ⇒ 玩家扫一眼战场就能分出两族，**不依赖颜色**（色觉障碍也读得出形状）。
+ */
+export const ENEMY_AVATAR = {
+  // ── Claude 系（陶土橙的小动物）──────────────────────────────
+  spore: { model: 'claude', pet: 'owl', name: '猫头鹰' },
+  moth: { model: 'claude', pet: 'blob', name: '水滴' },
+  charger: { model: 'claude', pet: 'penguin', name: '企鹅' },
+  bud: { model: 'claude', pet: 'mushroom', name: '蘑菇' },
+  weaver: { model: 'claude', pet: 'octopus', name: '章鱼' },
+  // ── GPT 系（淡紫的小工人）─────────────────────────────────
+  crawler: { model: 'gpt', pet: 'courier', name: '快递小工' },
+  swarm: { model: 'gpt', pet: 'crowd', name: '打工潮' },
+  husk: { model: 'gpt', pet: 'heavy', name: '重装工兵' },
+  huskling: { model: 'gpt', pet: 'worker', name: '小零工' },
+};
+
+/** 4 个 Boss 各自的化身 */
+export const BOSS_AVATAR = {
+  boss: { model: 'claude', pet: 'dragon', name: '小龙' },
+  boss_stone: { model: 'gpt', pet: 'foreman', name: '工头' },
+  boss_pollen: { model: 'claude', pet: 'mushroomKing', name: '蘑菇王' },
+  boss_thorn: { model: 'claude', pet: 'axolotl', name: '六角龙' },
+};
+
+/**
+ * 🔴 **加载时自检**：每个精灵的**所有格子角点**必须落在「半径 8 格」的圆内。
+ *
+ * 为什么是 8：精灵画在 16×16 的网格上、中心在 (8,8)，
+ * 而 `r` 的定义是**外接半径** ⟹ 格子角点到中心的距离 ≤ 8 格 ⟹ 视觉大小 = 碰撞大小。
+ * 早先「重装工兵的手臂伸到 1.06r」就是这么被抓住的（靠单测太晚，改成加载即报）。
+ */
+function assertFitsRadius(cells, name) {
+  for (const [x, y, w, h] of cells) {
+    for (const [px, py] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]) {
+      const d = Math.hypot(px - GRID / 2, py - GRID / 2);
+      if (d > GRID / 2) {
+        throw new Error(`精灵「${name}」的格子 (${x},${y},${w},${h}) 超出半径 ${GRID / 2} 格（角点距 ${d.toFixed(2)}）`);
+      }
+    }
+  }
+}
+if (!process.env.AVATAR_SKIP_ASSERT) {
+  for (const [name, cells] of Object.entries(BUDDY_SPECIES)) assertFitsRadius(cells, name);
+  for (const [name, cells] of Object.entries(CODEX_BUDDIES)) assertFitsRadius(cells, name);
+}
 
 /** 某敌种是哪个阵营（给 HUD / 图例用） */
 export function modelOf(enemyId) {
@@ -76,11 +323,17 @@ export function modelOf(enemyId) {
 export function colorOf(enemyId) {
   const m = modelOf(enemyId);
   if (m === 'claude') return CLAUDE_COLOR;
-  if (m === 'both') return GPT_COLOR;
+  if (m === 'both') return ACCENT;
   return GPT_COLOR;
 }
 
-/** 某敌种的名字（给 HUD 用） */
+/** 某敌种的名字（宠物名；给 HUD 用） */
+export function petNameOf(enemyId) {
+  const a = ENEMY_AVATAR[enemyId] || BOSS_AVATAR[enemyId];
+  return a ? a.name : '';
+}
+
+/** 某敌种的阵营标签（给 HUD 用） */
 export function modelLabelOf(enemyId) {
   const m = modelOf(enemyId);
   if (m === 'claude') return 'Claude';
@@ -88,179 +341,25 @@ export function modelLabelOf(enemyId) {
   return 'GPT';
 }
 
-/* ──────────────────────────────────────────────────────────────
- *  绘制：GPT Blossom
- * ────────────────────────────────────────────────────────────── */
-
-/**
- * 画 GPT 的六瓣结。
- *
- * 构造：N 个**描边圆环**按正 N 边形排布（每个圆心在半径 d 上），
- * 圆环之间互相叠压 ⇒ 视觉上就是一朵"六瓣结"。
- * 编织感：先把全部圆环画成暗色（下层），再把**间隔的一半**用亮色重画在上层。
- *
- * @param {Phaser.GameObjects.Graphics} g
- * @param {{cx:number, cy:number, r:number, color?:number, dark?:number,
- *          lobes?:number, weight?:number, phase?:number, dot?:number}} o
- */
-export function drawGptBlossom(g, o) {
-  const {
-    cx, cy, r,
-    color = GPT_COLOR, dark = GPT_DARK,
-    lobes = 6, weight = 0.17, phase = 0, dot = 0,
-  } = o;
-
-  // ⚠️ **r 的定义 = 这个形象的外接半径**（不是内部几何半径）——
-  // 这样调用方直接把「碰撞半径」传进来即可，视觉大小与判定大小一致，
-  // 玩家不会遇到「看着没打中却被打死了」。
-  // 外接半径 = 圆心距 d + 环半径 rr + 半个描边宽。
-  // ⚠️ 描边宽度是**参数**（weight）⇒ 外接半径要**按实际参数算**，
-  // 否则粗描边的那些怪会画得比它的判定圈还大（tests/avatars.test.js 会红）。
-  const R = r / (1.18 + weight / 2);
-  const d = R * 0.62;              // 圆心到中心的距离
-  const rr = R * 0.56;             // 每个圆环的半径
-  const lw = Math.max(1, R * weight);   // 描边宽度
-
-  const centers = [];
-  for (let i = 0; i < lobes; i++) {
-    const a = phase + (Math.PI * 2 * i) / lobes;
-    centers.push([cx + Math.cos(a) * d, cy + Math.sin(a) * d]);
-  }
-
-  // 下层：全部暗色
-  g.lineStyle(lw, dark, 1);
-  for (const [x, y] of centers) g.strokeCircle(x, y, rr);
-
-  // 上层：间隔取一半用亮色重画 ⇒ 看起来是"编织"而不是"叠放"
-  g.lineStyle(lw, color, 1);
-  for (let i = 0; i < centers.length; i += 2) {
-    const [x, y] = centers[i];
-    g.strokeCircle(x, y, rr);
-  }
-
-  // 中心：留白是标志的灵魂（2025 重绘把中心留白放大了），
-  // 但小怪给个"emotive point"圆点更利于在战场上辨认
-  if (dot) {
-    g.fillStyle(color, 1);
-    g.fillCircle(cx, cy, R * 0.1);
-  }
+/** 画一只宠物/小工人 */
+export function drawPet(g, o) {
+  const { cx, cy, r, pet } = o;
+  const table = BUDDY_SPECIES[pet] || CODEX_BUDDIES[pet];
+  if (!table) return false;
+  drawCells(g, { cx, cy, size: r * 2 }, table);
+  return true;
 }
-
-/* ──────────────────────────────────────────────────────────────
- *  绘制：Claude 星芒
- * ────────────────────────────────────────────────────────────── */
-
-/**
- * 画 Claude 的星芒。
- *
- * 构造：N 条**锥形笔画**从中心附近放射出去，每条：
- *   · 长度不同（长度的抖动是这个标志的灵魂 —— 规整的放射会变成"雪花"）；
- *   · 角度有微小抖动；
- *   · 略带弧度（不是死直的）；
- *   · 收笔不匀（有的末端粗、有的根部粗）。
- * 用固定的伪随机（由 phase 决定）⇒ 同一个敌人每次长得一样。
- *
- * @param {Phaser.GameObjects.Graphics} g
- * @param {{cx:number, cy:number, r:number, color?:number, dark?:number,
- *          rays?:number, phase?:number, weight?:number, curve?:number}} o
- */
-export function drawClaudeBurst(g, o) {
-  const {
-    cx, cy, r,
-    color = CLAUDE_COLOR, dark = CLAUDE_DARK,
-    rays = 12, phase = 0, weight = 1, curve = 0.18,
-  } = o;
-
-  // 固定种子的伪随机（同一个 phase ⇒ 同一张脸）
-  const rnd = (i, salt) => {
-    const x = Math.sin((i + 1) * 12.9898 + (phase + salt) * 78.233) * 43758.5453;
-    return x - Math.floor(x);            // 0..1
-  };
-
-  // 同上：**r = 外接半径** ⇒ 笔画整体按比例缩放到刚好填满 r
-  // 外接半径 = 最长射线(0.98R) + 末端半宽(0.03R × weight)
-  const R = r / (0.98 + 0.03 * weight);
-  const inner = R * 0.19;
-  // 真实标志的笔画是**粗壮**的（不是发丝线）⇒ 半宽给足
-  const base = R * 0.095 * weight;   // 根部半宽
-  const tip = R * 0.030 * weight;    // 末端半宽
-
-  for (let i = 0; i < rays; i++) {
-    const a0 = (Math.PI * 2 * i) / rays + (rnd(i, 1) - 0.5) * 0.16;
-    const len = R * (0.66 + 0.32 * rnd(i, 2));
-    const bend = curve * (rnd(i, 3) - 0.35);
-    // 收笔不匀：一半的笔画末端更粗，一半根部更粗
-    const fatTip = rnd(i, 4) > 0.5;
-    const w0 = fatTip ? base * 0.75 : base * 1.25;
-    const w1 = fatTip ? tip * 2.1 : tip * 0.9;
-
-    // 中线：沿半径采样，带一点弧度
-    const N = 6;
-    const left = [];
-    const right = [];
-    for (let k = 0; k <= N; k++) {
-      const t = k / N;
-      const rr = inner + (len - inner) * t;
-      const aa = a0 + bend * t * t;
-      const px = cx + Math.cos(aa) * rr;
-      const py = cy + Math.sin(aa) * rr;
-      // 垂直方向偏移
-      const ox = -Math.sin(aa);
-      const oy = Math.cos(aa);
-      const w = (w0 + (w1 - w0) * t) * 0.5;
-      left.push([px + ox * w, py + oy * w]);
-      right.push([px - ox * w, py - oy * w]);
-    }
-
-    g.fillStyle(i % 3 === 0 ? dark : color, 1);
-    g.beginPath();
-    g.moveTo(left[0][0], left[0][1]);
-    for (let k = 1; k <= N; k++) g.lineTo(left[k][0], left[k][1]);
-    for (let k = N; k >= 0; k--) g.lineTo(right[k][0], right[k][1]);
-    g.closePath();
-    g.fillPath();
-  }
-
-  // 中心的一小块实心，Claude 标志的 app 图标版本就是"橙底白芒"
-  g.fillStyle(color, 0.9);
-  g.fillCircle(cx, cy, R * 0.07);
-}
-
-/* ──────────────────────────────────────────────────────────────
- *  统一入口
- * ────────────────────────────────────────────────────────────── */
 
 /**
  * 按敌种 id 画它的化身。
  * @param {Phaser.GameObjects.Graphics} g
- * @param {string} enemyId  'crawler' | 'spore' | ... | 'boss' | 'boss_stone' | ...
- * @param {{cx:number, cy:number, r:number}} box 中心与半径
+ * @param {string} enemyId
+ * @param {{cx:number, cy:number, r:number}} box 中心与**外接半径**
  */
 export function drawAvatar(g, enemyId, box) {
   const a = ENEMY_AVATAR[enemyId] || BOSS_AVATAR[enemyId];
   if (!a) return false;
-  const { cx, cy, r } = box;
-  const rr = r;   // r 就是外接半径：视觉大小必须等于碰撞大小
-
-  if (a.model === 'gpt') {
-    drawGptBlossom(g, {
-      cx, cy, r: rr,
-      lobes: a.rays, phase: a.phase, weight: a.weight, dot: a.dot,
-    });
-  } else if (a.model === 'claude') {
-    drawClaudeBurst(g, {
-      cx, cy, r: rr,
-      rays: a.rays, phase: a.phase, weight: a.weight, curve: a.curve,
-    });
-  } else {
-    // 终局 Boss：两个模型叠在一起（结在里、芒在外）—— "双模型对决"
-    drawGptBlossom(g, { cx, cy, r: rr * 0.82, lobes: 6, phase: a.phase, weight: a.weight, dot: 0 });
-    drawClaudeBurst(g, {
-      cx, cy, r: rr,
-      rays: a.rays, phase: a.phase + 0.7, weight: a.weight * 0.8, curve: a.curve,
-    });
-  }
-  return true;
+  return drawPet(g, { cx: box.cx, cy: box.cy, r: box.r, pet: a.pet });
 }
 
 /** 敌人 id → 化身配置（给测试与文档用） */

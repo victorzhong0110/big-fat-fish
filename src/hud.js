@@ -6,7 +6,7 @@ import { counterNote, ENEMY_COUNTERS, COUNTER_TAGS, COUNTER_MULT, tagsFromStats 
 import { relicValue } from './systems/relicValue.js';
 import { applyBuild } from './systems/characters.js';
 import { ARCHETYPES, countByTag } from './systems/archetypes.js';
-import { legendEntries, legendEntry } from './systems/legend.js';
+import { legendEntries, LEGEND_EXTRA_ROWS } from './systems/legend.js';
 import { modelLabelOf, modelOf } from './art/avatars.js';
 
 const $ = (s) => document.querySelector(s);
@@ -319,29 +319,39 @@ function renderThreats(container, list, tags = []) {
 }
 
 /**
- * 主菜单图例：**名字与阵营都从数据来**。
+ * 主菜单图例：**整块由数据生成**（名字 + 阵营 + 按角色的一句话）。
  *
  * 为什么：图例是玩家对战场上那些东西的第一份认知表。
- *  ① 名字手抄一份 ⇒ 改名那天会漂（同一个事实只能有一份实现）；
+ *  ① 名字手抄一份 ⇒ 换皮那天会漂（第十四轮换一次、第十五轮又换一次）；
  *  ② 阵营只画成颜色 ⇒ 读不出来（颜色不是文字）。
- * ⇒ 名字取 `ENEMIES`，阵营取 `avatars.js` 的 `modelOf()`（注入进来，
- *    这样 systems/ 不用反过来依赖渲染层）。
+ * ⇒ 名字取 `ENEMY_TYPES`，阵营取 `avatars.js` 的 `modelLabelOf()`（注入进来，
+ *    这样 systems/ 不用反过来依赖渲染层），说明按**角色**给（角色不随换皮变）。
  */
 function renderLegend() {
-  const list = document.querySelectorAll('.legend li[data-enemy]');
-  if (!list.length) return;
+  const ul = document.querySelector('.legend');
+  if (!ul) return;
   const entries = legendEntries((id) => modelLabelOf(id));
-  for (const li of list) {
-    const id = li.dataset.enemy;
-    const e = legendEntry(entries, id);
-    if (!e) continue;
-    const nameEl = li.querySelector('.lg-name');
-    if (nameEl) nameEl.textContent = e.name;
-    const chip = li.querySelector('.faction');
-    if (chip) {
-      chip.className = `faction ${factionKey(e.faction)}`;
-      chip.textContent = e.faction;
-    }
+  ul.innerHTML = '';
+  for (const e of entries) {
+    const li = document.createElement('li');
+    li.dataset.enemy = e.id;
+    li.innerHTML = `
+      <i class="dot ${e.id}"></i>
+      <b class="lg-name"></b>
+      <i class="faction ${factionKey(e.faction)}"></i>
+      <span class="lg-hint"></span>`;
+    li.querySelector('.lg-name').textContent = e.name;
+    li.querySelector('.faction').textContent = e.faction;
+    li.querySelector('.lg-hint').textContent = e.hint;
+    ul.append(li);
+  }
+  for (const row of LEGEND_EXTRA_ROWS) {
+    const li = document.createElement('li');
+    li.className = 'lg-extra';
+    li.innerHTML = `<i class="dot ${row.dot}"></i><b class="lg-name"></b><span class="lg-hint"></span>`;
+    li.querySelector('.lg-name').textContent = row.name;
+    li.querySelector('.lg-hint').textContent = row.hint;
+    ul.append(li);
   }
 }
 

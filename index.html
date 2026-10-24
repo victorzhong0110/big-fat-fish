@@ -60,18 +60,9 @@
       <p class="kicker roster-kicker">深海藏品</p>
       <p class="tiny" id="memory-note">记忆 0</p>
       <div class="cards unlock-list" id="unlock-list"></div>
-      <ul class="legend">
-        <li data-enemy="crawler"><i class="dot crawler"></i><b class="lg-name">贪嘴小鱼</b><i class="faction"></i> · 贴身追击</li>
-        <li data-enemy="spore"><i class="dot spore"></i><b class="lg-name">水母</b><i class="faction"></i> · 远程弹幕</li>
-        <li data-enemy="swarm"><i class="dot swarm"></i><b class="lg-name">沙丁鱼群</b><i class="faction"></i> · 一窝一窝地扑</li>
-        <li data-enemy="bud"><i class="dot bud"></i><b class="lg-name">海葵</b><i class="faction"></i> · 死亡后分裂</li>
-        <li data-enemy="moth"><i class="dot moth"></i><b class="lg-name">毒水母</b><i class="faction"></i> · 死了留下毒云</li>
-        <li data-enemy="charger"><i class="dot charger"></i><b class="lg-name">旗鱼</b><i class="faction"></i> · 蓄力后冲刺</li>
-        <li data-enemy="husk"><i class="dot husk"></i><b class="lg-name">铁壳蟹</b><i class="faction"></i> · 结壳免伤，壳碎分裂</li>
-        <li data-enemy="weaver"><i class="dot weaver"></i><b class="lg-name">墨鱼</b><i class="faction"></i> · 墨弹会黏住你</li>
-        <li data-enemy="boss"><i class="dot boss"></i><b class="lg-name">深渊巨鲸</b><i class="faction"></i> · 每 5 波</li>
-        <li><i class="dot boss"></i>异变体 · 每章第 2 波，带词缀</li>
-      </ul>
+      <!-- 图例由 src/systems/legend.js + src/hud.js 从敌种数据生成：
+           名字、阵营、说明全部来自数据 ⇒ 换皮/改名时它不会漂。 -->
+      <ul class="legend"></ul>
       <button class="btn primary" id="btn-start" type="button">开始一局</button>
       <button class="btn" id="btn-daily" type="button">今日挑战</button>
       <button class="btn" id="btn-music" type="button">音乐：开</button>

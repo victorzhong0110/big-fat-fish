@@ -10,7 +10,7 @@
 import { chromium } from 'playwright-core';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ENEMY_AVATAR, BOSS_AVATAR, drawAvatar, modelLabelOf } from '../src/art/avatars.js';
+import { ENEMY_AVATAR, BOSS_AVATAR, drawAvatar, modelLabelOf, petNameOf } from '../src/art/avatars.js';
 import { svgGraphics } from '../src/art/graphics-probe.js';
 
 const SHOTS = new URL('../shots/', import.meta.url).pathname;
@@ -25,7 +25,8 @@ function render() {
   const H = rows * CELL + 60;
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
   svg += `<rect width="${W}" height="${H}" fill="#0b0a10"/>`;
-  svg += `<text x="20" y="30" fill="#e8e6f0" font-family="monospace" font-size="16">敌人化身预览 · GPT Blossom(青绿) vs Claude 星芒(陶土橙)</text>`;
+  svg += `<defs><pattern id="g" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="none" stroke="#1c1a26" stroke-width="1"/></pattern></defs>`;
+  svg += `<text x="20" y="30" fill="#e8e6f0" font-family="monospace" font-size="16">敌人化身预览 · GPT = Codex 小工人（淡紫） vs Claude = Buddy 物种（陶土橙）</text>`;
 
   ids.forEach((id, i) => {
     const col = i % COLS;
@@ -35,7 +36,7 @@ function render() {
     const g = svgGraphics();
     drawAvatar(g, id, { cx, cy, r: 44 });
     svg += `<g>${g.toSVG()}</g>`;
-    svg += `<text x="${cx}" y="${cy + 68}" fill="#cfcbe0" font-family="monospace" font-size="11" text-anchor="middle">${id}</text>`;
+    svg += `<text x="${cx}" y="${cy + 68}" fill="#cfcbe0" font-family="monospace" font-size="11" text-anchor="middle">${id} · ${petNameOf(id)}</text>`;
     svg += `<text x="${cx}" y="${cy + 83}" fill="${modelLabelOf(id) === 'Claude' ? '#d97757' : '#10a37f'}" font-family="monospace" font-size="10" text-anchor="middle">${modelLabelOf(id)}</text>`;
   });
   svg += '</svg>';

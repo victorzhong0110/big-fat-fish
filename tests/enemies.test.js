@@ -35,7 +35,7 @@ describe('敌种表', () => {
   });
 
   it('应对提示与名字都能取到', () => {
-    expect(enemyName('charger')).toBe('旗鱼');
+    expect(enemyName('charger')).toBe('企鹅');
     expect(counterHint('husk')).toContain('爆发');
   });
 });

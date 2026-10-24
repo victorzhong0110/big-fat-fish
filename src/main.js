@@ -2,6 +2,7 @@ import './styles.css';
 import Phaser from 'phaser';
 import { GameScene, ARENA } from './scenes/GameScene.js';
 import { activeArchetypes } from './systems/archetypes.js';
+import { ENEMY_TYPES, ENEMY_TYPE_IDS } from './systems/enemies.js';
 import { audioState } from './audio.js';
 import { touch } from './touch.js';
 
@@ -46,6 +47,8 @@ window.__tulip = {
   scene: () => game.scene.getScene('game'),
   /** 音频现状（BGM 是否真的在放） */
   audioState: () => audioState(),
+  /** 敌种名字（数据侧真相；浏览器断言拿它跟 DOM 对账，不写死皮肤名） */
+  enemyNames: () => ENEMY_TYPE_IDS.map((id) => ENEMY_TYPES[id].name),
   state: () => {
     const s = game.scene.getScene('game');
     if (!s) return null;
