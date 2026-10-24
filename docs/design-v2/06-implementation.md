@@ -40,9 +40,9 @@ src/v2/
     checkpoint.js        # 可序列化快照、校验与恢复
     settlement.js        # 资源、成就与解锁事务
   content/
-    weapons.js skills.js companions.js
+    weapons.js skills.js companions.js modelProfiles.js collisionProfiles.js
     plugins.js dsh.js tree.js enemies.js bosses.js
-    modes.js difficulties.js maps.js
+    modes.js difficulties.js difficultyMechanics.js maps.js
   adapters/
     input/               # 键鼠/双摇杆，统一命令
     phaser/              # 相机、精灵、地形、粒子
@@ -78,15 +78,17 @@ type Session = {
   runId: string; coreVersion: string; contentVersion: string;
   mode: 'tutorial' | 'short' | 'expedition' | 'api'; difficulty: number | 'api';
   seed: number; rngStates: Record<string, number>; tick: number;
-  startSnapshot: {tree: string[]; dsh: unknown[]; loadout: unknown};
+  startSnapshot: {tree: string[]; dsh: unknown[]; loadout: unknown; mechanicIds: string[]};
+  mechanismRuntime: {activeEvents: unknown[]; pendingEvents: unknown[]; encounterBudgets: unknown[];};
   apiRuntime?: {elapsedTicks: number; bossIndex: number; materialMinute: number; fragmentsThisMinute: number; partsThisMinute: number};
   phase: 'preparing' | 'exploring' | 'boss' | 'pluginChoice' |
-    'paused' | 'victory' | 'defeat' | 'withdrawal';
+    'paused' | 'loraTraining' | 'victory' | 'defeat' | 'withdrawal';
   player: unknown; world: unknown; encounter: unknown;
   level: number; xpRemainder: number; totalTokens: number;
   plugins: {id: string; rank: 1 | 2; origin: PluginOrigin}[];
   pluginRuntime: Record<string, unknown>;
-  dshRuntime: Record<string, unknown>;
+  dshRuntime: Record<string, unknown>; // 含28秒开奖与武器临时更新
+  loraRuntime?: {pendingLevels: number[]; trialId: string | null; targetStat: string | null; uiTick: number; resolved: boolean; modifiers: unknown; penalties: unknown;};
   pendingChoices: unknown[]; rerollsRemaining: number;
   distill: Record<'claude' | 'gpt' | 'grok', {stage: number; samples: number}>;
   damageBudgets: Record<string, {tick: number; spent: number}[]>;
@@ -103,7 +105,15 @@ type DamageRequest = {
 
 实际类型应展开unknown字段，不把上述省略字段照抄进生产逻辑。普通插件最多6个`origin=run`；Pro附带5h是额外一个difficulty来源；同id只一条状态，无论origin如何。DSH是另一个集合，不在plugins里混算。只有已解锁/已实现的内容可加入牌池，缺处理器不能静默吞效果。
 
-内容记录至少包括id、displayName、descriptionParams、unlockCondition、effects、stackingPolicy、tags（只作检索）、version。启动校验重复id、未知前置、不可达技能树、缺效果处理器、缺阵营、缺sourceId继承规则、负数伤害/冷却、插件2级缺参数。技能树全树27节点160点；局内插件30种；DSH9项设计（8项效果明确，dsh_gpt_branch待定不可装配）；MCP6把；主动8个；伙伴6位；普通敌人9类按GPT7/Claude1/Grok1分配。
+内容记录至少包括id、displayName、descriptionParams、unlockCondition、effects、stackingPolicy、tags（只作检索）、version。启动校验重复id、未知前置、不可达技能树、缺效果处理器、缺阵营、缺sourceId继承规则、负数伤害/冷却、插件2级缺参数。技能树全树27节点160点；局内插件30种；DSH10项设计（含已确认28秒更新/重置与LoRA微调）；MCP6把；主动8个；伙伴6位；普通敌人9类按GPT7/Claude1/Grok1分配。
+
+### 难度机制契约
+
+为07全部16项建立DifficultyMechanic记录（11级同时有目标信号与Glasswing）：`id`、`unlockAt`、`scope`（常驻AI/地图/目标/事件/Boss）、`appliesTo`、`prerequisites`、`exclusions`、`handlerId`与`contentVersion`。正式数字难度只计算一次`mechanics.filter(m => m.unlockAt <= d)`；API用d=15，Free走独立教程配置。不能用`unlockAt === d`只启用本级，也不能按Pro/Max档覆盖前一档机制集合。
+
+所有AI、地图、目标与Boss读同一组startSnapshot.mechanicIds；Pro附带5h独立使用difficultyPerks，不写入累计表。启动校验机制id唯一、unlockAt恰覆盖1–15、前置在同级或更低级、处理器存在。检查点保存完整机制集/内容版本、压力事件已启动/待触发状态、预警计时、预算分配、箱子/掩体/信号装置/通道状态与随机流；恢复不能重新抽机制、重复增援或刷新警报箱奖励。
+
+07调度器先做适用条件/安全/预算判断，再提交事件；常驻已解锁AI不能因事件轮换被移除。最多2项压力事件的名额在事件结束或取消时释放，不能因插件面板暂停而重新分配。API继承全部机制，只轮换额外事件，不轮换核心解锁集；每个合法API调度周期用同一可复现的事件随机流。
 
 ## 4. 时间、事件、伤害和控制
 
@@ -111,7 +121,7 @@ type DamageRequest = {
 
 60tick/秒，渲染帧累积时间。每帧最多执行8步，保留积压；持续积压超过1秒自动性能暂停，用户继续时清理墙钟积压但不快进游戏tick，显示性能提示。后台自动暂停；恢复等待确认，并重置墙钟基准。正常30/60/120渲染FPS下同输入tick得到同结果。
 
-战斗对象寿命、射速、控制、5h滚动窗口、蒸馏、伙伴、追兵、Boss读条使用tick；不使用表现tween或wall clock执行战斗事件。菜单装饰动画可以独立运行。
+LoRA训练期间暂停世界tick，用独立UI固定时钟驱动指针，后台/用户暂停同时暂停UI时钟；判定只提交一次，恢复后才走负面计时。战斗对象寿命、射速、控制、5h滚动窗口、蒸馏、伙伴、追兵、DSH28秒开奖、Boss读条使用世界tick；不使用表现tween或wall clock执行战斗事件。菜单装饰动画可以独立运行。
 
 单tick：输入命令→合法性/流程→计时/状态→移动AI→攻击生成→扫掠碰撞→排序后的伤害/控制→死亡→奖励/解锁→升级选择队列→目标完成→提交实体增删→事件与快照。命令按seq，碰撞按攻击/目标id稳定排序。玩家和最终首领同tick致死时明确判失败，但首领真实死亡的永久DSH解锁仍按击败事实记一次；不发最终胜利资源。
 
@@ -125,7 +135,7 @@ type DamageRequest = {
 
 ### 控制优先级
 
-禁锢先检查闪避/2秒控制免疫→技能树紧急重试→故障转移→伙伴补丁→施加控制等待玩家解控/挣脱。封禁先检查是否存在合法技能/伙伴目标→DSH白名单→插件越狱→施加封禁。先挡成功的效果消费自己的次数/冷却，后续拦截器不消费。封禁解除不会重新初始化伙伴或补满技能冷却。
+控制请求先按08唯一应用Glasswing倍数，再叠玩家抵抗，不复制控制实体；禁锢先检查闪避/2秒控制免疫→技能树紧急重试→故障转移→伙伴补丁→施加控制等待玩家解控/挣脱。封禁先检查是否存在合法技能/伙伴目标→DSH白名单→插件越狱→施加封禁。先挡成功的效果消费自己的次数/冷却，后续拦截器不消费。封禁解除不会重新初始化伙伴或补满技能冷却。
 
 ## 5. 检查点、随机流、重置与结算
 
@@ -141,7 +151,7 @@ ChatGPT重置调用Boss局部reset事件，不调用检查点load。重置节点
 
 ## 6. 图像、音频与移动端交付
 
-用户已要求社区原有形象，不能继续把“零素材”当作高于用户要求的硬约束。现有绘图可作为明确标记的临时资源；最终形象以用户确认的参考为准。Claude只棕色螃蟹，ChatGPT多种Pets，Grok Bot，大肥鱼主角不可换种。
+用户已明确09拿铁盆像素大肥鱼，原图与GPT Pets截图已在设计讨论中查看，文字要求见09（仓库未包含原图）。不得继续用椭圆蓝鱼或统一小工人换色当最终形象；现有绘图只可作明确标记的临时资源。Claude同棕蟹轮廓下做08模型外壳/弱点，GPT七种轮廓与四档模型分离，Grok Bot与低矮穿障表现清楚。详细像素规格和梗名映射以09为准。
 
 《Let Me Go》需要实际音源路径/版本、循环点、音量开关和用户手势播放处理。当前仓库的合成曲不是指定歌曲，不得标为“已接入原曲”。拿不到音源时记录待提供的具体文件，不凭空编曲替代并宣布完成。音频缺失不阻塞核心机制测试，但阻塞“音乐完成”的验收项。
 
@@ -157,10 +167,10 @@ ChatGPT重置调用Boss局部reset事件，不调用检查点load。重置节点
 | T03 等级与插件基础 | T02 | XP、指定级三选一/DSH分支预览首轮四选一、槽位、重抽、初始6个插件 | 升级队列、满槽替换、候选存档/去重正确 |
 | T04 蒸馏与5h | T03 | 三来源样本、护甲/追击泡/Bot虚影、滚动额度、Pro附带origin | 有可见来源反馈、边界/恢复不重复生效 |
 | T05 单局闭环 | T04 | Claude简版完整Boss、探索目标、胜负、检查点 | 真实可玩，退出恢复相同；不是只跑自动测试 |
-| T06 局外成长 | T05 | 算力卡/碎片/零件、27节点、小窝、DSH9种与槽位 | 收入/退款/装配/奖励去重正确 |
+| T06 局外成长 | T05 | 算力卡/碎片/零件、27节点、小窝、DSH10种与槽位 | 收入/退款/装配/奖励去重正确 |
 | T07 全装备构筑 | T06 | 6MCP、8主动、6伙伴、30局内插件及升级/联动 | 每个效果真实可触发，不能只写卡面 |
 | T08 三阵营 | T07 | 7种GPT Pet、单种强Claude蟹、单种Grok人海与简化Boss | 05各破解路径、所有奖励排除规则成立 |
-| T09 模式与难度 | T08 | Free、短途、三海域远征、0–15/API调用持续生存、Pro特例 | 教程不刷奖励，模式时长靠内容验证，难度解锁正确 |
+| T09 模式与难度 | T08 | Free、短途、远征、0–15累计机制/Glasswing、四档模型、Grok穿障、API完整继承 | 1–15逐级新增且前缀继承，事件/数值/福利分开，API不因Boss死结束 |
 | T10 美术与音乐 | 可与T02后交错 | 确认形象、反馈、指定音乐、界面 | 正确资源可见/可听，音源缺失明确标未完成 |
 | T11 完整试玩 | T09、T10 | 桌面/手机真人报告、性能与平衡、回归 | 有录像/记录与缺陷修复，不以旧390测试替代 |
 
@@ -186,6 +196,15 @@ T03首批6插件建议：并行调用、批量处理、大白饭回收、蒸馏�
 12. 存档损坏、版本不兼容、storage写失败、重复结算/双击/刷新，不丢原档、不重复加货币。
 13. API长局：Boss死后继续刷怪、等级超过30、31级后插件节点、检查点保留精确时间强度、主动返回/失败比例、无重复首领奖励与材料分钟上限。
 
+14. 逐级机制：1–15的集合严格单调包含且各级新增对应id，11级同时新增两个（目标信号/Glasswing），全表16个id，d=3/6/10/12/15逐项核对；API集合与15级相等。Free不继承正式机制或教程奖励。
+15. 行为集：12级GPT既有支援也有换位且可四职能编组；15级Claude Opus可破掩体且保留组合/Glasswing规定控制上限；高难度Grok仍无高级小怪技能。Pro5→6只取消福利，已解锁敌人/地图机制不能丢。
+16. 调度：最多两项压力事件、Boss/检查点优先、增援去重/预算不复制、无合法位置则延期/取消、通道始终可达；暂停/读档不刷新事件和箱子奖励。
+
+17. DSH28秒开奖：两结果均可复现，临时品质不叠不永久化，最高品质+20%，换枪/封禁/暂停/恢复正确，重置不触发施放事件或清5h/插件内置冷却。
+18. LoRA：每次实际升级一次，连升顺序，固定速率与完美区左右边界、2秒超时、键盘repeat/双触点、暂停/后台、四属性上下限、两类负面恢复后计时、API长局封顶、trialId幂等。
+19. Claude四阶段壳/弱点/破壳眩晕覆盖与Grok穿障碰撞矩阵；GPT7×4模型组合的技能覆盖/继承；11级Glasswing与解控/封禁防护只处理一次。
+20. 09像素参考与梗名改名：稳定id、原伤害/冷却不变，拿铁盆不自动变格挡/近战，移动端与LoRA/挣脱Space输入不串。
+
 ### 真人体验（不能用机器人代替）
 
 - 未读文档的玩家在Free学会射击、大白饭、插件、挣脱、检查点；能说出一次插件改变了什么。
@@ -196,8 +215,8 @@ T03首批6插件建议：并行调用、批量处理、大白饭回收、蒸馏�
 
 ## 9. 仍需输入与允许调参的范围
 
-需要用户提供/确认的实际资源：指定《Let Me Go》音源版本、社区大肥鱼/棕蟹/Grok Bot精确参考。GPT七种Pets已有用户截图，名称与造型以05列出的七种为准；细节制作仍需对应素材参考。它们不是玩法未定，不应让实现者因此重新设计主角或替换歌曲。
+实际资源：拿铁盆像素大肥鱼与GPT七种Pets用户参考已在设计讨论中提供，09记录文件名和造型要求，原图未上传仓库；最终精灵仍待制作，Claude棕蟹/Grok Bot细节可继续补充参考。指定《Let Me Go》音源仍待提供，不擅自用合成曲替代。
 
-本规格给出的默认解释：5/10归前一档、Pro自带5h采用既有防御效果且不占普通槽。这三条在正式实现前需在PR描述醒目列出，用户若更正应全目录同步。
+本规格给出的默认解释：5/10归前一档、Pro自带5h采用既有防御效果且不占普通槽。另补齐的默认初值包括11级Glasswing（时长/禁锢挣脱×2）、LoRA仪表盘区间/负面参数与解锁条件、四档模型数值；这些在PR描述醒目列出，用户若更正应全目录同步。
 
 可按试玩调整：经验数量/敌人血量/插件倍率/花费/掉率/地图大小/冷却。不得静默改变：唯一主角、双端手动瞄准、两种时长目标、社区概念映射、DSH解锁/槽位关系、检查点无额外效果、Boss核心机制、指定音乐。
