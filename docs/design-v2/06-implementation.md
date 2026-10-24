@@ -12,7 +12,7 @@
 
 ```mermaid
 flowchart TD
-  Profile["局外档：大白饭、树、DSH收藏"] --> Start["出发快照"]
+  Profile["局外档：算力卡、树、DSH收藏"] --> Start["出发快照"]
   Definitions["模式、难度、内容定义"] --> Start
   Input["键鼠与触屏命令"] --> Core["GameSession固定步内核"]
   Start --> Core
@@ -34,7 +34,7 @@ src/v2/
     session.js           # 唯一对局状态、tick与命令入口
     flow.js              # 小窝/战斗/插件/暂停/结算流程
     combat/              # 移动、投射物、碰撞、伤害、状态、死亡
-    progression/         # Token、等级、插件候选与替换
+    progression/         # 大白饭、等级、插件候选与替换
     plugins/             # 有限效果处理器、蒸馏、5h账本
     world/               # 地图、任务、追兵、首领
     checkpoint.js        # 可序列化快照、校验与恢复
@@ -64,7 +64,7 @@ type DamageSourceKind = 'weapon_primary' | 'weapon_secondary' |
 
 type Profile = {
   schemaVersion: number;
-  rice: number; fragments: number; parts: number;
+  gpuCards: number; gpuFragments: number; parts: number;
   purchasedTree: string[];
   discovered: string[]; unlockedWeapons: string[]; unlockedSkills: string[];
   unlockedCompanions: string[]; unlockedDsh: string[];
@@ -89,7 +89,7 @@ type Session = {
   pendingChoices: unknown[]; rerollsRemaining: number;
   distill: Record<'claude' | 'gpt' | 'grok', {stage: number; samples: number}>;
   damageBudgets: Record<string, {tick: number; spent: number}[]>;
-  runInventory: {fragments: number; parts: number};
+  runInventory: {gpuFragments: number; parts: number};
   objectives: unknown[]; discoveries: string[]; eventQueue: unknown[];
 };
 
@@ -152,18 +152,18 @@ ChatGPT重置调用Boss局部reset事件，不调用检查点load。重置节点
 |---|---|---|---|
 | T00 规格落表 | 无 | 内容schema、稳定id、确认未决资源、旧版基线 | 数量/引用/花费校验过；明确资源占位 |
 | T01 核心与输入 | T00 | 单一Session、固定tick、移动/瞄准/射击/冲刺、双摇杆 | 不同渲染帧率结果一致，暂停与后台不走时钟 |
-| T02 一张连续地图 | T01 | 相机、遮挡、驻守/追兵、资源/Token、拾取 | 出生不贴脸，掉落不丢，探索能环回 |
+| T02 一张连续地图 | T01 | 相机、遮挡、驻守/追兵、资源/大白饭、拾取 | 出生不贴脸，掉落不丢，探索能环回 |
 | T03 等级与插件基础 | T02 | XP、指定级三选一/DSH分支预览首轮四选一、槽位、重抽、初始6个插件 | 升级队列、满槽替换、候选存档/去重正确 |
 | T04 蒸馏与5h | T03 | 三来源样本、护甲/追击泡/火箭、滚动额度、Pro附带origin | 有可见来源反馈、边界/恢复不重复生效 |
 | T05 单局闭环 | T04 | Claude简版完整Boss、探索目标、胜负、检查点 | 真实可玩，退出恢复相同；不是只跑自动测试 |
-| T06 局外成长 | T05 | 大白饭/碎片/零件、27节点、小窝、DSH9种与槽位 | 收入/退款/装配/奖励去重正确 |
+| T06 局外成长 | T05 | 算力卡/碎片/零件、27节点、小窝、DSH9种与槽位 | 收入/退款/装配/奖励去重正确 |
 | T07 全装备构筑 | T06 | 6MCP、8主动、6伙伴、30局内插件及升级/联动 | 每个效果真实可触发，不能只写卡面 |
 | T08 三阵营 | T07 | 普通/精英、ChatGPT条件重置、Grok火箭 | 05各破解路径、所有奖励排除规则成立 |
 | T09 模式与难度 | T08 | Free、短途、三海域远征、0–15/无尽难度、Pro特例 | 教程不刷奖励，模式时长靠内容验证，难度解锁正确 |
 | T10 美术与音乐 | 可与T02后交错 | 确认形象、反馈、指定音乐、界面 | 正确资源可见/可听，音源缺失明确标未完成 |
 | T11 完整试玩 | T09、T10 | 桌面/手机真人报告、性能与平衡、回归 | 有录像/记录与缺陷修复，不以旧390测试替代 |
 
-T03首批6插件建议：并行调用、批量处理、Token回收、蒸馏、5h限制、故障转移。首片装备只泡泡/扇面两MCP、断开连接/缓存护盾两技能、饭团一伙伴。T05是第一段可评审成果；只能称试作，不声称全系统已完成。之后补齐完整目录，不用新增内容掩盖核心体验问题。
+T03首批6插件建议：并行调用、批量处理、大白饭回收、蒸馏、5h限制、故障转移。首片装备只泡泡/扇面两MCP、断开连接/缓存护盾两技能、饭团一伙伴。T05是第一段可评审成果；只能称试作，不声称全系统已完成。之后补齐完整目录，不用新增内容掩盖核心体验问题。
 
 每个任务独立PR，描述实际完成内容/测试/限制；不把设计文件中的所有条目自动勾为完成。不擅自合并或部署，按仓库协作流程交付用户评审。
 
@@ -171,7 +171,7 @@ T03首批6插件建议：并行调用、批量处理、Token回收、蒸馏、5h
 
 ### 自动化正确性
 
-1. 普通怪死亡只掉一次Token/资源；派生伤害、同时命中、回旋去回都不能重复死亡。
+1. 普通怪死亡只掉一次大白饭/资源；派生伤害、同时命中、回旋去回都不能重复死亡。
 2. 经验溢出、连续升级、多个插件节点、死亡/胜利同帧弹窗顺序正确；未选完不刷怪。
 3. 30种插件每种1/2级都至少一条正例与一条边界例；无目标/不兼容武器不能静默变无效奖励。
 4. 蒸馏三来源样本、升2级转换、3阶封顶、移除重装、伙伴击杀、回响排除、存档恢复。
@@ -186,7 +186,7 @@ T03首批6插件建议：并行调用、批量处理、Token回收、蒸馏、5h
 
 ### 真人体验（不能用机器人代替）
 
-- 未读文档的玩家在Free学会射击、Token、插件、挣脱、检查点；能说出一次插件改变了什么。
+- 未读文档的玩家在Free学会射击、大白饭、插件、挣脱、检查点；能说出一次插件改变了什么。
 - 短途有效时长落在10–15分钟附近；远征有足够探索/成长达到40+，不靠空跑或堆血。
 - 三阵营能按外观和行为分辨；Claude难但可反抗，ChatGPT重置可以理解，Grok数量多但有路可走。
 - 至少两种组合成型后明显横扫普通遭遇；没有全局标签检查或实时敌人补强抵消收益。
