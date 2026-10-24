@@ -1,5 +1,8 @@
 # 大肥鱼历险记 · Big Fat Fish
 
+> **V2 设计交接**：[玩法、技能树、插件、DSH、敌人与实现任务](docs/design-v2/00-README.md)。
+> V2 尚待实现；下面的运行说明与玩法介绍描述现有旧版，不能当作 V2 当前实现。
+
 > 纯代码生成的 2D 肉鸽生存射击。**零美术素材、零音频素材、零外部依赖** ——
 > 所有图形由 Phaser Graphics 在运行时生成，所有音效用 WebAudio 振荡器合成，
 > 仓库里没有一张图片、一个音频文件。
@@ -100,3 +103,4 @@ node scripts/avatar-preview.mjs  # 敌人化身预览图
 ## 许可
 
 Apache-2.0（见 [`LICENSE`](LICENSE)）。
+
