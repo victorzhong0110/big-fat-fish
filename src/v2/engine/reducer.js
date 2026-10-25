@@ -42,6 +42,7 @@ export function applySystemPlan(working, plan) {
         const data = /** @type {Pick<import('../contracts.d.ts').EntityState, 'position' | 'previousPosition' | 'velocity' | 'facingRadians'>} */ (JSON.parse(serializeCanonical(p)));
         entity.position = data.position; entity.previousPosition = data.previousPosition; entity.velocity = data.velocity; entity.facingRadians = data.facingRadians; break;
       }
+      case 'setProjectileLeg': if(entity.kind!=='projectile')throw new Error('Only projectiles have attack legs');entity.attackId=String(p.attackId);entity.runtime=/** @type {Record<string,import('../contracts.d.ts').Json>} */(p.runtime);break;
       case 'setEntityRuntime': entity.runtime = /** @type {Record<string, import('../contracts.d.ts').Json>} */ (p.runtime); break;
       case 'setObjectives': next.world.objectives=/** @type {import('../contracts.d.ts').ObjectiveState[]} */ (JSON.parse(serializeCanonical(p.objectives)));break;
       case 'setBosses': next.bosses=/** @type {import('../contracts.d.ts').BossState[]} */ (JSON.parse(serializeCanonical(p.bosses)));break;

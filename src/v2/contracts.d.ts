@@ -56,7 +56,7 @@ export interface EntityState {
 export interface WeaponState { instanceId: Id; definitionId: Id; originalQuality: 0 | 1 | 2; cooldown: number; temporaryQuality: number | null; updateExpiresAt: Tick | null; }
 export interface Loadout { weapons: readonly WeaponState[]; activeWeaponIndex: number; skillId: Id; skillCooldown: number; companionId: Id | null; companionCooldown: number; dashCooldown: number; }
 export interface PlayerState { entityId: Id; baseStats: BaseStats; modifiers: readonly StatModifier[]; loadout: Loadout; invulnerableRemaining: number; controlImmuneRemaining: number; }
-export interface PickupState { id: Id; kind: 'riceXp' | 'gpuFragment' | 'part' | 'weapon' | 'skill'; amount: number; position: Vec2; instanceId: Id | null; collected: boolean; }
+export interface PickupState { weapon?: WeaponState; id: Id; kind: 'riceXp' | 'gpuFragment' | 'part' | 'weapon' | 'skill'; amount: number; position: Vec2; instanceId: Id | null; collected: boolean; }
 export interface ObjectiveState { id: Id; kind: string; active: boolean; completed: boolean; progress: number; requiredEntityIds: readonly Id[]; rewardId: Id; }
 export interface SpawnRequest { id: Id; groupId: Id; enemyId: Id; position: Vec2; at: Tick; modelProfileId: Id; budgetId: Id; rewardPolicy: EntityState['rewardPolicy']; distillEligible: boolean; }
 export interface EncounterBudget { id: Id; total: number; reserved: number; spawned: number; maxAlive: number; }
@@ -91,7 +91,7 @@ export interface GameState {
 export interface GameSession { readonly runId: Id; readonly revision: number; }
 export interface Definition { id: Id; kind: string; displayName: string; parameters: Readonly<Record<string, Json>>; version: string; }
 export interface MechanicDefinition extends Definition { unlockAt: number; scope: 'ai' | 'world' | 'objective' | 'event' | 'boss'; appliesTo: readonly Id[]; handlerId: Id; exclusions: readonly Id[]; }
-export interface ContentCatalog { modWeapons?: Readonly<Record<Id, {templateId: 'mcp_bubble'|'mcp_fan'; packId:Id}>>; modLock?: readonly ModLockEntry[]; version: string; definitions: Readonly<Record<Id, Definition>>; mechanics: readonly MechanicDefinition[]; }
+export interface ContentCatalog { modWeapons?: Readonly<Record<Id, {templateId: WeaponTemplateId; packId:Id}>>; modLock?: readonly ModLockEntry[]; version: string; definitions: Readonly<Record<Id, Definition>>; mechanics: readonly MechanicDefinition[]; }
 export interface ValidationReport { valid: boolean; diagnostics: readonly Diagnostic[]; }
 export interface EvaluationContext { state: StateSnapshot; catalog: Readonly<ContentCatalog>; event: DomainEvent | null; entityId: Id | null; random: RandomState; }
 export interface AttackContext extends EvaluationContext { aim: Vec2; weapon: WeaponState | null; }
@@ -130,7 +130,7 @@ export interface PresentationPort { render(snapshot: RenderSnapshot): void; pres
 export interface InputPort { poll(): readonly InputSample[]; suspend(): void; dispose(): void; }
 export interface AudioPort { unlock(): Promise<void>; play(events: readonly DomainEvent[]): void; suspend(): void; dispose(): void; }
 export interface RuntimePorts { storage: StoragePort; presentation: PresentationPort; input: InputPort; audio: AudioPort; }
-export interface RenderEntity { bossTelegraph?: Json; objectiveProgress?: number; unlocked?: boolean; opened?: boolean; radius: number; team: EntityState['team']; hp: number; maxHp: number; telegraphRemaining: number; shieldAmount: number; id: Id; kind: string; position: Vec2; facingRadians: number; spriteId: Id; modelLabel: string | null; hpFraction: number; weakArcDegrees: number | null; statusLabels: readonly string[]; }
+export interface RenderEntity { projectileStyle?:string; quality?:number; effectRadius?:number; bossTelegraph?: Json; objectiveProgress?: number; unlocked?: boolean; opened?: boolean; radius: number; team: EntityState['team']; hp: number; maxHp: number; telegraphRemaining: number; shieldAmount: number; id: Id; kind: string; position: Vec2; facingRadians: number; spriteId: Id; modelLabel: string | null; hpFraction: number; weakArcDegrees: number | null; statusLabels: readonly string[]; }
 export interface RenderSnapshot { revision: number; tick: Tick; uiTick: Tick; phase: Phase; entities: readonly RenderEntity[]; hud: Json; panel: Json; }
 export interface UiAction { id: Id; type: string; payload: Json; }
 export interface ViewHandle { id: Id; }
@@ -144,10 +144,12 @@ export interface BrowserRuntime { app: ApplicationHandle; input: InputHandle; vi
 export interface Recording { versions: Versions; initial: GameState; commands: readonly Command[]; digests: readonly { tick: Tick; digest: string }[]; }
 export interface TickResult { next: GameState; events: readonly DomainEvent[]; persistence: readonly PersistenceIntent[]; diagnostics: readonly Diagnostic[]; }
 
-/** Community SDK 1.0: local, declarative packs; never executed JavaScript. */
+/** Community SDK 1.0–1.2: local, declarative packs; never executed JavaScript. */
 export interface ModPatch { id: Id; displayName?: string; parameters?: Readonly<Record<string, number>>; }
-export interface ModPackage { formatVersion: 1; apiVersion: '1.0'|'1.1'; id: Id; version: string; name: string; author: string; description: string; gameVersion: string; dependencies: Readonly<Record<Id, string>>; conflicts: readonly Id[]; patches: readonly ModPatch[]; weapons?:readonly ModWeaponRecipe[]; }
+export interface ModPackage { formatVersion: 1; apiVersion: '1.0'|'1.1'|'1.2'; id: Id; version: string; name: string; author: string; description: string; gameVersion: string; dependencies: Readonly<Record<Id, string>>; conflicts: readonly Id[]; patches: readonly ModPatch[]; weapons?:readonly ModWeaponRecipe[]; }
 export interface ModLockEntry { id: Id; version: string; digest: string; }
 export type NestAction = { type:'buyTree' | 'build' | 'unlock'; id:Id } | { type:'respec' } | { type:'equipDsh'; slots:readonly DshSlot[] };
 
-export interface ModWeaponRecipe { id:string; templateId:'mcp_bubble'|'mcp_fan'; displayName:string; parameters:Readonly<Record<string,number>>; }
+export interface ModWeaponRecipe { id:string; templateId:WeaponTemplateId; displayName:string; parameters:Readonly<Record<string,number>>; }
+
+export type WeaponTemplateId = 'mcp_bubble'|'mcp_fan'|'mcp_vector'|'mcp_stream'|'mcp_return'|'mcp_batch';

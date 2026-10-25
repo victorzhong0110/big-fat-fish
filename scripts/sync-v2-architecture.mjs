@@ -11,6 +11,9 @@ manifest.modules=[];
 for(const module of sourceModel){
  const old=previous.get(module.path);const contract={path:module.path,layer:old?.layer??(module.path.startsWith('preview/')?'host':module.path.startsWith('content/')?'content':module.path.startsWith('engine/')?'engine':'domain'),purpose:old?.purpose??module.source.split('\n').find(line=>line.startsWith('/**'))?.replace(/^\/\*\*\s*/,'').replace(/\*\/$/,'')??module.path,dependencies:module.dependencies,functions:[]};
  contract.purpose=contract.purpose.trim();
+ if(module.path==='content/handlers/weapons.js')contract.purpose='六把MCP的真实行为入口，共用经过模板校验的弹体管线。';
+ if(module.path==='domain/projectiles.js')contract.purpose='原生/并行弹体工厂、行为快照与一次爆破计划。';
+ if(module.path==='domain/equipment.js')contract.purpose='探索中MCP交互、满槽预览与实例保留交换。';
  let source=module.source;
  for(const fn of module.functions){
   const original=old?.functions.find(item=>item.name===fn.name);const item={...(original??{description:descriptions[fn.name]??fn.name,rule:'',ownership:'只读输入、返回值/计划；不得写调用者状态',phase:'query',callMode:'sequence'}),name:fn.name,args:fn.args,result:fn.result,implementation:fn.implementation};
@@ -68,6 +71,24 @@ for(const module of sourceModel){
    mountCombatPreview:'组装Free/Pro1、输入、正式小窝消费与配装、事务结算和本地模组；返回完整清理函数。'
   };
   if(nestDescriptions[fn.name])item.description=nestDescriptions[fn.name];
+  const equipmentDescriptions={
+   createWeaponProjectile:'按原生模板建立独立弹体实例；主弹/并行次级弹共用去回程、爆破与品质快照，不重乘输出。',
+   planNativeProjectiles:'六把MCP按真实参数产弹；每枚独立attackId，每次原生射击仅一个WeaponFired。',
+   planProjectileBurst:'在碰撞或射程到期点结算一次非暴击范围伤害，生成12tick可视涟漪；不冒充基础命中。',
+   planEquipmentInteraction:'探索中F就近拾取地面MCP；空槽立即填入，满槽发可放弃的替换预览事件。',
+   planWeaponPickup:'距离/阶段/槽位复核后原子交换实例，原武器留地；品质/冷却/更新有效期不重置；稳定发现事件。',
+   planLoadoutChange:'处理Q切枪与探索地面实例替换；各自保留CD，实际换到当前槽才触发永久换枪效果。',
+   planEntityMotion:'统一移动并推进回旋分段/回追/接回、到期爆破及可视效果清理；不跨墙或离线补跑。',
+   planCollisionEffects:'连续碰撞产去重伤害；回旋碰墙下一步换程，保留本步去程命中；爆破首碰只爆一次。',
+   planWorldInteraction:'探索交互优先处理附近MCP，再处理补给/首领门；Boss不打开换装面板。',
+   resolveWeaponTemplate:'原版六MCP或已锁定社区配方解析为真实原生行为，不执行任意脚本。',
+   parseModPackage:'校验SDK1.0–1.2、精确依赖、补丁与六种原生模板配方；按版本开放模板并验证参数边界。',
+   planWeaponFire:'按当前六种MCP/社区配方的独立CD与手动瞄准开火，消费一次换枪下一发加成。',
+   planTokenCollection:'只消费接触的大白饭/材料；装备走F和实例交换，不自动吸入、不变为资源。'
+  };
+  if(equipmentDescriptions[fn.name])item.description=equipmentDescriptions[fn.name];
+  if(['planWeaponVector','planWeaponStream','planWeaponReturn','planWeaponBatch','planWeaponPickup','planEquipmentInteraction','createWeaponProjectile','planProjectileBurst'].includes(fn.name))item.implementationScope='core-preview + adventure-slice';
+
   if(fn.name==='executeNestAction'){item.ownership='只经注入StoragePort事务修改Profile，不写Session';item.phase='profile-command';item.rule='仅无活动检查点的小窝可执行；冲突重读重算';}
   if(fn.name==='mountNestManager')item.ownership='宿主只读Profile副本，经应用服务消费；不修改GameState';
 

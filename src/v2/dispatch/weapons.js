@@ -13,8 +13,12 @@ import * as dependency1 from '../content/handlers/weapons.js';
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。
  * @implementationScope core-preview
+ * @calls content/handlers/weapons.js#planWeaponBatch
  * @calls content/handlers/weapons.js#planWeaponBubble
  * @calls content/handlers/weapons.js#planWeaponFan
+ * @calls content/handlers/weapons.js#planWeaponReturn
+ * @calls content/handlers/weapons.js#planWeaponStream
+ * @calls content/handlers/weapons.js#planWeaponVector
  * @calls content/weaponCapabilities.js#resolveWeaponTemplate
  * @param {import('../contracts.d.ts').AttackContext} context
  * @param {import('../contracts.d.ts').Id} definitionId
@@ -24,5 +28,9 @@ export function dispatchWeaponsHandler(context, definitionId) {
   const templateId = resolveWeaponTemplate(context.catalog,definitionId);
   if (templateId === 'mcp_bubble') return dependency1.planWeaponBubble(context);
   if (templateId === 'mcp_fan') return dependency1.planWeaponFan(context);
+  if(templateId==='mcp_vector')return dependency1.planWeaponVector(context);
+  if(templateId==='mcp_stream')return dependency1.planWeaponStream(context);
+  if(templateId==='mcp_return')return dependency1.planWeaponReturn(context);
+  if(templateId==='mcp_batch')return dependency1.planWeaponBatch(context);
   throw new Error(`Weapon handler not available: ${definitionId}`);
 }

@@ -2611,6 +2611,7 @@
         "domain/distill.js",
         "domain/entities.js",
         "domain/plans.js",
+        "domain/projectiles.js",
         "domain/stats.js"
       ],
       "functions": [
@@ -2629,9 +2630,9 @@
           "result": "EffectPlan",
           "description": "plugin_parallel / 并行调用：每 0.4 秒最多一次基础射击增加左右各一枚 ±12° 投射物，各 0.40W→0.60W；新增弹为 secondary；两条分叉射流",
           "calls": [
-            "domain/entities.js#createEntityState",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
+            "domain/projectiles.js#createWeaponProjectile",
             "domain/stats.js#derivePlayerStats"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
@@ -3487,7 +3488,7 @@
     {
       "path": "content/handlers/weapons.js",
       "layer": "content-handler",
-      "purpose": "weapons逐项占位处理器；实际参数仍以玩法规格为准。",
+      "purpose": "六把MCP的真实行为入口，共用经过模板校验的弹体管线。",
       "dependencies": [
         "content/weaponCapabilities.js",
         "domain/plans.js",
@@ -3547,13 +3548,15 @@
           "result": "EffectPlan",
           "description": "mcp_vector / 向量检索 · 穿透接口：1 发 24 伤，弹速 900，半径 5，最多命中 4 个不同敌人；0.65 秒；900；8 零件",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "content/weaponCapabilities.js#resolveWeaponTemplate",
+            "domain/projectiles.js#planNativeProjectiles"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planWeaponStream",
@@ -3566,13 +3569,15 @@
           "result": "EffectPlan",
           "description": "mcp_stream / 流式输出 · 连发接口：按住每次发 1 个 4 伤微泡，弹速 700，半径 4；0.10 秒；600；8 零件",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "content/weaponCapabilities.js#resolveWeaponTemplate",
+            "domain/projectiles.js#planNativeProjectiles"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planWeaponReturn",
@@ -3585,13 +3590,15 @@
           "result": "EffectPlan",
           "description": "mcp_return / 回调函数 · 回旋接口：1 枚 18 伤回旋泡，弹速 420；到 340 距离后回追发射者，去/回各可命中同敌一次，2 秒到期；0.85 秒；最大离发射点 500；10 零件",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "content/weaponCapabilities.js#resolveWeaponTemplate",
+            "domain/projectiles.js#planNativeProjectiles"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planWeaponBatch",
@@ -3604,13 +3611,15 @@
           "result": "EffectPlan",
           "description": "mcp_batch / 批处理 · 爆破接口：1 枚慢泡，直击 20，爆炸半径 100 造成 12；直击目标可受两段，弹速 350，半径 10；1.10 秒；600；12 零件",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "content/weaponCapabilities.js#resolveWeaponTemplate",
+            "domain/projectiles.js#planNativeProjectiles"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         }
       ]
     },
@@ -3625,7 +3634,7 @@
       ],
       "functions": [
         {
-          "description": "校验SDK1.0/1.1清单、补丁和独立MCP配方；限制模板、命名空间、参数边界与大小。",
+          "description": "校验SDK1.0–1.2、精确依赖、补丁与六种原生模板配方；按版本开放模板并验证参数边界。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -3724,7 +3733,7 @@
       "dependencies": [],
       "functions": [
         {
-          "description": "解析原版MCP或拥有已锁定模组注册的独立配方，只允许已实现泡泡/扇面模板。",
+          "description": "原版六MCP或已锁定社区配方解析为真实原生行为，不执行任意脚本。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -3740,7 +3749,7 @@
               "type": "untyped"
             }
           ],
-          "result": "'mcp_bubble'|'mcp_fan'|null",
+          "result": "WeaponTemplateId|null",
           "implementation": "implemented",
           "calls": []
         },
@@ -4108,8 +4117,12 @@
           "result": "EffectPlan",
           "description": "按合法稳定id和已实现绑定只调用一个对应处理器。",
           "calls": [
+            "content/handlers/weapons.js#planWeaponBatch",
             "content/handlers/weapons.js#planWeaponBubble",
             "content/handlers/weapons.js#planWeaponFan",
+            "content/handlers/weapons.js#planWeaponReturn",
+            "content/handlers/weapons.js#planWeaponStream",
+            "content/handlers/weapons.js#planWeaponVector",
             "content/weaponCapabilities.js#resolveWeaponTemplate"
           ],
           "rule": "@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。",
@@ -4207,8 +4220,10 @@
       "dependencies": [
         "dispatch/skills.js",
         "dispatch/weapons.js",
+        "domain/equipment.js",
         "domain/geometry.js",
         "domain/plans.js",
+        "domain/projectiles.js",
         "domain/serialization.js",
         "domain/stats.js",
         "domain/treeRuntime.js"
@@ -4223,7 +4238,7 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "在预览中按当前泡泡/扇面冷却与手动瞄准开火，保持每把武器自己的冷却。",
+          "description": "按当前六种MCP/社区配方的独立CD与手动瞄准开火，消费一次换枪下一发加成。",
           "calls": [
             "dispatch/weapons.js#dispatchWeaponsHandler",
             "domain/plans.js#createEmptyPlan",
@@ -4297,8 +4312,9 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "当前只支持Q切枪与0.3秒切换锁，地面换装明确拒绝。",
+          "description": "处理Q切枪与探索地面实例替换；各自保留CD，实际换到当前槽才触发永久换枪效果。",
           "calls": [
+            "domain/equipment.js#planWeaponPickup",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
             "domain/treeRuntime.js#planTreeWeaponSwitch"
@@ -4323,10 +4339,11 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "将碰撞翻译为唯一伤害/控制/拾取请求，不直接递归结算。",
+          "description": "连续碰撞产去重伤害；回旋碰墙下一步换程，保留本步去程命中；爆破首碰只爆一次。",
           "calls": [
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
+            "domain/projectiles.js#planProjectileBurst",
             "domain/serialization.js#toJson"
           ],
           "rule": "",
@@ -5350,6 +5367,72 @@
       ]
     },
     {
+      "path": "domain/equipment.js",
+      "layer": "domain",
+      "purpose": "探索中MCP交互、满槽预览与实例保留交换。",
+      "dependencies": [
+        "content/weaponCapabilities.js",
+        "domain/plans.js",
+        "domain/serialization.js",
+        "domain/treeRuntime.js"
+      ],
+      "functions": [
+        {
+          "description": "探索中F就近拾取地面MCP；空槽立即填入，满槽发可放弃的替换预览事件。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planEquipmentInteraction",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan|null",
+          "implementation": "implemented",
+          "calls": [
+            "domain/equipment.js#planWeaponPickup",
+            "domain/plans.js#createEmptyPlan"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
+        },
+        {
+          "description": "距离/阶段/槽位复核后原子交换实例，原武器留地；品质/冷却/更新有效期不重置；稳定发现事件。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planWeaponPickup",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "pickupId",
+              "type": "untyped"
+            },
+            {
+              "name": "slotIndex",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "content/weaponCapabilities.js#resolveWeaponTemplate",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson",
+            "domain/treeRuntime.js#planTreeWeaponSwitch"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
+        }
+      ]
+    },
+    {
       "path": "domain/geometry.js",
       "layer": "domain",
       "purpose": "纯几何计算，无世界状态。",
@@ -5833,6 +5916,7 @@
         "domain/geometry.js",
         "domain/motionSolver.js",
         "domain/plans.js",
+        "domain/projectiles.js",
         "domain/stats.js"
       ],
       "functions": [
@@ -5872,12 +5956,14 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "积分实体/弹体位置并校验障碍，可穿Grok使用同一碰撞矩阵。",
+          "description": "统一移动并推进回旋分段/回追/接回、到期爆破及可视效果清理；不跨墙或离线补跑。",
           "calls": [
+            "domain/geometry.js#intersectSweptCircles",
             "domain/geometry.js#normalizeVector",
             "domain/motionSolver.js#resolveBodyDestination",
             "domain/plans.js#createEmptyPlan",
-            "domain/plans.js#createStateChange"
+            "domain/plans.js#createStateChange",
+            "domain/projectiles.js#planProjectileBurst"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -6389,15 +6475,66 @@
     {
       "path": "domain/projectiles.js",
       "layer": "domain",
-      "purpose": "Native MCP projectiles use one hit identity per pellet; a volley shares its chain.",
+      "purpose": "原生/并行弹体工厂、行为快照与一次爆破计划。",
       "dependencies": [
+        "content/weaponCapabilities.js",
         "domain/entities.js",
         "domain/plans.js",
+        "domain/serialization.js",
         "domain/stats.js"
       ],
       "functions": [
         {
-          "description": "按MCP参数生成原生弹体，每枚弹有独立attackId，同次射击共享chainId。",
+          "description": "按原生模板建立独立弹体实例；主弹/并行次级弹共用去回程、爆破与品质快照，不重乘输出。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createWeaponProjectile",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "weapon",
+              "type": "untyped"
+            },
+            {
+              "name": "stats",
+              "type": "untyped"
+            },
+            {
+              "name": "angle",
+              "type": "untyped"
+            },
+            {
+              "name": "id",
+              "type": "untyped"
+            },
+            {
+              "name": "chainId",
+              "type": "untyped"
+            },
+            {
+              "name": "sourceKind",
+              "type": "untyped"
+            },
+            {
+              "name": "damage",
+              "type": "untyped"
+            }
+          ],
+          "result": "EntityState",
+          "implementation": "implemented",
+          "calls": [
+            "content/weaponCapabilities.js#resolveWeaponTemplate",
+            "domain/entities.js#createEntityState"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
+        },
+        {
+          "description": "六把MCP按真实参数产弹；每枚独立attackId，每次原生射击仅一个WeaponFired。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -6412,12 +6549,43 @@
           "result": "SystemPlan",
           "implementation": "implemented",
           "calls": [
-            "domain/entities.js#createEntityState",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
+            "domain/projectiles.js#createWeaponProjectile",
             "domain/stats.js#deriveWeaponStats"
           ],
           "implementationScope": "core-preview"
+        },
+        {
+          "description": "在碰撞或射程到期点结算一次非暴击范围伤害，生成12tick可视涟漪；不冒充基础命中。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planProjectileBurst",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "projectile",
+              "type": "untyped"
+            },
+            {
+              "name": "position",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
         }
       ]
     },
@@ -6633,7 +6801,7 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "接触后消费米粒/材料拾取，装备类拾取明确拒绝；不直接持久化。",
+          "description": "只消费接触的大白饭/材料；装备走F和实例交换，不自动吸入、不变为资源。",
           "calls": [
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange"
@@ -7365,6 +7533,7 @@
       "purpose": "连续地图生成、探索与安全交互。",
       "dependencies": [
         "domain/entities.js",
+        "domain/equipment.js",
         "domain/geometry.js",
         "domain/plans.js",
         "domain/random.js",
@@ -7438,8 +7607,9 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "就近交互资源箱或已解锁首领门；首次扇面发现生成持久化事实。",
+          "description": "探索交互优先处理附近MCP，再处理补给/首领门；Boss不打开换装面板。",
           "calls": [
+            "domain/equipment.js#planEquipmentInteraction",
             "domain/geometry.js#distanceSquared",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
@@ -8679,6 +8849,7 @@
             "content/catalog.js#validateContentCatalog",
             "content/registry.js#createHandlerRegistry",
             "content/weaponCapabilities.js#listRuntimeWeapons",
+            "content/weaponCapabilities.js#resolveWeaponTemplate",
             "domain/checkpoint.js#canCreateCheckpoint",
             "domain/checkpoint.js#createCheckpoint",
             "domain/clock.js#createClockState",
@@ -9796,9 +9967,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 88,
-    "functions": 329,
-    "implemented": 189,
-    "placeholders": 140
+    "modules": 89,
+    "functions": 333,
+    "implemented": 197,
+    "placeholders": 136
   }
 }

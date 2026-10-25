@@ -12,7 +12,7 @@ function keys(value, allowed) { if (Object.keys(value).some(key => !allowed.incl
 /** @param {unknown} value @returns {asserts value is Record<string, any>} */
 function object(value) { if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Expected a JSON object'); }
 
-/** Parse and strictly validate an API 1.0 local package; unknown features fail closed.
+/** Parse and strictly validate an API 1.0–1.2 local package; unknown features fail closed.
  * @calls content/registry.js#createHandlerRegistry
  * @calls domain/serialization.js#serializeCanonical
  * @param {string} text
@@ -23,7 +23,7 @@ export function parseModPackage(text, base) {
   if (new TextEncoder().encode(text).length > 262144) throw new Error('模组超过256 KiB');
   const pack = JSON.parse(text); serializeCanonical(pack); object(pack);
   keys(pack, ['formatVersion', 'apiVersion', 'id', 'version', 'name', 'author', 'description', 'gameVersion', 'dependencies', 'conflicts', 'patches', 'weapons']);
-  if (pack.formatVersion !== 1 || !['1.0','1.1'].includes(pack.apiVersion) || !idPattern.test(pack.id) || typeof pack.id !== 'string' || typeof pack.version !== 'string' || !versionPattern.test(pack.version)) throw new Error('模组ID或API版本无效');
+  if (pack.formatVersion !== 1 || !['1.0','1.1','1.2'].includes(pack.apiVersion) || !idPattern.test(pack.id) || typeof pack.id !== 'string' || typeof pack.version !== 'string' || !versionPattern.test(pack.version)) throw new Error('模组ID或API版本无效');
   if (pack.gameVersion !== base.version || base.modLock?.length) throw new Error('模组与基础游戏版本不兼容');
   for (const field of ['name', 'author', 'description']) if (typeof pack[field] !== 'string' || pack[field].length > (field === 'description' ? 1000 : 100) || (field !== 'description' && !pack[field].trim())) throw new Error(`模组字段无效：${field}`);
   object(pack.dependencies);
@@ -31,12 +31,13 @@ export function parseModPackage(text, base) {
   if (!Array.isArray(pack.conflicts) || pack.conflicts.length > 32 || new Set(pack.conflicts).size !== pack.conflicts.length || pack.conflicts.some(id => typeof id !== 'string' || !idPattern.test(id) || id === pack.id)) throw new Error('模组冲突声明无效');
   if (!Array.isArray(pack.patches) || !pack.patches.length && !pack.weapons?.length || pack.patches.length > 64) throw new Error('模组补丁数量无效');
   if (pack.weapons !== undefined) {
-    if (pack.apiVersion !== '1.1' || !Array.isArray(pack.weapons) || pack.weapons.length > 16) throw new Error('新MCP配方需要SDK1.1，单包最多16把');
+    if (!['1.1','1.2'].includes(pack.apiVersion) || !Array.isArray(pack.weapons) || pack.weapons.length > 16) throw new Error('新MCP配方至少需要SDK1.1，单包最多16把');
     const ids = new Set();
     for (const recipe of pack.weapons) {
       object(recipe); keys(recipe,['id','templateId','displayName','parameters']);
-      if (typeof recipe.id !== 'string' || !/^[a-z][a-z0-9_-]{0,47}$/.test(recipe.id) || ids.has(recipe.id) || !['mcp_bubble','mcp_fan'].includes(recipe.templateId) || typeof recipe.displayName !== 'string' || !recipe.displayName.trim() || recipe.displayName.length > 80) throw new Error('新MCP的ID、显示名或行为模板无效');
+      if (typeof recipe.id !== 'string' || !/^[a-z][a-z0-9_-]{0,47}$/.test(recipe.id) || ids.has(recipe.id) || !(pack.apiVersion==='1.2'?['mcp_bubble','mcp_fan','mcp_vector','mcp_stream','mcp_return','mcp_batch']:['mcp_bubble','mcp_fan']).includes(recipe.templateId) || typeof recipe.displayName !== 'string' || !recipe.displayName.trim() || recipe.displayName.length > 80) throw new Error('新MCP的ID、显示名或行为模板无效');
       ids.add(recipe.id); object(recipe.parameters);
+      if(recipe.templateId==='mcp_batch'&&recipe.parameters.maxHits!==undefined&&recipe.parameters.maxHits!==1)throw new Error('爆破模板必须在首次碰撞时爆炸，maxHits固定为1');
       for (const [key,value] of Object.entries(recipe.parameters)) { const bound=limits[key]; if (!bound || typeof value !== 'number' || !Number.isFinite(value) || value < bound[0] || value > bound[1] || ['pellets','maxHits'].includes(key) && !Number.isInteger(value)) throw new Error(`新MCP参数越界：${key}`); }
     }
   }
@@ -48,7 +49,8 @@ export function parseModPackage(text, base) {
     if (patch.displayName !== undefined && (typeof patch.displayName !== 'string' || !patch.displayName.trim() || patch.displayName.length > 80)) throw new Error('显示名无效');
     if (patch.parameters !== undefined) {
       object(patch.parameters);
-      if (!['mcp_bubble', 'mcp_fan'].includes(patch.id) || !Object.keys(patch.parameters).length) throw new Error('API 1.0仅开放泡泡/扇面MCP参数');
+      if (!(pack.apiVersion==='1.2'?['mcp_bubble','mcp_fan','mcp_vector','mcp_stream','mcp_return','mcp_batch']:['mcp_bubble','mcp_fan']).includes(patch.id) || !Object.keys(patch.parameters).length) throw new Error('此SDK版本尚未开放该MCP参数');
+      if(patch.id==='mcp_batch'&&patch.parameters.maxHits!==undefined&&patch.parameters.maxHits!==1)throw new Error('爆破maxHits固定为1');
       for (const [key, value] of Object.entries(patch.parameters)) {
         const bound = limits[key];
         if (!bound || typeof value !== 'number' || !Number.isFinite(value) || value < bound[0] || value > bound[1] || ['pellets', 'maxHits'].includes(key) && !Number.isInteger(value)) throw new Error(`MCP参数超出API范围：${key}`);
@@ -113,7 +115,7 @@ export function composeModCatalog(base, packs) {
       else definition.parameters = { ...definition.parameters, [field.slice('parameters.'.length)]: value };
     }
   }
-  const recipes = /** @type {Record<string,{templateId:'mcp_bubble'|'mcp_fan';packId:string}>} */({});
+  const recipes = /** @type {Record<string,{templateId:import('../contracts.d.ts').WeaponTemplateId;packId:string}>} */({});
   const definitions = { ...catalog.definitions };
   for (const pack of ordered) for (const recipe of pack.weapons ?? []) {
     const id = `${pack.id}:${recipe.id}`;

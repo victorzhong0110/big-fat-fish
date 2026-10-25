@@ -1,7 +1,7 @@
 # 大肥鱼历险记 · Big Fat Fish
 
-> **V2 已有独立战斗试作**：运行 `npm run dev` 后打开 `/v2.html`。键鼠/手机双摇杆，两把MCP、两个技能、棕蟹/Bot、暂停和检查点保存/继续。
-> [实际进度与剩余任务](docs/design-v2/13-development-status.md) · [玩法规格](docs/design-v2/00-README.md) · [架构](docs/design-v2/11-architecture-contracts.md) · [函数目录](docs/design-v2/12-function-catalog.md)。当前189个函数有实现，140个TODO，Free与Pro1 Claude短途已可操作，支持小窝/技能树/DSH配装、信标/追兵/首领/正式结算；完整游戏仍在开发。
+> **V2 已有独立战斗试作**：运行 `npm run dev` 后打开 `/v2.html`。键鼠/手机双摇杆，六种MCP任选两把、两个技能、棕蟹/Bot、暂停和检查点保存/继续。
+> [实际进度与剩余任务](docs/design-v2/13-development-status.md) · [玩法规格](docs/design-v2/00-README.md) · [架构](docs/design-v2/11-architecture-contracts.md) · [函数目录](docs/design-v2/12-function-catalog.md)。当前197个函数有实现，136个TODO，Free与Pro1 Claude短途已可操作，支持小窝/技能树/DSH配装、信标/追兵/首领/正式结算；完整游戏仍在开发。
 > 以下玩法介绍仍描述旧版 `index.html`。
 
 > 纯代码生成的 2D 肉鸽生存射击。**零美术素材、零音频素材、零外部依赖** ——
@@ -106,4 +106,4 @@ node scripts/avatar-preview.mjs  # 敌人化身预览图
 Apache-2.0（见 [`LICENSE`](LICENSE)）。
 
 
-社区模组：V2出发页下方提供本地JSON模组安装、启停和移除，已开放Free练习的MCP参数/内容名称，以及SDK1.1独立新MCP配方。见[SDK与扩展规范](docs/design-v2/14-community-mods.md)和[可安装示例](public/mods/community-bubbles.json)与[独立MCP示例](public/mods/community-trident.json)。其余扩展面与Steam创意工坊适配仍待开发。
+社区模组：V2出发页下方提供本地JSON模组安装、启停和移除，已开放Free练习的MCP参数/内容名称，以及SDK1.1/1.2独立新MCP配方。见[SDK与扩展规范](docs/design-v2/14-community-mods.md)和[可安装示例](public/mods/community-bubbles.json)与[独立MCP示例](public/mods/community-trident.json)、[回旋示例](public/mods/community-callback.json)。其余扩展面与Steam创意工坊适配仍待开发。

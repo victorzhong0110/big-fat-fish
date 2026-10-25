@@ -4,6 +4,7 @@
  * Incremental implementation; unavailable functions remain explicit TODOs.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
+import { createWeaponProjectile } from '../../domain/projectiles.js';
 import { createEntityState } from '../../domain/entities.js';
 import { derivePlayerStats } from '../../domain/stats.js';
 import * as dependency1 from '../../domain/distill.js';
@@ -14,9 +15,9 @@ import * as dependency2 from '../../domain/plans.js';
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/entities.js#createEntityState
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
+ * @calls domain/projectiles.js#createWeaponProjectile
  * @calls domain/stats.js#derivePlayerStats
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
@@ -29,7 +30,8 @@ export function planPluginParallel(context, event) {
   const quality=weapon.updateExpiresAt!==null&&weapon.updateExpiresAt>state.tick&&weapon.temporaryQuality!==null?weapon.temporaryQuality:weapon.originalQuality;
   const damage=Number(p.damage)*[1,1.15,1.3][quality]*(plugin.rank===1?0.4:0.6)*derivePlayerStats(state,context.catalog).damageMultiplier;
   const changes=[dependency2.createStateChange('progression',plugin.id,'setPlugins',{plugins:state.plugins.map(item=>item.id===plugin.id?{...item,runtime:{...item.runtime,readyAt:state.tick+24}}:item)})];
-  for(const side of [-1,1]){const angle=Math.atan2(state.input.aim.y,state.input.aim.x)+side*Math.PI/15,id=`parallel:${event.id}:${side}`,speed=Number(p.projectileSpeed),radius=Number(p.projectileRadius),direction={x:Math.cos(angle),y:Math.sin(angle)};changes.push(dependency2.createStateChange('world',id,'putEntity',createEntityState(id,'projectile_bubble','projectile','player',{x:player.position.x+direction.x*(player.radius+radius+1),y:player.position.y+direction.y*(player.radius+radius+1)},{sourceId:player.id,attackId:id,radius,velocity:{x:direction.x*speed,y:direction.y*speed},facingRadians:angle,expiresAt:state.tick+Math.ceil(Number(p.range)/speed*60),runtime:{damage,sourceKind:'plugin_secondary',chainId:event.id,maxHits:Number(p.maxHits),hitTargetIds:[],critEligible:false}})));}
+  const stats={damage,interval:Number(p.interval),projectileSpeed:Number(p.projectileSpeed),projectileRadius:Number(p.projectileRadius),pellets:1,spreadRadians:0,range:Number(p.range),maxHits:Number(p.maxHits),damageMultiplierApplied:true};
+  for(const side of [-1,1]){const angle=Math.atan2(state.input.aim.y,state.input.aim.x)+side*Math.PI/15,id=`parallel:${event.id}:${side}`;changes.push(dependency2.createStateChange('world',id,'putEntity',createWeaponProjectile(context,weapon,stats,angle,id,event.id,'plugin_secondary',damage)));}
   return {...dependency2.createEmptyPlan(),changes};
 }
 

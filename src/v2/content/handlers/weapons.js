@@ -2,7 +2,7 @@
 import { resolveWeaponTemplate } from '../weaponCapabilities.js';
 import { planNativeProjectiles } from '../../domain/projectiles.js';
 /**
- * weapons逐项占位处理器；实际参数仍以玩法规格为准。
+ * 六种MCP的真实原生行为入口，派发前校验行为模板。
  * Incremental V2 implementation. Per-function status is in architecture-manifest.json.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
@@ -45,13 +45,15 @@ export function planWeaponFan(context) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview + adventure-slice
+ * @calls content/weaponCapabilities.js#resolveWeaponTemplate
+ * @calls domain/projectiles.js#planNativeProjectiles
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planWeaponVector(context) {
-  throw new Error('TODO V2: content/handlers/weapons.js#planWeaponVector');
+  if (resolveWeaponTemplate(context.catalog,context.weapon?.definitionId??'') !== 'mcp_vector') throw new Error('Wrong weapon behavior');
+  return planNativeProjectiles(context);
 }
 
 /**
@@ -59,13 +61,15 @@ export function planWeaponVector(context) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview + adventure-slice
+ * @calls content/weaponCapabilities.js#resolveWeaponTemplate
+ * @calls domain/projectiles.js#planNativeProjectiles
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planWeaponStream(context) {
-  throw new Error('TODO V2: content/handlers/weapons.js#planWeaponStream');
+  if (resolveWeaponTemplate(context.catalog,context.weapon?.definitionId??'') !== 'mcp_stream') throw new Error('Wrong weapon behavior');
+  return planNativeProjectiles(context);
 }
 
 /**
@@ -73,13 +77,15 @@ export function planWeaponStream(context) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview + adventure-slice
+ * @calls content/weaponCapabilities.js#resolveWeaponTemplate
+ * @calls domain/projectiles.js#planNativeProjectiles
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planWeaponReturn(context) {
-  throw new Error('TODO V2: content/handlers/weapons.js#planWeaponReturn');
+  if (resolveWeaponTemplate(context.catalog,context.weapon?.definitionId??'') !== 'mcp_return') throw new Error('Wrong weapon behavior');
+  return planNativeProjectiles(context);
 }
 
 /**
@@ -87,11 +93,13 @@ export function planWeaponReturn(context) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview + adventure-slice
+ * @calls content/weaponCapabilities.js#resolveWeaponTemplate
+ * @calls domain/projectiles.js#planNativeProjectiles
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planWeaponBatch(context) {
-  throw new Error('TODO V2: content/handlers/weapons.js#planWeaponBatch');
+  if (resolveWeaponTemplate(context.catalog,context.weapon?.definitionId??'') !== 'mcp_batch') throw new Error('Wrong weapon behavior');
+  return planNativeProjectiles(context);
 }

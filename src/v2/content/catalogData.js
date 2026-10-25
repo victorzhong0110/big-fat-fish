@@ -2,6 +2,7 @@
 export const CATALOG_DATA = {
   "version": "2.0.0-preview.5",
   "definitions": {
+    "world_blast": {"id":"world_blast","kind":"entity","displayName":"爆破涟漪","parameters":{},"version":"2.0.0-preview.5"},
     "plugin_parallel": {
       "id": "plugin_parallel",
       "kind": "plugin",
@@ -745,7 +746,7 @@ export const CATALOG_DATA = {
         "spreadRadians": 0.0,
         "range": 900,
         "maxHits": 4,
-        "previewAvailable": false,
+        "previewAvailable": true,
         "partCost": 8
       },
       "version": "2.0.0-preview.5"
@@ -771,7 +772,7 @@ export const CATALOG_DATA = {
         "spreadRadians": 0.0,
         "range": 600,
         "maxHits": 1,
-        "previewAvailable": false,
+        "previewAvailable": true,
         "partCost": 8
       },
       "version": "2.0.0-preview.5"
@@ -796,8 +797,8 @@ export const CATALOG_DATA = {
         "pellets": 1,
         "spreadRadians": 0.0,
         "range": 500,
-        "maxHits": 1,
-        "previewAvailable": false,
+        "maxHits": 100,
+        "previewAvailable": true,
         "partCost": 10
       },
       "version": "2.0.0-preview.5"
@@ -823,7 +824,7 @@ export const CATALOG_DATA = {
         "spreadRadians": 0.0,
         "range": 600,
         "maxHits": 1,
-        "previewAvailable": false,
+        "previewAvailable": true,
         "partCost": 12
       },
       "version": "2.0.0-preview.5"

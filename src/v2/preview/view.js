@@ -55,6 +55,7 @@ export function renderPreviewFrame(ctx,view,width,height,pixelRatio,popups=[]) {
     if(x<camera.x-100||y<camera.y-100||x>camera.x+width/camera.scale+100||y>camera.y+height/camera.scale+100)continue;
     ctx.fillStyle='#061d2855';ctx.beginPath();ctx.ellipse(x,y+entity.radius*.8,entity.radius*1.15,entity.radius*.38,0,0,Math.PI*2);ctx.fill();
     if(entity.kind==='pickup'&&entity.spriteId!=='riceXp'){ctx.fillStyle=entity.spriteId==='gpuFragment'?'#92cddf':'#b6bcb3';ctx.fillRect(x-7,y-5,14,10);ctx.strokeStyle='#f2ead1';ctx.strokeRect(x-5,y-3,10,6);continue;}
+    if(entity.kind==='pickup'&&entity.spriteId==='weapon'){ctx.fillStyle=(entity.quality??0)>0?'#d8b679':'#a9d4c6';ctx.fillRect(x-15,y-8,30,16);ctx.strokeStyle='#e6eee0';ctx.lineWidth=2;ctx.strokeRect(x-15,y-8,30,16);ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#e4e7d4';ctx.fillText(`${entity.modelLabel??'MCP'} · F`,x,y+30);continue;}
     if(entity.kind==='pickup'){ctx.fillStyle='#f8efd8';ctx.fillRect(x-4,y-2,3,6);ctx.fillRect(x+1,y-3,3,6);ctx.fillStyle='#d4d9b8';ctx.fillRect(x-4,y+3,8,2);continue;}
     if(entity.spriteId==='terrain_clutter'){ctx.fillStyle='#5b776c';ctx.fillRect(x-24,y-16,48,32);ctx.strokeStyle='#8ca18b';ctx.lineWidth=2;ctx.strokeRect(x-20,y-12,40,24);ctx.fillStyle='#b3c7ac';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('Bot ↔',x,y+4);continue;}
     if(entity.kind==='obstacle'){
@@ -64,12 +65,18 @@ export function renderPreviewFrame(ctx,view,width,height,pixelRatio,popups=[]) {
     if(entity.spriteId==='world_gate'){ctx.strokeStyle=entity.unlocked?'#c6dfa4':'#9a8c84';ctx.lineWidth=8;ctx.strokeRect(x-42,y-50,84,90);ctx.font='14px system-ui';ctx.fillStyle='#e3dfc8';ctx.textAlign='center';ctx.fillText(entity.unlocked?'首领入口 · F':'点亮任意两个信标',x,y+66);continue;}
     if(entity.spriteId==='world_cache'){ctx.fillStyle=entity.opened?'#677a6e':'#d5c59b';ctx.fillRect(x-19,y-13,38,26);ctx.fillStyle='#8b926a';ctx.fillRect(x-4,y-13,8,26);ctx.font='13px system-ui';ctx.textAlign='center';ctx.fillStyle='#e8e3c9';ctx.fillText(entity.opened?'已打开':'补给箱 · F',x,y+42);continue;}
     if(entity.spriteId==='claude_seal'){ctx.strokeStyle='#db967c';ctx.lineWidth=3;ctx.strokeRect(x-17,y-17,34,34);ctx.fillStyle='#e8c6a3';ctx.font='14px system-ui';ctx.textAlign='center';ctx.fillText(`${Math.ceil(entity.hp)}击`,x,y+5);continue;}
+    if(entity.spriteId==='world_blast'){ctx.strokeStyle='#eebd82';ctx.fillStyle='#f8c47622';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,entity.radius,0,Math.PI*2);ctx.fill();ctx.stroke();continue;}
     if(entity.kind==='objective'){
       const pulse=2+Math.sin(view.tick/35)*2;ctx.strokeStyle='#b5dbba44';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,38+pulse,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#8dbbb0';ctx.fillRect(x-17,y-8,34,20);ctx.fillStyle='#d7e7ca';ctx.fillRect(x-12,y-13,24,8);ctx.fillStyle='#446b65';ctx.fillRect(x-8,y-3,16,5);ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#c8e6d4';ctx.fillText('检查点 · F',x,y+49);continue;
     }
     if(entity.spriteId==='distilled_bot'){ctx.globalAlpha=.65;ctx.fillStyle='#a8e5ce';ctx.fillRect(x-9,y-9,18,18);ctx.fillStyle='#28535c';ctx.fillRect(x-5,y-4,3,4);ctx.fillRect(x+2,y-4,3,4);ctx.fillRect(x-4,y+3,8,2);ctx.globalAlpha=1;continue;}
     if(entity.spriteId==='distilled_bubble'){ctx.fillStyle='#c9afff';ctx.beginPath();ctx.arc(x,y,entity.radius,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#eee2ff';ctx.stroke();continue;}
-    if(entity.kind==='projectile'){ctx.fillStyle='#bceff6';ctx.beginPath();ctx.arc(x,y,entity.radius,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#f1ffff';ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#fff';ctx.fillRect(x-entity.radius*.3,y-entity.radius*.5,2,2);continue;}
+    if(entity.kind==='projectile'){
+      const style=entity.projectileStyle??'';ctx.fillStyle=style==='mcp_batch'?'#efb27b':style==='mcp_return'?'#c8a0ee':style==='mcp_vector'?'#a7e2bc':style==='mcp_stream'?'#9fd9ec':'#bceff6';
+      if(style==='mcp_vector'){ctx.save();ctx.translate(x,y);ctx.rotate(entity.facingRadians);ctx.fillRect(-14,-2,28,4);ctx.restore();continue;}
+      ctx.beginPath();ctx.arc(x,y,entity.radius,0,Math.PI*2);ctx.fill();ctx.strokeStyle=(entity.quality??0)===2?'#dfb5ff':(entity.quality??0)===1?'#f3da94':'#f1ffff';ctx.lineWidth=1.5;ctx.stroke();
+      if(style==='mcp_return'){ctx.beginPath();ctx.arc(x,y,entity.radius+4,entity.facingRadians,entity.facingRadians+Math.PI*1.5);ctx.stroke();}ctx.fillStyle='#fff';ctx.fillRect(x-entity.radius*.3,y-entity.radius*.5,2,2);continue;}
+
     if(entity.kind==='player'){
       if(entity.shieldAmount>0){ctx.strokeStyle='#9bdef0';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,29,0,Math.PI*2);ctx.stroke();}
       ctx.globalAlpha=hud.invulnerable&&view.tick%8<4?.55:1;drawFish(ctx,x,y);ctx.globalAlpha=1;

@@ -1,4 +1,5 @@
 // @ts-check
+import { planProjectileBurst } from './projectiles.js';
 import { createEmptyPlan, createStateChange } from './plans.js';
 import { resolveBodyDestination } from './motionSolver.js';
 /**
@@ -40,30 +41,41 @@ export function planPlayerMovement(context, input) {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @implementationScope core-preview
+ * @calls domain/geometry.js#intersectSweptCircles
  * @calls domain/geometry.js#normalizeVector
  * @calls domain/motionSolver.js#resolveBodyDestination
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
+ * @calls domain/projectiles.js#planProjectileBurst
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @returns {import('../contracts.d.ts').SystemPlan}
  */
 export function planEntityMotion(context) {
-  if (!['exploring', 'boss'].includes(context.state.flow.phase)) return createEmptyPlan();
-  const changes = /** @type {import('../contracts.d.ts').StateChange[]} */ ([]);
-  for (const entity of Object.values(context.state.world.entities)) {
-    if (entity.kind === 'projectile' && (entity.runtime.exhausted === true || entity.expiresAt !== null && entity.expiresAt < context.state.tick)) { changes.push(createStateChange('world', entity.id, 'removeEntity', {})); continue; }
-    if (entity.dead || entity.dying || !['player', 'enemy', 'projectile'].includes(entity.kind)) continue;
-    if (!entity.velocity.x && !entity.velocity.y && entity.previousPosition.x === entity.position.x && entity.previousPosition.y === entity.position.y) continue;
-    let velocity = entity.velocity;
-    if (typeof entity.runtime.homingTargetId === 'string') {
-      const target = context.state.world.entities[entity.runtime.homingTargetId];
-      if (target && !target.dead) { const direction = dependency2.normalizeVector({ x: target.position.x - entity.position.x, y: target.position.y - entity.position.y }); velocity = { x: direction.x * Number(entity.runtime.speed), y: direction.y * Number(entity.runtime.speed) }; }
+  if (!['exploring','boss'].includes(context.state.flow.phase)) return createEmptyPlan();
+  const changes=/** @type {import('../contracts.d.ts').StateChange[]} */([]),effects=/** @type {import('../contracts.d.ts').EffectRequest[]} */([]);
+  for(const entity of Object.values(context.state.world.entities)){
+    if(entity.runtime.visualOnly===true&&entity.expiresAt!==null&&entity.expiresAt<context.state.tick){changes.push(createStateChange('world',entity.id,'removeEntity',{}));continue;}
+    if(entity.kind==='projectile'&&(entity.runtime.exhausted===true||entity.runtime.returnCaught===true||entity.expiresAt!==null&&entity.expiresAt<context.state.tick)){
+      if(entity.runtime.exhausted!==true&&entity.runtime.returnCaught!==true){const burst=planProjectileBurst(context,entity,entity.position);changes.push(...burst.changes);effects.push(...burst.effects);}
+      changes.push(createStateChange('world',entity.id,'removeEntity',{}));continue;
     }
-    const desired = { x: entity.position.x + velocity.x / 60, y: entity.position.y + velocity.y / 60 };
-    const position = entity.kind === 'projectile' ? desired : resolveBodyDestination(context, entity, desired);
-    changes.push(createStateChange('entity', entity.id, 'setEntityKinematics', { position, previousPosition: entity.position, velocity, facingRadians: entity.facingRadians }));
+    if(entity.dead||entity.dying||!['player','enemy','projectile'].includes(entity.kind))continue;
+    let velocity=entity.velocity,runtime={...entity.runtime},returning=runtime.returnPhase==='returning';
+    const owner=context.state.world.entities[entity.sourceId],origin=/** @type {import('../contracts.d.ts').Vec2|undefined} */(runtime.returnOrigin);
+    if(origin&&(runtime.returnPhase==='turnPending'||runtime.returnPhase==='outbound'&&Math.hypot(entity.position.x-origin.x,entity.position.y-origin.y)>=Number(runtime.returnDistance)-1e-9)){
+      returning=true;runtime={...runtime,returnPhase:'returning',hitTargetIds:[]};changes.push(createStateChange('entity',entity.id,'setProjectileLeg',{attackId:`${entity.id}:return`,runtime}));
+    }
+    if(returning&&owner&&!owner.dead){const d=dependency2.normalizeVector({x:owner.position.x-entity.position.x,y:owner.position.y-entity.position.y});velocity={x:d.x*Number(runtime.speed),y:d.y*Number(runtime.speed)};}
+    else if(typeof runtime.homingTargetId==='string'){const target=context.state.world.entities[runtime.homingTargetId];if(target&&!target.dead){const d=dependency2.normalizeVector({x:target.position.x-entity.position.x,y:target.position.y-entity.position.y});velocity={x:d.x*Number(runtime.speed),y:d.y*Number(runtime.speed)};}}
+    if(!velocity.x&&!velocity.y&&entity.previousPosition.x===entity.position.x&&entity.previousPosition.y===entity.position.y)continue;
+    let desired={x:entity.position.x+velocity.x/60,y:entity.position.y+velocity.y/60};
+    if(origin&&!returning){const distance=Math.hypot(desired.x-origin.x,desired.y-origin.y),limit=Number(runtime.returnDistance);if(distance>limit){const d=dependency2.normalizeVector({x:desired.x-origin.x,y:desired.y-origin.y});desired={x:origin.x+d.x*limit,y:origin.y+d.y*limit};}}
+    if(origin&&returning&&owner){const time=dependency2.intersectSweptCircles(entity.position,desired,entity.radius,owner.position,owner.radius);if(time!==null){desired={x:entity.position.x+(desired.x-entity.position.x)*time,y:entity.position.y+(desired.y-entity.position.y)*time};runtime={...runtime,returnCaught:true};changes.push(createStateChange('entity',entity.id,'setEntityRuntime',{runtime}));}}
+    if(origin&&Math.hypot(desired.x-origin.x,desired.y-origin.y)>Number(runtime.returnMaxDistance)+1e-8){changes.push(createStateChange('world',entity.id,'removeEntity',{}));continue;}
+    const position=entity.kind==='projectile'?desired:resolveBodyDestination(context,entity,desired);
+    changes.push(createStateChange('entity',entity.id,'setEntityKinematics',{position,previousPosition:entity.position,velocity,facingRadians:entity.kind==='projectile'?Math.atan2(velocity.y,velocity.x):entity.facingRadians}));
   }
-  return { ...createEmptyPlan(), changes };
+  return {...createEmptyPlan(),changes,effects};
 }
 
 /**
@@ -84,7 +96,7 @@ export function planPickupMotion(context) {
   const radius = 100 + (state.start.treeNodeIds.includes('tree_explore_a') ? 25 : 0) + (collect ? collect.rank === 1 ? 80 : 140 : 0);
   const changes = /** @type {import('../contracts.d.ts').StateChange[]} */ ([]), effects = /** @type {import('../contracts.d.ts').EffectRequest[]} */ ([]);
   for (const pickup of Object.values(state.world.pickups).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)) {
-    if (pickup.collected) continue;
+    if (pickup.collected || ['weapon','skill'].includes(pickup.kind)) continue;
     const distance = Math.sqrt(dependency2.distanceSquared(player.position, pickup.position));
     if (distance <= 40) effects.push({ id: `collect:${pickup.id}`, chainId: `collect:${pickup.id}`, generation: 0, sourceId: player.id, kind: 'collect', payload: { pickupId: pickup.id } });
     else if (pickup.kind === 'riceXp' && distance <= radius) {

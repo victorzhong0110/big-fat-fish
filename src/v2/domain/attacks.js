@@ -1,4 +1,6 @@
 // @ts-check
+import { planWeaponPickup } from './equipment.js';
+import { planProjectileBurst } from './projectiles.js';
 import { planTreeWeaponSwitch } from './treeRuntime.js';
 import { toJson } from './serialization.js';
 import { createEmptyPlan, createStateChange } from './plans.js';
@@ -82,6 +84,7 @@ export function planDash(context, command) {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @implementationScope core-preview
+ * @calls domain/equipment.js#planWeaponPickup
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @calls domain/treeRuntime.js#planTreeWeaponSwitch
@@ -91,6 +94,7 @@ export function planDash(context, command) {
  */
 export function planLoadoutChange(context, command) {
   const state = context.state;
+  if(command.type==='EquipPickup'){const p=/** @type {{pickupId:string;slotIndex:number}} */(command.payload);return planWeaponPickup(context,p.pickupId,p.slotIndex);}
   if (command.type !== 'SwitchWeapon') throw new Error('Ground equipment swaps are not available in the combat preview');
   const player = state.world.entities[state.player.entityId];
   if (Number(player.runtime.switchReadyAt ?? 0) > state.tick || state.player.loadout.weapons.length < 2) return createEmptyPlan();
@@ -106,30 +110,32 @@ export function planLoadoutChange(context, command) {
  * @implementationScope core-preview
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
+ * @calls domain/projectiles.js#planProjectileBurst
  * @calls domain/serialization.js#toJson
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').CollisionResult} collisions
  * @returns {import('../contracts.d.ts').SystemPlan}
  */
 export function planCollisionEffects(context, collisions) {
-  const state = context.state, changes = /** @type {import('../contracts.d.ts').StateChange[]} */ ([]), effects = /** @type {import('../contracts.d.ts').EffectRequest[]} */ ([]);
-  const local = new Map();
-  for (const collision of collisions.hits) {
-    const projectile = state.world.entities[collision.sourceId], target = state.world.entities[collision.targetId];
-    if (!projectile || !target || projectile.runtime.exhausted === true) continue;
-    const progress = local.get(projectile.id) ?? { hits: /** @type {string[]} */ ([.../** @type {readonly string[]} */ (projectile.runtime.hitTargetIds ?? [])]), exhausted: false };
-    if (progress.exhausted || progress.hits.includes(target.id)) continue;
-    if (target.kind === 'obstacle') progress.exhausted = true;
-    else {
-      progress.hits.push(target.id);
-      const time = collision.timeOfImpact;
-      const atImpact = { x: target.previousPosition.x + (target.position.x - target.previousPosition.x) * time, y: target.previousPosition.y + (target.position.y - target.previousPosition.y) * time };
-      const request = { id: `damage:${projectile.id}:${target.id}`, sourceId: projectile.sourceId, creditOwner: projectile.creditOwner, sourceKind: projectile.runtime.sourceKind ?? 'weapon_primary', attackId: projectile.attackId, projectileId: projectile.id, targetId: target.id, baseDamage: Number(projectile.runtime.damage), contact: { x: target.position.x + collision.contact.x - atImpact.x, y: target.position.y + collision.contact.y - atImpact.y }, incomingDirection: collision.incomingDirection, generation: 0, chainId: String(projectile.runtime.chainId), critEligible: projectile.runtime.critEligible === true, expiresAt: projectile.expiresAt };
-      effects.push({ id: request.id, sourceId: request.sourceId, chainId: request.chainId, generation: 0, kind: 'damage', payload: toJson(request) });
-      progress.exhausted = progress.hits.length >= Number(projectile.runtime.maxHits ?? 1);
-    }
-    local.set(projectile.id, progress);
+ const state=context.state,changes=/** @type {import('../contracts.d.ts').StateChange[]} */([]),effects=/** @type {import('../contracts.d.ts').EffectRequest[]} */([]);
+ const local=new Map();
+ for(const collision of collisions.hits){
+  const projectile=state.world.entities[collision.sourceId],target=state.world.entities[collision.targetId];if(!projectile||!target||projectile.runtime.exhausted===true)continue;
+  const progress=local.get(projectile.id)??{hits:/** @type {string[]} */([.../** @type {readonly string[]} */(projectile.runtime.hitTargetIds??[])]),exhausted:false,stop:false,turnAt:/** @type {import('../contracts.d.ts').Vec2|null} */(null)};
+  if(progress.exhausted||progress.stop||progress.hits.includes(target.id))continue;
+  const time=collision.timeOfImpact,impact={x:projectile.previousPosition.x+(projectile.position.x-projectile.previousPosition.x)*time,y:projectile.previousPosition.y+(projectile.position.y-projectile.previousPosition.y)*time};
+  if(target.kind==='obstacle'){
+    if(projectile.runtime.returnPhase==='outbound'){progress.stop=true;progress.turnAt={x:impact.x-collision.incomingDirection.x,y:impact.y-collision.incomingDirection.y};}
+    else progress.exhausted=true;
+  }else{
+    progress.hits.push(target.id);const atImpact={x:target.previousPosition.x+(target.position.x-target.previousPosition.x)*time,y:target.previousPosition.y+(target.position.y-target.previousPosition.y)*time};
+    const request={id:`damage:${projectile.attackId}:${target.id}`,sourceId:projectile.sourceId,creditOwner:projectile.creditOwner,sourceKind:projectile.runtime.sourceKind??'weapon_primary',attackId:projectile.attackId,projectileId:projectile.id,targetId:target.id,baseDamage:Number(projectile.runtime.damage),contact:{x:target.position.x+collision.contact.x-atImpact.x,y:target.position.y+collision.contact.y-atImpact.y},incomingDirection:collision.incomingDirection,generation:0,chainId:String(projectile.runtime.chainId),critEligible:projectile.runtime.critEligible===true,expiresAt:projectile.expiresAt};
+    effects.push({id:request.id,sourceId:request.sourceId,chainId:request.chainId,generation:0,kind:'damage',payload:toJson(request)});
+    progress.exhausted=progress.hits.length>=Number(projectile.runtime.maxHits??1);
   }
-  for (const [id, progress] of local) changes.push(createStateChange('entity', id, 'setEntityRuntime', { runtime: { ...state.world.entities[id].runtime, hitTargetIds: progress.hits, exhausted: progress.exhausted } }));
-  return { ...createEmptyPlan(), changes, effects };
+  if(projectile.runtime.weaponTemplate==='mcp_batch'){const burst=planProjectileBurst(context,projectile,impact);changes.push(...burst.changes);effects.push(...burst.effects);progress.exhausted=true;}
+  local.set(projectile.id,progress);
+ }
+ for(const [id,progress]of local){const projectile=state.world.entities[id];changes.push(createStateChange('entity',id,'setEntityRuntime',{runtime:{...projectile.runtime,hitTargetIds:progress.hits,exhausted:progress.exhausted,...(progress.turnAt?{returnPhase:'turnPending'}:{})}}));if(progress.turnAt)changes.push(createStateChange('entity',id,'setEntityKinematics',{position:progress.turnAt,previousPosition:progress.turnAt,velocity:projectile.velocity,facingRadians:projectile.facingRadians}));}
+ return {...createEmptyPlan(),changes,effects};
 }

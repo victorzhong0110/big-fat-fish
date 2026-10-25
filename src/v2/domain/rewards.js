@@ -70,6 +70,6 @@ export function planWorldReward(context, rewardId) {
 export function planTokenCollection(context, pickupId) {
   const state = context.state, pickup = state.world.pickups[pickupId], player = state.world.entities[state.player.entityId];
   if (!pickup || pickup.collected || (pickup.position.x - player.position.x) ** 2 + (pickup.position.y - player.position.y) ** 2 > 40 ** 2) return createEmptyPlan();
-  if (!['riceXp', 'gpuFragment', 'part'].includes(pickup.kind)) throw new Error('Equipment pickups are not available yet');
+  if (!['riceXp', 'gpuFragment', 'part'].includes(pickup.kind)) return createEmptyPlan();
   return { ...createEmptyPlan(), changes: [createStateChange('world', pickupId, 'removePickup', {}), createStateChange('progression', pickupId, 'addCollectedResource', { kind: pickup.kind, amount: pickup.amount })], events: [{ id: `collected:${pickupId}`, runId: state.runId, tick: state.tick, seq: 0, type: 'PickupCollected', sourceId: player.id, targetId: null, payload: { kind: pickup.kind, amount: pickup.amount } }] };
 }

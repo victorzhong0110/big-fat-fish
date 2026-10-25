@@ -14,5 +14,5 @@ import { CONTENT_BINDINGS } from './catalogData.js';
  * @returns {import('../contracts.d.ts').HandlerRegistry}
  */
 export function createHandlerRegistry() {
-  return { bindings: Object.fromEntries(CONTENT_BINDINGS.map(binding => [binding.id, `${binding.module}#${binding.function}`])), implementedIds: ['mcp_bubble', 'mcp_fan', 'skill_cache', 'skill_disconnect', 'enemy_claude_guard', 'enemy_grok_bot', 'plugin_collect', 'plugin_5h', 'plugin_guard', 'plugin_distill', 'dsh_lora', 'dsh_gpt_branch', 'dsh_claude_appeal', 'dsh_claude_allowlist', 'plugin_compress', 'plugin_parallel'] };
+  return { bindings: Object.fromEntries(CONTENT_BINDINGS.map(binding => [binding.id, `${binding.module}#${binding.function}`])), implementedIds: ['mcp_bubble', 'mcp_fan', 'mcp_vector', 'mcp_stream', 'mcp_return', 'mcp_batch', 'skill_cache', 'skill_disconnect', 'enemy_claude_guard', 'enemy_grok_bot', 'plugin_collect', 'plugin_5h', 'plugin_guard', 'plugin_distill', 'dsh_lora', 'dsh_gpt_branch', 'dsh_claude_appeal', 'dsh_claude_allowlist', 'plugin_compress', 'plugin_parallel'] };
 }

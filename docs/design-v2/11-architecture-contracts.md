@@ -1,6 +1,6 @@
 # 11 · V2架构骨架、状态权限与调用规则
 
-状态：**独立战斗试作v2.html已可操作，完整冒险仍未完成**。用户已授权先由Codex编码。189个函数有实现，140个显式TODO；带core-preview标记的实现仅覆盖当前试作。实际范围见[开发进度](13-development-status.md)。旧src/main.js保持独立。
+状态：**独立战斗试作v2.html已可操作，完整冒险仍未完成**。用户已授权先由Codex编码。197个函数有实现，136个显式TODO；带core-preview标记的实现仅覆盖当前试作。实际范围见[开发进度](13-development-status.md)。旧src/main.js保持独立。
 
 入口文档：[全部函数目录](12-function-catalog.md)；入口源码：[bootstrap.js](../../src/v2/bootstrap.js)；类型契约：[contracts.d.ts](../../src/v2/contracts.d.ts)；机器可读依赖与绑定：[architecture-manifest.json](../../src/v2/architecture-manifest.json)。函数目录和manifest列出全部跨模块接口以及逐内容处理器，Grok填写函数体时应保留接口/约束，新增公共函数要同步契约。
 
@@ -32,7 +32,7 @@ flowchart TD
 
 ## 3. 上下游调用如何阅读
 
-当前共88个JS模块、312个具名函数，类型与manifest另列。每个函数都有：具名参数和类型、返回类型、功能描述、阶段、状态权限、允许调用的下游、特殊约束。源码JSDoc的`@calls`与manifest、12目录对应。
+当前共89个JS模块、312个具名函数，类型与manifest另列。每个函数都有：具名参数和类型、返回类型、功能描述、阶段、状态权限、允许调用的下游、特殊约束。源码JSDoc的`@calls`与manifest、12目录对应。
 
 - `sequence`：声明阶段依赖与先后，但需要相应合法性/phase/目标存在等条件。不能把列出的函数不带参数、无条件全部调用。
 - `dispatch`：列出可能分支，按type或稳定id只调用一个对应分支；例如一次MCP射击不能把六把武器处理器全跑。
@@ -116,9 +116,9 @@ ChatGPT重置只走`planGptReset`，绝不能调用checkpoint恢复或创建新S
 
 ## 10. 当前验证与实现修正
 
-- 88个JS模块、329个公开函数：189有实现、140显式TODO。95项处理器绑定与33项声明式数据消费者仍为设计覆盖数量，不能等同于已实现内容数量。
+- 89个JS模块、333个公开函数：197有实现、136显式TODO。95项处理器绑定与33项声明式数据消费者仍为设计覆盖数量，不能等同于已实现内容数量。
 - `npm run check:v2`执行TypeScript 5.9.3 strict/checkJs及AST审计：实际导出、参数、import、函数状态、已实现函数的公开调用边、剩余TODO异常、模块/函数DAG与内容绑定。
-- `npm test`：43文件621项通过，其中V2共231项；双入口构建通过。Chromium桌面/手机触控仿真43项，另12项短途连接检查与17项模组安装检查通过，尚无真人完整冒险验收。
+- `npm test`：44文件638项通过，其中V2共248项；双入口构建通过。Chromium桌面/手机触控仿真43项，另12项短途、23项模组、16项小窝与14项换装检查通过，尚无真人完整冒险验收。
 
 当前实现对原占位契约做了必要补全，详见13：
 
@@ -139,7 +139,7 @@ ChatGPT重置只走`planGptReset`，绝不能调用checkpoint恢复或创建新S
 
 Session的模块私有step/getRecord不导出，但其转达的公开依赖已由AST工具展开到函数图。工具不会因公有函数只调用私有helper，就漏掉它实际进入previewTick的边。snapshot不暴露私有引用；Renderer只画图，不运行另一套物理。
 
-当前Canvas2D是试作表现，正式Phaser适配器仍TODO。registry声明16项实际开放内容能力；目录139项定义包括计划内容，不代表所有参数和效果已实现。完整范围、调试检查点和后续顺序以13为准。
+当前Canvas2D是试作表现，正式Phaser适配器仍TODO。registry声明20项实际开放内容能力；目录140项定义包括计划内容，不代表所有参数和效果已实现。完整范围、调试检查点和后续顺序以13为准。
 
 本批成长接口补全：`createPluginChoice`返回`Result<{choice,nextRandom}>`，候选与随机流必须同一计划提交；`flow.pluginRerollsUsed`保存整局次数，`distillRuntime`独立保存内置冷却，避免移除再装备重置。实际串联顺序与范围见13，LoRA升级面板仍未接通。
 
@@ -148,3 +148,9 @@ Session的模块私有step/getRecord不导出，但其转达的公开依赖已�
 `application/nest.executeNestAction`是小窝消费入口：读取最新档案→拒绝活动检查点→纯领域计划→CAS；冲突重读重算，最多3次。`prepareAdventureStart`验证拥有/能力后复制树与DSH，Session不再读取局外档。体魄只在初始化应用一次；MCP专属输出、换枪触发、伤害保命和无伤CD由各自明确消费者处理，检查点保留全部已用标记/时钟。
 
 社区MCP使用`ContentCatalog.modWeapons`明确注册原生行为模板与所属包；`resolveWeaponTemplate`验证包锁后才分派原生处理器，不把社区ID伪装成95项原版绑定之一。新武器仍走相同命中/额度/暴击/伤害链。SDK1.1仅Free开放，正式Profile继续原版目录。
+
+## 弹体与装备实例增量
+
+`createWeaponProjectile`统一建立原生/并行次级弹的行为快照，`planEntityMotion`推进回旋分段和生命周期，`planCollisionEffects`处理碰撞、一次爆破；`setProjectileLeg`仅可变更真实弹体的攻击段。换程不能使本步已有请求失效。所有爆破仍进入原有damage队列，不能直接扣血。
+
+`PickupState.weapon`是可选完整实例；世界与背包不能同时存在同一instanceId。地面武器只经F/EquipPickup原子换装，不能经Collect吸入。宿主满槽预览暂停世界，确认后恢复并排世界命令，领域重新校验距离/槽位；原实例留地并继续保存CD/更新期限。

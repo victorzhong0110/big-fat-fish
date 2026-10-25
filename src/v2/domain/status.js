@@ -183,6 +183,7 @@ export function planStatusAdvance(context) {
     if (!active.length) changes.push({ target: 'runtime', id: sourceId, operation: 'removeDamageBudget', payload: {} });
     else if (active.length !== entries.length) changes.push({ target: 'runtime', id: sourceId, operation: 'setDamageBudget', payload: { entries: active.map(entry => ({ ...entry })) } });
   }
+  for(const pickup of Object.values(state.world.pickups))if(pickup.kind==='weapon'&&pickup.weapon&&pickup.weapon.cooldown>0)changes.push(createStateChange('world',pickup.id,'putPickup',{...pickup,weapon:{...pickup.weapon,cooldown:decrease(pickup.weapon.cooldown)}}));
   const player = state.world.entities[state.player.entityId], loadout = state.player.loadout;
   const companionBanned = player.statusIds.some(id => state.world.statuses[id]?.kind === 'companionBan');
   const rootExpired = player.statusIds.some(id => expiredStatuses.has(id) && state.world.statuses[id]?.kind === 'root');

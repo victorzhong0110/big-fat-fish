@@ -1,4 +1,5 @@
 // @ts-check
+import { planEquipmentInteraction } from '../equipment.js';
 import { createAdventureMapPlan, planClaudeEncounter } from './adventure.js';
 import { createEmptyPlan } from '../plans.js';
 import { createStateChange } from '../plans.js';
@@ -88,6 +89,7 @@ export function planMapExploration(context) {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @implementationScope adventure-slice
+ * @calls domain/equipment.js#planEquipmentInteraction
  * @calls domain/geometry.js#distanceSquared
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
@@ -100,6 +102,7 @@ export function planMapExploration(context) {
 export function planWorldInteraction(context, command) {
   const state = context.state, player = state.world.entities[state.player.entityId];
   if (state.flow.phase !== 'exploring') return createEmptyPlan();
+  const equipment=planEquipmentInteraction(context);if(equipment)return equipment;
   const candidates = Object.values(state.world.entities).filter(entity => entity.kind === 'objective' && ['cache', 'bossGate'].includes(String(entity.runtime.interaction)) && dependency1.distanceSquared(entity.position, player.position) <= 96 ** 2).sort((a,b)=>dependency1.distanceSquared(a.position,player.position)-dependency1.distanceSquared(b.position,player.position)||(a.id<b.id?-1:1));
   const entity = candidates[0]; if (!entity) return createEmptyPlan();
   if (entity.runtime.interaction === 'bossGate') return planClaudeEncounter(context);

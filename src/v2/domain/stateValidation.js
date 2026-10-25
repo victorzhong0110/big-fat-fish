@@ -81,11 +81,24 @@ export function inspectGameState(state, catalog) {
       if (id !== entity.id || entity.radius < 0 || entity.hp < 0 || entity.maxHp <= 0 || entity.hp > entity.maxHp || !entity.sourceId) reject('Invalid entity', [id]);
       if (entity.dead && (!entity.dying || entity.hp !== 0)) reject('Invalid dead entity', [id]);
       if (!Object.hasOwn(catalog.definitions, entity.definitionId)) reject('Unknown entity definition', [id]);
+      if(entity.kind==='projectile'&&entity.runtime.returnPhase!==undefined){
+        const origin=/** @type {{x?:number;y?:number}|undefined} */(entity.runtime.returnOrigin);
+        if(!['outbound','turnPending','returning'].includes(String(entity.runtime.returnPhase))||!origin||![origin.x,origin.y,entity.runtime.speed,entity.runtime.returnDistance,entity.runtime.returnMaxDistance].every(value=>typeof value==='number'&&Number.isFinite(value))||Number(entity.runtime.speed)<=0||Number(entity.runtime.returnDistance)<=0||Number(entity.runtime.returnMaxDistance)<Number(entity.runtime.returnDistance)||entity.runtime.returnPhase==='returning'&&entity.attackId!==`${entity.id}:return`)reject('Invalid saved returning projectile',[id]);
+      }
+      if(entity.kind==='projectile'&&entity.runtime.blastDamage!==undefined&&(!Number.isFinite(entity.runtime.blastDamage)||Number(entity.runtime.blastDamage)<0||!Number.isFinite(entity.runtime.blastRadius)||Number(entity.runtime.blastRadius)<=0))reject('Invalid saved explosive projectile',[id]);
       if (entity.shell && (entity.shell.hp < 0 || entity.shell.hp > entity.shell.maxHp || entity.shell.broken && entity.shell.hp !== 0 || entity.shell.enraged && !entity.shell.broken)) reject('Invalid shell', [id]);
       if (entity.shieldIds.some(shieldId => !state.world.shields[shieldId]) || entity.statusIds.some(statusId => !state.world.statuses[statusId])) reject('Dangling shield/status', [id]);
     }
     if (state.attackHits.some(hit => !hit.attackId || !state.world.entities[hit.targetId] || !Number.isSafeInteger(hit.expiresAt))) reject('Invalid hit ledger');
     for (const entries of Object.values(state.damageBudgets)) if (entries.some(entry => !Number.isSafeInteger(entry.tick) || entry.tick < 0 || entry.tick > state.tick || entry.spent < 0)) reject('Invalid damage ledger');
+    const instances=new Set(state.player.loadout.weapons.map(weapon=>weapon.instanceId));
+    for(const [id,pickup]of Object.entries(state.world.pickups)){
+      if(pickup.id!==id||!['riceXp','gpuFragment','part','weapon','skill'].includes(pickup.kind)||!Number.isFinite(pickup.amount)||pickup.amount<0||![pickup.position.x,pickup.position.y].every(Number.isFinite)||typeof pickup.collected!=='boolean')reject('Invalid pickup',[id]);
+      if(pickup.kind==='weapon'){
+        const weapon=pickup.weapon;if(!weapon||pickup.instanceId!==weapon.instanceId||instances.has(weapon.instanceId)||!resolveWeaponTemplate(catalog,weapon.definitionId)||![0,1,2].includes(weapon.originalQuality)||!Number.isFinite(weapon.cooldown)||weapon.cooldown<0||weapon.temporaryQuality!==null&&![0,1,2].includes(weapon.temporaryQuality)||weapon.updateExpiresAt!==null&&(!Number.isSafeInteger(weapon.updateExpiresAt)||weapon.updateExpiresAt<0))reject('Invalid ground weapon instance',[id]);
+        if(weapon)instances.add(weapon.instanceId);
+      }
+    }
     const d = state.start.difficulty.level === 'api' ? 15 : state.start.difficulty.level;
     const expected = catalog.mechanics.filter(mechanic => mechanic.unlockAt >= 1 && mechanic.unlockAt <= d).map(mechanic => mechanic.id).sort();
     if (JSON.stringify([...state.start.difficulty.mechanicIds].sort()) !== JSON.stringify(expected)) reject('Difficulty mechanism set differs from cumulative catalog');

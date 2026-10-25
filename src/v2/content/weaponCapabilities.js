@@ -3,13 +3,13 @@
  * @calls 无内部公开函数。
  * @param {Readonly<import('../contracts.d.ts').ContentCatalog>} catalog
  * @param {string} id
- * @returns {'mcp_bubble'|'mcp_fan'|null}
+ * @returns {import('../contracts.d.ts').WeaponTemplateId|null}
  */
 export function resolveWeaponTemplate(catalog, id) {
   if (catalog.definitions[id]?.kind !== 'weapon') return null;
-  if (id === 'mcp_bubble' || id === 'mcp_fan') return id;
+  if (['mcp_bubble','mcp_fan','mcp_vector','mcp_stream','mcp_return','mcp_batch'].includes(id)) return /** @type {import('../contracts.d.ts').WeaponTemplateId} */(id);
   const recipe = catalog.modWeapons?.[id];
-  return recipe && (recipe.templateId === 'mcp_bubble' || recipe.templateId === 'mcp_fan') && catalog.modLock?.some(pack => pack.id === recipe.packId) ? recipe.templateId : null;
+  return recipe && ['mcp_bubble','mcp_fan','mcp_vector','mcp_stream','mcp_return','mcp_batch'].includes(recipe.templateId) && catalog.modLock?.some(pack => pack.id === recipe.packId) ? recipe.templateId : null;
 }
 
 /** List only weapons whose native behavior can actually run in this runtime.
