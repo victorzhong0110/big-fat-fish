@@ -1,6 +1,6 @@
 # 11 · V2架构骨架、状态权限与调用规则
 
-状态：**独立战斗试作v2.html已可操作，完整冒险仍未完成**。用户已授权先由Codex编码。153个函数有实现，159个显式TODO；带core-preview标记的实现仅覆盖当前试作。实际范围见[开发进度](13-development-status.md)。旧src/main.js保持独立。
+状态：**独立战斗试作v2.html已可操作，完整冒险仍未完成**。用户已授权先由Codex编码。178个函数有实现，142个显式TODO；带core-preview标记的实现仅覆盖当前试作。实际范围见[开发进度](13-development-status.md)。旧src/main.js保持独立。
 
 入口文档：[全部函数目录](12-function-catalog.md)；入口源码：[bootstrap.js](../../src/v2/bootstrap.js)；类型契约：[contracts.d.ts](../../src/v2/contracts.d.ts)；机器可读依赖与绑定：[architecture-manifest.json](../../src/v2/architecture-manifest.json)。函数目录和manifest列出全部跨模块接口以及逐内容处理器，Grok填写函数体时应保留接口/约束，新增公共函数要同步契约。
 
@@ -32,7 +32,7 @@ flowchart TD
 
 ## 3. 上下游调用如何阅读
 
-当前共81个JS模块、312个具名函数，类型与manifest另列。每个函数都有：具名参数和类型、返回类型、功能描述、阶段、状态权限、允许调用的下游、特殊约束。源码JSDoc的`@calls`与manifest、12目录对应。
+当前共84个JS模块、312个具名函数，类型与manifest另列。每个函数都有：具名参数和类型、返回类型、功能描述、阶段、状态权限、允许调用的下游、特殊约束。源码JSDoc的`@calls`与manifest、12目录对应。
 
 - `sequence`：声明阶段依赖与先后，但需要相应合法性/phase/目标存在等条件。不能把列出的函数不带参数、无条件全部调用。
 - `dispatch`：列出可能分支，按type或稳定id只调用一个对应分支；例如一次MCP射击不能把六把武器处理器全跑。
@@ -116,9 +116,9 @@ ChatGPT重置只走`planGptReset`，绝不能调用checkpoint恢复或创建新S
 
 ## 10. 当前验证与实现修正
 
-- 81个JS模块、312个公开函数：153有实现、159显式TODO。95项处理器绑定与33项声明式数据消费者仍为设计覆盖数量，不能等同于已实现内容数量。
+- 84个JS模块、320个公开函数：178有实现、142显式TODO。95项处理器绑定与33项声明式数据消费者仍为设计覆盖数量，不能等同于已实现内容数量。
 - `npm run check:v2`执行TypeScript 5.9.3 strict/checkJs及AST审计：实际导出、参数、import、函数状态、已实现函数的公开调用边、剩余TODO异常、模块/函数DAG与内容绑定。
-- `npm test`：39文件557项通过，其中V2共167项；双入口构建通过。Chromium桌面/手机触控仿真40项通过，尚无真人完整冒险验收。
+- `npm test`：42文件601项通过，其中V2共211项；双入口构建通过。Chromium桌面/手机触控仿真43项，另12项短途连接检查与17项模组安装检查通过，尚无真人完整冒险验收。
 
 当前实现对原占位契约做了必要补全，详见13：
 

@@ -60,9 +60,10 @@ export function deriveWeaponStats(state, weapon, catalog) {
   const player = derivePlayerStats(state, catalog);
   const topUpdate = updated && weapon.originalQuality === 2 ? 1.2 : 1;
   const underfit = state.lora.underfitRemaining > 0 ? 0.8 : 1;
-  return { damage: Number(p.damage) * qualityMultiplier * player.damageMultiplier * topUpdate * underfit,
+  const compress=state.plugins.find(plugin=>plugin.id==='plugin_compress');
+  return { damage: (compress?compress.rank===1?1.3:1.45:1)*Number(p.damage) * qualityMultiplier * player.damageMultiplier * topUpdate * underfit,
     interval: resolveStatModifier(Number(p.interval), modifiers.filter(modifier => modifier.stat === 'weaponInterval'), 0.05, Number.MAX_SAFE_INTEGER),
-    projectileSpeed: Number(p.projectileSpeed), projectileRadius: Number(p.projectileRadius), pellets: Number(p.pellets), spreadRadians: Number(p.spreadRadians), range: Number(p.range), maxHits: Number(p.maxHits), damageMultiplierApplied: true,
+    projectileSpeed: Number(p.projectileSpeed), projectileRadius: Number(p.projectileRadius), pellets: Number(p.pellets), spreadRadians: Number(p.spreadRadians), range: Number(p.range)*(compress?0.75:1), maxHits: Number(p.maxHits), damageMultiplierApplied: true,
   };
 }
 

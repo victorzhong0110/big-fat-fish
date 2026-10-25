@@ -1,4 +1,8 @@
 // @ts-check
+import { mountModManager } from './modManager.js';
+import { createStoragePort } from '../adapters/storage.js';
+import { readProfileRepository, commitProfilePlan, mergePersistenceIntents } from '../application/repository.js';
+import { createSettlement } from '../domain/settlement.js';
 import { loadContentCatalog, validateContentCatalog } from '../content/catalog.js';
 import { createHandlerRegistry } from '../content/registry.js';
 import { resolveDifficultySnapshot } from '../domain/difficulty.js';
@@ -7,9 +11,13 @@ import { canCreateCheckpoint, createCheckpoint } from '../domain/checkpoint.js';
 import { createGameSession, enqueueSessionCommand, readSessionState, readSessionView, stepSessionWorld, stepSessionUi, restoreGameSession, disposeGameSession } from '../engine/session.js';
 import { getPreviewCamera, renderPreviewFrame } from './view.js';
 
-/** Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,
- * not the unfinished permanent Profile economy. Returns complete listener/RAF cleanup.
- * @implementationScope core-preview
+/** Mount opt-in Free practice and the Pro1 Claude slice. Practice/modded checkpoints
+ * are isolated; the adventure uses transactional permanent Profile storage. Returns cleanup.
+ * @implementationScope core-preview + adventure-slice
+ * @calls adapters/storage.js#createStoragePort
+ * @calls application/repository.js#commitProfilePlan
+ * @calls application/repository.js#mergePersistenceIntents
+ * @calls application/repository.js#readProfileRepository
  * @calls content/catalog.js#loadContentCatalog
  * @calls content/catalog.js#validateContentCatalog
  * @calls content/registry.js#createHandlerRegistry
@@ -19,6 +27,7 @@ import { getPreviewCamera, renderPreviewFrame } from './view.js';
  * @calls domain/clock.js#resumeClock
  * @calls domain/clock.js#scheduleFrame
  * @calls domain/difficulty.js#resolveDifficultySnapshot
+ * @calls domain/settlement.js#createSettlement
  * @calls engine/session.js#createGameSession
  * @calls engine/session.js#disposeGameSession
  * @calls engine/session.js#enqueueSessionCommand
@@ -27,6 +36,7 @@ import { getPreviewCamera, renderPreviewFrame } from './view.js';
  * @calls engine/session.js#restoreGameSession
  * @calls engine/session.js#stepSessionUi
  * @calls engine/session.js#stepSessionWorld
+ * @calls preview/modManager.js#mountModManager
  * @calls preview/view.js#getPreviewCamera
  * @calls preview/view.js#renderPreviewFrame
  * @param {string} mountElementId
@@ -40,9 +50,13 @@ export function mountCombatPreview(mountElementId) {
   const canvas=/** @type {HTMLCanvasElement} */(node('sea'));
   const context=canvas.getContext('2d');if(!context)throw new Error('Canvas2D unavailable');
   const ctx=context;
-  const catalog=loadContentCatalog(),registry=createHandlerRegistry(),report=validateContentCatalog(catalog,registry);
+  const baseCatalog=loadContentCatalog(),registry=createHandlerRegistry(),report=validateContentCatalog(baseCatalog,registry);
+  let catalog=baseCatalog;
   if(!report.valid)throw new Error(report.diagnostics.map(item=>item.message).join('; '));
-  const checkpointKey='big-fat-fish:v2-combat-preview:checkpoint';
+  let checkpointKey='big-fat-fish:v2-combat-preview:checkpoint';
+  const profilePort=createStoragePort('big-fat-fish:v2:profile');
+  let profileRecord=/** @type {import('../contracts.d.ts').StorageRecord|null} */(null),profileWorking=false,profileFailed=false,settledRunId='',formal=false,escapePressing=false;
+  const pendingPersistence=/** @type {import('../contracts.d.ts').PersistenceIntent[]} */([]);
   let session=/** @type {import('../contracts.d.ts').GameSession|null} */(null);
   let view=/** @type {import('../contracts.d.ts').RenderSnapshot|null} */(null);
   let clock=createClockState(),lastTime=0,sequence=0,frameId=0,disposed=false,saveRequested=false;
@@ -55,8 +69,8 @@ export function mountCombatPreview(mountElementId) {
   /** @param {EventTarget} target @param {string} type @param {EventListener} listener @param {boolean} capture */
   function on(target,type,listener,capture=false){target.addEventListener(type,listener,capture);removers.push(()=>target.removeEventListener(type,listener,capture));}
   /** @param {string} message */
-  function toast(message){node('toast').textContent=message;node('toast').classList.add('visible');toastUntil=performance.now()+3800;}
-  function clearInput(){for(const reset of stickResetters)reset();keys.clear();mouseFiring=false;stickFiring=false;leftMove={x:0,y:0};lastInput='';node('left-stick').querySelector('span')?.removeAttribute('style');node('right-stick').querySelector('span')?.removeAttribute('style');}
+  function toast(message){if(disposed)return;node('toast').textContent=message;node('toast').classList.add('visible');toastUntil=performance.now()+3800;}
+  function clearInput(){escapePressing=false;for(const reset of stickResetters)reset();keys.clear();mouseFiring=false;stickFiring=false;leftMove={x:0,y:0};lastInput='';node('left-stick').querySelector('span')?.removeAttribute('style');node('right-stick').querySelector('span')?.removeAttribute('style');}
   /** @param {string} type @param {import('../contracts.d.ts').Json} payload @param {'world'|'ui'} domain @returns {boolean} */
   function send(type,payload={},domain='world'){
     if(!session)return false;
@@ -73,41 +87,66 @@ export function mountCombatPreview(mountElementId) {
   /** @param {string} type @param {string|null} optionId */
   function choose(type,optionId=null){if(!session)return;const choice=readSessionState(session).flow.choice;if(!choice)return;clearInput();if(send(type,{choiceId:choice.id,optionId},'ui'))stepSessionUi(session,false);clock=resumeClock(clock);lastTime=performance.now();canvas.focus();}
   /** @param {readonly import('../contracts.d.ts').DomainEvent[]} events */
-  function showEvents(events){for(const event of events){if(event.type==='LoraResolved'){const p=/** @type {{result:string;actualDelta:number}} */(event.payload);toast(`${p.result==='perfect'?'完美训练！':p.result==='underfit'?'欠拟合':'过拟合'} 属性变化 ${p.actualDelta>0?'+':''}${Number(p.actualDelta.toFixed(3))}`);}else if(event.type==='DshCycleResolved'){toast(/** @type {{outcome:string}} */(event.payload).outcome==='update'?'更新！当前 MCP 强化28秒。':'重置！装备技能和冲刺冷却已清零。');}}}
+  function showEvents(events){for(const event of events){if(event.type==='LoraResolved'){const p=/** @type {{result:string;actualDelta:number}} */(event.payload);toast(`${p.result==='perfect'?'完美训练！':p.result==='underfit'?'欠拟合':'过拟合'} 属性变化 ${p.actualDelta>0?'+':''}${Number(p.actualDelta.toFixed(3))}`);}else if(event.type==='ObjectiveCompleted'){toast('信标已点亮！占领任意两个即可挑战首领。');}else if(event.type==='ContentDiscovered'){toast('发现扇面 MCP，按Q切换试试。');}else if(event.type==='DshCycleResolved'){toast(/** @type {{outcome:string}} */(event.payload).outcome==='update'?'更新！当前 MCP 强化28秒。':'重置！装备技能和冲刺冷却已清零。');}}}
   /** @param {boolean} release */
   function train(release=false){if(!session)return;const state=readSessionState(session),trial=state.lora.active;if(!trial)return;if(!release&&state.flow.phase!=='loraTraining')return;const type=release?'ReleaseTraining':trial.phase==='ready'?'StartTraining':'ConfirmTraining';if(send(type,{trialId:trial.id,edge:release?'release':'press',repeat:false},'ui')){const result=stepSessionUi(session,false);showEvents(result.events);if(result.next.flow.phase!==state.flow.phase||result.next.lora.active?.phase!==trial.phase){clock=resumeClock(clock);lastTime=performance.now();}}}
-  function refreshContinue(){try{node('continue').toggleAttribute('disabled',!localStorage.getItem(checkpointKey));}catch{node('continue').setAttribute('disabled','');}}
+  const mods=mountModManager(node('mods-manager'),baseCatalog,toast);removers.push(()=>mods.dispose());
+  function selectCatalog(adventure=false){catalog=adventure?baseCatalog:mods.getCatalog();checkpointKey=catalog.modLock?.length?`big-fat-fish:v2-combat-preview:checkpoint:${catalog.version}`:'big-fat-fish:v2-combat-preview:checkpoint';}
+  function refreshContinue(){try{const adventure=/** @type {HTMLSelectElement} */(node('mode-select')).value==='short';if(!session)selectCatalog(adventure);node('continue').toggleAttribute('disabled',adventure?!profileRecord?.profile.checkpoint:!localStorage.getItem(checkpointKey));}catch{node('continue').setAttribute('disabled','');}}
+  function updateWallet(){if(disposed)return;node('wallet').textContent=profileRecord?`小窝 · 算力卡 ${profileRecord.profile.gpuCards} · 碎片 ${profileRecord.profile.gpuFragments}/5 · 零件 ${profileRecord.profile.parts}`:'小窝档案暂不可用';refreshContinue();}
+  async function loadProfile(){const result=await readProfileRepository(profilePort,baseCatalog);if(result.ok)profileRecord=result.value;else toast(`小窝档案读取失败：${result.message}`);updateWallet();}
+  async function flushProfile(){
+    if(profileWorking||!pendingPersistence.length)return;profileWorking=true;profileFailed=false;
+    const batch=[...pendingPersistence];
+    try{for(let attempt=0;attempt<3;attempt++){
+      const current=await readProfileRepository(profilePort,baseCatalog);if(!current.ok)throw new Error(current.message);
+      const plan=mergePersistenceIntents(current.value.profile,batch,baseCatalog);if(!plan.ok)throw new Error(plan.message);
+      const committed=await commitProfilePlan(profilePort,plan.value,baseCatalog);if(!committed.ok){if(committed.code==='REVISION_CONFLICT')continue;throw new Error(committed.message);}
+      profileRecord=committed.value;const ids=new Set(batch.map(intent=>intent.id));for(let i=pendingPersistence.length-1;i>=0;i--)if(ids.has(pendingPersistence[i].id))pendingPersistence.splice(i,1);
+      if(session&&profileRecord.profile.settlementLedger.includes(`settlement:${session.runId}`))settledRunId=session.runId;
+      updateWallet();return;
+    }throw new Error('档案正在被另一个页面更新，请重试。');}catch(error){profileFailed=true;pause();toast(`收获尚未保存：${error instanceof Error?error.message:String(error)}`);}finally{profileWorking=false;}
+  }
   /** @param {boolean} restore */
-  function begin(restore=false){
+  async function begin(restore=false){
+    if(profileWorking||pendingPersistence.length)return;
+    let replacement=/** @type {import('../contracts.d.ts').GameSession|null} */(null);
+    node('start').setAttribute('disabled','');node('continue').setAttribute('disabled','');
     try{
-      let replacement;
-      if(restore){
-        const raw=localStorage.getItem(checkpointKey);if(!raw){toast('还没有保存的检查点。');return;}
-        const result=restoreGameSession(JSON.parse(raw),catalog);
-        if(!result.ok){toast(`无法继续：${result.message}。原存档已保留。`);return;}
-        replacement=result.value;
+      const adventure=/** @type {HTMLSelectElement} */(node('mode-select')).value==='short';selectCatalog(adventure);
+      if(adventure){const record=await readProfileRepository(profilePort,baseCatalog);if(!record.ok)throw new Error(record.message);profileRecord=record.value;
+        if(restore){if(!record.value.profile.checkpoint)throw new Error('还没有保存的冒险');const result=restoreGameSession(record.value.profile.checkpoint,catalog);if(!result.ok)throw new Error(result.message);replacement=result.value;}
+        else{
+          if(record.value.profile.checkpoint)throw new Error('请先继续或放弃现有冒险');
+          const seed=Number(/** @type {HTMLInputElement} */(node('seed')).value);if(!Number.isSafeInteger(seed)||seed<0||seed>0xffffffff)throw new Error('请输入有效整数种子');
+          const difficulty=resolveDifficultySnapshot({mode:'short',difficulty:1,seed,weaponIds:['mcp_bubble'],skillId:'skill_disconnect',companionId:null},catalog);if(!difficulty.ok)throw new Error(difficulty.message);
+          const runId=`adventure:${Array.from(crypto.getRandomValues(new Uint32Array(4)),value=>value.toString(16).padStart(8,'0')).join('')}`;
+          replacement=createGameSession({runtimeProfile:'adventure-slice',runId,treeNodeIds:[],dsh:[],difficulty:difficulty.value,loadout:{weapons:[{instanceId:`${runId}:bubble`,definitionId:'mcp_bubble',originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null}],activeWeaponIndex:0,skillId:'skill_disconnect',skillCooldown:0,companionId:null,companionCooldown:0,dashCooldown:0}},seed,catalog);
+          const checkpoint=createCheckpoint(readSessionState(replacement)),plan=mergePersistenceIntents(record.value.profile,[{id:checkpoint.id,kind:'checkpoint',payload:/** @type {import('../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(checkpoint)))}],catalog);if(!plan.ok)throw new Error(plan.message);const saved=await commitProfilePlan(profilePort,plan.value,baseCatalog);if(!saved.ok)throw new Error(saved.message);profileRecord=saved.value;
+        }
+      }else if(restore){
+        const raw=localStorage.getItem(checkpointKey);if(!raw)throw new Error('还没有保存的检查点');const result=restoreGameSession(JSON.parse(raw),catalog);if(!result.ok)throw new Error(result.message);replacement=result.value;
       }else{
-        const seed=Number(/** @type {HTMLInputElement} */(node('seed')).value);
-        if(!Number.isSafeInteger(seed)||seed<0||seed>0xffffffff){toast('请输入 0–4294967295 的整数种子。');return;}
-        const difficulty=resolveDifficultySnapshot({mode:'tutorial',difficulty:0,seed,weaponIds:['mcp_bubble','mcp_fan'],skillId:'skill_cache',companionId:null},catalog);
-        if(!difficulty.ok)throw new Error(difficulty.message);
+        const seed=Number(/** @type {HTMLInputElement} */(node('seed')).value);if(!Number.isSafeInteger(seed)||seed<0||seed>0xffffffff)throw new Error('请输入有效整数种子');
+        const difficulty=resolveDifficultySnapshot({mode:'tutorial',difficulty:0,seed,weaponIds:['mcp_bubble','mcp_fan'],skillId:'skill_cache',companionId:null},catalog);if(!difficulty.ok)throw new Error(difficulty.message);
         const skillId=/** @type {HTMLSelectElement} */(node('skill-select')).value;
-        replacement=createGameSession({runtimeProfile:'core-preview',runId:`preview:${Array.from(crypto.getRandomValues(new Uint32Array(4)), value => value.toString(16).padStart(8, '0')).join('')}`,treeNodeIds:[],dsh:/** @type {HTMLSelectElement} */(node('dsh-select')).value?[{id:/** @type {HTMLSelectElement} */(node('dsh-select')).value,options:{}}]:[],difficulty:difficulty.value,loadout:{weapons:['bubble','fan'].map(name=>({instanceId:`mcp:${name}`,definitionId:`mcp_${name}`,originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null})),activeWeaponIndex:0,skillId,skillCooldown:0,companionId:null,companionCooldown:0,dashCooldown:0}},seed,catalog);
+        replacement=createGameSession({modLock:catalog.modLock??[],runtimeProfile:'core-preview',runId:`preview:${Array.from(crypto.getRandomValues(new Uint32Array(4)),value=>value.toString(16).padStart(8,'0')).join('')}`,treeNodeIds:[],dsh:/** @type {HTMLSelectElement} */(node('dsh-select')).value?[{id:/** @type {HTMLSelectElement} */(node('dsh-select')).value,options:{}}]:[],difficulty:difficulty.value,loadout:{weapons:['bubble','fan'].map(name=>({instanceId:`mcp:${name}`,definitionId:`mcp_${name}`,originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null})),activeWeaponIndex:0,skillId,skillCooldown:0,companionId:null,companionCooldown:0,dashCooldown:0}},seed,catalog);
       }
-      if(session)disposeGameSession(session);session=replacement;sequence=readSessionState(session).lastCommandSeq+1;
+      if(session)disposeGameSession(session);session=replacement;replacement=null;formal=adventure;settledRunId='';profileFailed=false;sequence=readSessionState(session).lastCommandSeq+1;
       displayedChoice='';displayedTrial='';node('lora-menu').classList.add('hidden');node('plugin-menu').classList.add('hidden');view=readSessionView(session);clock=createClockState();lastTime=performance.now();clearInput();popups=[];saveRequested=false;
-      node('menu').classList.add('hidden');node('hud').classList.remove('hidden');node('controls').classList.remove('hidden');mount?.classList.add('started');
-      if(restore)toast('已恢复到检查点原进度。点击“继续游”恢复战斗。');else toast('起点的饭盆是检查点。WASD 移动，按住左键射击。');
-      canvas.focus();
-    }catch(error){toast(`未能开始：${error instanceof Error?error.message:String(error)}`);}
+      node('menu').classList.add('hidden');node('hud').classList.remove('hidden');node('controls').classList.remove('hidden');mount?.classList.add('started');node('mods-panel').classList.add('hidden');updateWallet();
+      toast(restore?'已恢复原进度，点击继续才开始。':formal?'占领任意两个信标，前往右下方首领入口。F交互，R保存检查点。':'WASD移动，鼠标射击。F交互，R保存起点检查点。');canvas.focus();
+    }catch(error){if(replacement)disposeGameSession(replacement);toast(`未能开始：${error instanceof Error?error.message:String(error)}`);}finally{node('start').removeAttribute('disabled');refreshContinue();}
   }
   function save(){
-    if(!session)return;
-    const snapshot=readSessionState(session);
-    const validation=canCreateCheckpoint({state:snapshot,catalog,event:null,entityId:null,random:snapshot.random.world});
-    if(!validation.valid){toast(validation.diagnostics.map(item=>item.message).join('；').replace('Move within 96 units of a checkpoint','请回到起点检查点附近').replace('Threats or pressure events are still active','附近仍有敌人或在途攻击'));return;}
-    try{localStorage.setItem(checkpointKey,JSON.stringify(createCheckpoint(snapshot)));refreshContinue();toast('检查点已保存，生命、冷却和战斗进度原样保留。');}catch{toast('保存失败，原存档未被主动清除。请检查浏览器存储空间。');}
+    if(!session)return;const snapshot=readSessionState(session),validation=canCreateCheckpoint({state:snapshot,catalog,event:null,entityId:null,random:snapshot.random.world});
+    if(!validation.valid){toast(validation.diagnostics.map(item=>item.message).join('；').replace('Move within 96 units of a checkpoint','请靠近检查点').replace('Threats or pressure events are still active','附近仍有敌人或在途攻击'));return;}
+    const checkpoint=createCheckpoint(snapshot);
+    if(formal){pendingPersistence.push({id:checkpoint.id,kind:'checkpoint',payload:/** @type {import('../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(checkpoint)))});void flushProfile().then(()=>{if(!profileFailed)toast('冒险检查点已保存，生命和冷却原样保留。');});return;}
+    try{localStorage.setItem(checkpointKey,JSON.stringify(checkpoint));refreshContinue();toast('检查点已保存，生命、冷却和战斗进度原样保留。');}catch{toast('保存失败，原存档已保留。');}
   }
+  /** @param {boolean} release */
+  function escape(release=false){if(!session)return;const state=readSessionState(session),player=state.world.entities[state.player.entityId];if(!release&&!player.statusIds.some(id=>state.world.statuses[id]?.kind==='root'))return;escapePressing=!release;send(release?'ReleaseEscape':'EscapePress',{edge:release?'release':'press',repeat:false});}
   function requestSave(){clearInput();saveRequested=true;}
   /** @param {MouseEvent|PointerEvent} event */
   function aimFromPointer(event){if(!view)return;const rect=canvas.getBoundingClientRect(),camera=getPreviewCamera(view,rect.width,rect.height),player=view.entities.find(entity=>entity.kind==='player');if(!player)return;const dx=(event.clientX-rect.left)/camera.scale+camera.x-player.position.x,dy=(event.clientY-rect.top)/camera.scale+camera.y-player.position.y,mag=Math.hypot(dx,dy);if(mag>0)aim={x:dx/mag,y:dy/mag};}
@@ -116,7 +155,7 @@ export function mountCombatPreview(mountElementId) {
     const pad=node(id),knob=pad.querySelector('span');let pointer=/** @type {number|null} */(null),origin={x:0,y:0};
     /** @param {PointerEvent} event */
     const update=event=>{if(event.pointerId!==pointer)return;let dx=event.clientX-origin.x,dy=event.clientY-origin.y;const magnitude=Math.hypot(dx,dy),limit=33;if(magnitude>limit){dx*=limit/magnitude;dy*=limit/magnitude;}if(knob instanceof HTMLElement)knob.style.transform=`translate(${dx}px,${dy}px)`;const norm=Math.hypot(dx,dy);if(movement)leftMove=norm>5?{x:dx/norm,y:dy/norm}:{x:0,y:0};else{if(norm>5)aim={x:dx/norm,y:dy/norm};stickFiring=norm>5;}};
-    on(pad,'pointerdown',event=>{const e=/** @type {PointerEvent} */(event);if(!session||readSessionState(session).flow.phase!=='exploring'||pointer!==null)return;e.preventDefault();e.stopPropagation();pointer=e.pointerId;const bounds=pad.getBoundingClientRect();origin={x:bounds.left+bounds.width/2,y:bounds.top+bounds.height/2};pad.setPointerCapture(pointer);update(e);});
+    on(pad,'pointerdown',event=>{const e=/** @type {PointerEvent} */(event);if(!session||!['exploring','boss'].includes(readSessionState(session).flow.phase)||pointer!==null)return;e.preventDefault();e.stopPropagation();pointer=e.pointerId;const bounds=pad.getBoundingClientRect();origin={x:bounds.left+bounds.width/2,y:bounds.top+bounds.height/2};pad.setPointerCapture(pointer);update(e);});
     on(pad,'pointermove',event=>update(/** @type {PointerEvent} */(event)));
     const release=/** @type {EventListener} */(event=>{const e=/** @type {PointerEvent} */(event);if(e.pointerId!==pointer)return;pointer=null;if(knob instanceof HTMLElement)knob.style.transform='';if(movement)leftMove={x:0,y:0};else stickFiring=false;});
     on(pad,'pointerup',release);on(pad,'pointercancel',release);on(pad,'lostpointercapture',release);
@@ -124,8 +163,13 @@ export function mountCombatPreview(mountElementId) {
     removers.push(()=>{pointer=null;});
   }
   attachStick('left-stick',true);attachStick('right-stick',false);
+  on(node('escape-assist'),'change',()=>canvas.focus());
+  on(node('escape-input'),'pointerdown',event=>{blockTrainingClick=true;event.preventDefault();escape(false);});on(window,'pointerup',()=>{if(escapePressing)escape(true);});
+  on(node('mods-manager'),'modschange',()=>refreshContinue());
+  on(node('mode-select'),'change',()=>{const adventure=/** @type {HTMLSelectElement} */(node('mode-select')).value==='short';if(adventure){/** @type {HTMLSelectElement} */(node('skill-select')).value='skill_disconnect';/** @type {HTMLSelectElement} */(node('dsh-select')).value='';}node('skill-select').toggleAttribute('disabled',adventure);node('dsh-select').toggleAttribute('disabled',adventure);refreshContinue();});on(node('retry-profile'),'click',()=>{void flushProfile();});on(node('interact'),'click',()=>{send('Interact');});
+  on(node('abandon'),'click',()=>{if(send('Abandon',{},'ui')&&session)stepSessionUi(session,false);});
   on(node('start'),'click',()=>begin(false));on(node('continue'),'click',()=>begin(true));on(node('pause'),'click',()=>session&&readSessionState(session).flow.phase==='paused'?resume():pause());on(node('resume'),'click',()=>resume());
-  on(node('restart'),'click',()=>{if(session)disposeGameSession(session);session=null;view=null;displayedChoice='';displayedTrial='';node('lora-menu').classList.add('hidden');node('plugin-menu').classList.add('hidden');clearInput();node('menu').classList.remove('hidden');node('pause-menu').classList.add('hidden');node('hud').classList.add('hidden');node('controls').classList.add('hidden');mount?.classList.remove('started');refreshContinue();});
+  on(node('restart'),'click',()=>{if(formal&&session&&settledRunId!==session.runId){pause();return;}if(session)disposeGameSession(session);session=null;view=null;displayedChoice='';displayedTrial='';node('lora-menu').classList.add('hidden');node('plugin-menu').classList.add('hidden');clearInput();node('menu').classList.remove('hidden');node('pause-menu').classList.add('hidden');node('hud').classList.add('hidden');node('controls').classList.add('hidden');mount?.classList.remove('started');node('mods-panel').classList.remove('hidden');refreshContinue();});
   on(window,'pointerdown',()=>{blockTrainingClick=false;},true);on(window,'click',event=>{if(blockTrainingClick&&/** @type {MouseEvent} */(event).detail>0){blockTrainingClick=false;event.preventDefault();event.stopImmediatePropagation();}},true);
   on(node('training-input'),'pointerdown',event=>{blockTrainingClick=true;event.preventDefault();train(false);});on(window,'pointerup',()=>train(true));on(node('training-input'),'click',event=>{if(/** @type {MouseEvent} */(event).detail===0){train(false);train(true);}});
   on(node('plugin-reroll'),'click',()=>choose('RerollPlugin'));on(node('plugin-skip'),'click',()=>choose('SkipPlugin'));
@@ -133,9 +177,9 @@ export function mountCombatPreview(mountElementId) {
   on(window,'keydown',event=>{const e=/** @type {KeyboardEvent} */(event);if(!session||e.target instanceof HTMLInputElement||e.target instanceof HTMLSelectElement)return;const key=e.code;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(key))e.preventDefault();if(e.repeat)return;
     if(key==='Escape'){readSessionState(session).flow.phase==='paused'?resume():pause();return;}keys.add(key);
     if(key==='Space'&&readSessionState(session).flow.phase==='loraTraining'){train(false);return;}
-    if(key==='Space')send('Dash');else if(key==='KeyE')send('Skill');else if(key==='KeyQ')send('SwitchWeapon');else if(key==='KeyF')requestSave();
+    if(key==='Space'){const state=readSessionState(session);if(state.world.entities[state.player.entityId].statusIds.some(id=>state.world.statuses[id]?.kind==='root'))escape(false);else send('Dash');}else if(key==='KeyE')send('Skill');else if(key==='KeyQ')send('SwitchWeapon');else if(key==='KeyF')send('Interact');else if(key==='KeyR')requestSave();
   });
-  on(window,'keyup',event=>{const key=/** @type {KeyboardEvent} */(event).code;keys.delete(key);if(key==='Space')train(true);});
+  on(window,'keyup',event=>{const key=/** @type {KeyboardEvent} */(event).code;keys.delete(key);if(key==='Space'){train(true);if(escapePressing)escape(true);}});
   on(canvas,'pointermove',event=>{const e=/** @type {PointerEvent} */(event);if(e.pointerType==='mouse')aimFromPointer(e);});
   on(canvas,'pointerdown',event=>{const e=/** @type {PointerEvent} */(event);if(e.pointerType==='mouse'&&e.button===0){aimFromPointer(e);mouseFiring=true;canvas.focus();}});
   on(window,'pointerup',event=>{if(/** @type {PointerEvent} */(event).pointerType==='mouse')mouseFiring=false;});
@@ -148,19 +192,20 @@ export function mountCombatPreview(mountElementId) {
       if(canvas.width!==Math.round(width*ratio)||canvas.height!==Math.round(height*ratio)){canvas.width=Math.round(width*ratio);canvas.height=Math.round(height*ratio);}
       if(session){
         const frameState=readSessionState(session);
-        if(frameState.flow.phase==='exploring'){
+        if(['exploring','boss'].includes(frameState.flow.phase)){
           const move={x:(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)+leftMove.x,y:(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-(keys.has('KeyW')||keys.has('ArrowUp')?1:0)+leftMove.y};
-          const sample={move,aim,firing:mouseFiring||stickFiring},encoded=JSON.stringify(sample);if(encoded!==lastInput&&send('SetInput',sample))lastInput=encoded;
+          const camera=view?getPreviewCamera(view,width,height):{x:0,y:0,scale:1};const sample={move,aim,firing:mouseFiring||stickFiring,viewport:{width:width/camera.scale,height:height/camera.scale}},encoded=JSON.stringify(sample);if(encoded!==lastInput&&send('SetInput',sample))lastInput=encoded;
         }
         const state=frameState,schedule=scheduleFrame(clock,lastTime?Math.max(0,now-lastTime):0,state.flow.phase);clock=schedule.nextClock;
         if(schedule.performancePause){pause();toast('帧积压较多，已暂停。继续时不会快进战斗。');}
         for(let index=0;index<schedule.worldSteps;index++){
-          const result=stepSessionWorld(session);showEvents(result.events);
+          if(escapePressing&&/** @type {HTMLInputElement} */(node('escape-assist')).checked){const state=readSessionState(session),player=state.world.entities[state.player.entityId];if(player.statusIds.some(id=>state.world.statuses[id]?.kind==='root')&&state.tick-Number(player.runtime.lastEscapeAt??0)>=12)send('EscapeHeld',{edge:'held',repeat:false});}
+          const result=stepSessionWorld(session);showEvents(result.events);if(formal)pendingPersistence.push(...result.persistence);
           for(const event of result.events)if(event.type==='DamageResolved'){
             const p=/** @type {{hpDamage:number;shellDamage:number;shieldDamage:number}} */(event.payload),entity=event.targetId?result.next.world.entities[event.targetId]:null;
             if(entity&&p.hpDamage+p.shellDamage>0)popups.push({x:entity.position.x,y:entity.position.y,amount:p.hpDamage+p.shellDamage,tick:result.next.tick});
           }
-          if(result.next.flow.phase!=='exploring')break;
+          if(!['exploring','boss'].includes(result.next.flow.phase))break;
         }
         for(let index=0;index<schedule.uiSteps;index++){const result=stepSessionUi(session,true);showEvents(result.events);if(result.next.flow.phase!=='loraTraining'||result.next.lora.active?.phase!=='running')break;}
         if(saveRequested){const pending=readSessionState(session);if(pending.flow.phase!=='exploring'||!pending.input.firing&&!pending.input.move.x&&!pending.input.move.y){saveRequested=false;save();}}
@@ -186,17 +231,27 @@ export function mountCombatPreview(mountElementId) {
         node('level').textContent=String(growth.level);node('growth-label').textContent=growth.level>=16?'本模式等级已满':`${growth.xpRemainder} / ${20+10*growth.level}`;
         node('plugins-label').textContent=growth.plugins.map(plugin=>`${catalog.definitions[plugin.id].displayName}${plugin.rank}`).join(' · ');
         node('distill-label').textContent=growth.plugins.some(plugin=>plugin.id==='plugin_distill')?`蒸馏 蟹${growth.distill.claude.stage}阶(${growth.distill.claude.samples}) / GPT${growth.distill.gpt.stage}阶(${growth.distill.gpt.samples}) / Bot${growth.distill.grok.stage}阶(${growth.distill.grok.samples})`:'';
+        const player=growth.world.entities[growth.player.entityId],rootId=player.statusIds.find(id=>growth.world.statuses[id]?.kind==='root'),root=rootId?growth.world.statuses[rootId]:null;
+        node('escape-input').classList.toggle('hidden',!root);node('escape-assist-label').classList.toggle('hidden',!root);node('escape-count').textContent=root?`${root.completedInputs}/${root.requiredInputs}`:'';
+        const completed=growth.world.objectives.filter(objective=>objective.kind==='beacon'&&objective.completed).length;const targets=completed>=2?[growth.world.entities['boss:gate']]:growth.world.objectives.filter(objective=>objective.active&&!objective.completed).map(objective=>growth.world.entities[objective.id]);const target=targets.filter(Boolean).sort((a,b)=>Math.hypot(a.position.x-player.position.x,a.position.y-player.position.y)-Math.hypot(b.position.x-player.position.x,b.position.y-player.position.y))[0];const distance=target?Math.hypot(target.position.x-player.position.x,target.position.y-player.position.y):0;const direction=target?['→','↘','↓','↙','←','↖','↑','↗'][(Math.round(Math.atan2(target.position.y-player.position.y,target.position.x-player.position.x)/(Math.PI/4))+8)%8]:'';node('objective-label').textContent=formal?`${growth.flow.phase==='boss'?'击败封禁管理员':completed>=2?`首领入口已开放 · ${direction} ${Math.round(distance)}`:`信标 ${completed}/2 · ${direction} ${Math.round(distance)} · 圈内35秒`}`:'';node('materials-label').textContent=formal?`背包：碎片 ${growth.inventory.gpuFragments} · 零件 ${growth.inventory.parts}`:'';
+        const boss=growth.bosses.map(boss=>growth.world.entities[boss.entityId]).find(entity=>entity&&!entity.dead);node('boss-hud').classList.toggle('hidden',!boss);if(boss){node('boss-hp').textContent=`${Math.ceil(boss.hp)} / ${Math.ceil(boss.maxHp)}`;node('boss-fill').style.width=`${Math.max(0,boss.hp/boss.maxHp*100)}%`;}
+        node('skill').toggleAttribute('disabled',growth.player.loadout.skillCooldown>0||player.statusIds.some(id=>growth.world.statuses[id]?.kind==='skillBan'));
         view=readSessionView(session);
         const hud=/** @type {{hp:number;maxHp:number;rice:number;enemies:number;weaponName:string;skillId:string;skillCooldown:number;dashCooldown:number}} */(view.hud);
         node('hp-label').textContent=`${Math.ceil(hud.hp)} / ${Math.ceil(hud.maxHp)}`;node('hp-fill').style.width=`${Math.max(0,hud.hp/hud.maxHp*100)}%`;node('rice').textContent=String(hud.rice);node('enemies').textContent=String(hud.enemies);node('weapon-label').textContent=hud.weaponName;
-        const skillLabel=node('skill').firstChild;if(skillLabel)skillLabel.textContent=hud.skillId==='skill_cache'?'缓存护盾 ':'断开连接 ';node('skill-cd').textContent=hud.skillCooldown>0?`${hud.skillCooldown.toFixed(1)}s`:'就绪';node('dash-cd').textContent=hud.dashCooldown>0?`${hud.dashCooldown.toFixed(1)}s`:'就绪';node('skill').toggleAttribute('disabled',hud.skillCooldown>0);node('dash').toggleAttribute('disabled',hud.dashCooldown>0);
-        const stopped=view.phase==='paused'||view.phase==='defeat';node('pause-menu').classList.toggle('hidden',!stopped);node('resume').classList.toggle('hidden',view.phase==='defeat');node('pause-title').textContent=view.phase==='defeat'?'这次先回小窝':'已暂停';node('pause-description').textContent=view.phase==='defeat'?'本轮战斗结束。已保存的试作检查点仍可继续，不产生永久资源。':'战斗时间已冻结；回来后不会补跑。';mount?.classList.toggle('stopped',stopped);
+        const skillLabel=node('skill').firstChild;if(skillLabel)skillLabel.textContent=hud.skillId==='skill_cache'?'缓存护盾 ':'断开连接 ';node('skill-cd').textContent=hud.skillCooldown>0?`${hud.skillCooldown.toFixed(1)}s`:'就绪';node('dash-cd').textContent=hud.dashCooldown>0?`${hud.dashCooldown.toFixed(1)}s`:'就绪';node('skill').toggleAttribute('disabled',hud.skillCooldown>0||player.statusIds.some(id=>growth.world.statuses[id]?.kind==='skillBan'));node('dash').toggleAttribute('disabled',hud.dashCooldown>0);
+        const terminal=['victory','defeat','withdrawal'].includes(view.phase),stopped=view.phase==='paused'||terminal;
+        if(formal&&terminal&&settledRunId!==session.runId&&!pendingPersistence.some(intent=>intent.id===`settlement:${growth.runId}`)){
+          const outcome=/** @type {'victory'|'defeat'|'withdrawal'} */(view.phase),settlement=createSettlement(growth,outcome);pendingPersistence.push({id:settlement.id,kind:'settlement',payload:/** @type {import('../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(settlement)))});
+        }
+        if(formal&&pendingPersistence.length&&!profileWorking&&!profileFailed)void flushProfile();
+        node('pause-menu').classList.toggle('hidden',!stopped);node('resume').classList.toggle('hidden',terminal);node('abandon').classList.toggle('hidden',!formal||terminal);node('retry-profile').classList.toggle('hidden',!profileFailed);node('restart').toggleAttribute('disabled',formal&&settledRunId!==session.runId);node('pause-title').textContent=view.phase==='victory'?'带着收获回家！':view.phase==='defeat'?'这次先回小窝':'已暂停';node('pause-description').textContent=terminal?(formal?(settledRunId===session.runId?'收获已保存。可以返回出发页查看小窝余额。':'正在保存收获，请稍候。失败时可重试，原档不会被覆盖。'):'练习结束，不产生永久资源。'):formal?'战斗已冻结。继续原进度，或明确放弃并按失败结算。':'战斗时间已冻结；回来后不会补跑。';mount?.classList.toggle('stopped',stopped);
         popups=popups.filter(popup=>view&&view.tick-popup.tick<45);renderPreviewFrame(ctx,view,width,height,ratio,popups);
       }else{ctx.setTransform(ratio,0,0,ratio,0,0);ctx.fillStyle='#12333e';ctx.fillRect(0,0,width,height);}
       if(now>toastUntil)node('toast').classList.remove('visible');
     }catch(error){pause();toast(`试作已暂停：${error instanceof Error?error.message:String(error)}`);}
     lastTime=now;frameId=requestAnimationFrame(frame);
   }
-  refreshContinue();frameId=requestAnimationFrame(frame);
+  void loadProfile();refreshContinue();frameId=requestAnimationFrame(frame);
   return ()=>{if(disposed)return;disposed=true;cancelAnimationFrame(frameId);for(const remove of removers)remove();if(session)disposeGameSession(session);clearInput();};
 }

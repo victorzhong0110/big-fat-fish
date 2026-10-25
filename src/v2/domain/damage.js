@@ -31,7 +31,8 @@ export function resolveDamageRequest(context, request) {
   const state = context.state, target = state.world.entities[request.targetId];
   const plans = /** @type {import('../contracts.d.ts').SystemPlan[]} */ ([]);
   const changes = /** @type {import('../contracts.d.ts').StateChange[]} */ ([{ target: 'runtime', id: request.id, operation: 'registerHit', payload: { attackId: request.attackId, targetId: request.targetId, expiresAt: request.expiresAt } }]);
-  let incoming = request.baseDamage;
+  const seal = typeof target.runtime.sealStatusId === 'string';
+  let incoming = seal ? 1 : request.baseDamage;
   if (target.id === state.player.entityId && state.world.entities[request.sourceId].team === 'enemy') {
     const quota = dependency1.planQuotaAllowance(context, request);
     incoming = quota.allowedDamage; plans.push(quota.plan);
@@ -45,7 +46,7 @@ export function resolveDamageRequest(context, request) {
     const guard = target.id === state.player.entityId ? state.plugins.find(plugin => plugin.id === 'plugin_guard') : null;
     if (guard && incoming >= 20) damage *= guard.rank === 1 ? 0.8 : 0.7;
     // Only primary weapon requests may roll the player's crit stream; output was applied at attack construction.
-    const primary = request.sourceKind === 'weapon_primary' && request.critEligible && target.team === 'enemy';
+    const primary = !seal && request.sourceKind === 'weapon_primary' && request.critEligible && target.team === 'enemy';
     if (primary) {
       const playerStats = dependency4.derivePlayerStats(state, context.catalog);
       const draw = dependency5.drawRandom(state.random.combat);
@@ -87,6 +88,7 @@ export function isDamageRequestValid(context, request) {
     const projectile = state.world.entities[request.projectileId];
     if (!projectile || projectile.dead || projectile.dying || projectile.attackId !== request.attackId || projectile.sourceId !== request.sourceId) return false;
   }
+  if (typeof target.runtime.sealStatusId === 'string' && request.sourceKind !== 'weapon_primary') return false;
   if (target.id === state.player.entityId && state.player.invulnerableRemaining > 0) return false;
   return !state.attackHits.some(hit => hit.attackId === request.attackId && hit.targetId === request.targetId && hit.expiresAt >= state.tick);
 }

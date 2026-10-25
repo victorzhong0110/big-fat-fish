@@ -46,7 +46,7 @@ function step(session, domain, advanceClock = false) {
  * 建立尚未发布的Session并初始化世界/随机/流程，只有此处持有可提交状态。
  * 调用阶段：initialize；下游模式：sequence。
  * 状态权限：创建Session私有状态；不接触Profile和宿主对象。
- * @implementationScope core-preview
+ * @implementationScope core-preview + adventure-slice
  * @calls content/catalog.js#validateContentCatalog
  * @calls content/registry.js#createHandlerRegistry
  * @calls domain/initial.js#createInitialGameState
@@ -92,7 +92,7 @@ export function enqueueSessionCommand(session, command) {
  * 消费当前tick命令并调用世界步一次，提交后发布输出。
  * 调用阶段：world-tick；下游模式：sequence。
  * 状态权限：唯一门面允许提交世界状态。
- * @implementationScope core-preview
+ * @implementationScope core-preview + adventure-slice
  * @calls engine/commands.js#orderPendingCommands
  * @calls engine/previewTick.js#advancePreviewUiCommands
  * @calls engine/previewTick.js#advancePreviewWorldTick
@@ -107,7 +107,7 @@ export function stepSessionWorld(session) {
  * 执行UI步，LoRA指针使用独立时钟。
  * 调用阶段：ui-tick；下游模式：sequence。
  * 状态权限：唯一门面允许提交UI状态。
- * @implementationScope core-preview
+ * @implementationScope core-preview + adventure-slice
  * @calls engine/commands.js#orderPendingCommands
  * @calls engine/previewTick.js#advancePreviewUiCommands
  * @calls engine/previewTick.js#advancePreviewWorldTick
@@ -148,7 +148,7 @@ export function readSessionView(session) {
  * 校验并创建新的暂停Session，不在旧局上部分覆盖。
  * 调用阶段：restore；下游模式：sequence。
  * 状态权限：构建替代Session，调用者先dispose旧表现订阅。
- * @implementationScope core-preview
+ * @implementationScope core-preview + adventure-slice
  * @calls domain/checkpoint.js#restoreCheckpointState
  * @param {import('../contracts.d.ts').Checkpoint} checkpoint
  * @param {Readonly<import('../contracts.d.ts').ContentCatalog>} catalog
@@ -157,7 +157,7 @@ export function readSessionView(session) {
 export function restoreGameSession(checkpoint, catalog) {
   const result = dependency1.restoreCheckpointState(checkpoint, catalog);
   if (!result.ok) return result;
-  if (result.value.start.runtimeProfile !== 'core-preview') return { ok: false, code: 'UNSUPPORTED_RUNTIME', message: 'Only core-preview sessions can currently be restored' };
+  if (!['core-preview', 'adventure-slice'].includes(String(result.value.start.runtimeProfile))) return { ok: false, code: 'UNSUPPORTED_RUNTIME', message: 'Only Free practice and the Pro1 adventure slice can currently be restored' };
   const record = { state: result.value, catalog: structuredClone(catalog), commands: [], disposed: false, running: false };
   const handle = Object.freeze({ get runId() { return record.state.runId; }, get revision() { return record.state.revision; } });
   sessions.set(handle, record); return { ok: true, value: handle };

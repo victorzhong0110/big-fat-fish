@@ -1,4 +1,5 @@
 // @ts-check
+import { toJson } from './serialization.js';
 import { createEmptyPlan, createStateChange } from './plans.js';
 /**
  * 实体/群组/箱子/目标奖励计划，无存储I/O。
@@ -10,39 +11,49 @@ import { createEmptyPlan, createStateChange } from './plans.js';
  * 按阵营掉经验，精英群仅一箱；无奖励回响/装置排除。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @implementationScope core-preview
+ * @implementationScope core-preview + adventure-slice
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
+ * @calls domain/serialization.js#toJson
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {readonly import('../contracts.d.ts').DeathRecord[]} records
  * @returns {import('../contracts.d.ts').RewardPlan}
  */
 export function planDeathRewards(context, records) {
   const state = context.state, changes = /** @type {import('../contracts.d.ts').StateChange[]} */ ([]), rewardIds = [];
-  const seen = new Set(state.processedRewardIds);
+  const seen = new Set(state.processedRewardIds), events=/** @type {import('../contracts.d.ts').DomainEvent[]} */ ([]),persistence=/** @type {import('../contracts.d.ts').PersistenceIntent[]} */ ([]);
   for (const record of records) {
     const entity = state.world.entities[record.entityId], rewardId = `deathReward:${record.entityId}`;
     if (!entity || record.creditOwner !== 'player' || record.rewardPolicy === 'none' || seen.has(rewardId)) continue;
     seen.add(rewardId);
+    if(state.bosses.some(boss=>boss.entityId===entity.id)){const event={id:`bossDefeated:${entity.id}`,runId:state.runId,tick:state.tick,seq:0,type:'BossDefeated',sourceId:record.sourceId,targetId:entity.id,payload:{entityId:entity.id,faction:record.faction,difficulty:state.start.difficulty.level,mode:state.start.difficulty.mode}};events.push(event);persistence.push({id:`unlock:${event.id}`,kind:'unlock',payload:toJson(event)});changes.push(createStateChange('progression',rewardId,'addCollectedResource',{kind:'gpuFragment',amount:10}),createStateChange('progression',rewardId,'addCollectedResource',{kind:'part',amount:6}));}
     const amount = state.bosses.some(boss => boss.entityId === entity.id) ? 120 : record.rewardPolicy === 'elite' ? 32 : record.faction === 'claude' ? 24 : record.faction === 'gpt' ? 8 : 4;
     changes.push(createStateChange('world', rewardId, 'putPickup', { id: rewardId, kind: 'riceXp', amount, position: entity.position, instanceId: null, collected: false }));
     changes.push(createStateChange('runtime', rewardId, 'recordReward', {})); rewardIds.push(rewardId);
   }
-  return { plan: { ...createEmptyPlan(), changes }, rewardIds };
+  return { plan: { ...createEmptyPlan(), changes,events,persistence }, rewardIds };
 }
 
 /**
  * 按stable rewardId发箱子/任务奖励，API分钟材料限额先校验。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部公开函数。
+ * @implementationScope adventure-slice
+ * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/plans.js#createStateChange
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').Id} rewardId
  * @returns {import('../contracts.d.ts').RewardPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planWorldReward(context, rewardId) {
-  throw new Error('TODO V2: domain/rewards.js#planWorldReward');
+  const state=context.state;if(state.processedRewardIds.includes(rewardId))return {plan:createEmptyPlan(),rewardIds:[]};
+  const objective=state.world.objectives.find(item=>item.rewardId===rewardId),cache=rewardId.startsWith('cache:')?state.world.entities[rewardId.slice(6)]:null;
+  const entity=objective?state.world.entities[objective.id]:cache;
+  if(!entity||!objective&&!cache||cache?.runtime.opened===true)return {plan:createEmptyPlan(),rewardIds:[]};
+  const amounts=objective?{riceXp:80,gpuFragment:2,part:3}:{riceXp:40,gpuFragment:5,part:2};
+  const changes=[createStateChange('runtime',rewardId,'recordReward',{})];
+  for(const [kind,amount]of Object.entries(amounts)){const id=`${rewardId}:${kind}`;changes.push(createStateChange('world',id,'putPickup',{id,kind,amount,position:entity.position,instanceId:null,collected:false}));}
+  return {plan:{...createEmptyPlan(),changes},rewardIds:[rewardId]};
 }
 
 /**

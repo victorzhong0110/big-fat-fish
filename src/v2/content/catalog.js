@@ -2,13 +2,13 @@
 import { serializeCanonical } from '../domain/serialization.js';
 import { CATALOG_DATA } from './catalogData.js';
 /**
- * 玩法定义与版本的唯一读取入口；值尚未填充，规格见02–09。
+ * 玩法定义与版本的唯一读取入口；数据存在不表示处理器已实现。
  * Incremental V2 implementation; remaining TODO bodies are intentionally unavailable.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 
 /**
- * 载入全部版本化内容定义；本次不填真实玩法数据。
+ * 复制版本化内容定义，实际运行能力由注册表独立声明。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @calls 无内部公开函数。

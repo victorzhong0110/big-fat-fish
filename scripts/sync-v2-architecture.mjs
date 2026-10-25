@@ -18,6 +18,43 @@ for(const module of sourceModel){
   if(scoped.has(fn.name))item.implementationScope='core-preview';
   const previewDescriptions={createMapPlan:'生成固定的连续战斗演练海域/礁石/检查点与15只普通敌人；正式区域/事件/目标地图尚未实现。',planEnemyAi:'当前只分派棕蟹与基础Bot，不执行未实现的GPT/模型/累计机制处理器。',planWeaponFire:'在预览中按当前泡泡/扇面冷却与手动瞄准开火，保持每把武器自己的冷却。',planSkillCast:'当前只施放缓存护盾/断开连接，检查冷却与技能封禁后成功才发SkillCast。',planLoadoutChange:'当前只支持Q切枪与0.3秒切换锁，地面换装明确拒绝。',planGameCommand:'预览分派移动/战斗/暂停及插件选择、重抽、跳过；校验后确认单调序号。',validateGameCommand:'校验战斗与成长命令、choiceId/候选、一次重抽上限、单调序号、时钟域与阶段。',evaluateEffectRequest:'预览处理damage/heal/shield/collect；其他效果类型明确拒绝，不假装生成或控制已完成。',planEventHooks:'预览分派蒸馏死亡/受伤钩子；其他三插件由属性/额度/拾取消费者处理；仅接受LoRA/更新重置两种试装DSH，完整机制仍拒绝。',planFlowTransition:'预览只开放战斗→暂停/终态与暂停→原战斗状态；保留暂停前面板及其原世界返回阶段。',planResume:'恢复战斗或LoRA/插件面板原阶段，保留指针和原世界返回位置，不补跑墙钟。',planDeathRewards:'当前按阵营生成大白饭并按死亡来源ID去重；正式精英群箱/材料/Boss永久解锁仍待实现。',planTokenCollection:'接触后消费米粒/材料拾取，装备类拾取明确拒绝；不直接持久化。',createGameSession:'只创建显式core-preview/0级范围的私有Session，校验内容/初始世界后才发布句柄。',restoreGameSession:'验证检查点后构建新的暂停预览Session；完整冒险范围明确拒绝。',stepSessionWorld:'消费到期世界命令，调用独立预览世界步并原子提交；正式世界tick仍未实现。',stepSessionUi:'消费预览暂停/继续与插件选择/重抽/跳过，结算后续等级；可选择独立UI步推进LoRA，命令flush不推进指针。',createRenderSnapshot:'投影实体/米粒/预警、蒸馏虚影/追击泡、生命/武器/冷却；成长面板由宿主读取Session快照，LoRA未接入。'};
   if(previewDescriptions[fn.name])item.description=previewDescriptions[fn.name];
+  const sliceFunctions=new Set(['createAdventureMapPlan','planClaudeEncounter','planMapExploration','planWorldInteraction','planObjectiveAdvance','planObjectiveCompletion','planWorldReward','planSpawnSchedule','planReinforcementGroup','planEnemySpawn','validateSpawnLocation','planBossAi','planClaudeBoss','planClaudeBan']);
+  const sharedSlices=new Set(['createGameSession','restoreGameSession','stepSessionWorld','stepSessionUi','createMapPlan','createInitialGameState','advancePreviewWorldTick','mountCombatPreview','planEventHooks','evaluateEffectRequest','planDeathRewards','createRenderSnapshot']);
+  if(sliceFunctions.has(fn.name))item.implementationScope='adventure-slice';
+  if(sharedSlices.has(fn.name))item.implementationScope='core-preview + adventure-slice';
+  const currentDescriptions={
+   createAdventureMapPlan:'构建Pro1连续地图：三信标、两检查点、资源箱、驻守敌人与有限追兵预算。',
+   planClaudeEncounter:'任意两个信标完成后，以稳定ID创建一次Claude首领并切换boss阶段。',
+   createInitialGameState:'创建Free或Pro1显式范围初态并验证模组锁；完整冒险和局外树尚未开放。',
+   createMapPlan:'按运行范围生成Free演练或Pro1三信标地图；不假装完整区域生成已完成。',
+   createGameSession:'校验内容与初始世界后发布Free/Pro1私有Session；模组仅允许Free练习。',
+   restoreGameSession:'校验版本、模组锁及状态后构建暂停Session；失败保留原检查点。',
+   stepSessionWorld:'消费到期世界命令，执行Free/Pro1固定世界步并原子提交。',
+   advancePreviewWorldTick:'执行Free/Pro1固定世界步，推进探索/追兵/Claude/效果/掉落与成长后统一提交。',
+   mountCombatPreview:'组装Free/Pro1、键鼠/双摇杆、Profile事务结算及本地模组菜单；返回完整清理函数。',
+   evaluateEffectRequest:'处理damage/heal/shield/collect/control；未实现效果明确拒绝。',
+   planEventHooks:'分派蒸馏、封印破坏和并行调用事件；其余首批插件由明确数据消费者处理。',
+   planDeathRewards:'按死亡来源稳定去重生成经验；Claude首领提供材料与永久击败事实，普通封印无奖励。',
+   createRenderSnapshot:'只读投影战斗实体、掉落、探索格、Claude预警与首领生命，供Canvas绘制。',
+   computeCameraBounds:'以当前逻辑位置、地图与世界单位视野推导同一相机边界，渲染和出生检查共用。',
+   planSealRelease:'封印被主武器击碎时解除对应技能封禁，不重置冷却，不发掉落。',
+   planClaudeBoss:'实现Pro1重钳禁锢、技能封印与半血三条带扫击；真实伙伴封禁弹和高难连招仍待接通。',
+   planBossAi:'仅分派当前Claude首领，GPT/Grok首领明确拒绝。',
+   planMapExploration:'按玩家位置揭示160单位网格，只有新格子才生成修改计划。',
+   planWorldInteraction:'就近交互资源箱或已解锁首领门；首次扇面发现生成持久化事实。',
+   planObjectiveAdvance:'仅在探索阶段且进入120范围时推进一个信标；离开不清零，35秒完成。',
+   planObjectiveCompletion:'稳定去重完成信标、生成80经验/2碎片/3零件，完成两个后开放首领门。',
+   planWorldReward:'为当前信标/资源箱生成稳定ID的拾取物，永久收入由事务结算处理。',
+   planSpawnSchedule:'推进有限预算分组追兵、延迟预警、错峰出生；首领战不新增追兵。',
+   planReinforcementGroup:'按阶段压力和屏幕外规则预留一组Bot预算，不积累补刷债务。',
+   planEnemySpawn:'仅消费到期且位置合法的出生请求；实际出生才把预留预算转为已使用。',
+   validateSpawnLocation:'共享逻辑相机，要求视野外128余量、距玩家420、合法地形和数量上限。',
+   parseModPackage:'校验SDK1.0清单/版本/补丁/参数边界及大小，拒绝未知功能和未实现内容。',
+   resolveModLoadOrder:'检查精确依赖版本与冲突，生成稳定拓扑顺序，拒绝依赖环。',
+   composeModCatalog:'从原版复制并组装声明式模组；重复字段报错，生成内容指纹和存档锁。',
+   mountModManager:'提供本地JSON安装、启停、移除与持久化菜单，只影响下次Free出发。'
+  };
+  if(currentDescriptions[fn.name])item.description=currentDescriptions[fn.name];
   if(fn.name==='loadContentCatalog')item.description='返回来源于设计表格的正式版本化内容副本；数据存在不表示其处理器已经实现。';
   if(fn.name==='createHandlerRegistry')item.description='返回95项设计绑定与显式implementedIds能力集合，不把未实现条目声明为可运行。';
   if(fn.name==='validateContentCatalog')item.description='校验各目录数量、稳定ID/引用、160点树花费及前置DAG、累计机制和运行能力声明。';
@@ -39,7 +76,7 @@ manifest.rules=[...new Set(manifest.rules)];
 const fns=manifest.modules.flatMap(module=>module.functions),implemented=fns.filter(fn=>fn.implementation==='implemented').length;
 manifest.counts={modules:manifest.modules.length,functions:fns.length,implemented,placeholders:fns.length-implemented};
 await fs.writeFile(filename,JSON.stringify(manifest,null,2)+'\n');
-const esc=value=>value.replaceAll('|','\\|').replaceAll('\n',' '),rows=['# 12 · 全部函数目录与调用契约','',`当前${manifest.counts.modules}个JS模块、${fns.length}个公开函数：${implemented}个有实现，${fns.length-implemented}个明确TODO。标注core-preview的函数仅覆盖战斗试作；不能当完整冒险实现。参见[进度与边界](13-development-status.md)。`,'','调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。',''];
+const esc=value=>value.replaceAll('|','\\|').replaceAll('\n',' '),rows=['# 12 · 全部函数目录与调用契约','',`当前${manifest.counts.modules}个JS模块、${fns.length}个公开函数：${implemented}个有实现，${fns.length-implemented}个明确TODO。core-preview为Free练习，adventure-slice为Pro1短途；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。`,'','调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。',''];
 for(const module of manifest.modules){rows.push(`## ${module.path}`,'',module.purpose,'',`[源码](../../src/v2/${module.path})；层：\`${module.layer}\`。`,'',`直接依赖：${module.dependencies.map(dep=>'`'+dep+'`').join('、')||'无'}。`,'','| 函数签名 | 返回 | 状态/范围 | 功能与约束 |','|---|---|---|---|');
  for(const fn of module.functions)rows.push(`| \`${esc(fn.name+'('+fn.args.map(arg=>arg.name+': '+arg.type+(arg.default!==undefined?' = '+arg.default:'')).join(', ')+')')}\` | \`${esc(fn.result)}\` | ${fn.implementation==='implemented'?'已实现':'TODO'}${fn.implementationScope?' / '+fn.implementationScope:''} | ${esc(fn.description+'；'+fn.rule+'；状态权限：'+fn.ownership)} |`);
  rows.push('','公开函数下游：','');for(const fn of module.functions)rows.push(`- \`${fn.name}\` → ${fn.calls.map(call=>'`'+call+'`').join('、')||'无内部公开函数'}。`);

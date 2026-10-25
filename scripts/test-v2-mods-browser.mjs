@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createServer } from 'vite';
+import { chromium } from 'playwright-core';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),executablePath=process.env.V2_CHROMIUM_EXECUTABLE;
+if(!executablePath)throw new Error('Set V2_CHROMIUM_EXECUTABLE; browser verification never silently skips.');
+const output=path.join(root,'dist','v2-mods-browser-check');await fs.mkdir(output,{recursive:true});
+const example=JSON.parse(await fs.readFile(path.join(root,'public/mods/community-bubbles.json'),'utf8'));
+const server=await createServer({root,server:{host:'127.0.0.1',port:0}});await server.listen();
+const browser=await chromium.launch({executablePath,headless:true,args:['--no-sandbox','--single-process','--no-zygote','--disable-gpu','--disable-gpu-compositing','--disable-webgl']});
+const checks=[],errors=[];function check(value,label){assert(value,label);checks.push(label);}
+try{
+ const context=await browser.newContext({viewport:{width:1280,height:800}}),page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/v2.html`);
+ await page.locator('#start').click();await page.locator('#checkpoint').click();await page.waitForFunction(()=>localStorage.getItem('big-fat-fish:v2-combat-preview:checkpoint'));
+ const vanilla=await page.evaluate(()=>localStorage.getItem('big-fat-fish:v2-combat-preview:checkpoint'));
+ await page.locator('#pause').click();await page.locator('#restart').click();await page.locator('#mods-panel summary').click();
+ async function install(pack){await page.locator('#mods-manager input[type=file]').setInputFiles({name:'test-mod.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(pack))});}
+ await install(example);await page.getByText('一盆大泡泡 · 1.0.0',{exact:true}).waitFor();
+ check((await page.locator('.mod-card').count())===1,'Real file import installs the example without editing source');
+ check(await page.locator('.mod-card button').first().textContent()==='启用','Newly installed mods are disabled by default');
+ await page.locator('.mod-card button').first().click();check(await page.locator('.mod-card button').first().getAttribute('aria-pressed')==='true','Enable validates and persists the mod');
+ await page.screenshot({path:path.join(output,'mod-manager.png'),fullPage:true});await page.reload();await page.locator('#mods-panel summary').click();
+ check(await page.locator('.mod-card button').first().textContent()==='停用','Installed/enabled mod set survives reload');
+ await page.locator('#start').click();await page.waitForFunction(()=>document.querySelector('#weapon-label').textContent.includes('一盆大泡泡'));check((await page.locator('#weapon-label').textContent()).includes('一盆大泡泡'),'A real Free session uses the community MCP definition');
+ await page.locator('#checkpoint').click();await page.waitForFunction(()=>Object.keys(localStorage).some(key=>key.startsWith('big-fat-fish:v2-combat-preview:checkpoint:')));
+ const modded=await page.evaluate(()=>{const key=Object.keys(localStorage).find(key=>key.startsWith('big-fat-fish:v2-combat-preview:checkpoint:'));return JSON.parse(localStorage.getItem(key));});
+ check(modded.state.start.modLock[0].id==='community.bubbles','The actual saved run contains an exact package lock');
+ check(await page.evaluate(()=>localStorage.getItem('big-fat-fish:v2-combat-preview:checkpoint'))===vanilla,'Modded saving leaves the vanilla checkpoint byte-for-byte intact');
+ await page.locator('#pause').click();await page.locator('#restart').click();await page.locator('.mod-card button').first().click();await page.locator('#continue').click();await page.locator('#resume').click();await page.waitForFunction(()=>!document.querySelector('#weapon-label').textContent.includes('一盆大泡泡'));
+ check(!(await page.locator('#weapon-label').textContent()).includes('一盆大泡泡'),'Disabling selects the original vanilla checkpoint and weapon');
+ await page.locator('#pause').click();await page.locator('#restart').click();await page.locator('.mod-card button').first().click();await page.locator('#continue').click();
+ await page.locator('#pause-menu').waitFor({state:'visible'});check(await page.locator('#pause-menu').isVisible(),'The modded checkpoint restores paused');await page.locator('#resume').click();await page.waitForFunction(()=>document.querySelector('#weapon-label').textContent.includes('一盆大泡泡'));check((await page.locator('#weapon-label').textContent()).includes('一盆大泡泡'),'Re-enabling restores the compatible modded run');
+ await page.locator('#pause').click();await page.locator('#restart').click();
+ await install({...example,id:'community.conflict',name:'冲突测试'});await page.getByText('冲突测试 · 1.0.0',{exact:true}).waitFor();
+ await page.locator('.mod-card').filter({hasText:'冲突测试'}).getByRole('button',{name:'启用',exact:true}).click();
+ check((await page.locator('#toast').textContent()).includes('字段冲突'),'Overlapping patches produce an actionable field conflict');
+ check((await page.locator('.mod-card button[aria-pressed=true]').count())===1,'A failed enable preserves the prior activation set');
+ await install({...example,id:'community.missing',name:'依赖测试',dependencies:{'community.absent':'1.0.0'}});await page.getByText('依赖测试 · 1.0.0',{exact:true}).waitFor();
+ await page.locator('.mod-card').filter({hasText:'依赖测试'}).getByRole('button',{name:'启用',exact:true}).click();check((await page.locator('#toast').textContent()).includes('缺少依赖'),'Missing exact dependency blocks activation');
+ await install({...example,id:'community.invalid',script:'window.bad=1'});await page.waitForFunction(()=>document.querySelector('#toast').textContent.includes('安装失败'));
+ check((await page.locator('.mod-card').count())===3,'Unknown executable fields fail import without modifying installed entries');
+ await page.setViewportSize({width:390,height:844});check(!(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)),'Community mod manager fits a phone without horizontal overflow');
+ const bounds=await page.locator('.mod-card button').first().boundingBox();check(bounds.height>=44,'Mod actions retain a 44px mobile touch target');
+ await page.screenshot({path:path.join(output,'mod-manager-mobile.png'),fullPage:true});
+ check(errors.length===0,`No page errors: ${errors.join('; ')}`);
+ const report={checks:checks.length,passed:checks,errors,scope:'Local SDK1.0 Free practice only; no Workshop or new content IDs'};await fs.writeFile(path.join(output,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+}finally{await browser.close();await server.close();}

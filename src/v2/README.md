@@ -1,8 +1,8 @@
 # V2 开发源码
 
-当前81个JS模块、312个公开函数：153个有实现，159个显式TODO。**独立战斗试作可启动，完整冒险仍未完成。** `implementationScope: core-preview`标记当前范围有限的实现。
+当前84个JS模块、320个公开函数：178个有实现，142个显式TODO。**Free练习与Pro1 Claude短途纵切可操作，完整游戏仍未完成。** `implementationScope: core-preview`标记当前范围有限的实现。
 
-运行`npm run dev`后打开`/v2.html`。构建同时生成旧版index与新试作v2，不替换旧入口。键鼠WASD/瞄准射击，Q换MCP，E技能，Space冲刺，F检查点，Esc暂停；手机双摇杆与按钮。
+运行`npm run dev`后打开`/v2.html`。构建同时生成旧版index与新试作v2，不替换旧入口。键鼠WASD/瞄准射击，Q换MCP，E技能，Space冲刺，F交互，R检查点，Esc暂停；手机双摇杆与按钮。
 
 - [实际完成范围、运行/验收和后续任务](../../docs/design-v2/13-development-status.md)
 - [架构与调用规则](../../docs/design-v2/11-architecture-contracts.md)
@@ -19,6 +19,6 @@ npm run build
 V2_CHROMIUM_EXECUTABLE=/path/to/chromium npm run test:v2:browser
 ```
 
-当前世界入口是engine/previewTick，宿主是preview/host，Session唯一持有单局状态。正式bootstrap/application/engine/tick仍保持TODO；full模式明确拒绝。未实现内容不得靠空返回蒙混可用性：registry的95项设计绑定与12项已开放能力分开校验。武器/技能/树等定义存在不代表运行效果已实现。
+当前世界入口是engine/previewTick，宿主是preview/host，Session唯一持有单局状态。正式bootstrap/application/engine/tick仍保持TODO；full模式明确拒绝。未实现内容不得靠空返回蒙混可用性：registry的95项设计绑定与14项已开放能力分开校验。武器/技能/树等定义存在不代表运行效果已实现。
 
-试作浏览器存档使用独立localStorage调试检查点；不包含完整Profile经济或CAS结算。大白饭已接通等级与首批4种插件三选一，蒸馏按阵营积累样本。最终像素资源和指定音乐待接入。
+Free使用独立localStorage调试槽；Pro1使用正式IndexedDB Profile，已接通结算与原子删档。首批6插件可选，蒸馏按阵营积累。小窝/树/DSH完整界面与全内容仍待开发。最终像素资源和指定音乐待接入。

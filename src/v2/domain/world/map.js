@@ -1,4 +1,6 @@
 // @ts-check
+import { createAdventureMapPlan, planClaudeEncounter } from './adventure.js';
+import { createEmptyPlan } from '../plans.js';
 import { createStateChange } from '../plans.js';
 import { createEntityState } from '../entities.js';
 /**
@@ -14,16 +16,18 @@ import * as dependency3 from '../rewards.js';
  * 按模式生成连续地图、合法目标/检查点/箱子；不生成房间清场门。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @implementationScope core-preview
+ * @implementationScope core-preview + adventure-slice
  * @calls domain/entities.js#createEntityState
  * @calls domain/plans.js#createStateChange
  * @calls domain/random.js#drawRandom
+ * @calls domain/world/adventure.js#createAdventureMapPlan
  * @param {import('../../contracts.d.ts').StartSnapshot} start
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
  * @param {import('../../contracts.d.ts').RandomState} random
  * @returns {import('../../contracts.d.ts').SystemPlan}
  */
 export function createMapPlan(start, catalog, random) {
+  if (start.runtimeProfile === 'adventure-slice') return createAdventureMapPlan(start, catalog);
   if (start.runtimeProfile !== 'core-preview') throw new Error('Full adventure map generation is not implemented');
   const changes = /** @type {import('../../contracts.d.ts').StateChange[]} */ ([]);
   const rocks = [{ x: 650, y: 420 }, { x: 650, y: 610 }, { x: 1150, y: 420 }, { x: 1450, y: 800 }, { x: 1750, y: 500 }];
@@ -60,28 +64,47 @@ export function createMapPlan(start, catalog, random) {
  * 更新可见格、秘密方向与发现事件，已发现id不重复发资源。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部公开函数。
+ * @implementationScope adventure-slice
+ * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/plans.js#createStateChange
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @returns {import('../../contracts.d.ts').SystemPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planMapExploration(context) {
-  throw new Error('TODO V2: domain/world/map.js#planMapExploration');
+  const state=context.state,player=state.world.entities[state.player.entityId],size=160,cx=Math.floor(player.position.x/size),cy=Math.floor(player.position.y/size),cells=new Set(state.world.map.exploredCells);
+  for(let dx=-2;dx<=2;dx++)for(let dy=-2;dy<=2;dy++){const x=cx+dx,y=cy+dy;if(x>=0&&y>=0&&x*size<state.world.map.width&&y*size<state.world.map.height)cells.add(`${x}:${y}`);}
+  if(cells.size===state.world.map.exploredCells.length)return createEmptyPlan();
+  return {...createEmptyPlan(),changes:[createStateChange('world',state.world.map.id,'setMap',{...state.world.map,exploredCells:[...cells].sort()})]};
 }
 
 /**
  * F/触屏选择最近交互目标，校验距离与安全状态；不直接读写存储。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
+ * @implementationScope adventure-slice
  * @calls domain/geometry.js#distanceSquared
+ * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/plans.js#createStateChange
  * @calls domain/rewards.js#planWorldReward
+ * @calls domain/world/adventure.js#planClaudeEncounter
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').Command} command
  * @returns {import('../../contracts.d.ts').SystemPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planWorldInteraction(context, command) {
-  throw new Error('TODO V2: domain/world/map.js#planWorldInteraction');
+  const state = context.state, player = state.world.entities[state.player.entityId];
+  if (state.flow.phase !== 'exploring') return createEmptyPlan();
+  const candidates = Object.values(state.world.entities).filter(entity => entity.kind === 'objective' && ['cache', 'bossGate'].includes(String(entity.runtime.interaction)) && dependency1.distanceSquared(entity.position, player.position) <= 96 ** 2).sort((a,b)=>dependency1.distanceSquared(a.position,player.position)-dependency1.distanceSquared(b.position,player.position)||(a.id<b.id?-1:1));
+  const entity = candidates[0]; if (!entity) return createEmptyPlan();
+  if (entity.runtime.interaction === 'bossGate') return planClaudeEncounter(context);
+  if (entity.runtime.opened === true) return createEmptyPlan();
+  const reward = dependency3.planWorldReward(context, `cache:${entity.id}`);
+  const changes=[...reward.plan.changes,createStateChange('entity',entity.id,'setEntityRuntime',{runtime:{...entity.runtime,opened:true}})],events=[...reward.plan.events],persistence=[...reward.plan.persistence];
+  if(entity.id==='cache:0'&&state.player.loadout.weapons.length<2){
+    changes.push(createStateChange('player',player.id,'setLoadout',{...state.player.loadout,weapons:[...state.player.loadout.weapons,{instanceId:`${state.runId}:found:fan`,definitionId:'mcp_fan',originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null}]}));
+    const event={id:`discovery:${state.runId}:mcp_fan`,runId:state.runId,tick:state.tick,seq:0,type:'ContentDiscovered',sourceId:player.id,targetId:entity.id,payload:{definitionId:'mcp_fan'}};events.push(event);persistence.push({id:event.id,kind:'discovery',payload:/** @type {import('../../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(event)))});
+  }
+  return {...reward.plan,changes,events,persistence};
 }
 
 /**

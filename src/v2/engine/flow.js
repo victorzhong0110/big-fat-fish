@@ -72,7 +72,7 @@ export function planProgressionPanels(context) {
 export function planPause(context, reason) {
   if (context.state.flow.phase === 'paused') return createEmptyPlan();
   const plan = planFlowTransition(context, 'paused');
-  return { ...plan, changes: [...plan.changes, createStateChange('runtime', 'dsh_lora', 'setLoraInputHeld', { held: false }), createStateChange('runtime', 'input', 'setInput', { ...context.state.input, move: { x: 0, y: 0 }, firing: false, heldKeys: [], pointerIds: [] })] };
+  return { ...plan, changes: [...plan.changes, ...(context.state.world.entities[context.state.player.entityId].runtime.escapeHeld===true?[createStateChange('entity',context.state.player.entityId,'setEntityRuntime',{runtime:{...context.state.world.entities[context.state.player.entityId].runtime,escapeHeld:false}})]:[]), createStateChange('runtime', 'dsh_lora', 'setLoraInputHeld', { held: false }), createStateChange('runtime', 'input', 'setInput', { ...context.state.input, move: { x: 0, y: 0 }, firing: false, heldKeys: [], pointerIds: [] })] };
 }
 
 /**

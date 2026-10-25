@@ -19,18 +19,20 @@ import * as dependency8 from './reducer.js';
  * 按请求kind分派伤害、控制、治疗、盾、生成等；返回下一批计划。
  * 调用阶段：query；下游模式：dispatch。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @implementationScope core-preview
+ * @implementationScope core-preview + adventure-slice
  * @calls domain/damage.js#planLifeChange
  * @calls domain/damage.js#resolveDamageRequest
  * @calls domain/rewards.js#planTokenCollection
  * @calls domain/serialization.js#serializeCanonical
  * @calls domain/shields.js#planShieldGrant
+ * @calls domain/status.js#resolveControlRequest
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').EffectRequest} request
  * @returns {import('../contracts.d.ts').SystemPlan}
  */
 export function evaluateEffectRequest(context, request) {
   const p = /** @type {Record<string, import('../contracts.d.ts').Json>} */ (request.payload);
+  if (request.kind === 'control') return dependency5.resolveControlRequest(context, /** @type {import('../contracts.d.ts').ControlRequest} */ (JSON.parse(serializeCanonical(p)))).plan;
   if (request.kind === 'damage') return dependency1.resolveDamageRequest(context, /** @type {import('../contracts.d.ts').DamageRequest} */ (JSON.parse(serializeCanonical(p)))).plan;
   if (request.kind === 'heal') return dependency1.planLifeChange(context, String(p.targetId), Number(p.amount), request.id);
   if (request.kind === 'shield') return dependency4.planShieldGrant(context, String(p.targetId), request.sourceId, Number(p.amount), Number(p.duration));

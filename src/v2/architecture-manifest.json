@@ -2528,7 +2528,9 @@
       "purpose": "plugins逐项占位处理器；实际参数仍以玩法规格为准。",
       "dependencies": [
         "domain/distill.js",
-        "domain/plans.js"
+        "domain/entities.js",
+        "domain/plans.js",
+        "domain/stats.js"
       ],
       "functions": [
         {
@@ -2546,13 +2548,16 @@
           "result": "EffectPlan",
           "description": "plugin_parallel / 并行调用：每 0.4 秒最多一次基础射击增加左右各一枚 ±12° 投射物，各 0.40W→0.60W；新增弹为 secondary；两条分叉射流",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/stats.js#derivePlayerStats"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginBatch",
@@ -2598,7 +2603,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginCache",
@@ -3526,6 +3531,87 @@
       ]
     },
     {
+      "path": "content/mods.js",
+      "layer": "content",
+      "purpose": "Versioned declarative mod SDK. No dynamic code, global registry mutation or host access.",
+      "dependencies": [
+        "content/catalog.js",
+        "content/registry.js",
+        "domain/serialization.js"
+      ],
+      "functions": [
+        {
+          "description": "校验SDK1.0清单/版本/补丁/参数边界及大小，拒绝未知功能和未实现内容。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "parseModPackage",
+          "args": [
+            {
+              "name": "text",
+              "type": "untyped"
+            },
+            {
+              "name": "base",
+              "type": "untyped"
+            }
+          ],
+          "result": "ModPackage",
+          "implementation": "implemented",
+          "calls": [
+            "content/registry.js#createHandlerRegistry",
+            "domain/serialization.js#serializeCanonical"
+          ]
+        },
+        {
+          "description": "检查精确依赖版本与冲突，生成稳定拓扑顺序，拒绝依赖环。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolveModLoadOrder",
+          "args": [
+            {
+              "name": "packs",
+              "type": "untyped"
+            }
+          ],
+          "result": "readonly ModPackage[]",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "从原版复制并组装声明式模组；重复字段报错，生成内容指纹和存档锁。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "composeModCatalog",
+          "args": [
+            {
+              "name": "base",
+              "type": "untyped"
+            },
+            {
+              "name": "packs",
+              "type": "untyped"
+            }
+          ],
+          "result": "ContentCatalog",
+          "implementation": "implemented",
+          "calls": [
+            "content/catalog.js#validateContentCatalog",
+            "content/mods.js#parseModPackage",
+            "content/mods.js#resolveModLoadOrder",
+            "content/registry.js#createHandlerRegistry",
+            "domain/serialization.js#createDataDigest",
+            "domain/serialization.js#serializeCanonical"
+          ]
+        }
+      ]
+    },
+    {
       "path": "content/registry.js",
       "layer": "content",
       "purpose": "所有内容ID到显式处理器绑定；不构造假可用实例。",
@@ -3966,17 +4052,17 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "按阵营只分派对应首领；API阶段Boss不改变胜负规则。",
+          "description": "仅分派当前Claude首领，GPT/Grok首领明确拒绝。",
           "calls": [
             "domain/bosses/claude.js#planClaudeBoss",
-            "domain/bosses/gpt.js#planGptBoss",
-            "domain/bosses/grok.js#planGrokBoss"
+            "domain/plans.js#mergeSystemPlans"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "dispatch",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         }
       ]
     },
@@ -4120,7 +4206,12 @@
       "path": "domain/bosses/claude.js",
       "layer": "domain",
       "purpose": "Claude高数值/封禁招式意图；控制由统一管线处理。",
-      "dependencies": [],
+      "dependencies": [
+        "domain/geometry.js",
+        "domain/meleeAi.js",
+        "domain/plans.js",
+        "domain/serialization.js"
+      ],
       "functions": [
         {
           "name": "planClaudeBoss",
@@ -4135,15 +4226,22 @@
             }
           ],
           "result": "EffectPlan",
-          "description": "推进预警/招式/恢复，按5/10/11级机制加入组合/场地/Glasswing请求标记。",
+          "description": "实现Pro1重钳禁锢、技能封印与半血三条带扫击；真实伙伴封禁弹和高难连招仍待接通。",
           "calls": [
-            "domain/bosses/claude.js#planClaudeBan"
+            "domain/bosses/claude.js#planClaudeBan",
+            "domain/geometry.js#distanceSquared",
+            "domain/geometry.js#normalizeVector",
+            "domain/meleeAi.js#planMeleeEnemy",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         },
         {
           "name": "planClaudeBan",
@@ -4163,12 +4261,17 @@
           ],
           "result": "EffectPlan",
           "description": "无合法槽则普通攻击；只发一份封禁请求和可破封装置计划。",
-          "calls": [],
+          "calls": [
+            "domain/geometry.js#normalizeVector",
+            "domain/plans.js#createEmptyPlan",
+            "domain/serialization.js#toJson"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         }
       ]
     },
@@ -4540,16 +4643,18 @@
             }
           ],
           "result": "Result<Vec2>",
-          "description": "检查视野外、最小距离、可通行与局部/全局数量上限。",
+          "description": "共享逻辑相机，要求视野外128余量、距玩家420、合法地形和数量上限。",
           "calls": [
-            "domain/geometry.js#distanceSquared",
-            "domain/collision.js#canTraverseObstacle"
+            "domain/collision.js#canTraverseObstacle",
+            "domain/geometry.js#computeCameraBounds",
+            "domain/geometry.js#distanceSquared"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         }
       ]
     },
@@ -4881,6 +4986,7 @@
       "layer": "domain",
       "purpose": "候选、升级、换槽与一次性重抽。",
       "dependencies": [
+        "content/registry.js",
         "domain/distill.js",
         "domain/plans.js",
         "domain/random.js"
@@ -4901,6 +5007,7 @@
           "result": "Result<{choice: PluginChoice; nextRandom: RandomState}>",
           "description": "按权重生成3/DSH首轮4个互异候选，首组保底蒸馏。",
           "calls": [
+            "content/registry.js#createHandlerRegistry",
             "domain/random.js#chooseWeightedIndex"
           ],
           "rule": "",
@@ -5209,6 +5316,31 @@
           "phase": "query",
           "callMode": "sequence",
           "implementation": "implemented"
+        },
+        {
+          "description": "以当前逻辑位置、地图与世界单位视野推导同一相机边界，渲染和出生检查共用。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "computeCameraBounds",
+          "args": [
+            {
+              "name": "position",
+              "type": "untyped"
+            },
+            {
+              "name": "map",
+              "type": "untyped"
+            },
+            {
+              "name": "viewport",
+              "type": "untyped"
+            }
+          ],
+          "result": "{x:number;y:number;width:number;height:number}",
+          "implementation": "implemented",
+          "calls": []
         }
       ]
     },
@@ -5219,11 +5351,12 @@
       "dependencies": [
         "domain/entities.js",
         "domain/random.js",
+        "domain/serialization.js",
         "versions.js"
       ],
       "functions": [
         {
-          "description": "构造未发布的初始对局；当前仅允许显式core-preview，不开放完整冒险。",
+          "description": "创建Free或Pro1显式范围初态并验证模组锁；完整冒险和局外树尚未开放。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -5247,9 +5380,10 @@
           "implementation": "implemented",
           "calls": [
             "domain/entities.js#createEntityState",
-            "domain/random.js#createRandomStreams"
+            "domain/random.js#createRandomStreams",
+            "domain/serialization.js#serializeCanonical"
           ],
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
         }
       ]
     },
@@ -6288,7 +6422,8 @@
       "layer": "domain",
       "purpose": "实体/群组/箱子/目标奖励计划，无存储I/O。",
       "dependencies": [
-        "domain/plans.js"
+        "domain/plans.js",
+        "domain/serialization.js"
       ],
       "functions": [
         {
@@ -6304,17 +6439,18 @@
             }
           ],
           "result": "RewardPlan",
-          "description": "当前按阵营生成大白饭并按死亡来源ID去重；正式精英群箱/材料/Boss永久解锁仍待实现。",
+          "description": "按死亡来源稳定去重生成经验；Claude首领提供材料与永久击败事实，普通封印无奖励。",
           "calls": [
             "domain/plans.js#createEmptyPlan",
-            "domain/plans.js#createStateChange"
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
           "implementation": "implemented",
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planWorldReward",
@@ -6329,13 +6465,17 @@
             }
           ],
           "result": "RewardPlan",
-          "description": "按stable rewardId发箱子/任务奖励，API分钟材料限额先校验。",
-          "calls": [],
+          "description": "为当前信标/资源箱生成稳定ID的拾取物，永久收入由事务结算处理。",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         },
         {
           "name": "planTokenCollection",
@@ -6775,7 +6915,13 @@
       "path": "domain/status.js",
       "layer": "domain",
       "purpose": "控制/封禁请求与拦截优先级。",
-      "dependencies": [],
+      "dependencies": [
+        "domain/entities.js",
+        "domain/geometry.js",
+        "domain/plans.js",
+        "domain/serialization.js",
+        "domain/stats.js"
+      ],
       "functions": [
         {
           "name": "resolveControlRequest",
@@ -6792,6 +6938,12 @@
           "result": "ControlResolution",
           "description": "Glasswing只处理一次，再算抵抗/拦截；返回计划，不立即调用插件。",
           "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/geometry.js#distanceSquared",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson",
+            "domain/stats.js#derivePlayerStats",
             "domain/status.js#applyGlasswingModifier",
             "domain/status.js#selectControlInterceptor"
           ],
@@ -6799,7 +6951,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "applyGlasswingModifier",
@@ -6841,7 +6993,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planEscapeInput",
@@ -6857,12 +7009,15 @@
           ],
           "result": "EffectPlan",
           "description": "只接受有效按下边沿/辅助节奏，累积挣脱；LoRA界面不接收。",
-          "calls": [],
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planStatusAdvance",
@@ -6874,12 +7029,97 @@
           ],
           "result": "SystemPlan",
           "description": "更新控制、免疫和训练负面倒计时；暂停不走，解除不刷新技能。",
-          "calls": [],
+          "calls": [
+            "domain/plans.js#createStateChange"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
           "implementation": "implemented"
+        },
+        {
+          "description": "封印被主武器击碎时解除对应技能封禁，不重置冷却，不发掉落。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planSealRelease",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "domain/world/adventure.js",
+      "layer": "domain",
+      "purpose": "Claude短途纵切的连续地图；首领与其他模式不因此宣称完整实现。",
+      "dependencies": [
+        "domain/entities.js",
+        "domain/plans.js"
+      ],
+      "functions": [
+        {
+          "description": "构建Pro1连续地图：三信标、两检查点、资源箱、驻守敌人与有限追兵预算。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createAdventureMapPlan",
+          "args": [
+            {
+              "name": "start",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
+          "implementationScope": "adventure-slice"
+        },
+        {
+          "description": "任意两个信标完成后，以稳定ID创建一次Claude首领并切换boss阶段。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planClaudeEncounter",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
+          "implementationScope": "adventure-slice"
         }
       ]
     },
@@ -6892,7 +7132,8 @@
         "domain/geometry.js",
         "domain/plans.js",
         "domain/random.js",
-        "domain/rewards.js"
+        "domain/rewards.js",
+        "domain/world/adventure.js"
       ],
       "functions": [
         {
@@ -6912,18 +7153,19 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "生成固定的连续战斗演练海域/礁石/检查点与15只普通敌人；正式区域/事件/目标地图尚未实现。",
+          "description": "按运行范围生成Free演练或Pro1三信标地图；不假装完整区域生成已完成。",
           "calls": [
             "domain/entities.js#createEntityState",
             "domain/plans.js#createStateChange",
-            "domain/random.js#drawRandom"
+            "domain/random.js#drawRandom",
+            "domain/world/adventure.js#createAdventureMapPlan"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
           "implementation": "implemented",
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planMapExploration",
@@ -6934,13 +7176,17 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "更新可见格、秘密方向与发现事件，已发现id不重复发资源。",
-          "calls": [],
+          "description": "按玩家位置揭示160单位网格，只有新格子才生成修改计划。",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         },
         {
           "name": "planWorldInteraction",
@@ -6955,16 +7201,20 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "F/触屏选择最近交互目标，校验距离与安全状态；不直接读写存储。",
+          "description": "就近交互资源箱或已解锁首领门；首次扇面发现生成持久化事实。",
           "calls": [
             "domain/geometry.js#distanceSquared",
-            "domain/rewards.js#planWorldReward"
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/rewards.js#planWorldReward",
+            "domain/world/adventure.js#planClaudeEncounter"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         },
         {
           "name": "isSafeForInteraction",
@@ -6996,6 +7246,8 @@
       "layer": "domain",
       "purpose": "主线/信标/锁门与API首领过程事件。",
       "dependencies": [
+        "domain/geometry.js",
+        "domain/plans.js",
         "domain/rewards.js"
       ],
       "functions": [
@@ -7008,15 +7260,19 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "根据实际目标实体和占领进度完成目标，不把生成完当清场。",
+          "description": "仅在探索阶段且进入120范围时推进一个信标；离开不清零，35秒完成。",
           "calls": [
+            "domain/geometry.js#distanceSquared",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
             "domain/world/objectives.js#planObjectiveCompletion"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         },
         {
           "name": "planObjectiveCompletion",
@@ -7031,15 +7287,18 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "唯一奖励/开门事件；正式最后Boss可请求胜利，API仅记阶段。",
+          "description": "稳定去重完成信标、生成80经验/2碎片/3零件，完成两个后开放首领门。",
           "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
             "domain/rewards.js#planWorldReward"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         },
         {
           "name": "planApiProgression",
@@ -7135,7 +7394,9 @@
       "dependencies": [
         "content/catalog.js",
         "domain/collision.js",
-        "domain/difficulty.js"
+        "domain/difficulty.js",
+        "domain/entities.js",
+        "domain/plans.js"
       ],
       "functions": [
         {
@@ -7147,17 +7408,20 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "推进合法生成日程，额度/局部容量满则延期，合并久积压，保持Grok人海方向。",
+          "description": "推进有限预算分组追兵、延迟预警、错峰出生；首领战不新增追兵。",
           "calls": [
             "domain/collision.js#validateSpawnLocation",
-            "domain/difficulty.js#resolveApiSpawnMultipliers",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/world/spawning.js#planEnemySpawn",
             "domain/world/spawning.js#planReinforcementGroup"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         },
         {
           "name": "planEnemySpawn",
@@ -7172,16 +7436,20 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "建立稳定实体id/奖励来源/出生时倍率和模型壳，提交生成计划。",
+          "description": "仅消费到期且位置合法的出生请求；实际出生才把预留预算转为已使用。",
           "calls": [
-            "domain/difficulty.js#resolveModelProfileId",
-            "content/catalog.js#findContentDefinition"
+            "content/catalog.js#findContentDefinition",
+            "domain/collision.js#validateSpawnLocation",
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
           ],
           "rule": "模型壳/基础能力在下一阶段按相同profile处理，出生倍率只快照一次；实体来源和奖励策略不丢失。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         },
         {
           "name": "planReinforcementGroup",
@@ -7200,13 +7468,17 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "为一组入口/信号援军预留预算和奖励策略；同group只排一次。",
-          "calls": [],
+          "description": "按阶段压力和屏幕外规则预留一组Bot预算，不积累补刷债务。",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         }
       ]
     },
@@ -7275,6 +7547,8 @@
             "domain/lora.js#planLoraInput",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
+            "domain/status.js#planEscapeInput",
+            "domain/world/map.js#planWorldInteraction",
             "engine/commands.js#validateGameCommand",
             "engine/flow.js#planPause",
             "engine/flow.js#planResume"
@@ -7343,20 +7617,21 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "预览处理damage/heal/shield/collect；其他效果类型明确拒绝，不假装生成或控制已完成。",
+          "description": "处理damage/heal/shield/collect/control；未实现效果明确拒绝。",
           "calls": [
             "domain/damage.js#planLifeChange",
             "domain/damage.js#resolveDamageRequest",
             "domain/rewards.js#planTokenCollection",
             "domain/serialization.js#serializeCanonical",
-            "domain/shields.js#planShieldGrant"
+            "domain/shields.js#planShieldGrant",
+            "domain/status.js#resolveControlRequest"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "dispatch",
           "implementation": "implemented",
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "drainEffectQueue",
@@ -7503,12 +7778,14 @@
       "layer": "engine",
       "purpose": "事件投影到效果计划，切断伤害与插件的循环依赖。",
       "dependencies": [
+        "content/handlers/plugins.js",
         "dispatch/dsh.js",
         "dispatch/mechanics.js",
         "dispatch/models.js",
         "dispatch/plugins.js",
         "domain/distill.js",
-        "domain/plans.js"
+        "domain/plans.js",
+        "domain/status.js"
       ],
       "functions": [
         {
@@ -7524,16 +7801,19 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "预览分派蒸馏死亡/受伤钩子；其他三插件由属性/额度/拾取消费者处理；仅接受LoRA/更新重置两种试装DSH，完整机制仍拒绝。",
+          "description": "分派蒸馏、封印破坏和并行调用事件；其余首批插件由明确数据消费者处理。",
           "calls": [
-            "domain/distill.js#planDistillEvent"
+            "content/handlers/plugins.js#planPluginParallel",
+            "domain/distill.js#planDistillEvent",
+            "domain/plans.js#mergeSystemPlans",
+            "domain/status.js#planSealRelease"
           ],
           "rule": "过滤已启用/实际订阅的handler；次级伤害不冒充基础武器命中；不再次发布同eventId。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
           "implementation": "implemented",
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
         }
       ]
     },
@@ -7553,14 +7833,18 @@
         "domain/plans.js",
         "domain/rewards.js",
         "domain/status.js",
+        "domain/world/map.js",
+        "domain/world/objectives.js",
+        "domain/world/spawning.js",
         "engine/commands.js",
         "engine/effectLoop.js",
         "engine/flow.js",
+        "engine/hooks.js",
         "engine/reducer.js"
       ],
       "functions": [
         {
-          "description": "执行受范围限制的预览世界步，逐阶段应用计划、排队效果、声明死亡与掉落，最后只提交一次。",
+          "description": "执行Free/Pro1固定世界步，推进探索/追兵/Claude/效果/掉落与成长后统一提交。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -7583,12 +7867,12 @@
           "result": "TickResult",
           "implementation": "implemented",
           "calls": [
+            "domain/ai.js#planBossAi",
             "domain/ai.js#planEnemyAi",
             "domain/attacks.js#planCollisionEffects",
             "domain/attacks.js#planWeaponFire",
             "domain/collision.js#detectCollisions",
             "domain/deaths.js#resolveTerminalOutcome",
-            "domain/distill.js#planDistillEvent",
             "domain/distill.js#planDistilledAbilities",
             "domain/dshCycle.js#planDshCycleEvent",
             "domain/movement.js#planEntityMotion",
@@ -7598,14 +7882,18 @@
             "domain/plans.js#createStateChange",
             "domain/rewards.js#planDeathRewards",
             "domain/status.js#planStatusAdvance",
+            "domain/world/map.js#planMapExploration",
+            "domain/world/objectives.js#planObjectiveAdvance",
+            "domain/world/spawning.js#planSpawnSchedule",
             "engine/commands.js#orderPendingCommands",
             "engine/commands.js#planGameCommand",
             "engine/effectLoop.js#drainEffectQueue",
             "engine/flow.js#planProgressionPanels",
+            "engine/hooks.js#planEventHooks",
             "engine/reducer.js#applySystemPlan",
             "engine/reducer.js#commitWorkingState"
           ],
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "description": "不推进已暂停时钟，立即处理暂停/恢复命令。",
@@ -7775,7 +8063,7 @@
             }
           ],
           "result": "GameSession",
-          "description": "只创建显式core-preview/0级范围的私有Session，校验内容/初始世界后才发布句柄。",
+          "description": "校验内容与初始世界后发布Free/Pro1私有Session；模组仅允许Free练习。",
           "calls": [
             "content/catalog.js#validateContentCatalog",
             "content/registry.js#createHandlerRegistry",
@@ -7789,7 +8077,7 @@
           "phase": "initialize",
           "callMode": "sequence",
           "implementation": "implemented",
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "enqueueSessionCommand",
@@ -7824,7 +8112,7 @@
             }
           ],
           "result": "TickResult",
-          "description": "消费到期世界命令，调用独立预览世界步并原子提交；正式世界tick仍未实现。",
+          "description": "消费到期世界命令，执行Free/Pro1固定世界步并原子提交。",
           "calls": [
             "engine/commands.js#orderPendingCommands",
             "engine/previewTick.js#advancePreviewUiCommands",
@@ -7835,7 +8123,7 @@
           "phase": "world-tick",
           "callMode": "sequence",
           "implementation": "implemented",
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "stepSessionUi",
@@ -7862,7 +8150,7 @@
           "phase": "ui-tick",
           "callMode": "sequence",
           "implementation": "implemented",
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "readSessionState",
@@ -7913,7 +8201,7 @@
             }
           ],
           "result": "Result<GameSession>",
-          "description": "验证检查点后构建新的暂停预览Session；完整冒险范围明确拒绝。",
+          "description": "校验版本、模组锁及状态后构建暂停Session；失败保留原检查点。",
           "calls": [
             "domain/checkpoint.js#restoreCheckpointState"
           ],
@@ -7922,7 +8210,7 @@
           "phase": "restore",
           "callMode": "sequence",
           "implementation": "implemented",
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "disposeGameSession",
@@ -7964,7 +8252,7 @@
             }
           ],
           "result": "RenderSnapshot",
-          "description": "投影实体/米粒/预警、蒸馏虚影/追击泡、生命/武器/冷却；成长面板由宿主读取Session快照，LoRA未接入。",
+          "description": "只读投影战斗实体、掉落、探索格、Claude预警与首领生命，供Canvas绘制。",
           "calls": [
             "domain/serialization.js#toJson"
           ],
@@ -7973,7 +8261,7 @@
           "phase": "query",
           "callMode": "sequence",
           "implementation": "implemented",
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "createStateDigest",
@@ -8113,17 +8401,21 @@
       "layer": "host",
       "purpose": "Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,",
       "dependencies": [
+        "adapters/storage.js",
+        "application/repository.js",
         "content/catalog.js",
         "content/registry.js",
         "domain/checkpoint.js",
         "domain/clock.js",
         "domain/difficulty.js",
+        "domain/settlement.js",
         "engine/session.js",
+        "preview/modManager.js",
         "preview/view.js"
       ],
       "functions": [
         {
-          "description": "组装独立浏览器战斗试作、键鼠/双摇杆、固定帧、菜单和隔离检查点；返回完整清理函数。",
+          "description": "组装Free/Pro1、键鼠/双摇杆、Profile事务结算及本地模组菜单；返回完整清理函数。",
           "rule": "",
           "ownership": "宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState",
           "phase": "query",
@@ -8138,6 +8430,10 @@
           "result": "() => void",
           "implementation": "implemented",
           "calls": [
+            "adapters/storage.js#createStoragePort",
+            "application/repository.js#commitProfilePlan",
+            "application/repository.js#mergePersistenceIntents",
+            "application/repository.js#readProfileRepository",
             "content/catalog.js#loadContentCatalog",
             "content/catalog.js#validateContentCatalog",
             "content/registry.js#createHandlerRegistry",
@@ -8147,6 +8443,7 @@
             "domain/clock.js#resumeClock",
             "domain/clock.js#scheduleFrame",
             "domain/difficulty.js#resolveDifficultySnapshot",
+            "domain/settlement.js#createSettlement",
             "engine/session.js#createGameSession",
             "engine/session.js#disposeGameSession",
             "engine/session.js#enqueueSessionCommand",
@@ -8155,10 +8452,49 @@
             "engine/session.js#restoreGameSession",
             "engine/session.js#stepSessionUi",
             "engine/session.js#stepSessionWorld",
+            "preview/modManager.js#mountModManager",
             "preview/view.js#getPreviewCamera",
             "preview/view.js#renderPreviewFrame"
           ],
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
+        }
+      ]
+    },
+    {
+      "path": "preview/modManager.js",
+      "layer": "host",
+      "purpose": "Local community mod manager. Installation is persistent; activation applies only at next departure.",
+      "dependencies": [
+        "content/mods.js"
+      ],
+      "functions": [
+        {
+          "description": "提供本地JSON安装、启停、移除与持久化菜单，只影响下次Free出发。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "mountModManager",
+          "args": [
+            {
+              "name": "root",
+              "type": "untyped"
+            },
+            {
+              "name": "base",
+              "type": "untyped"
+            },
+            {
+              "name": "notify",
+              "type": "untyped"
+            }
+          ],
+          "result": "{getCatalog: () => ContentCatalog; dispose: () => void}",
+          "implementation": "implemented",
+          "calls": [
+            "content/mods.js#composeModCatalog",
+            "content/mods.js#parseModPackage"
+          ]
         }
       ]
     },
@@ -8166,7 +8502,9 @@
       "path": "preview/view.js",
       "layer": "host",
       "purpose": "Canvas presentation for the combat preview. Never mutates or simulates game state.",
-      "dependencies": [],
+      "dependencies": [
+        "domain/geometry.js"
+      ],
       "functions": [
         {
           "description": "按画面尺寸计算相机与比例，绘制和鼠标映射使用同一投影。",
@@ -8191,7 +8529,9 @@
           ],
           "result": "{x:number;y:number;scale:number}",
           "implementation": "implemented",
-          "calls": [],
+          "calls": [
+            "domain/geometry.js#computeCameraBounds"
+          ],
           "implementationScope": "core-preview"
         },
         {
@@ -9163,9 +9503,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 81,
-    "functions": 312,
-    "implemented": 153,
-    "placeholders": 159
+    "modules": 84,
+    "functions": 320,
+    "implemented": 178,
+    "placeholders": 142
   }
 }

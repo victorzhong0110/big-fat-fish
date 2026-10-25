@@ -1,11 +1,15 @@
 // @ts-check
 import { createEmptyPlan, createStateChange } from '../domain/plans.js';
 import { planDistilledAbilities, planDistillEvent } from '../domain/distill.js';
+import { planEventHooks } from './hooks.js';
 import { planLoraUiStep } from '../domain/lora.js';
 import { planDshCycleEvent } from '../domain/dshCycle.js';
 import { planProgressionPanels } from './flow.js';
 import { planStatusAdvance } from '../domain/status.js';
-import { planEnemyAi } from '../domain/ai.js';
+import { planMapExploration } from '../domain/world/map.js';
+import { planSpawnSchedule } from '../domain/world/spawning.js';
+import { planObjectiveAdvance } from '../domain/world/objectives.js';
+import { planEnemyAi, planBossAi } from '../domain/ai.js';
 import { planPlayerMovement, planEntityMotion, planPickupMotion } from '../domain/movement.js';
 import { planWeaponFire, planCollisionEffects } from '../domain/attacks.js';
 import { detectCollisions } from '../domain/collision.js';
@@ -15,13 +19,13 @@ import { orderPendingCommands, planGameCommand } from './commands.js';
 import { applySystemPlan, commitWorkingState } from './reducer.js';
 import { drainEffectQueue } from './effectLoop.js';
 /** A bounded, explicit combat-only slice. Full adventure tick remains separate and unfinished.
- * @implementationScope core-preview
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/ai.js#planBossAi
  * @calls domain/ai.js#planEnemyAi
  * @calls domain/attacks.js#planCollisionEffects
  * @calls domain/attacks.js#planWeaponFire
  * @calls domain/collision.js#detectCollisions
  * @calls domain/deaths.js#resolveTerminalOutcome
- * @calls domain/distill.js#planDistillEvent
  * @calls domain/distill.js#planDistilledAbilities
  * @calls domain/dshCycle.js#planDshCycleEvent
  * @calls domain/movement.js#planEntityMotion
@@ -31,10 +35,14 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls domain/plans.js#createStateChange
  * @calls domain/rewards.js#planDeathRewards
  * @calls domain/status.js#planStatusAdvance
+ * @calls domain/world/map.js#planMapExploration
+ * @calls domain/world/objectives.js#planObjectiveAdvance
+ * @calls domain/world/spawning.js#planSpawnSchedule
  * @calls engine/commands.js#orderPendingCommands
  * @calls engine/commands.js#planGameCommand
  * @calls engine/effectLoop.js#drainEffectQueue
  * @calls engine/flow.js#planProgressionPanels
+ * @calls engine/hooks.js#planEventHooks
  * @calls engine/reducer.js#applySystemPlan
  * @calls engine/reducer.js#commitWorkingState
  * @param {import('../contracts.d.ts').StateSnapshot} state
@@ -43,20 +51,23 @@ import { drainEffectQueue } from './effectLoop.js';
  * @returns {import('../contracts.d.ts').TickResult}
  */
 export function advancePreviewWorldTick(state, commands, catalog) {
-  if (state.start.runtimeProfile !== 'core-preview') throw new Error('Not a combat preview');
+  if (!['core-preview', 'adventure-slice'].includes(String(state.start.runtimeProfile))) throw new Error('Not a combat preview');
   if (!['exploring', 'boss'].includes(state.flow.phase)) return { next: /** @type {import('../contracts.d.ts').GameState} */ (structuredClone(state)), events: [], persistence: [], diagnostics: [] };
   let working = /** @type {import('../contracts.d.ts').GameState} */ (structuredClone(state));
   working.tick++;
   const outbox = { events: /** @type {import('../contracts.d.ts').DomainEvent[]} */ ([]), persistence: /** @type {import('../contracts.d.ts').PersistenceIntent[]} */ ([]), diagnostics: /** @type {import('../contracts.d.ts').Diagnostic[]} */ ([]) };
   const effects = /** @type {import('../contracts.d.ts').EffectRequest[]} */ ([]);
   const context = () => ({ state: working, catalog, event: null, entityId: null, random: working.random.combat });
-  const apply = (/** @type {import('../contracts.d.ts').SystemPlan} */ plan) => { if (plan.changes.length) working = applySystemPlan(working, plan); effects.push(...plan.effects); outbox.events.push(...plan.events); outbox.persistence.push(...plan.persistence); outbox.diagnostics.push(...plan.diagnostics); for (const event of plan.events) if (event.type === 'WeaponFired') { const hook = planDistillEvent(context(), event); if (hook.changes.length) working = applySystemPlan(working, hook); effects.push(...hook.effects); } };
+  const apply = (/** @type {import('../contracts.d.ts').SystemPlan} */ plan) => { if (plan.changes.length) working = applySystemPlan(working, plan); effects.push(...plan.effects); outbox.events.push(...plan.events); outbox.persistence.push(...plan.persistence); outbox.diagnostics.push(...plan.diagnostics); for (const event of plan.events) if (event.type === 'WeaponFired') { const hook = planEventHooks(context(), event); if (hook.changes.length) working = applySystemPlan(working, hook); effects.push(...hook.effects); } };
   for (const command of orderPendingCommands(commands, working.tick, 'world')) apply(planGameCommand(context(), command).plan);
   apply(planStatusAdvance(context()));
   apply(planDshCycleEvent(context(), { id: `world:${working.tick}`, runId: working.runId, tick: working.tick, seq: 0, type: 'WorldTick', sourceId: null, targetId: null, payload: {} }));
+  apply(planSpawnSchedule(context()));
   apply(planEnemyAi(context()));
+  apply(planBossAi(context()));
   apply(planPlayerMovement(context(), working.input));
   apply(planEntityMotion(context()));
+  apply(planMapExploration(context()));
   apply(planWeaponFire({ ...context(), aim: working.input.aim, weapon: working.player.loadout.weapons[working.player.loadout.activeWeaponIndex] }));
   apply(planDistilledAbilities(context()));
   apply(planCollisionEffects(context(), detectCollisions(context())));
@@ -67,6 +78,7 @@ export function advancePreviewWorldTick(state, commands, catalog) {
   apply(planDeathRewards(context(), drained.deaths).plan);
   const outcome = resolveTerminalOutcome(context(), drained.deaths);
   if (outcome) apply({ ...createEmptyPlan(), changes: [createStateChange('flow', 'phase', 'setFlowPhase', { phase: outcome, resumePhase: null }), createStateChange('runtime', 'input', 'setInput', { ...working.input, move: { x: 0, y: 0 }, firing: false })] });
+  if (!outcome) apply(planObjectiveAdvance(context()));
   if (!outcome) for (let i = 0; i < 128; i++) { const plan = planProgressionPanels(context()); if (!plan.changes.length) break; apply(plan); if (i === 127) throw new Error('Growth queue did not settle'); }
   return commitWorkingState(state, working, catalog, outbox);
 }

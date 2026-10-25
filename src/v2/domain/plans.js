@@ -60,6 +60,9 @@ export function validateSystemPlan(plan) {
       case 'removeEntity': valid = change.target === 'world' && Object.keys(p).length === 0; break;
       case 'setEntityKinematics': valid = change.target === 'entity' && Object.keys(p).length === 4 && ['position', 'previousPosition', 'velocity'].every(key => { const point = /** @type {Record<string, import('../contracts.d.ts').Json> | null} */ (p[key]); return point && typeof point === 'object' && typeof point.x === 'number' && typeof point.y === 'number'; }) && typeof p.facingRadians === 'number'; break;
       case 'setEntityRuntime': valid = change.target === 'entity' && !!p.runtime && typeof p.runtime === 'object' && !Array.isArray(p.runtime); break;
+      case 'setObjectives': valid=change.target==='world'&&Array.isArray(p.objectives);break;
+      case 'setBosses': valid=change.target==='world'&&Array.isArray(p.bosses);break;
+      case 'setSpawnDirector': valid=change.target==='world'&&Array.isArray(p.queue)&&Array.isArray(p.budgets)&&Number.isSafeInteger(p.nextAt)&&Number(p.nextAt)>=0;break;
       case 'setMap': valid = change.target === 'world' && p.id === change.id && nonnegative('width') && nonnegative('height') && Array.isArray(p.obstacleIds) && Array.isArray(p.checkpointIds) && Array.isArray(p.exitIds); break;
       case 'setInput': valid = change.target === 'runtime' && change.id === 'input' && typeof p.firing === 'boolean' && !!p.move && typeof p.move === 'object' && !!p.aim && typeof p.aim === 'object' && Array.isArray(p.heldKeys) && Array.isArray(p.pointerIds); break;
       case 'ackCommand': valid = change.target === 'runtime' && Number.isSafeInteger(p.seq) && Number(p.seq) >= 0; break;
@@ -98,6 +101,8 @@ export function validateSystemPlan(plan) {
       }
       case 'setWeaponUpdate': valid = change.target === 'player' && typeof p.instanceId === 'string' && typeof p.temporaryQuality === 'number' && [0, 1, 2].includes(p.temporaryQuality) && Number.isSafeInteger(p.expiresAt) && Number(p.expiresAt) >= 0; break;
       case 'resetEquipmentCooldowns': valid = change.target === 'player' && Object.keys(p).length === 0; break;
+      case 'setDshRuntime': valid = change.target === 'runtime' && !!p.runtime && typeof p.runtime === 'object' && !Array.isArray(p.runtime); break;
+      case 'setPlayerModifiers': valid = change.target === 'player' && Array.isArray(p.modifiers); break;
       case 'setDshCycle': valid = change.target === 'runtime' && change.id === 'dsh_gpt_branch' && nonnegative('remaining') && Number(p.remaining) <= 28 && (p.pendingOutcome === null || p.pendingOutcome === 'update' || p.pendingOutcome === 'reset') && Number.isSafeInteger(p.triggerSeq) && Number(p.triggerSeq) >= 0 && Number.isSafeInteger(p.lastAdvancedTick) && Number(p.lastAdvancedTick) >= 0; break;
       case 'setHp': valid = change.target === 'entity' && nonnegative('hp'); break;
       case 'setDeath': valid = change.target === 'entity' && p.dying === true && p.dead === true; break;

@@ -5,6 +5,7 @@
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import { createEmptyPlan, createStateChange } from './plans.js';
+import { createHandlerRegistry } from '../content/registry.js';
 import { advanceDistillTrack } from './distill.js';
 import * as dependency2 from './random.js';
 
@@ -13,6 +14,7 @@ import * as dependency2 from './random.js';
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @implementationScope core-preview
+ * @calls content/registry.js#createHandlerRegistry
  * @calls domain/random.js#chooseWeightedIndex
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').LevelReward} reward
@@ -20,8 +22,8 @@ import * as dependency2 from './random.js';
  */
 export function createPluginChoice(context, reward) {
   const state = context.state;
-  if (state.start.runtimeProfile !== 'core-preview') throw new Error('Full draft pool is unfinished');
-  let pool = ['plugin_collect', 'plugin_distill', 'plugin_5h', 'plugin_guard'].filter(id => !state.plugins.some(plugin => plugin.id === id && plugin.rank === 2));
+  if (!['core-preview', 'adventure-slice'].includes(String(state.start.runtimeProfile))) throw new Error('Full draft pool is unfinished');
+  let pool = createHandlerRegistry().implementedIds.filter(id=>context.catalog.definitions[id]?.kind==='plugin').filter(id => !state.plugins.some(plugin => plugin.id === id && plugin.rank === 2));
   const previous = state.flow.choice;
   const fresh = pool.filter(id => !previous?.candidates.some(candidate => candidate.id === id));
   let random = state.random.reward;
@@ -29,10 +31,10 @@ export function createPluginChoice(context, reward) {
   const add = (/** @type {string} */ id) => { candidates.push({ id, rank: state.plugins.some(plugin => plugin.id === id) ? 2 : 1 }); pool = pool.filter(item => item !== id); };
   if (reward.level === 2 && !previous && pool.includes('plugin_distill')) add('plugin_distill');
   const ordinal = [2, 4, 7, 10, 13, 16, 19, 22, 25, 28].filter(level => level <= reward.level).length;
-  const weights = ordinal <= 2 ? [75, 23] : ordinal <= 4 ? [50, 40] : [30, 50];
+  const weights = ordinal <= 2 ? [75, 23, 2] : ordinal <= 4 ? [50, 40, 10] : [30, 50, 20];
   while (pool.length && candidates.length < 3) {
     const preferred = previous && fresh.some(id => pool.includes(id)) ? pool.filter(id => fresh.includes(id)) : pool;
-    const groups = [preferred.filter(id => id === 'plugin_collect'), preferred.filter(id => id !== 'plugin_collect')];
+    const groups = ['common','advanced','legendary'].map(rarity=>preferred.filter(id=>context.catalog.definitions[id]?.parameters.rarity===rarity));
     const rarity = dependency2.chooseWeightedIndex(groups.map((group, i) => group.length ? weights[i] : 0), random);
     if (!rarity.ok) throw new Error(rarity.message); random = rarity.value.next;
     const group = groups[rarity.value.index], pick = dependency2.chooseWeightedIndex(group.map(() => 1), random);

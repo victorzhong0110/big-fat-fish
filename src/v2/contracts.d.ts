@@ -18,7 +18,7 @@ export interface ClockState { accumulatorMs: number; suspended: boolean; backlog
 export interface FrameSchedule { worldSteps: number; uiSteps: number; nextClock: ClockState; performancePause: boolean; }
 export interface Command { id: Id; seq: number; clock: 'world' | 'ui'; targetTick: Tick; type: string; payload: Json; }
 export interface InputSample { device: 'keyboard' | 'mouse' | 'touch' | 'system'; type: string; timestampMs: number; payload: Json; }
-export interface InputState { move: Vec2; aim: Vec2; firing: boolean; heldKeys: readonly string[]; pointerIds: readonly number[]; }
+export interface InputState { viewport?: {width:number;height:number}; move: Vec2; aim: Vec2; firing: boolean; heldKeys: readonly string[]; pointerIds: readonly number[]; }
 export interface InputClockMapping { worldTick: Tick; uiTick: Tick; phase: Phase; sampleOriginMs: number; worldOriginMs: number; uiOriginMs: number; worldPaused: boolean; uiPaused: boolean; }
 export interface CommandBatch { commands: readonly Command[]; nextInput: InputState; }
 export interface CommandResult { accepted: boolean; reason: string | null; plan: SystemPlan; }
@@ -77,10 +77,10 @@ export interface DshCycleState { remaining: number; pendingOutcome: 'update' | '
 export interface BossState { entityId: Id; faction: Faction; phase: number; telegraph: Json; resetNodes: readonly { id: Id; hp: number; consumed: boolean; position: Vec2 }[]; resetRemaining: number; resetCooldown: number; spawnGroupSeq: number; }
 export interface ApiState { elapsedTicks: Tick; bossIndex: number; materialMinute: number; fragmentsThisMinute: number; partsThisMinute: number; }
 export interface DifficultySnapshot { level: number | 'api'; mode: Mode; mechanicIds: readonly Id[]; difficultyPerkIds: readonly Id[]; modelProfileIds: Readonly<Record<Faction, Id>>; hpMultiplier: number; damageMultiplier: number; spawnBudgetMultiplier: number; }
-export interface StartSnapshot { runtimeProfile?: 'core-preview' | 'full'; runId?: Id; treeNodeIds: readonly Id[]; dsh: readonly DshSlot[]; loadout: Loadout; difficulty: DifficultySnapshot; }
+export interface StartSnapshot { modLock?: readonly ModLockEntry[]; runtimeProfile?: 'core-preview' | 'adventure-slice' | 'full'; runId?: Id; treeNodeIds: readonly Id[]; dsh: readonly DshSlot[]; loadout: Loadout; difficulty: DifficultySnapshot; }
 export interface FlowState { suspendedResumePhase?: Phase | null; phase: Phase; resumePhase: Phase | null; queuedLevelRewards: readonly LevelReward[]; choice: PluginChoice | null; settlementPending: boolean; pluginRerollsUsed?: number; }
 export interface GameState {
-  versions: Versions; runId: Id; seed: number; tick: Tick; uiTick: Tick; revision: number; lastWorldAdvanceTick: Tick | null; input: InputState; lastCommandSeq: number;
+  spawnDirectorNextAt?: Tick; versions: Versions; runId: Id; seed: number; tick: Tick; uiTick: Tick; revision: number; lastWorldAdvanceTick: Tick | null; input: InputState; lastCommandSeq: number;
   start: StartSnapshot; flow: FlowState; random: RandomStreams; player: PlayerState; world: WorldState;
   level: number; xpRemainder: number; totalTokens: number; plugins: readonly PluginState[];
   dshRuntime: Readonly<Record<Id, Json>>; dshCycle: DshCycleState; lora: LoraState;
@@ -91,7 +91,7 @@ export interface GameState {
 export interface GameSession { readonly runId: Id; readonly revision: number; }
 export interface Definition { id: Id; kind: string; displayName: string; parameters: Readonly<Record<string, Json>>; version: string; }
 export interface MechanicDefinition extends Definition { unlockAt: number; scope: 'ai' | 'world' | 'objective' | 'event' | 'boss'; appliesTo: readonly Id[]; handlerId: Id; exclusions: readonly Id[]; }
-export interface ContentCatalog { version: string; definitions: Readonly<Record<Id, Definition>>; mechanics: readonly MechanicDefinition[]; }
+export interface ContentCatalog { modLock?: readonly ModLockEntry[]; version: string; definitions: Readonly<Record<Id, Definition>>; mechanics: readonly MechanicDefinition[]; }
 export interface ValidationReport { valid: boolean; diagnostics: readonly Diagnostic[]; }
 export interface EvaluationContext { state: StateSnapshot; catalog: Readonly<ContentCatalog>; event: DomainEvent | null; entityId: Id | null; random: RandomState; }
 export interface AttackContext extends EvaluationContext { aim: Vec2; weapon: WeaponState | null; }
@@ -130,7 +130,7 @@ export interface PresentationPort { render(snapshot: RenderSnapshot): void; pres
 export interface InputPort { poll(): readonly InputSample[]; suspend(): void; dispose(): void; }
 export interface AudioPort { unlock(): Promise<void>; play(events: readonly DomainEvent[]): void; suspend(): void; dispose(): void; }
 export interface RuntimePorts { storage: StoragePort; presentation: PresentationPort; input: InputPort; audio: AudioPort; }
-export interface RenderEntity { radius: number; team: EntityState['team']; hp: number; maxHp: number; telegraphRemaining: number; shieldAmount: number; id: Id; kind: string; position: Vec2; facingRadians: number; spriteId: Id; modelLabel: string | null; hpFraction: number; weakArcDegrees: number | null; statusLabels: readonly string[]; }
+export interface RenderEntity { bossTelegraph?: Json; objectiveProgress?: number; unlocked?: boolean; opened?: boolean; radius: number; team: EntityState['team']; hp: number; maxHp: number; telegraphRemaining: number; shieldAmount: number; id: Id; kind: string; position: Vec2; facingRadians: number; spriteId: Id; modelLabel: string | null; hpFraction: number; weakArcDegrees: number | null; statusLabels: readonly string[]; }
 export interface RenderSnapshot { revision: number; tick: Tick; uiTick: Tick; phase: Phase; entities: readonly RenderEntity[]; hud: Json; panel: Json; }
 export interface UiAction { id: Id; type: string; payload: Json; }
 export interface ViewHandle { id: Id; }
@@ -143,3 +143,8 @@ export interface BootstrapOptions { mountElementId: string; assets: readonly Ass
 export interface BrowserRuntime { app: ApplicationHandle; input: InputHandle; view: ViewHandle; audio: AudioHandle; inputState: InputState; storage: StoragePort; }
 export interface Recording { versions: Versions; initial: GameState; commands: readonly Command[]; digests: readonly { tick: Tick; digest: string }[]; }
 export interface TickResult { next: GameState; events: readonly DomainEvent[]; persistence: readonly PersistenceIntent[]; diagnostics: readonly Diagnostic[]; }
+
+/** Community SDK 1.0: local, declarative packs; never executed JavaScript. */
+export interface ModPatch { id: Id; displayName?: string; parameters?: Readonly<Record<string, number>>; }
+export interface ModPackage { formatVersion: 1; apiVersion: '1.0'; id: Id; version: string; name: string; author: string; description: string; gameVersion: string; dependencies: Readonly<Record<Id, string>>; conflicts: readonly Id[]; patches: readonly ModPatch[]; }
+export interface ModLockEntry { id: Id; version: string; digest: string; }

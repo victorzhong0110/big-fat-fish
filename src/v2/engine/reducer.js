@@ -43,6 +43,9 @@ export function applySystemPlan(working, plan) {
         entity.position = data.position; entity.previousPosition = data.previousPosition; entity.velocity = data.velocity; entity.facingRadians = data.facingRadians; break;
       }
       case 'setEntityRuntime': entity.runtime = /** @type {Record<string, import('../contracts.d.ts').Json>} */ (p.runtime); break;
+      case 'setObjectives': next.world.objectives=/** @type {import('../contracts.d.ts').ObjectiveState[]} */ (JSON.parse(serializeCanonical(p.objectives)));break;
+      case 'setBosses': next.bosses=/** @type {import('../contracts.d.ts').BossState[]} */ (JSON.parse(serializeCanonical(p.bosses)));break;
+      case 'setSpawnDirector': next.world.spawnQueue=/** @type {import('../contracts.d.ts').SpawnRequest[]} */ (JSON.parse(serializeCanonical(p.queue)));next.world.budgets=/** @type {import('../contracts.d.ts').EncounterBudget[]} */ (JSON.parse(serializeCanonical(p.budgets)));next.spawnDirectorNextAt=Number(p.nextAt);break;
       case 'setMap': next.world.map = /** @type {import('../contracts.d.ts').MapState} */ (JSON.parse(serializeCanonical(p))); break;
       case 'setInput': next.input = /** @type {import('../contracts.d.ts').InputState} */ (JSON.parse(serializeCanonical(p))); break;
       case 'ackCommand':
@@ -124,6 +127,8 @@ export function applySystemPlan(working, plan) {
       case 'resetEquipmentCooldowns':
         if (change.id !== next.player.entityId) throw new Error('Player id mismatch');
         next.player.loadout = { ...next.player.loadout, skillCooldown: 0, dashCooldown: 0, companionCooldown: next.player.loadout.companionId ? 0 : next.player.loadout.companionCooldown }; break;
+      case 'setDshRuntime': next.dshRuntime = { ...next.dshRuntime, [change.id]: p.runtime }; break;
+      case 'setPlayerModifiers': next.player.modifiers = /** @type {import('../contracts.d.ts').StatModifier[]} */ (JSON.parse(serializeCanonical(p.modifiers))); break;
       case 'setDshCycle':
         if (p.lastAdvancedTick !== next.tick) throw new Error('DSH tick mismatch');
         next.dshCycle = { remaining: Number(p.remaining), pendingOutcome: p.pendingOutcome === 'update' ? 'update' : p.pendingOutcome === 'reset' ? 'reset' : null, triggerSeq: Number(p.triggerSeq), lastAdvancedTick: Number(p.lastAdvancedTick) }; break;

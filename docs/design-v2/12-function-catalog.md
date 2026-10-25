@@ -1,6 +1,6 @@
 # 12 · 全部函数目录与调用契约
 
-当前81个JS模块、312个公开函数：153个有实现，159个明确TODO。标注core-preview的函数仅覆盖战斗试作；不能当完整冒险实现。参见[进度与边界](13-development-status.md)。
+当前84个JS模块、320个公开函数：178个有实现，142个明确TODO。core-preview为Free练习，adventure-slice为Pro1短途；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
 
 调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。
 
@@ -143,7 +143,7 @@ Phaser只表现，UI只发送UiAction。
 
 公开函数上游：
 
-- `createStoragePort` ← `bootstrap.js#bootstrapV2`。
+- `createStoragePort` ← `bootstrap.js#bootstrapV2`、`preview/host.js#mountCombatPreview`。
 - `readStorageRecord` ← `adapters/storage.js#createStoragePort`。
 - `compareAndSwapStorageRecord` ← `adapters/storage.js#createStoragePort`。
 
@@ -254,9 +254,9 @@ Phaser只表现，UI只发送UiAction。
 
 公开函数上游：
 
-- `readProfileRepository` ← `application/game.js#flushPersistenceQueue`、`application/game.js#continueAdventure`、`bootstrap.js#bootstrapV2`。
-- `commitProfilePlan` ← `application/game.js#flushPersistenceQueue`、`application/game.js#saveAdventureCheckpoint`、`application/game.js#settleAdventure`、`application/game.js#submitNestAction`。
-- `mergePersistenceIntents` ← `application/game.js#flushPersistenceQueue`。
+- `readProfileRepository` ← `application/game.js#flushPersistenceQueue`、`application/game.js#continueAdventure`、`bootstrap.js#bootstrapV2`、`preview/host.js#mountCombatPreview`。
+- `commitProfilePlan` ← `application/game.js#flushPersistenceQueue`、`application/game.js#saveAdventureCheckpoint`、`application/game.js#settleAdventure`、`application/game.js#submitNestAction`、`preview/host.js#mountCombatPreview`。
+- `mergePersistenceIntents` ← `application/game.js#flushPersistenceQueue`、`preview/host.js#mountCombatPreview`。
 
 ## bootstrap.js
 
@@ -312,7 +312,7 @@ Phaser只表现，UI只发送UiAction。
 公开函数上游：
 
 - `loadContentCatalog` ← `bootstrap.js#bootstrapV2`、`preview/host.js#mountCombatPreview`。
-- `validateContentCatalog` ← `application/game.js#createApplication`、`bootstrap.js#bootstrapV2`、`engine/session.js#createGameSession`、`preview/host.js#mountCombatPreview`。
+- `validateContentCatalog` ← `application/game.js#createApplication`、`bootstrap.js#bootstrapV2`、`content/mods.js#composeModCatalog`、`engine/session.js#createGameSession`、`preview/host.js#mountCombatPreview`。
 - `findContentDefinition` ← `domain/stats.js#deriveWeaponStats`、`domain/world/spawning.js#planEnemySpawn`。
 - `listContentByKind` ← 宿主/工具入口或待编排。
 
@@ -577,13 +577,13 @@ plugins逐项占位处理器；实际参数仍以玩法规格为准。
 
 [源码](../../src/v2/content/handlers/plugins.js)；层：`content-handler`。
 
-直接依赖：`domain/distill.js`、`domain/plans.js`。
+直接依赖：`domain/distill.js`、`domain/entities.js`、`domain/plans.js`、`domain/stats.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planPluginParallel(context: untyped, event: untyped)` | `EffectPlan` | TODO | plugin_parallel / 并行调用：每 0.4 秒最多一次基础射击增加左右各一枚 ±12° 投射物，各 0.40W→0.60W；新增弹为 secondary；两条分叉射流；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planPluginParallel(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | plugin_parallel / 并行调用：每 0.4 秒最多一次基础射击增加左右各一枚 ±12° 投射物，各 0.40W→0.60W；新增弹为 secondary；两条分叉射流；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planPluginBatch(context: untyped, event: untyped)` | `EffectPlan` | TODO | plugin_batch / 批量处理：每 8→6 次基础武器命中，在目标处爆炸，半径 85，伤害 18；内置冷却 0.5 秒；命中计数与范围圆环；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planPluginCompress(context: untyped, event: untyped)` | `EffectPlan` | TODO | plugin_compress / 上下文压缩：基础武器射程 ×0.75，武器伤害 +30%→+45%；回旋转折距离同步 ×0.75；泡泡更浓、更短；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planPluginCompress(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | plugin_compress / 上下文压缩：基础武器射程 ×0.75，武器伤害 +30%→+45%；回旋转折距离同步 ×0.75；泡泡更浓、更短；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planPluginCache(context: untyped, event: untyped)` | `EffectPlan` | TODO | plugin_cache / 缓存命中：连续命中同一目标 3 次后，基础武器对其额外伤害 +20%→+35%，持续 2 秒；切目标即清层，刷新不叠乘；目标上缓存方块；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planPluginRetry(context: untyped, event: untyped)` | `EffectPlan` | TODO | plugin_retry / 自动重试：主投射物到期且一次未命中时，向 450 范围最近敌人补一发 0.5W→0.8W 追踪泡；内置冷却 1.5 秒；失败泡泡回转；只重试一次；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planPluginTemperature(context: untyped, event: untyped)` | `EffectPlan` | TODO | plugin_temperature / 温度采样：每次基础射击 15%→25% 概率变成大泡，主弹伤害 ×1.6、半径 ×1.3；整组只掷一次；变大、有表情的泡泡；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
@@ -614,7 +614,7 @@ plugins逐项占位处理器；实际参数仍以玩法规格为准。
 
 公开函数下游：
 
-- `planPluginParallel` → `domain/plans.js#createEmptyPlan`。
+- `planPluginParallel` → `domain/entities.js#createEntityState`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/stats.js#derivePlayerStats`。
 - `planPluginBatch` → `domain/plans.js#createEmptyPlan`。
 - `planPluginCompress` → `domain/plans.js#createEmptyPlan`。
 - `planPluginCache` → `domain/plans.js#createEmptyPlan`。
@@ -647,7 +647,7 @@ plugins逐项占位处理器；实际参数仍以玩法规格为准。
 
 公开函数上游：
 
-- `planPluginParallel` ← `dispatch/plugins.js#dispatchPluginsHandler`。
+- `planPluginParallel` ← `dispatch/plugins.js#dispatchPluginsHandler`、`engine/hooks.js#planEventHooks`。
 - `planPluginBatch` ← `dispatch/plugins.js#dispatchPluginsHandler`。
 - `planPluginCompress` ← `dispatch/plugins.js#dispatchPluginsHandler`。
 - `planPluginCache` ← `dispatch/plugins.js#dispatchPluginsHandler`。
@@ -754,6 +754,32 @@ weapons逐项占位处理器；实际参数仍以玩法规格为准。
 - `planWeaponReturn` ← 宿主/工具入口或待编排。
 - `planWeaponBatch` ← 宿主/工具入口或待编排。
 
+## content/mods.js
+
+Versioned declarative mod SDK. No dynamic code, global registry mutation or host access.
+
+[源码](../../src/v2/content/mods.js)；层：`content`。
+
+直接依赖：`content/catalog.js`、`content/registry.js`、`domain/serialization.js`。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `parseModPackage(text: untyped, base: untyped)` | `ModPackage` | 已实现 | 校验SDK1.0清单/版本/补丁/参数边界及大小，拒绝未知功能和未实现内容。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `resolveModLoadOrder(packs: untyped)` | `readonly ModPackage[]` | 已实现 | 检查精确依赖版本与冲突，生成稳定拓扑顺序，拒绝依赖环。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `composeModCatalog(base: untyped, packs: untyped)` | `ContentCatalog` | 已实现 | 从原版复制并组装声明式模组；重复字段报错，生成内容指纹和存档锁。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `parseModPackage` → `content/registry.js#createHandlerRegistry`、`domain/serialization.js#serializeCanonical`。
+- `resolveModLoadOrder` → 无内部公开函数。
+- `composeModCatalog` → `content/catalog.js#validateContentCatalog`、`content/mods.js#parseModPackage`、`content/mods.js#resolveModLoadOrder`、`content/registry.js#createHandlerRegistry`、`domain/serialization.js#createDataDigest`、`domain/serialization.js#serializeCanonical`。
+
+公开函数上游：
+
+- `parseModPackage` ← `content/mods.js#composeModCatalog`、`preview/modManager.js#mountModManager`。
+- `resolveModLoadOrder` ← `content/mods.js#composeModCatalog`。
+- `composeModCatalog` ← `preview/modManager.js#mountModManager`。
+
 ## content/registry.js
 
 所有内容ID到显式处理器绑定；不构造假可用实例。
@@ -772,7 +798,7 @@ weapons逐项占位处理器；实际参数仍以玩法规格为准。
 
 公开函数上游：
 
-- `createHandlerRegistry` ← `bootstrap.js#bootstrapV2`、`engine/session.js#createGameSession`、`preview/host.js#mountCombatPreview`。
+- `createHandlerRegistry` ← `bootstrap.js#bootstrapV2`、`content/mods.js#parseModPackage`、`content/mods.js#composeModCatalog`、`domain/draft.js#createPluginChoice`、`engine/session.js#createGameSession`、`preview/host.js#mountCombatPreview`。
 
 ## dispatch/companions.js
 
@@ -946,19 +972,19 @@ AI系统收集意图，模型和难度共同生效。
 |---|---|---|---|
 | `planEnemyAi(context: untyped)` | `SystemPlan` | 已实现 / core-preview | 当前只分派棕蟹与基础Bot，不执行未实现的GPT/模型/累计机制处理器。；分派为每个合法entity/handler一次，不能把声明的所有分支直接全跑。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planCompanionAi(context: untyped)` | `SystemPlan` | TODO | 未封禁时按原冷却和条件自动协助，输出来源companion。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planBossAi(context: untyped)` | `SystemPlan` | TODO | 按阵营只分派对应首领；API阶段Boss不改变胜负规则。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planBossAi(context: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 仅分派当前Claude首领，GPT/Grok首领明确拒绝。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
 - `planEnemyAi` → `dispatch/enemies.js#dispatchEnemiesHandler`、`domain/plans.js#mergeSystemPlans`。
 - `planCompanionAi` → `dispatch/companions.js#dispatchCompanionsHandler`。
-- `planBossAi` → `domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/grok.js#planGrokBoss`。
+- `planBossAi` → `domain/bosses/claude.js#planClaudeBoss`、`domain/plans.js#mergeSystemPlans`。
 
 公开函数上游：
 
 - `planEnemyAi` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
 - `planCompanionAi` ← `engine/tick.js#advanceWorldTick`。
-- `planBossAi` ← `engine/tick.js#advanceWorldTick`。
+- `planBossAi` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
 
 ## domain/attacks.js
 
@@ -998,17 +1024,17 @@ Claude高数值/封禁招式意图；控制由统一管线处理。
 
 [源码](../../src/v2/domain/bosses/claude.js)；层：`domain`。
 
-直接依赖：无。
+直接依赖：`domain/geometry.js`、`domain/meleeAi.js`、`domain/plans.js`、`domain/serialization.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planClaudeBoss(context: untyped, boss: untyped)` | `EffectPlan` | TODO | 推进预警/招式/恢复，按5/10/11级机制加入组合/场地/Glasswing请求标记。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planClaudeBan(context: untyped, boss: untyped, kind: untyped)` | `EffectPlan` | TODO | 无合法槽则普通攻击；只发一份封禁请求和可破封装置计划。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planClaudeBoss(context: untyped, boss: untyped)` | `EffectPlan` | 已实现 / adventure-slice | 实现Pro1重钳禁锢、技能封印与半血三条带扫击；真实伙伴封禁弹和高难连招仍待接通。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planClaudeBan(context: untyped, boss: untyped, kind: untyped)` | `EffectPlan` | 已实现 / adventure-slice | 无合法槽则普通攻击；只发一份封禁请求和可破封装置计划。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
-- `planClaudeBoss` → `domain/bosses/claude.js#planClaudeBan`。
-- `planClaudeBan` → 无内部公开函数。
+- `planClaudeBoss` → `domain/bosses/claude.js#planClaudeBan`、`domain/geometry.js#distanceSquared`、`domain/geometry.js#normalizeVector`、`domain/meleeAi.js#planMeleeEnemy`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#toJson`。
+- `planClaudeBan` → `domain/geometry.js#normalizeVector`、`domain/plans.js#createEmptyPlan`、`domain/serialization.js#toJson`。
 
 公开函数上游：
 
@@ -1037,7 +1063,7 @@ ChatGPT三个节点的局部重置事务。
 
 公开函数上游：
 
-- `planGptBoss` ← `domain/ai.js#planBossAi`。
+- `planGptBoss` ← 宿主/工具入口或待编排。
 - `planGptReset` ← `domain/bosses/gpt.js#planGptBoss`。
 - `planGptResetInterrupt` ← `domain/bosses/gpt.js#planGptBoss`。
 
@@ -1061,7 +1087,7 @@ Grok首领只有简单火箭和召集人海。
 
 公开函数上游：
 
-- `planGrokBoss` ← `domain/ai.js#planBossAi`。
+- `planGrokBoss` ← 宿主/工具入口或待编排。
 - `planGrokBossReinforcements` ← `domain/bosses/grok.js#planGrokBoss`。
 
 ## domain/checkpoint.js
@@ -1131,19 +1157,19 @@ Grok首领只有简单火箭和召集人海。
 |---|---|---|---|
 | `canTraverseObstacle(entity: untyped, obstacle: untyped, catalog: untyped)` | `boolean` | 已实现 | 读取同一碰撞矩阵，只有指定Grok/虚影穿低矮障碍，高墙/锁门优先阻挡。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `detectCollisions(context: untyped)` | `CollisionResult` | 已实现 | 生成稳定排序的连续碰撞结果，不直接改血或销毁实体。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `validateSpawnLocation(context: untyped, request: untyped)` | `Result<Vec2>` | TODO | 检查视野外、最小距离、可通行与局部/全局数量上限。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `validateSpawnLocation(context: untyped, request: untyped)` | `Result<Vec2>` | 已实现 / adventure-slice | 共享逻辑相机，要求视野外128余量、距玩家420、合法地形和数量上限。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
 - `canTraverseObstacle` → 无内部公开函数。
 - `detectCollisions` → `domain/collision.js#canTraverseObstacle`、`domain/geometry.js#intersectSweptCircles`、`domain/geometry.js#normalizeVector`。
-- `validateSpawnLocation` → `domain/geometry.js#distanceSquared`、`domain/collision.js#canTraverseObstacle`。
+- `validateSpawnLocation` → `domain/collision.js#canTraverseObstacle`、`domain/geometry.js#computeCameraBounds`、`domain/geometry.js#distanceSquared`。
 
 公开函数上游：
 
 - `canTraverseObstacle` ← `domain/collision.js#detectCollisions`、`domain/collision.js#validateSpawnLocation`、`domain/motionSolver.js#resolveBodyDestination`、`domain/navigation.js#findNavigationPath`。
 - `detectCollisions` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
-- `validateSpawnLocation` ← `domain/world/spawning.js#planSpawnSchedule`。
+- `validateSpawnLocation` ← `domain/world/spawning.js#planSpawnSchedule`、`domain/world/spawning.js#planEnemySpawn`。
 
 ## domain/damage.js
 
@@ -1220,8 +1246,8 @@ Grok首领只有简单火箭和召集人海。
 公开函数上游：
 
 - `resolveDifficultySnapshot` ← `application/game.js#startAdventure`、`preview/host.js#mountCombatPreview`。
-- `resolveModelProfileId` ← `domain/world/spawning.js#planEnemySpawn`。
-- `resolveApiSpawnMultipliers` ← `domain/world/spawning.js#planSpawnSchedule`。
+- `resolveModelProfileId` ← 宿主/工具入口或待编排。
+- `resolveApiSpawnMultipliers` ← 宿主/工具入口或待编排。
 
 ## domain/distill.js
 
@@ -1245,7 +1271,7 @@ Grok首领只有简单火箭和召集人海。
 
 公开函数上游：
 
-- `planDistillEvent` ← `content/handlers/plugins.js#planPluginDistill`、`engine/hooks.js#planEventHooks`、`engine/previewTick.js#advancePreviewWorldTick`。
+- `planDistillEvent` ← `content/handlers/plugins.js#planPluginDistill`、`engine/hooks.js#planEventHooks`。
 - `advanceDistillTrack` ← `domain/distill.js#planDistillEvent`、`domain/draft.js#planPluginSelection`。
 - `planDistilledAbilities` ← `engine/previewTick.js#advancePreviewWorldTick`。
 
@@ -1255,7 +1281,7 @@ Grok首领只有简单火箭和召集人海。
 
 [源码](../../src/v2/domain/draft.js)；层：`domain`。
 
-直接依赖：`domain/distill.js`、`domain/plans.js`、`domain/random.js`。
+直接依赖：`content/registry.js`、`domain/distill.js`、`domain/plans.js`、`domain/random.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -1266,7 +1292,7 @@ Grok首领只有简单火箭和召集人海。
 
 公开函数下游：
 
-- `createPluginChoice` → `domain/random.js#chooseWeightedIndex`。
+- `createPluginChoice` → `content/registry.js#createHandlerRegistry`、`domain/random.js#chooseWeightedIndex`。
 - `planPluginSelection` → `domain/distill.js#advanceDistillTrack`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
 - `planPluginReroll` → `domain/draft.js#createPluginChoice`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
 - `planPluginSkip` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
@@ -1322,7 +1348,7 @@ Canonical entity constructor; callers provide stable identity and source snapsho
 
 公开函数上游：
 
-- `createEntityState` ← `domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/initial.js#createInitialGameState`、`domain/projectiles.js#planNativeProjectiles`、`domain/world/map.js#createMapPlan`。
+- `createEntityState` ← `content/handlers/plugins.js#planPluginParallel`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/initial.js#createInitialGameState`、`domain/projectiles.js#planNativeProjectiles`、`domain/status.js#resolveControlRequest`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/map.js#createMapPlan`、`domain/world/spawning.js#planEnemySpawn`。
 
 ## domain/geometry.js
 
@@ -1338,6 +1364,7 @@ Canonical entity constructor; callers provide stable identity and source snapsho
 | `intersectSweptCircles(from: untyped, to: untyped, radius: untyped, target: untyped, targetRadius: untyped)` | `number \| null` | 已实现 | 计算高速移动圆的首个命中时间比例，避免穿透。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `isContactWithinArc(center: untyped, facingRadians: untyped, contact: untyped, arcDegrees: untyped)` | `boolean` | 已实现 | 判定侧后弱点弧，包含08指定边界。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `distanceSquared(a: untyped, b: untyped)` | `number` | 已实现 | 供稳定目标/距离排序；相同距离由上层按entityId裁决。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `computeCameraBounds(position: untyped, map: untyped, viewport: untyped)` | `{x:number;y:number;width:number;height:number}` | 已实现 | 以当前逻辑位置、地图与世界单位视野推导同一相机边界，渲染和出生检查共用。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
@@ -1345,13 +1372,15 @@ Canonical entity constructor; callers provide stable identity and source snapsho
 - `intersectSweptCircles` → 无内部公开函数。
 - `isContactWithinArc` → 无内部公开函数。
 - `distanceSquared` → 无内部公开函数。
+- `computeCameraBounds` → 无内部公开函数。
 
 公开函数上游：
 
-- `normalizeVector` ← `adapters/input.js#normalizeInputSamples`、`content/handlers/skills.js#planSkillDisconnect`、`domain/attacks.js#planDash`、`domain/collision.js#detectCollisions`、`domain/meleeAi.js#planMeleeEnemy`、`domain/motionSolver.js#resolveBodyDestination`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`engine/commands.js#planGameCommand`。
+- `normalizeVector` ← `adapters/input.js#normalizeInputSamples`、`content/handlers/skills.js#planSkillDisconnect`、`domain/attacks.js#planDash`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/claude.js#planClaudeBan`、`domain/collision.js#detectCollisions`、`domain/meleeAi.js#planMeleeEnemy`、`domain/motionSolver.js#resolveBodyDestination`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`engine/commands.js#planGameCommand`。
 - `intersectSweptCircles` ← `domain/collision.js#detectCollisions`、`domain/motionSolver.js#resolveBodyDestination`、`domain/navigation.js#findNavigationPath`。
 - `isContactWithinArc` ← `domain/shells.js#resolveShellContact`。
-- `distanceSquared` ← `content/handlers/skills.js#planSkillDisconnect`、`domain/collision.js#validateSpawnLocation`、`domain/meleeAi.js#planMeleeEnemy`、`domain/movement.js#planPickupMotion`、`domain/navigation.js#findNavigationPath`、`domain/navigation.js#chooseRetreatPoint`、`domain/world/map.js#planWorldInteraction`、`domain/world/map.js#isSafeForInteraction`。
+- `distanceSquared` ← `content/handlers/skills.js#planSkillDisconnect`、`domain/bosses/claude.js#planClaudeBoss`、`domain/collision.js#validateSpawnLocation`、`domain/meleeAi.js#planMeleeEnemy`、`domain/movement.js#planPickupMotion`、`domain/navigation.js#findNavigationPath`、`domain/navigation.js#chooseRetreatPoint`、`domain/status.js#resolveControlRequest`、`domain/world/map.js#planWorldInteraction`、`domain/world/map.js#isSafeForInteraction`、`domain/world/objectives.js#planObjectiveAdvance`。
+- `computeCameraBounds` ← `domain/collision.js#validateSpawnLocation`、`preview/view.js#getPreviewCamera`。
 
 ## domain/initial.js
 
@@ -1359,15 +1388,15 @@ Create an unpublished initial state. Map plans are applied before Session publis
 
 [源码](../../src/v2/domain/initial.js)；层：`domain`。
 
-直接依赖：`domain/entities.js`、`domain/random.js`、`versions.js`。
+直接依赖：`domain/entities.js`、`domain/random.js`、`domain/serialization.js`、`versions.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `createInitialGameState(start: untyped, seed: untyped, catalog: untyped)` | `GameState` | 已实现 / core-preview | 构造未发布的初始对局；当前仅允许显式core-preview，不开放完整冒险。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `createInitialGameState(start: untyped, seed: untyped, catalog: untyped)` | `GameState` | 已实现 / core-preview + adventure-slice | 创建Free或Pro1显式范围初态并验证模组锁；完整冒险和局外树尚未开放。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
-- `createInitialGameState` → `domain/entities.js#createEntityState`、`domain/random.js#createRandomStreams`。
+- `createInitialGameState` → `domain/entities.js#createEntityState`、`domain/random.js#createRandomStreams`、`domain/serialization.js#serializeCanonical`。
 
 公开函数上游：
 
@@ -1452,7 +1481,7 @@ Shared navigation/contact logic; only the brown crab has a telegraphed heavy cla
 
 公开函数上游：
 
-- `planMeleeEnemy` ← `content/handlers/enemies.js#planEnemyClaudeGuard`、`content/handlers/enemies.js#planEnemyGrokBot`。
+- `planMeleeEnemy` ← `content/handlers/enemies.js#planEnemyClaudeGuard`、`content/handlers/enemies.js#planEnemyGrokBot`、`domain/bosses/claude.js#planClaudeBoss`。
 
 ## domain/motionSolver.js
 
@@ -1550,10 +1579,10 @@ Sweep and slide a circular body along blocking circular terrain, then clamp map 
 
 公开函数上游：
 
-- `createEmptyPlan` ← `content/handlers/companions.js#planCompanionRice`、`content/handlers/companions.js#planCompanionPatch`、`content/handlers/companions.js#planCompanionCache`、`content/handlers/companions.js#planCompanionRouter`、`content/handlers/companions.js#planCompanionDecoy`、`content/handlers/companions.js#planCompanionRocket`、`content/handlers/dsh.js#planDshClaudeAppeal`、`content/handlers/dsh.js#planDshGptPreview`、`content/handlers/dsh.js#planDshGrokLicense`、`content/handlers/dsh.js#planDshClaudeAllowlist`、`content/handlers/dsh.js#planDshGrokSalvage`、`content/handlers/dsh.js#planDshSleep`、`content/handlers/dsh.js#planDshRice`、`content/handlers/dsh.js#planDshOpen`、`content/handlers/enemies.js#planEnemyGptCodex`、`content/handlers/enemies.js#planEnemyGptDewey`、`content/handlers/enemies.js#planEnemyGptFireball`、`content/handlers/enemies.js#planEnemyGptHoots`、`content/handlers/enemies.js#planEnemyGptRocky`、`content/handlers/enemies.js#planEnemyGptSeedy`、`content/handlers/enemies.js#planEnemyGptStacky`、`content/handlers/mechanics.js#planMechanic01Exploration`、`content/handlers/mechanics.js#planMechanic02Reinforcements`、`content/handlers/mechanics.js#planMechanic03GptSupport`、`content/handlers/mechanics.js#planMechanic04ClaudeBreak`、`content/handlers/mechanics.js#planMechanic05BossCombo`、`content/handlers/mechanics.js#planMechanic06AlarmCache`、`content/handlers/mechanics.js#planMechanic07Tide`、`content/handlers/mechanics.js#planMechanic08GrokFlanks`、`content/handlers/mechanics.js#planMechanic09GptReposition`、`content/handlers/mechanics.js#planMechanic10BossArena`、`content/handlers/mechanics.js#planMechanic11ObjectiveSignal`、`content/handlers/mechanics.js#planMechanic11Glasswing`、`content/handlers/mechanics.js#planMechanic12GptFourRoles`、`content/handlers/mechanics.js#planMechanic13Handoff`、`content/handlers/mechanics.js#planMechanic14Anomaly`、`content/handlers/mechanics.js#planMechanic15Integration`、`content/handlers/models.js#planModelClaudeHaiku`、`content/handlers/models.js#planModelClaudeSonnet`、`content/handlers/models.js#planModelClaudeOpus`、`content/handlers/models.js#planModelClaudeFable`、`content/handlers/models.js#planModelClaudeMythos`、`content/handlers/models.js#planModelGptAstra`、`content/handlers/models.js#planModelGptSol`、`content/handlers/models.js#planModelGptTerra`、`content/handlers/models.js#planModelGptLuna`、`content/handlers/models.js#planModelGrokBot`、`content/handlers/plugins.js#planPluginParallel`、`content/handlers/plugins.js#planPluginBatch`、`content/handlers/plugins.js#planPluginCompress`、`content/handlers/plugins.js#planPluginCache`、`content/handlers/plugins.js#planPluginRetry`、`content/handlers/plugins.js#planPluginTemperature`、`content/handlers/plugins.js#planPluginCollect`、`content/handlers/plugins.js#planPluginCooldown`、`content/handlers/plugins.js#planPluginOffload`、`content/handlers/plugins.js#planPluginKeepalive`、`content/handlers/plugins.js#planPluginRedirect`、`content/handlers/plugins.js#planPluginBackoff`、`content/handlers/plugins.js#planPlugin5h`、`content/handlers/plugins.js#planPluginFailover`、`content/handlers/plugins.js#planPluginSandbox`、`content/handlers/plugins.js#planPluginHallucination`、`content/handlers/plugins.js#planPluginChain`、`content/handlers/plugins.js#planPluginContext`、`content/handlers/plugins.js#planPluginHotplug`、`content/handlers/plugins.js#planPluginGuard`、`content/handlers/plugins.js#planPluginPrefill`、`content/handlers/plugins.js#planPluginToolchain`、`content/handlers/plugins.js#planPluginMirror`、`content/handlers/plugins.js#planPluginRecursion`、`content/handlers/plugins.js#planPluginMoe`、`content/handlers/plugins.js#planPluginSpeculate`、`content/handlers/plugins.js#planPluginWindow`、`content/handlers/plugins.js#planPluginAgent`、`content/handlers/plugins.js#planPluginBreaker`、`content/handlers/skills.js#planSkillDisconnect`、`content/handlers/skills.js#planSkillBatch`、`content/handlers/skills.js#planSkillRedirect`、`content/handlers/skills.js#planSkillSandbox`、`content/handlers/skills.js#planSkillFork`、`content/handlers/skills.js#planSkillRollback`、`content/handlers/skills.js#planSkillOverclock`、`content/handlers/weapons.js#planWeaponVector`、`content/handlers/weapons.js#planWeaponStream`、`content/handlers/weapons.js#planWeaponReturn`、`content/handlers/weapons.js#planWeaponBatch`、`domain/attacks.js#planWeaponFire`、`domain/attacks.js#planSkillCast`、`domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planCollisionEffects`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSkip`、`domain/levels.js#planLevelProgression`、`domain/levels.js#planNextLevelReward`、`domain/meleeAi.js#planMeleeEnemy`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/plans.js#mergeSystemPlans`、`domain/projectiles.js#planNativeProjectiles`、`domain/rewards.js#planDeathRewards`、`domain/rewards.js#planTokenCollection`、`engine/commands.js#planGameCommand`、`engine/flow.js#planFlowTransition`、`engine/flow.js#planProgressionPanels`、`engine/flow.js#planPause`、`engine/flow.js#planResume`、`engine/previewTick.js#advancePreviewWorldTick`。
-- `mergeSystemPlans` ← `domain/ai.js#planEnemyAi`。
+- `createEmptyPlan` ← `content/handlers/companions.js#planCompanionRice`、`content/handlers/companions.js#planCompanionPatch`、`content/handlers/companions.js#planCompanionCache`、`content/handlers/companions.js#planCompanionRouter`、`content/handlers/companions.js#planCompanionDecoy`、`content/handlers/companions.js#planCompanionRocket`、`content/handlers/dsh.js#planDshClaudeAppeal`、`content/handlers/dsh.js#planDshGptPreview`、`content/handlers/dsh.js#planDshGrokLicense`、`content/handlers/dsh.js#planDshClaudeAllowlist`、`content/handlers/dsh.js#planDshGrokSalvage`、`content/handlers/dsh.js#planDshSleep`、`content/handlers/dsh.js#planDshRice`、`content/handlers/dsh.js#planDshOpen`、`content/handlers/enemies.js#planEnemyGptCodex`、`content/handlers/enemies.js#planEnemyGptDewey`、`content/handlers/enemies.js#planEnemyGptFireball`、`content/handlers/enemies.js#planEnemyGptHoots`、`content/handlers/enemies.js#planEnemyGptRocky`、`content/handlers/enemies.js#planEnemyGptSeedy`、`content/handlers/enemies.js#planEnemyGptStacky`、`content/handlers/mechanics.js#planMechanic01Exploration`、`content/handlers/mechanics.js#planMechanic02Reinforcements`、`content/handlers/mechanics.js#planMechanic03GptSupport`、`content/handlers/mechanics.js#planMechanic04ClaudeBreak`、`content/handlers/mechanics.js#planMechanic05BossCombo`、`content/handlers/mechanics.js#planMechanic06AlarmCache`、`content/handlers/mechanics.js#planMechanic07Tide`、`content/handlers/mechanics.js#planMechanic08GrokFlanks`、`content/handlers/mechanics.js#planMechanic09GptReposition`、`content/handlers/mechanics.js#planMechanic10BossArena`、`content/handlers/mechanics.js#planMechanic11ObjectiveSignal`、`content/handlers/mechanics.js#planMechanic11Glasswing`、`content/handlers/mechanics.js#planMechanic12GptFourRoles`、`content/handlers/mechanics.js#planMechanic13Handoff`、`content/handlers/mechanics.js#planMechanic14Anomaly`、`content/handlers/mechanics.js#planMechanic15Integration`、`content/handlers/models.js#planModelClaudeHaiku`、`content/handlers/models.js#planModelClaudeSonnet`、`content/handlers/models.js#planModelClaudeOpus`、`content/handlers/models.js#planModelClaudeFable`、`content/handlers/models.js#planModelClaudeMythos`、`content/handlers/models.js#planModelGptAstra`、`content/handlers/models.js#planModelGptSol`、`content/handlers/models.js#planModelGptTerra`、`content/handlers/models.js#planModelGptLuna`、`content/handlers/models.js#planModelGrokBot`、`content/handlers/plugins.js#planPluginParallel`、`content/handlers/plugins.js#planPluginBatch`、`content/handlers/plugins.js#planPluginCompress`、`content/handlers/plugins.js#planPluginCache`、`content/handlers/plugins.js#planPluginRetry`、`content/handlers/plugins.js#planPluginTemperature`、`content/handlers/plugins.js#planPluginCollect`、`content/handlers/plugins.js#planPluginCooldown`、`content/handlers/plugins.js#planPluginOffload`、`content/handlers/plugins.js#planPluginKeepalive`、`content/handlers/plugins.js#planPluginRedirect`、`content/handlers/plugins.js#planPluginBackoff`、`content/handlers/plugins.js#planPlugin5h`、`content/handlers/plugins.js#planPluginFailover`、`content/handlers/plugins.js#planPluginSandbox`、`content/handlers/plugins.js#planPluginHallucination`、`content/handlers/plugins.js#planPluginChain`、`content/handlers/plugins.js#planPluginContext`、`content/handlers/plugins.js#planPluginHotplug`、`content/handlers/plugins.js#planPluginGuard`、`content/handlers/plugins.js#planPluginPrefill`、`content/handlers/plugins.js#planPluginToolchain`、`content/handlers/plugins.js#planPluginMirror`、`content/handlers/plugins.js#planPluginRecursion`、`content/handlers/plugins.js#planPluginMoe`、`content/handlers/plugins.js#planPluginSpeculate`、`content/handlers/plugins.js#planPluginWindow`、`content/handlers/plugins.js#planPluginAgent`、`content/handlers/plugins.js#planPluginBreaker`、`content/handlers/skills.js#planSkillDisconnect`、`content/handlers/skills.js#planSkillBatch`、`content/handlers/skills.js#planSkillRedirect`、`content/handlers/skills.js#planSkillSandbox`、`content/handlers/skills.js#planSkillFork`、`content/handlers/skills.js#planSkillRollback`、`content/handlers/skills.js#planSkillOverclock`、`content/handlers/weapons.js#planWeaponVector`、`content/handlers/weapons.js#planWeaponStream`、`content/handlers/weapons.js#planWeaponReturn`、`content/handlers/weapons.js#planWeaponBatch`、`domain/attacks.js#planWeaponFire`、`domain/attacks.js#planSkillCast`、`domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planCollisionEffects`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/claude.js#planClaudeBan`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSkip`、`domain/levels.js#planLevelProgression`、`domain/levels.js#planNextLevelReward`、`domain/meleeAi.js#planMeleeEnemy`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/plans.js#mergeSystemPlans`、`domain/projectiles.js#planNativeProjectiles`、`domain/rewards.js#planDeathRewards`、`domain/rewards.js#planWorldReward`、`domain/rewards.js#planTokenCollection`、`domain/status.js#resolveControlRequest`、`domain/status.js#planEscapeInput`、`domain/status.js#planSealRelease`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/map.js#planMapExploration`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/objectives.js#planObjectiveCompletion`、`domain/world/spawning.js#planSpawnSchedule`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/spawning.js#planReinforcementGroup`、`engine/commands.js#planGameCommand`、`engine/flow.js#planFlowTransition`、`engine/flow.js#planProgressionPanels`、`engine/flow.js#planPause`、`engine/flow.js#planResume`、`engine/previewTick.js#advancePreviewWorldTick`。
+- `mergeSystemPlans` ← `domain/ai.js#planEnemyAi`、`domain/ai.js#planBossAi`、`engine/hooks.js#planEventHooks`。
 - `validateSystemPlan` ← `engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
-- `createStateChange` ← `content/handlers/skills.js#planSkillDisconnect`、`domain/attacks.js#planWeaponFire`、`domain/attacks.js#planSkillCast`、`domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planCollisionEffects`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSkip`、`domain/levels.js#planLevelProgression`、`domain/levels.js#planNextLevelReward`、`domain/meleeAi.js#planMeleeEnemy`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/projectiles.js#planNativeProjectiles`、`domain/rewards.js#planDeathRewards`、`domain/rewards.js#planTokenCollection`、`domain/world/map.js#createMapPlan`、`engine/commands.js#planGameCommand`、`engine/flow.js#planFlowTransition`、`engine/flow.js#planProgressionPanels`、`engine/flow.js#planPause`、`engine/previewTick.js#advancePreviewWorldTick`。
+- `createStateChange` ← `content/handlers/plugins.js#planPluginParallel`、`content/handlers/skills.js#planSkillDisconnect`、`domain/attacks.js#planWeaponFire`、`domain/attacks.js#planSkillCast`、`domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planCollisionEffects`、`domain/bosses/claude.js#planClaudeBoss`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSkip`、`domain/levels.js#planLevelProgression`、`domain/levels.js#planNextLevelReward`、`domain/meleeAi.js#planMeleeEnemy`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/projectiles.js#planNativeProjectiles`、`domain/rewards.js#planDeathRewards`、`domain/rewards.js#planWorldReward`、`domain/rewards.js#planTokenCollection`、`domain/status.js#resolveControlRequest`、`domain/status.js#planEscapeInput`、`domain/status.js#planStatusAdvance`、`domain/status.js#planSealRelease`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/map.js#createMapPlan`、`domain/world/map.js#planMapExploration`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/objectives.js#planObjectiveCompletion`、`domain/world/spawning.js#planSpawnSchedule`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/spawning.js#planReinforcementGroup`、`engine/commands.js#planGameCommand`、`engine/flow.js#planFlowTransition`、`engine/flow.js#planProgressionPanels`、`engine/flow.js#planPause`、`engine/previewTick.js#advancePreviewWorldTick`。
 
 ## domain/profile/nest.js
 
@@ -1717,18 +1746,18 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 
 [源码](../../src/v2/domain/rewards.js)；层：`domain`。
 
-直接依赖：`domain/plans.js`。
+直接依赖：`domain/plans.js`、`domain/serialization.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planDeathRewards(context: untyped, records: untyped)` | `RewardPlan` | 已实现 / core-preview | 当前按阵营生成大白饭并按死亡来源ID去重；正式精英群箱/材料/Boss永久解锁仍待实现。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planWorldReward(context: untyped, rewardId: untyped)` | `RewardPlan` | TODO | 按stable rewardId发箱子/任务奖励，API分钟材料限额先校验。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planDeathRewards(context: untyped, records: untyped)` | `RewardPlan` | 已实现 / core-preview + adventure-slice | 按死亡来源稳定去重生成经验；Claude首领提供材料与永久击败事实，普通封印无奖励。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planWorldReward(context: untyped, rewardId: untyped)` | `RewardPlan` | 已实现 / adventure-slice | 为当前信标/资源箱生成稳定ID的拾取物，永久收入由事务结算处理。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planTokenCollection(context: untyped, pickupId: untyped)` | `SystemPlan` | 已实现 / core-preview | 接触后消费米粒/材料拾取，装备类拾取明确拒绝；不直接持久化。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
-- `planDeathRewards` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
-- `planWorldReward` → 无内部公开函数。
+- `planDeathRewards` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#toJson`。
+- `planWorldReward` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
 - `planTokenCollection` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
 
 公开函数上游：
@@ -1759,9 +1788,9 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 
 公开函数上游：
 
-- `serializeCanonical` ← `adapters/storage.js#compareAndSwapStorageRecord`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`content/catalog.js#validateContentCatalog`、`domain/checkpoint.js#createCheckpoint`、`domain/checkpoint.js#validateCheckpoint`、`domain/checkpoint.js#restoreCheckpointState`、`domain/plans.js#validateSystemPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#createDataDigest`、`domain/serialization.js#toJson`、`domain/settlement.js#validateProfileRecord`、`domain/stateValidation.js#inspectGameState`、`engine/commands.js#validateGameCommand`、`engine/effectLoop.js#evaluateEffectRequest`、`engine/reducer.js#applySystemPlan`。
-- `createDataDigest` ← `domain/checkpoint.js#createCheckpoint`、`domain/checkpoint.js#validateCheckpoint`、`engine/snapshot.js#createStateDigest`。
-- `toJson` ← `domain/attacks.js#planCollisionEffects`、`domain/meleeAi.js#planMeleeEnemy`、`engine/snapshot.js#createRenderSnapshot`。
+- `serializeCanonical` ← `adapters/storage.js#compareAndSwapStorageRecord`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`content/catalog.js#validateContentCatalog`、`content/mods.js#parseModPackage`、`content/mods.js#composeModCatalog`、`domain/checkpoint.js#createCheckpoint`、`domain/checkpoint.js#validateCheckpoint`、`domain/checkpoint.js#restoreCheckpointState`、`domain/initial.js#createInitialGameState`、`domain/plans.js#validateSystemPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#createDataDigest`、`domain/serialization.js#toJson`、`domain/settlement.js#validateProfileRecord`、`domain/stateValidation.js#inspectGameState`、`engine/commands.js#validateGameCommand`、`engine/effectLoop.js#evaluateEffectRequest`、`engine/reducer.js#applySystemPlan`。
+- `createDataDigest` ← `content/mods.js#composeModCatalog`、`domain/checkpoint.js#createCheckpoint`、`domain/checkpoint.js#validateCheckpoint`、`engine/snapshot.js#createStateDigest`。
+- `toJson` ← `domain/attacks.js#planCollisionEffects`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/claude.js#planClaudeBan`、`domain/meleeAi.js#planMeleeEnemy`、`domain/rewards.js#planDeathRewards`、`domain/status.js#resolveControlRequest`、`engine/snapshot.js#createRenderSnapshot`。
 
 ## domain/settlement.js
 
@@ -1787,7 +1816,7 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 
 公开函数上游：
 
-- `createSettlement` ← `application/game.js#settleAdventure`。
+- `createSettlement` ← `application/game.js#settleAdventure`、`preview/host.js#mountCombatPreview`。
 - `planSettlementCommit` ← `application/game.js#settleAdventure`、`application/repository.js#mergePersistenceIntents`。
 - `validateProfileRecord` ← `application/game.js#createApplication`、`application/repository.js#readProfileRepository`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`domain/settlement.js#planSettlementCommit`。
 - `createDefaultProfile` ← `application/repository.js#readProfileRepository`。
@@ -1880,7 +1909,7 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 
 公开函数上游：
 
-- `derivePlayerStats` ← `domain/damage.js#resolveDamageRequest`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/lora.js#planLoraOutcome`、`domain/movement.js#planPlayerMovement`、`domain/stats.js#deriveWeaponStats`。
+- `derivePlayerStats` ← `content/handlers/plugins.js#planPluginParallel`、`domain/damage.js#resolveDamageRequest`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/lora.js#planLoraOutcome`、`domain/movement.js#planPlayerMovement`、`domain/stats.js#deriveWeaponStats`、`domain/status.js#resolveControlRequest`。
 - `deriveWeaponStats` ← `domain/attacks.js#planWeaponFire`、`domain/projectiles.js#planNativeProjectiles`。
 - `resolveStatModifier` ← `domain/stats.js#derivePlayerStats`、`domain/stats.js#deriveWeaponStats`。
 
@@ -1890,31 +1919,57 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 
 [源码](../../src/v2/domain/status.js)；层：`domain`。
 
-直接依赖：无。
+直接依赖：`domain/entities.js`、`domain/geometry.js`、`domain/plans.js`、`domain/serialization.js`、`domain/stats.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `resolveControlRequest(context: untyped, request: untyped)` | `ControlResolution` | TODO | Glasswing只处理一次，再算抵抗/拦截；返回计划，不立即调用插件。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `resolveControlRequest(context: untyped, request: untyped)` | `ControlResolution` | 已实现 | Glasswing只处理一次，再算抵抗/拦截；返回计划，不立即调用插件。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `applyGlasswingModifier(context: untyped, request: untyped)` | `ControlRequest` | 已实现 | 11级Claude Boss控制时长/禁锢挣脱要求×2；不复制伤害或状态。；使用appliedModifierIds去重；技能/伙伴封禁破封命中数不翻倍。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `selectControlInterceptor(context: untyped, request: untyped)` | `Id \| null` | TODO | 按树→故障转移→补丁或白名单→越狱选择第一可用防护，仅消费一份。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planEscapeInput(context: untyped, command: untyped)` | `EffectPlan` | TODO | 只接受有效按下边沿/辅助节奏，累积挣脱；LoRA界面不接收。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `selectControlInterceptor(context: untyped, request: untyped)` | `Id \| null` | 已实现 | 按树→故障转移→补丁或白名单→越狱选择第一可用防护，仅消费一份。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planEscapeInput(context: untyped, command: untyped)` | `EffectPlan` | 已实现 | 只接受有效按下边沿/辅助节奏，累积挣脱；LoRA界面不接收。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planStatusAdvance(context: untyped)` | `SystemPlan` | 已实现 | 更新控制、免疫和训练负面倒计时；暂停不走，解除不刷新技能。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planSealRelease(context: untyped, event: untyped)` | `SystemPlan` | 已实现 | 封印被主武器击碎时解除对应技能封禁，不重置冷却，不发掉落。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
-- `resolveControlRequest` → `domain/status.js#applyGlasswingModifier`、`domain/status.js#selectControlInterceptor`。
+- `resolveControlRequest` → `domain/entities.js#createEntityState`、`domain/geometry.js#distanceSquared`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#toJson`、`domain/stats.js#derivePlayerStats`、`domain/status.js#applyGlasswingModifier`、`domain/status.js#selectControlInterceptor`。
 - `applyGlasswingModifier` → 无内部公开函数。
 - `selectControlInterceptor` → 无内部公开函数。
-- `planEscapeInput` → 无内部公开函数。
-- `planStatusAdvance` → 无内部公开函数。
+- `planEscapeInput` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
+- `planStatusAdvance` → `domain/plans.js#createStateChange`。
+- `planSealRelease` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
 
 公开函数上游：
 
-- `resolveControlRequest` ← 宿主/工具入口或待编排。
+- `resolveControlRequest` ← `engine/effectLoop.js#evaluateEffectRequest`。
 - `applyGlasswingModifier` ← `domain/status.js#resolveControlRequest`。
 - `selectControlInterceptor` ← `domain/status.js#resolveControlRequest`。
-- `planEscapeInput` ← 宿主/工具入口或待编排。
+- `planEscapeInput` ← `engine/commands.js#planGameCommand`。
 - `planStatusAdvance` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planSealRelease` ← `engine/hooks.js#planEventHooks`。
+
+## domain/world/adventure.js
+
+Claude短途纵切的连续地图；首领与其他模式不因此宣称完整实现。
+
+[源码](../../src/v2/domain/world/adventure.js)；层：`domain`。
+
+直接依赖：`domain/entities.js`、`domain/plans.js`。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `createAdventureMapPlan(start: untyped, catalog: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 构建Pro1连续地图：三信标、两检查点、资源箱、驻守敌人与有限追兵预算。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `planClaudeEncounter(context: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 任意两个信标完成后，以稳定ID创建一次Claude首领并切换boss阶段。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `createAdventureMapPlan` → `domain/entities.js#createEntityState`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
+- `planClaudeEncounter` → `domain/entities.js#createEntityState`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
+
+公开函数上游：
+
+- `createAdventureMapPlan` ← `domain/world/map.js#createMapPlan`。
+- `planClaudeEncounter` ← `domain/world/map.js#planWorldInteraction`。
 
 ## domain/world/map.js
 
@@ -1922,27 +1977,27 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 
 [源码](../../src/v2/domain/world/map.js)；层：`domain`。
 
-直接依赖：`domain/entities.js`、`domain/geometry.js`、`domain/plans.js`、`domain/random.js`、`domain/rewards.js`。
+直接依赖：`domain/entities.js`、`domain/geometry.js`、`domain/plans.js`、`domain/random.js`、`domain/rewards.js`、`domain/world/adventure.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `createMapPlan(start: untyped, catalog: untyped, random: untyped)` | `SystemPlan` | 已实现 / core-preview | 生成固定的连续战斗演练海域/礁石/检查点与15只普通敌人；正式区域/事件/目标地图尚未实现。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planMapExploration(context: untyped)` | `SystemPlan` | TODO | 更新可见格、秘密方向与发现事件，已发现id不重复发资源。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planWorldInteraction(context: untyped, command: untyped)` | `SystemPlan` | TODO | F/触屏选择最近交互目标，校验距离与安全状态；不直接读写存储。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `createMapPlan(start: untyped, catalog: untyped, random: untyped)` | `SystemPlan` | 已实现 / core-preview + adventure-slice | 按运行范围生成Free演练或Pro1三信标地图；不假装完整区域生成已完成。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planMapExploration(context: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 按玩家位置揭示160单位网格，只有新格子才生成修改计划。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planWorldInteraction(context: untyped, command: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 就近交互资源箱或已解锁首领门；首次扇面发现生成持久化事实。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `isSafeForInteraction(context: untyped, position: untyped)` | `boolean` | 已实现 | 检查附近敌人、在途攻击、事件危险和检查点规则，不靠暂停制造安全。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
-- `createMapPlan` → `domain/entities.js#createEntityState`、`domain/plans.js#createStateChange`、`domain/random.js#drawRandom`。
-- `planMapExploration` → 无内部公开函数。
-- `planWorldInteraction` → `domain/geometry.js#distanceSquared`、`domain/rewards.js#planWorldReward`。
+- `createMapPlan` → `domain/entities.js#createEntityState`、`domain/plans.js#createStateChange`、`domain/random.js#drawRandom`、`domain/world/adventure.js#createAdventureMapPlan`。
+- `planMapExploration` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
+- `planWorldInteraction` → `domain/geometry.js#distanceSquared`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#planWorldReward`、`domain/world/adventure.js#planClaudeEncounter`。
 - `isSafeForInteraction` → `domain/geometry.js#distanceSquared`。
 
 公开函数上游：
 
 - `createMapPlan` ← `engine/session.js#createGameSession`。
-- `planMapExploration` ← `engine/tick.js#advanceWorldTick`。
-- `planWorldInteraction` ← 宿主/工具入口或待编排。
+- `planMapExploration` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planWorldInteraction` ← `engine/commands.js#planGameCommand`。
 - `isSafeForInteraction` ← `application/game.js#settleAdventure`、`domain/checkpoint.js#canCreateCheckpoint`。
 
 ## domain/world/objectives.js
@@ -1951,23 +2006,23 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 
 [源码](../../src/v2/domain/world/objectives.js)；层：`domain`。
 
-直接依赖：`domain/rewards.js`。
+直接依赖：`domain/geometry.js`、`domain/plans.js`、`domain/rewards.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planObjectiveAdvance(context: untyped)` | `SystemPlan` | TODO | 根据实际目标实体和占领进度完成目标，不把生成完当清场。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planObjectiveCompletion(context: untyped, objectiveId: untyped)` | `SystemPlan` | TODO | 唯一奖励/开门事件；正式最后Boss可请求胜利，API仅记阶段。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planObjectiveAdvance(context: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 仅在探索阶段且进入120范围时推进一个信标；离开不清零，35秒完成。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planObjectiveCompletion(context: untyped, objectiveId: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 稳定去重完成信标、生成80经验/2碎片/3零件，完成两个后开放首领门。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planApiProgression(context: untyped)` | `SystemPlan` | TODO | 推进API时间、5分钟Boss日程与材料分钟限额，Boss死不结束局。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
-- `planObjectiveAdvance` → `domain/world/objectives.js#planObjectiveCompletion`。
-- `planObjectiveCompletion` → `domain/rewards.js#planWorldReward`。
+- `planObjectiveAdvance` → `domain/geometry.js#distanceSquared`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/world/objectives.js#planObjectiveCompletion`。
+- `planObjectiveCompletion` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#planWorldReward`。
 - `planApiProgression` → 无内部公开函数。
 
 公开函数上游：
 
-- `planObjectiveAdvance` ← `engine/tick.js#advanceWorldTick`。
+- `planObjectiveAdvance` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
 - `planObjectiveCompletion` ← `domain/world/objectives.js#planObjectiveAdvance`。
 - `planApiProgression` ← `engine/tick.js#advanceWorldTick`。
 
@@ -2003,24 +2058,24 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 
 [源码](../../src/v2/domain/world/spawning.js)；层：`domain`。
 
-直接依赖：`content/catalog.js`、`domain/collision.js`、`domain/difficulty.js`。
+直接依赖：`content/catalog.js`、`domain/collision.js`、`domain/difficulty.js`、`domain/entities.js`、`domain/plans.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planSpawnSchedule(context: untyped)` | `SystemPlan` | TODO | 推进合法生成日程，额度/局部容量满则延期，合并久积压，保持Grok人海方向。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planEnemySpawn(context: untyped, request: untyped)` | `SystemPlan` | TODO | 建立稳定实体id/奖励来源/出生时倍率和模型壳，提交生成计划。；模型壳/基础能力在下一阶段按相同profile处理，出生倍率只快照一次；实体来源和奖励策略不丢失。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planReinforcementGroup(context: untyped, groupId: untyped, budgetId: untyped)` | `SystemPlan` | TODO | 为一组入口/信号援军预留预算和奖励策略；同group只排一次。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planSpawnSchedule(context: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 推进有限预算分组追兵、延迟预警、错峰出生；首领战不新增追兵。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planEnemySpawn(context: untyped, request: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 仅消费到期且位置合法的出生请求；实际出生才把预留预算转为已使用。；模型壳/基础能力在下一阶段按相同profile处理，出生倍率只快照一次；实体来源和奖励策略不丢失。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planReinforcementGroup(context: untyped, groupId: untyped, budgetId: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 按阶段压力和屏幕外规则预留一组Bot预算，不积累补刷债务。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
-- `planSpawnSchedule` → `domain/collision.js#validateSpawnLocation`、`domain/difficulty.js#resolveApiSpawnMultipliers`、`domain/world/spawning.js#planReinforcementGroup`。
-- `planEnemySpawn` → `domain/difficulty.js#resolveModelProfileId`、`content/catalog.js#findContentDefinition`。
-- `planReinforcementGroup` → 无内部公开函数。
+- `planSpawnSchedule` → `domain/collision.js#validateSpawnLocation`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/spawning.js#planReinforcementGroup`。
+- `planEnemySpawn` → `content/catalog.js#findContentDefinition`、`domain/collision.js#validateSpawnLocation`、`domain/entities.js#createEntityState`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
+- `planReinforcementGroup` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
 
 公开函数上游：
 
-- `planSpawnSchedule` ← `engine/tick.js#advanceWorldTick`。
-- `planEnemySpawn` ← 宿主/工具入口或待编排。
+- `planSpawnSchedule` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planEnemySpawn` ← `domain/world/spawning.js#planSpawnSchedule`。
 - `planReinforcementGroup` ← `domain/bosses/grok.js#planGrokBossReinforcements`、`domain/world/spawning.js#planSpawnSchedule`。
 
 ## engine/commands.js
@@ -2040,7 +2095,7 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 公开函数下游：
 
 - `validateGameCommand` → `domain/serialization.js#serializeCanonical`。
-- `planGameCommand` → `domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planSkillCast`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginSkip`、`domain/geometry.js#normalizeVector`、`domain/lora.js#planLoraInput`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`engine/commands.js#validateGameCommand`、`engine/flow.js#planPause`、`engine/flow.js#planResume`。
+- `planGameCommand` → `domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planSkillCast`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginSkip`、`domain/geometry.js#normalizeVector`、`domain/lora.js#planLoraInput`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/status.js#planEscapeInput`、`domain/world/map.js#planWorldInteraction`、`engine/commands.js#validateGameCommand`、`engine/flow.js#planPause`、`engine/flow.js#planResume`。
 - `orderPendingCommands` → 无内部公开函数。
 
 公开函数上游：
@@ -2059,12 +2114,12 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `evaluateEffectRequest(context: untyped, request: untyped)` | `SystemPlan` | 已实现 / core-preview | 预览处理damage/heal/shield/collect；其他效果类型明确拒绝，不假装生成或控制已完成。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `evaluateEffectRequest(context: untyped, request: untyped)` | `SystemPlan` | 已实现 / core-preview + adventure-slice | 处理damage/heal/shield/collect/control；未实现效果明确拒绝。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `drainEffectQueue(context: untyped, queue: untyped)` | `EffectDrain` | 已实现 / core-preview | 稳定顺序执行请求，应用中间计划/死亡声明/事件钩子，再把派生请求排队。；generation<=4、每tick派生<=128；先标dying再钩子；队列循环不递归，禁止自动新开chain绕预算。 返回nextWorking与deaths/outbox，不返回供再次apply的重复计划；调用方接纳结果后继续tick。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
-- `evaluateEffectRequest` → `domain/damage.js#planLifeChange`、`domain/damage.js#resolveDamageRequest`、`domain/rewards.js#planTokenCollection`、`domain/serialization.js#serializeCanonical`、`domain/shields.js#planShieldGrant`。
+- `evaluateEffectRequest` → `domain/damage.js#planLifeChange`、`domain/damage.js#resolveDamageRequest`、`domain/rewards.js#planTokenCollection`、`domain/serialization.js#serializeCanonical`、`domain/shields.js#planShieldGrant`、`domain/status.js#resolveControlRequest`。
 - `drainEffectQueue` → `domain/deaths.js#collectDeathRecords`、`domain/deaths.js#planDeathTransitions`、`engine/effectLoop.js#evaluateEffectRequest`、`engine/hooks.js#planEventHooks`、`engine/reducer.js#applySystemPlan`。
 
 公开函数上游：
@@ -2107,19 +2162,19 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 
 [源码](../../src/v2/engine/hooks.js)；层：`engine`。
 
-直接依赖：`dispatch/dsh.js`、`dispatch/mechanics.js`、`dispatch/models.js`、`dispatch/plugins.js`、`domain/distill.js`、`domain/plans.js`。
+直接依赖：`content/handlers/plugins.js`、`dispatch/dsh.js`、`dispatch/mechanics.js`、`dispatch/models.js`、`dispatch/plugins.js`、`domain/distill.js`、`domain/plans.js`、`domain/status.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planEventHooks(context: untyped, event: untyped)` | `SystemPlan` | 已实现 / core-preview | 预览分派蒸馏死亡/受伤钩子；其他三插件由属性/额度/拾取消费者处理；仅接受LoRA/更新重置两种试装DSH，完整机制仍拒绝。；过滤已启用/实际订阅的handler；次级伤害不冒充基础武器命中；不再次发布同eventId。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planEventHooks(context: untyped, event: untyped)` | `SystemPlan` | 已实现 / core-preview + adventure-slice | 分派蒸馏、封印破坏和并行调用事件；其余首批插件由明确数据消费者处理。；过滤已启用/实际订阅的handler；次级伤害不冒充基础武器命中；不再次发布同eventId。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
-- `planEventHooks` → `domain/distill.js#planDistillEvent`。
+- `planEventHooks` → `content/handlers/plugins.js#planPluginParallel`、`domain/distill.js#planDistillEvent`、`domain/plans.js#mergeSystemPlans`、`domain/status.js#planSealRelease`。
 
 公开函数上游：
 
-- `planEventHooks` ← `engine/effectLoop.js#drainEffectQueue`、`engine/tick.js#advanceWorldTick`。
+- `planEventHooks` ← `engine/effectLoop.js#drainEffectQueue`、`engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
 
 ## engine/previewTick.js
 
@@ -2127,16 +2182,16 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 [源码](../../src/v2/engine/previewTick.js)；层：`engine`。
 
-直接依赖：`domain/ai.js`、`domain/attacks.js`、`domain/collision.js`、`domain/deaths.js`、`domain/distill.js`、`domain/dshCycle.js`、`domain/lora.js`、`domain/movement.js`、`domain/plans.js`、`domain/rewards.js`、`domain/status.js`、`engine/commands.js`、`engine/effectLoop.js`、`engine/flow.js`、`engine/reducer.js`。
+直接依赖：`domain/ai.js`、`domain/attacks.js`、`domain/collision.js`、`domain/deaths.js`、`domain/distill.js`、`domain/dshCycle.js`、`domain/lora.js`、`domain/movement.js`、`domain/plans.js`、`domain/rewards.js`、`domain/status.js`、`domain/world/map.js`、`domain/world/objectives.js`、`domain/world/spawning.js`、`engine/commands.js`、`engine/effectLoop.js`、`engine/flow.js`、`engine/hooks.js`、`engine/reducer.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `advancePreviewWorldTick(state: untyped, commands: untyped, catalog: untyped)` | `TickResult` | 已实现 / core-preview | 执行受范围限制的预览世界步，逐阶段应用计划、排队效果、声明死亡与掉落，最后只提交一次。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `advancePreviewWorldTick(state: untyped, commands: untyped, catalog: untyped)` | `TickResult` | 已实现 / core-preview + adventure-slice | 执行Free/Pro1固定世界步，推进探索/追兵/Claude/效果/掉落与成长后统一提交。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 | `advancePreviewUiCommands(state: untyped, commands: untyped, catalog: untyped, advanceClock: untyped = false)` | `TickResult` | 已实现 / core-preview | 不推进已暂停时钟，立即处理暂停/恢复命令。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
-- `advancePreviewWorldTick` → `domain/ai.js#planEnemyAi`、`domain/attacks.js#planCollisionEffects`、`domain/attacks.js#planWeaponFire`、`domain/collision.js#detectCollisions`、`domain/deaths.js#resolveTerminalOutcome`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/dshCycle.js#planDshCycleEvent`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/movement.js#planPlayerMovement`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#planDeathRewards`、`domain/status.js#planStatusAdvance`、`engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/effectLoop.js#drainEffectQueue`、`engine/flow.js#planProgressionPanels`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
+- `advancePreviewWorldTick` → `domain/ai.js#planBossAi`、`domain/ai.js#planEnemyAi`、`domain/attacks.js#planCollisionEffects`、`domain/attacks.js#planWeaponFire`、`domain/collision.js#detectCollisions`、`domain/deaths.js#resolveTerminalOutcome`、`domain/distill.js#planDistilledAbilities`、`domain/dshCycle.js#planDshCycleEvent`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/movement.js#planPlayerMovement`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#planDeathRewards`、`domain/status.js#planStatusAdvance`、`domain/world/map.js#planMapExploration`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/spawning.js#planSpawnSchedule`、`engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/effectLoop.js#drainEffectQueue`、`engine/flow.js#planProgressionPanels`、`engine/hooks.js#planEventHooks`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
 - `advancePreviewUiCommands` → `domain/lora.js#planLoraUiStep`、`engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/flow.js#planProgressionPanels`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
 
 公开函数上游：
@@ -2180,13 +2235,13 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `createGameSession(start: untyped, seed: untyped, catalog: untyped)` | `GameSession` | 已实现 / core-preview | 只创建显式core-preview/0级范围的私有Session，校验内容/初始世界后才发布句柄。；；状态权限：创建Session私有状态；不接触Profile和宿主对象 |
+| `createGameSession(start: untyped, seed: untyped, catalog: untyped)` | `GameSession` | 已实现 / core-preview + adventure-slice | 校验内容与初始世界后发布Free/Pro1私有Session；模组仅允许Free练习。；；状态权限：创建Session私有状态；不接触Profile和宿主对象 |
 | `enqueueSessionCommand(session: untyped, command: untyped)` | `Result<Command>` | 已实现 / core-preview | 只排队不重入tick，拒绝终态/重复命令。；；状态权限：只写Session待处理命令队列 |
-| `stepSessionWorld(session: untyped)` | `TickResult` | 已实现 / core-preview | 消费到期世界命令，调用独立预览世界步并原子提交；正式世界tick仍未实现。；；状态权限：唯一门面允许提交世界状态 |
-| `stepSessionUi(session: untyped, advanceClock: untyped = true)` | `TickResult` | 已实现 / core-preview | 消费预览暂停/继续与插件选择/重抽/跳过，结算后续等级；可选择独立UI步推进LoRA，命令flush不推进指针。；；状态权限：唯一门面允许提交UI状态 |
+| `stepSessionWorld(session: untyped)` | `TickResult` | 已实现 / core-preview + adventure-slice | 消费到期世界命令，执行Free/Pro1固定世界步并原子提交。；；状态权限：唯一门面允许提交世界状态 |
+| `stepSessionUi(session: untyped, advanceClock: untyped = true)` | `TickResult` | 已实现 / core-preview + adventure-slice | 消费预览暂停/继续与插件选择/重抽/跳过，结算后续等级；可选择独立UI步推进LoRA，命令flush不推进指针。；；状态权限：唯一门面允许提交UI状态 |
 | `readSessionState(session: untyped)` | `StateSnapshot` | 已实现 | 返回防修改快照或结构化复制，不能泄露私有可变引用。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `readSessionView(session: untyped)` | `RenderSnapshot` | 已实现 | 供表现读取投影，不把整个Session交给Phaser。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `restoreGameSession(checkpoint: untyped, catalog: untyped)` | `Result<GameSession>` | 已实现 / core-preview | 验证检查点后构建新的暂停预览Session；完整冒险范围明确拒绝。；；状态权限：构建替代Session，调用者先dispose旧表现订阅 |
+| `restoreGameSession(checkpoint: untyped, catalog: untyped)` | `Result<GameSession>` | 已实现 / core-preview + adventure-slice | 校验版本、模组锁及状态后构建暂停Session；失败保留原检查点。；；状态权限：构建替代Session，调用者先dispose旧表现订阅 |
 | `disposeGameSession(session: untyped)` | `void` | 已实现 | 标记废弃、清队列，后续命令拒绝，不能再结算一次。；；状态权限：释放Session私有资源引用 |
 
 公开函数下游：
@@ -2221,7 +2276,7 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `createRenderSnapshot(state: untyped, catalog: untyped)` | `RenderSnapshot` | 已实现 / core-preview | 投影实体/米粒/预警、蒸馏虚影/追击泡、生命/武器/冷却；成长面板由宿主读取Session快照，LoRA未接入。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `createRenderSnapshot(state: untyped, catalog: untyped)` | `RenderSnapshot` | 已实现 / core-preview + adventure-slice | 只读投影战斗实体、掉落、探索格、Claude预警与首领生命，供Canvas绘制。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `createStateDigest(state: untyped)` | `string` | 已实现 | 稳定序列化关键状态摘要，排除表现随机/宿主对象。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
@@ -2263,19 +2318,39 @@ Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,
 
 [源码](../../src/v2/preview/host.js)；层：`host`。
 
-直接依赖：`content/catalog.js`、`content/registry.js`、`domain/checkpoint.js`、`domain/clock.js`、`domain/difficulty.js`、`engine/session.js`、`preview/view.js`。
+直接依赖：`adapters/storage.js`、`application/repository.js`、`content/catalog.js`、`content/registry.js`、`domain/checkpoint.js`、`domain/clock.js`、`domain/difficulty.js`、`domain/settlement.js`、`engine/session.js`、`preview/modManager.js`、`preview/view.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `mountCombatPreview(mountElementId: untyped)` | `() => void` | 已实现 / core-preview | 组装独立浏览器战斗试作、键鼠/双摇杆、固定帧、菜单和隔离检查点；返回完整清理函数。；；状态权限：宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState |
+| `mountCombatPreview(mountElementId: untyped)` | `() => void` | 已实现 / core-preview + adventure-slice | 组装Free/Pro1、键鼠/双摇杆、Profile事务结算及本地模组菜单；返回完整清理函数。；；状态权限：宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState |
 
 公开函数下游：
 
-- `mountCombatPreview` → `content/catalog.js#loadContentCatalog`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`domain/checkpoint.js#canCreateCheckpoint`、`domain/checkpoint.js#createCheckpoint`、`domain/clock.js#createClockState`、`domain/clock.js#resumeClock`、`domain/clock.js#scheduleFrame`、`domain/difficulty.js#resolveDifficultySnapshot`、`engine/session.js#createGameSession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#readSessionView`、`engine/session.js#restoreGameSession`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`preview/view.js#getPreviewCamera`、`preview/view.js#renderPreviewFrame`。
+- `mountCombatPreview` → `adapters/storage.js#createStoragePort`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`application/repository.js#readProfileRepository`、`content/catalog.js#loadContentCatalog`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`domain/checkpoint.js#canCreateCheckpoint`、`domain/checkpoint.js#createCheckpoint`、`domain/clock.js#createClockState`、`domain/clock.js#resumeClock`、`domain/clock.js#scheduleFrame`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/settlement.js#createSettlement`、`engine/session.js#createGameSession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#readSessionView`、`engine/session.js#restoreGameSession`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`preview/modManager.js#mountModManager`、`preview/view.js#getPreviewCamera`、`preview/view.js#renderPreviewFrame`。
 
 公开函数上游：
 
 - `mountCombatPreview` ← 宿主/工具入口或待编排。
+
+## preview/modManager.js
+
+Local community mod manager. Installation is persistent; activation applies only at next departure.
+
+[源码](../../src/v2/preview/modManager.js)；层：`host`。
+
+直接依赖：`content/mods.js`。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `mountModManager(root: untyped, base: untyped, notify: untyped)` | `{getCatalog: () => ContentCatalog; dispose: () => void}` | 已实现 | 提供本地JSON安装、启停、移除与持久化菜单，只影响下次Free出发。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `mountModManager` → `content/mods.js#composeModCatalog`、`content/mods.js#parseModPackage`。
+
+公开函数上游：
+
+- `mountModManager` ← `preview/host.js#mountCombatPreview`。
 
 ## preview/view.js
 
@@ -2283,7 +2358,7 @@ Canvas presentation for the combat preview. Never mutates or simulates game stat
 
 [源码](../../src/v2/preview/view.js)；层：`host`。
 
-直接依赖：无。
+直接依赖：`domain/geometry.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -2292,7 +2367,7 @@ Canvas presentation for the combat preview. Never mutates or simulates game stat
 
 公开函数下游：
 
-- `getPreviewCamera` → 无内部公开函数。
+- `getPreviewCamera` → `domain/geometry.js#computeCameraBounds`。
 - `renderPreviewFrame` → `preview/view.js#getPreviewCamera`。
 
 公开函数上游：

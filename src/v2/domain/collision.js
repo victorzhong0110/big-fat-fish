@@ -66,13 +66,25 @@ export function detectCollisions(context) {
  * 检查视野外、最小距离、可通行与局部/全局数量上限。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls domain/geometry.js#distanceSquared
+ * @implementationScope adventure-slice
  * @calls domain/collision.js#canTraverseObstacle
+ * @calls domain/geometry.js#computeCameraBounds
+ * @calls domain/geometry.js#distanceSquared
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').SpawnRequest} request
  * @returns {import('../contracts.d.ts').Result<import('../contracts.d.ts').Vec2>}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function validateSpawnLocation(context, request) {
-  throw new Error('TODO V2: domain/collision.js#validateSpawnLocation');
+  const state=context.state,player=state.world.entities[state.player.entityId],viewport=state.input.viewport,view=viewport?dependency1.computeCameraBounds(player.position,state.world.map,viewport):null,definition=context.catalog.definitions[request.enemyId];
+  const fail=(/** @type {string} */ message)=>({ok:/** @type {const} */ (false),code:'SPAWN_DEFERRED',message});
+  if(!definition||definition.kind!=='enemy'||!view)return fail('Missing enemy definition or explicit camera bounds');
+  const radius=Number(definition.parameters.radius),point=request.position;
+  if(![point.x,point.y,radius].every(Number.isFinite)||point.x<radius||point.y<radius||point.x>state.world.map.width-radius||point.y>state.world.map.height-radius)return fail('Spawn lies outside legal map bounds');
+  if(dependency1.distanceSquared(point,player.position)<420**2)return fail('Spawn is too close to the player');
+  if(point.x+radius>=view.x-128&&point.x-radius<=view.x+view.width+128&&point.y+radius>=view.y-128&&point.y-radius<=view.y+view.height+128)return fail('Spawn would be visible');
+  const enemies=Object.values(state.world.entities).filter(entity=>entity.kind==='enemy'&&!entity.dead&&entity.runtime.noAi!==true);
+  if(enemies.length>=(state.start.difficulty.mode==='expedition'?100:80)||request.enemyId==='enemy_grok_bot'&&enemies.filter(entity=>entity.definitionId===request.enemyId).length>=24)return fail('Alive capacity is full');
+  const temporary={...player,definitionId:request.enemyId,kind:/** @type {const} */ ('enemy'),runtime:{}};
+  if(state.world.map.obstacleIds.some(id=>{const obstacle=state.world.entities[id];return obstacle&&!canTraverseObstacle(temporary,obstacle,context.catalog)&&dependency1.distanceSquared(point,obstacle.position)<(radius+obstacle.radius)**2;}))return fail('Spawn intersects blocking terrain');
+  return {ok:true,value:{...point}};
 }

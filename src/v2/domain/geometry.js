@@ -85,3 +85,15 @@ export function distanceSquared(a, b) {
   if (![a.x, a.y, b.x, b.y].every(Number.isFinite)) throw new RangeError('Non-finite position');
   return (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
 }
+
+/** 核心生成校验与渲染共享相机边界；只传视野尺寸，不采样渲染帧中的玩家位置。
+ * @calls 无内部公开函数。
+ * @param {Readonly<import('../contracts.d.ts').Vec2>} position
+ * @param {Readonly<{width:number;height:number}>} map
+ * @param {Readonly<{width:number;height:number}>} viewport
+ * @returns {{x:number;y:number;width:number;height:number}}
+ */
+export function computeCameraBounds(position,map,viewport){
+ if(![position.x,position.y,map.width,map.height,viewport.width,viewport.height].every(Number.isFinite)||map.width<=0||map.height<=0||viewport.width<=0||viewport.height<=0)throw new Error('Invalid camera geometry');
+ return {x:Math.max(0,Math.min(map.width-viewport.width,position.x-viewport.width/2)),y:Math.max(0,Math.min(map.height-viewport.height,position.y-viewport.height/2)),width:viewport.width,height:viewport.height};
+}

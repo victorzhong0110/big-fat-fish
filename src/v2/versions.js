@@ -1,3 +1,3 @@
 // Runtime compatibility boundary. Increment schema when persisted structure changes.
-export const SCHEMA_VERSION = 5;
-export const CORE_VERSION = '2.0.0-preview.4';
+export const SCHEMA_VERSION = 6;
+export const CORE_VERSION = '2.0.0-preview.5';
