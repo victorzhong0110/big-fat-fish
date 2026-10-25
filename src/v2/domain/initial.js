@@ -19,10 +19,10 @@ export function createInitialGameState(start, seed, catalog) {
   return {
     versions: { schema: SCHEMA_VERSION, core: CORE_VERSION, content: catalog.version }, runId: start.runId, seed, tick: 0, uiTick: 0, revision: 0, lastWorldAdvanceTick: null,
     input: { move: { x: 0, y: 0 }, aim: { x: 1, y: 0 }, firing: false, heldKeys: [], pointerIds: [] }, lastCommandSeq: -1,
-    start: structuredClone(start), flow: { phase: 'exploring', resumePhase: null, queuedLevelRewards: [], choice: null, settlementPending: false }, random: createRandomStreams(seed),
+    start: structuredClone(start), flow: { phase: 'exploring', resumePhase: null, queuedLevelRewards: [], choice: null, settlementPending: false, pluginRerollsUsed: 0 }, random: createRandomStreams(seed),
     player: { entityId: 'fish', baseStats: { maxHp: 100, moveSpeed: 220, armor: 0, damageMultiplier: 1, critChance: 0.05, critMultiplier: 1.5 }, modifiers: [], loadout: structuredClone(start.loadout), invulnerableRemaining: 0, controlImmuneRemaining: 0 },
     world: { map: { id: 'unpublished', biomeIndex: 0, width: 2200, height: 1400, exploredCells: [], obstacleIds: [], checkpointIds: [], exitIds: [], navigationRevision: 0 }, entities: { fish: createEntityState('fish', 'player_fish', 'player', 'player', { x: 230, y: 270 }, { hp: 100, maxHp: 100 }) }, pickups: {}, statuses: {}, shields: {}, objectives: [], spawnQueue: [], budgets: [], pressureEvents: [] },
     level: 1, xpRemainder: 0, totalTokens: 0, plugins: [], dshRuntime: {}, dshCycle: { remaining: 28, pendingOutcome: null, triggerSeq: 0, lastAdvancedTick: null },
-    lora: { active: null, pendingLevels: [], modifiers: [], underfitRemaining: 0, overfitRemaining: 0, resolvedTrialIds: [] }, distill: { claude: { stage: 0, samples: 0 }, gpt: { stage: 0, samples: 0 }, grok: { stage: 0, samples: 0 } }, damageBudgets: {}, bosses: [], api: null, inventory: { gpuFragments: 0, parts: 0 }, attackHits: [], processedRewardIds: [], processedCommandIds: [], pendingEffects: { pending: [], processedIds: [], spawnedThisTick: 0 },
+    lora: { active: null, pendingLevels: [], modifiers: [], underfitRemaining: 0, overfitRemaining: 0, resolvedTrialIds: [] }, distillRuntime: {}, distill: { claude: { stage: 0, samples: 0 }, gpt: { stage: 0, samples: 0 }, grok: { stage: 0, samples: 0 } }, damageBudgets: {}, bosses: [], api: null, inventory: { gpuFragments: 0, parts: 0 }, attackHits: [], processedRewardIds: [], processedCommandIds: [], pendingEffects: { pending: [], processedIds: [], spawnedThisTick: 0 },
   };
 }

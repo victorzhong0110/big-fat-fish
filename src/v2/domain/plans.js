@@ -69,6 +69,12 @@ export function validateSystemPlan(plan) {
       case 'removePickup': valid = change.target === 'world' && Object.keys(p).length === 0; break;
       case 'recordReward': valid = change.target === 'runtime' && Object.keys(p).length === 0; break;
       case 'addCollectedResource': valid = change.target === 'progression' && ['riceXp', 'gpuFragment', 'part'].includes(String(p.kind)) && Number.isSafeInteger(p.amount) && Number(p.amount) >= 0; break;
+      case 'setLevelProgress': valid = change.target === 'progression' && Number.isSafeInteger(p.level) && Number(p.level) >= 2 && Number.isSafeInteger(p.xpRemainder) && Number(p.xpRemainder) >= 0 && Array.isArray(p.rewards); break;
+      case 'applyLevelGrowth': valid = change.target === 'progression' && Number.isSafeInteger(p.level) && Number(p.level) >= 2; break;
+      case 'setGrowthFlow': valid = change.target === 'flow' && Array.isArray(p.rewards) && (p.choice === null || !!p.choice && typeof p.choice === 'object') && Number.isInteger(p.rerollsUsed) && Number(p.rerollsUsed) >= 0 && Number(p.rerollsUsed) <= 1; break;
+      case 'setPlugins': valid = change.target === 'progression' && Array.isArray(p.plugins); break;
+      case 'setDistillRuntime': valid = change.target === 'progression' && change.id === 'distill' && !!p.runtime && typeof p.runtime === 'object' && !Array.isArray(p.runtime) && Object.values(p.runtime).every(value => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0); break;
+      case 'setDistillTrack': valid = change.target === 'progression' && ['claude', 'gpt', 'grok'].includes(change.id) && Number.isInteger(p.stage) && Number(p.stage) >= 0 && Number(p.stage) <= 3 && Number.isSafeInteger(p.samples) && Number(p.samples) >= 0; break;
       case 'setPlayerTimers': valid = change.target === 'player' && ['invulnerableRemaining', 'controlImmuneRemaining', 'skillCooldown', 'dashCooldown', 'companionCooldown'].every(nonnegative) && Array.isArray(p.weaponCooldowns) && p.weaponCooldowns.every(item => item && typeof item === 'object' && !Array.isArray(item) && typeof item.instanceId === 'string' && typeof item.cooldown === 'number' && item.cooldown >= 0); break;
       case 'setWorldTimers': valid = change.target === 'runtime' && change.id === 'worldTimers' && Number.isSafeInteger(p.lastWorldAdvanceTick) && Number(p.lastWorldAdvanceTick) >= 0 && nonnegative('underfitRemaining') && nonnegative('overfitRemaining'); break;
       case 'removeStatus': case 'removeShield': valid = change.target === 'world' && Object.keys(p).length === 0; break;

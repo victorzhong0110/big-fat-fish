@@ -20,6 +20,10 @@ export function derivePlayerStats(state, catalog) {
   // Expired temporary modifiers are ignored even before the cleanup phase removes them.
   const modifiers = [...state.player.modifiers, ...state.lora.modifiers].filter(modifier => modifier.expiresAt === null || modifier.expiresAt > state.tick);
   const base = state.player.baseStats;
+  if (state.plugins.some(plugin => plugin.id === 'plugin_distill')) {
+    modifiers.push({ id: 'distill:armor', sourceId: 'plugin_distill', stat: 'armor', operation: 'add', value: state.distill.claude.stage * 6, expiresAt: null });
+    modifiers.push({ id: 'distill:speed', sourceId: 'plugin_distill', stat: 'moveSpeed', operation: 'add', value: base.moveSpeed * state.distill.grok.stage * 0.03, expiresAt: null });
+  }
   return {
     maxHp: resolveStatModifier(base.maxHp, modifiers.filter(m => m.stat === 'maxHp'), 1, Number.MAX_SAFE_INTEGER),
     moveSpeed: resolveStatModifier(base.moveSpeed, modifiers.filter(m => m.stat === 'moveSpeed'), 1, base.moveSpeed * 1.8),

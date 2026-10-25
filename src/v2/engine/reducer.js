@@ -59,6 +59,20 @@ export function applySystemPlan(working, plan) {
       case 'addCollectedResource':
         if (p.kind === 'riceXp') { next.totalTokens += Number(p.amount); next.xpRemainder += Number(p.amount); }
         else if (p.kind === 'gpuFragment') next.inventory.gpuFragments += Number(p.amount); else next.inventory.parts += Number(p.amount); break;
+      case 'setLevelProgress':
+        if (Number(p.level) !== next.level + 1 || Number(p.xpRemainder) !== next.xpRemainder - (20 + 10 * next.level) || next.flow.queuedLevelRewards.length) throw new Error('Invalid level threshold');
+        next.level = Number(p.level); next.xpRemainder = Number(p.xpRemainder); next.flow.queuedLevelRewards = /** @type {import('../contracts.d.ts').LevelReward[]} */ (JSON.parse(serializeCanonical(p.rewards))); break;
+      case 'applyLevelGrowth': {
+        if (next.flow.queuedLevelRewards[0]?.level !== p.level || change.id !== `growth:${next.flow.queuedLevelRewards[0]?.id}` || next.processedRewardIds.includes(change.id)) throw new Error('Invalid or duplicate level growth');
+        next.player.baseStats.maxHp += 2;
+        const player = next.world.entities[next.player.entityId]; player.maxHp += 2; player.hp = Math.min(player.maxHp, player.hp + 2);
+        next.processedRewardIds = [...next.processedRewardIds, change.id]; break;
+      }
+      case 'setGrowthFlow':
+        next.flow = { ...next.flow, queuedLevelRewards: /** @type {import('../contracts.d.ts').LevelReward[]} */ (JSON.parse(serializeCanonical(p.rewards))), choice: /** @type {import('../contracts.d.ts').PluginChoice | null} */ (p.choice), pluginRerollsUsed: Number(p.rerollsUsed) }; break;
+      case 'setPlugins': next.plugins = /** @type {import('../contracts.d.ts').PluginState[]} */ (JSON.parse(serializeCanonical(p.plugins))); break;
+      case 'setDistillRuntime': next.distillRuntime = /** @type {Record<string, import('../contracts.d.ts').Json>} */ (p.runtime); break;
+      case 'setDistillTrack': next.distill = { ...next.distill, [change.id]: { stage: /** @type {0 | 1 | 2 | 3} */ (p.stage), samples: Number(p.samples) } }; break;
       case 'setPlayerTimers': {
         if (change.id !== next.player.entityId) throw new Error('Player id mismatch');
         const weaponCooldowns = /** @type {Record<string, import('../contracts.d.ts').Json>[]} */ (p.weaponCooldowns);

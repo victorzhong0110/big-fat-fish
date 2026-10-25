@@ -20,13 +20,13 @@ function ctx(state) {return {state,catalog,random:state.random.combat,entityId:n
 
 describe('source-backed V2 catalog',()=>{
  it('has all declared categories, exact 160-GPU tree cost, explicit runtime capabilities and detached loads',()=>{
-  const registry=createHandlerRegistry();expect(validateContentCatalog(catalog,registry)).toEqual({valid:true,diagnostics:[]});expect(registry.implementedIds).toHaveLength(6);expect(Object.keys(registry.bindings)).toHaveLength(95);
+  const registry=createHandlerRegistry();expect(validateContentCatalog(catalog,registry)).toEqual({valid:true,diagnostics:[]});expect(registry.implementedIds).toHaveLength(10);expect(Object.keys(registry.bindings)).toHaveLength(95);
   const copy=loadContentCatalog();copy.definitions.mcp_bubble.parameters.damage=99;expect(loadContentCatalog().definitions.mcp_bubble.parameters.damage).toBe(12);
  });
  it('rejects missing data, wrong tree totals, cyclic prerequisites and false capabilities',()=>{
   const broken=loadContentCatalog();delete broken.definitions.mcp_fan;expect(validateContentCatalog(broken,createHandlerRegistry()).valid).toBe(false);
   const cyclic=loadContentCatalog();cyclic.definitions.tree_body_a.parameters.prerequisites=['tree_body_f'];expect(validateContentCatalog(cyclic,createHandlerRegistry()).valid).toBe(false);
-  const registry=createHandlerRegistry();registry.implementedIds.push('plugin_distill');expect(validateContentCatalog(catalog,registry).valid).toBe(false);
+  const registry=createHandlerRegistry();registry.implementedIds.push('plugin_chain');expect(validateContentCatalog(catalog,registry).valid).toBe(false);
  });
 });
 describe('private V2 Session and command boundaries',()=>{

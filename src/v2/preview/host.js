@@ -46,6 +46,7 @@ export function mountCombatPreview(mountElementId) {
   let session=/** @type {import('../contracts.d.ts').GameSession|null} */(null);
   let view=/** @type {import('../contracts.d.ts').RenderSnapshot|null} */(null);
   let clock=createClockState(),lastTime=0,sequence=0,frameId=0,disposed=false,saveRequested=false;
+  let displayedChoice='';
   let aim={x:1,y:0},mouseFiring=false,stickFiring=false,leftMove={x:0,y:0},lastInput='',toastUntil=0;
   let popups=/** @type {{x:number;y:number;amount:number;tick:number}[]} */([]);
   const keys=new Set();
@@ -69,6 +70,8 @@ export function mountCombatPreview(mountElementId) {
     clearInput();if(send('Pause',{},'ui'))stepSessionUi(session);clock=resumeClock(clock);lastTime=performance.now();
   }
   function resume(){if(!session)return;clearInput();node('toast').classList.remove('visible');toastUntil=0;if(send('Resume',{},'ui'))stepSessionUi(session);clock=resumeClock(clock);lastTime=performance.now();canvas.focus();}
+  /** @param {string} type @param {string|null} optionId */
+  function choose(type,optionId=null){if(!session)return;const choice=readSessionState(session).flow.choice;if(!choice)return;clearInput();if(send(type,{choiceId:choice.id,optionId},'ui'))stepSessionUi(session);clock=resumeClock(clock);lastTime=performance.now();canvas.focus();}
   function refreshContinue(){try{node('continue').toggleAttribute('disabled',!localStorage.getItem(checkpointKey));}catch{node('continue').setAttribute('disabled','');}}
   /** @param {boolean} restore */
   function begin(restore=false){
@@ -88,7 +91,7 @@ export function mountCombatPreview(mountElementId) {
         replacement=createGameSession({runtimeProfile:'core-preview',runId:`preview:${Array.from(crypto.getRandomValues(new Uint32Array(4)), value => value.toString(16).padStart(8, '0')).join('')}`,treeNodeIds:[],dsh:[],difficulty:difficulty.value,loadout:{weapons:['bubble','fan'].map(name=>({instanceId:`mcp:${name}`,definitionId:`mcp_${name}`,originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null})),activeWeaponIndex:0,skillId,skillCooldown:0,companionId:null,companionCooldown:0,dashCooldown:0}},seed,catalog);
       }
       if(session)disposeGameSession(session);session=replacement;sequence=readSessionState(session).lastCommandSeq+1;
-      view=readSessionView(session);clock=createClockState();lastTime=performance.now();clearInput();popups=[];saveRequested=false;
+      displayedChoice='';node('plugin-menu').classList.add('hidden');view=readSessionView(session);clock=createClockState();lastTime=performance.now();clearInput();popups=[];saveRequested=false;
       node('menu').classList.add('hidden');node('hud').classList.remove('hidden');node('controls').classList.remove('hidden');mount?.classList.add('started');
       if(restore)toast('已恢复到检查点原进度。点击“继续游”恢复战斗。');else toast('起点的饭盆是检查点。WASD 移动，按住左键射击。');
       canvas.focus();
@@ -118,7 +121,8 @@ export function mountCombatPreview(mountElementId) {
   }
   attachStick('left-stick',true);attachStick('right-stick',false);
   on(node('start'),'click',()=>begin(false));on(node('continue'),'click',()=>begin(true));on(node('pause'),'click',()=>session&&readSessionState(session).flow.phase==='paused'?resume():pause());on(node('resume'),'click',()=>resume());
-  on(node('restart'),'click',()=>{if(session)disposeGameSession(session);session=null;view=null;clearInput();node('menu').classList.remove('hidden');node('pause-menu').classList.add('hidden');node('hud').classList.add('hidden');node('controls').classList.add('hidden');mount?.classList.remove('started');refreshContinue();});
+  on(node('restart'),'click',()=>{if(session)disposeGameSession(session);session=null;view=null;displayedChoice='';node('plugin-menu').classList.add('hidden');clearInput();node('menu').classList.remove('hidden');node('pause-menu').classList.add('hidden');node('hud').classList.add('hidden');node('controls').classList.add('hidden');mount?.classList.remove('started');refreshContinue();});
+  on(node('plugin-reroll'),'click',()=>choose('RerollPlugin'));on(node('plugin-skip'),'click',()=>choose('SkipPlugin'));
   on(node('switch'),'click',()=>{send('SwitchWeapon');});on(node('skill'),'click',()=>{send('Skill');});on(node('dash'),'click',()=>{send('Dash');});on(node('checkpoint'),'click',()=>requestSave());
   on(window,'keydown',event=>{const e=/** @type {KeyboardEvent} */(event);if(!session||e.target instanceof HTMLInputElement||e.target instanceof HTMLSelectElement)return;const key=e.code;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(key))e.preventDefault();if(e.repeat)return;
     if(key==='Escape'){readSessionState(session).flow.phase==='paused'?resume():pause();return;}keys.add(key);
@@ -152,6 +156,19 @@ export function mountCombatPreview(mountElementId) {
           if(result.next.flow.phase!=='exploring')break;
         }
         if(saveRequested){const pending=readSessionState(session);if(pending.flow.phase!=='exploring'||!pending.input.firing&&!pending.input.move.x&&!pending.input.move.y){saveRequested=false;save();}}
+        const growth=readSessionState(session),choice=growth.flow.choice;
+        node('plugin-menu').classList.toggle('hidden',growth.flow.phase!=='pluginChoice');
+        if(growth.flow.phase==='pluginChoice'&&choice&&choice.id!==displayedChoice){
+          clearInput();clock=resumeClock(clock);displayedChoice=choice.id;
+          node('plugin-title').textContent=`Lv.${choice.level} · 选择插件`;
+          const options=node('plugin-options');options.replaceChildren();
+          for(const candidate of choice.candidates){const definition=catalog.definitions[candidate.id],button=document.createElement('button'),title=document.createElement('strong'),description=document.createElement('small');button.type='button';button.dataset.pluginId=candidate.id;title.textContent=`${definition.displayName} · ${candidate.rank}级`;description.textContent=String(/** @type {readonly string[]} */(definition.parameters.rankDescriptions??[])[candidate.rank-1]??'');button.append(title,description);button.onclick=()=>choose('SelectPlugin',candidate.id);options.append(button);}
+          node('plugin-reroll').toggleAttribute('disabled',(growth.flow.pluginRerollsUsed??0)>=1);node('plugin-reroll').textContent=`重抽（本局剩余${1-(growth.flow.pluginRerollsUsed??0)}次）`;
+        }
+        if(growth.flow.phase!=='pluginChoice')displayedChoice='';
+        node('level').textContent=String(growth.level);node('growth-label').textContent=growth.level>=16?'本模式等级已满':`${growth.xpRemainder} / ${20+10*growth.level}`;
+        node('plugins-label').textContent=growth.plugins.map(plugin=>`${catalog.definitions[plugin.id].displayName}${plugin.rank}`).join(' · ');
+        node('distill-label').textContent=growth.plugins.some(plugin=>plugin.id==='plugin_distill')?`蒸馏 蟹${growth.distill.claude.stage}阶(${growth.distill.claude.samples}) / GPT${growth.distill.gpt.stage}阶(${growth.distill.gpt.samples}) / Bot${growth.distill.grok.stage}阶(${growth.distill.grok.samples})`:'';
         view=readSessionView(session);
         const hud=/** @type {{hp:number;maxHp:number;rice:number;enemies:number;weaponName:string;skillId:string;skillCooldown:number;dashCooldown:number}} */(view.hud);
         node('hp-label').textContent=`${Math.ceil(hud.hp)} / ${Math.ceil(hud.maxHp)}`;node('hp-fill').style.width=`${Math.max(0,hud.hp/hud.maxHp*100)}%`;node('rice').textContent=String(hud.rice);node('enemies').textContent=String(hud.enemies);node('weapon-label').textContent=hud.weaponName;

@@ -21,7 +21,7 @@ export function canTraverseObstacle(entity, obstacle, catalog) {
   // Closed gates, safety boundaries and connectivity-critical obstacles always take precedence.
   if (obstacle.runtime.highWall === true || obstacle.runtime.boundary === true || obstacle.runtime.locked === true || obstacle.runtime.connectivityCritical === true) return false;
   const bot = entity.definitionId === 'enemy_grok_bot' || entity.runtime.distilledGrok === true;
-  if (bot && entity.kind !== 'projectile' && obstacle.runtime.grok_passable === true && obstacle.runtime.low === true) return true;
+  if (bot && (entity.kind !== 'projectile' || entity.runtime.distilledGrok === true) && obstacle.runtime.grok_passable === true && obstacle.runtime.low === true) return true;
   return false;
 }
 

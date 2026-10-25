@@ -2674,7 +2674,8 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview"
         },
         {
           "name": "planPluginCooldown",
@@ -2812,7 +2813,8 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview"
         },
         {
           "name": "planPlugin5h",
@@ -2835,7 +2837,8 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview"
         },
         {
           "name": "planPluginFailover",
@@ -2996,7 +2999,8 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview"
         },
         {
           "name": "planPluginPrefill",
@@ -4779,7 +4783,11 @@
       "path": "domain/distill.js",
       "layer": "domain",
       "purpose": "三阵营样本、封顶和可见派生能力。",
-      "dependencies": [],
+      "dependencies": [
+        "domain/entities.js",
+        "domain/plans.js",
+        "domain/stats.js"
+      ],
       "functions": [
         {
           "name": "planDistillEvent",
@@ -4796,13 +4804,18 @@
           "result": "EffectPlan",
           "description": "启用时处理合法击杀样本/射击/时间事件，回响与辅助实体不提供样本。",
           "calls": [
-            "domain/distill.js#advanceDistillTrack"
+            "domain/distill.js#advanceDistillTrack",
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/stats.js#derivePlayerStats"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview"
         },
         {
           "name": "advanceDistillTrack",
@@ -4827,7 +4840,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planDistilledAbilities",
@@ -4839,12 +4852,18 @@
           ],
           "result": "EffectPlan",
           "description": "Claude受伤盾、GPT追击泡、Grok基础射击Bot虚影；不伪造主动技能施放。",
-          "calls": [],
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/stats.js#derivePlayerStats"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview"
         }
       ]
     },
@@ -4853,7 +4872,8 @@
       "layer": "domain",
       "purpose": "候选、升级、换槽与一次性重抽。",
       "dependencies": [
-        "content/catalog.js",
+        "domain/distill.js",
+        "domain/plans.js",
         "domain/random.js"
       ],
       "functions": [
@@ -4869,17 +4889,17 @@
               "type": "untyped"
             }
           ],
-          "result": "Result<PluginChoice>",
+          "result": "Result<{choice: PluginChoice; nextRandom: RandomState}>",
           "description": "按权重生成3/DSH首轮4个互异候选，首组保底蒸馏。",
           "calls": [
-            "domain/random.js#chooseWeightedIndex",
-            "content/catalog.js#listContentByKind"
+            "domain/random.js#chooseWeightedIndex"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview"
         },
         {
           "name": "planPluginSelection",
@@ -4895,12 +4915,17 @@
           ],
           "result": "SystemPlan",
           "description": "校验choiceId/optionId，升级同id或确认满槽替换，Pro5h单独origin不占槽。",
-          "calls": [],
+          "calls": [
+            "domain/distill.js#advanceDistillTrack",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview"
         },
         {
           "name": "planPluginReroll",
@@ -4917,13 +4942,16 @@
           "result": "SystemPlan",
           "description": "消费本局有限重抽次数后重建候选，优先避开旧候选；不重复保底蒸馏。",
           "calls": [
-            "domain/draft.js#createPluginChoice"
+            "domain/draft.js#createPluginChoice",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview"
         },
         {
           "name": "planPluginSkip",
@@ -4939,12 +4967,16 @@
           ],
           "result": "SystemPlan",
           "description": "一次跳过治疗8并完成该选择，不转换永久资源。",
-          "calls": [],
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview"
         }
       ]
     },
@@ -5216,7 +5248,9 @@
       "path": "domain/levels.js",
       "layer": "domain",
       "purpose": "经验溢出、升级队列与LoRA/插件的前后顺序。",
-      "dependencies": [],
+      "dependencies": [
+        "domain/plans.js"
+      ],
       "functions": [
         {
           "name": "planLevelProgression",
@@ -5229,13 +5263,16 @@
           "result": "SystemPlan",
           "description": "按经验阈值分解升级，API不封顶；生成唯一LevelReward记录，不先开多个面板。",
           "calls": [
-            "domain/levels.js#isPluginMilestone"
+            "domain/levels.js#isPluginMilestone",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview"
         },
         {
           "name": "planNextLevelReward",
@@ -5247,12 +5284,16 @@
           ],
           "result": "SystemPlan",
           "description": "取队首：正常生命成长→LoRA→该级插件→下一级；胜负优先。",
-          "calls": [],
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview"
         },
         {
           "name": "isPluginMilestone",
@@ -5547,6 +5588,7 @@
           "result": "SystemPlan",
           "description": "积分实体/弹体位置并校验障碍，可穿Grok使用同一碰撞矩阵。",
           "calls": [
+            "domain/geometry.js#normalizeVector",
             "domain/motionSolver.js#resolveBodyDestination",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange"
@@ -7164,7 +7206,7 @@
             }
           ],
           "result": "ValidationReport",
-          "description": "校验预览支持的六类命令、纯数据载荷、单调序号、时钟域与阶段。",
+          "description": "校验战斗与成长命令、choiceId/候选、一次重抽上限、单调序号、时钟域与阶段。",
           "calls": [
             "domain/serialization.js#serializeCanonical"
           ],
@@ -7188,11 +7230,14 @@
             }
           ],
           "result": "CommandResult",
-          "description": "预览仅分派SetInput/Pause/Resume/Dash/Skill/SwitchWeapon，并提交单调序号确认。",
+          "description": "预览分派移动/战斗/暂停及插件选择、重抽、跳过；校验后确认单调序号。",
           "calls": [
             "domain/attacks.js#planDash",
             "domain/attacks.js#planLoadoutChange",
             "domain/attacks.js#planSkillCast",
+            "domain/draft.js#planPluginReroll",
+            "domain/draft.js#planPluginSelection",
+            "domain/draft.js#planPluginSkip",
             "domain/geometry.js#normalizeVector",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
@@ -7356,16 +7401,18 @@
           "result": "SystemPlan",
           "description": "按队首升级逐步开LoRA/插件，不能两个面板抢Space。",
           "calls": [
-            "domain/levels.js#planNextLevelReward",
-            "domain/lora.js#createLoraTrial",
             "domain/draft.js#createPluginChoice",
-            "engine/flow.js#planFlowTransition"
+            "domain/levels.js#planLevelProgression",
+            "domain/levels.js#planNextLevelReward",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview"
         },
         {
           "name": "planPause",
@@ -7442,9 +7489,9 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "只接受无插件/DSH/累计机制的预览订阅集；完整内容事件订阅尚未实现。",
+          "description": "预览分派蒸馏死亡/受伤钩子；其他三插件由属性/额度/拾取消费者处理；DSH/完整机制仍明确拒绝。",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/distill.js#planDistillEvent"
           ],
           "rule": "过滤已启用/实际订阅的handler；次级伤害不冒充基础武器命中；不再次发布同eventId。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -7464,13 +7511,14 @@
         "domain/attacks.js",
         "domain/collision.js",
         "domain/deaths.js",
+        "domain/distill.js",
         "domain/movement.js",
         "domain/plans.js",
         "domain/rewards.js",
-        "domain/serialization.js",
         "domain/status.js",
         "engine/commands.js",
         "engine/effectLoop.js",
+        "engine/flow.js",
         "engine/reducer.js"
       ],
       "functions": [
@@ -7503,6 +7551,8 @@
             "domain/attacks.js#planWeaponFire",
             "domain/collision.js#detectCollisions",
             "domain/deaths.js#resolveTerminalOutcome",
+            "domain/distill.js#planDistillEvent",
+            "domain/distill.js#planDistilledAbilities",
             "domain/movement.js#planEntityMotion",
             "domain/movement.js#planPickupMotion",
             "domain/movement.js#planPlayerMovement",
@@ -7513,6 +7563,7 @@
             "engine/commands.js#orderPendingCommands",
             "engine/commands.js#planGameCommand",
             "engine/effectLoop.js#drainEffectQueue",
+            "engine/flow.js#planProgressionPanels",
             "engine/reducer.js#applySystemPlan",
             "engine/reducer.js#commitWorkingState"
           ],
@@ -7544,6 +7595,7 @@
           "calls": [
             "engine/commands.js#orderPendingCommands",
             "engine/commands.js#planGameCommand",
+            "engine/flow.js#planProgressionPanels",
             "engine/reducer.js#applySystemPlan",
             "engine/reducer.js#commitWorkingState"
           ],
@@ -7750,7 +7802,7 @@
             }
           ],
           "result": "TickResult",
-          "description": "立即消费预览暂停/继续，不推进停止的世界/UI时钟；训练UI步尚未接入。",
+          "description": "消费预览暂停/继续与插件选择/重抽/跳过，结算后续等级；训练UI步仍未接入。",
           "calls": [
             "engine/commands.js#orderPendingCommands",
             "engine/previewTick.js#advancePreviewUiCommands",
@@ -7863,7 +7915,7 @@
             }
           ],
           "result": "RenderSnapshot",
-          "description": "投影预览实体/米粒/预警、生命/武器/技能冷却；完整LoRA/插件菜单尚未接入。",
+          "description": "投影实体/米粒/预警、蒸馏虚影/追击泡、生命/武器/冷却；成长面板由宿主读取Session快照，LoRA未接入。",
           "calls": [
             "domain/serialization.js#toJson"
           ],
@@ -9064,7 +9116,7 @@
   "counts": {
     "modules": 81,
     "functions": 311,
-    "implemented": 115,
-    "placeholders": 196
+    "implemented": 129,
+    "placeholders": 182
   }
 }

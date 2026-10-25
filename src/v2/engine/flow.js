@@ -31,16 +31,26 @@ export function planFlowTransition(context, nextPhase) {
  * 按队首升级逐步开LoRA/插件，不能两个面板抢Space。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls domain/levels.js#planNextLevelReward
- * @calls domain/lora.js#createLoraTrial
+ * @implementationScope core-preview
  * @calls domain/draft.js#createPluginChoice
- * @calls engine/flow.js#planFlowTransition
+ * @calls domain/levels.js#planLevelProgression
+ * @calls domain/levels.js#planNextLevelReward
+ * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/plans.js#createStateChange
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @returns {import('../contracts.d.ts').SystemPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planProgressionPanels(context) {
-  throw new Error('TODO V2: engine/flow.js#planProgressionPanels');
+  const state = context.state, reward = state.flow.queuedLevelRewards[0];
+  if (['paused', 'pluginChoice', 'loraTraining', 'victory', 'defeat', 'withdrawal'].includes(state.flow.phase)) return createEmptyPlan();
+  if (!reward) return state.flow.phase === 'preparing' ? { ...createEmptyPlan(), changes: [createStateChange('flow', 'phase', 'setFlowPhase', { phase: state.flow.resumePhase ?? 'exploring', resumePhase: null })] } : dependency2.planLevelProgression(context);
+  const growth = dependency2.planNextLevelReward(context); if (growth.changes.length) return growth;
+  if (reward.loraRequired) throw new Error('LoRA progression is not enabled in the combat preview');
+  if (reward.pluginRequired) {
+    const result = dependency1.createPluginChoice(context, reward); if (!result.ok) throw new Error(result.message);
+    return { ...createEmptyPlan(), changes: [createStateChange('random', 'reward', 'setRandomStream', result.value.nextRandom), createStateChange('flow', 'growth', 'setGrowthFlow', { rewards: state.flow.queuedLevelRewards, choice: result.value.choice, rerollsUsed: state.flow.pluginRerollsUsed ?? 0 }), createStateChange('flow', 'phase', 'setFlowPhase', { phase: 'pluginChoice', resumePhase: state.flow.phase === 'boss' ? 'boss' : state.flow.resumePhase ?? 'exploring' }), createStateChange('runtime', 'input', 'setInput', { ...state.input, move: { x: 0, y: 0 }, firing: false, heldKeys: [], pointerIds: [] })] };
+  }
+  return { ...createEmptyPlan(), changes: [createStateChange('flow', 'growth', 'setGrowthFlow', { rewards: state.flow.queuedLevelRewards.slice(1), choice: null, rerollsUsed: state.flow.pluginRerollsUsed ?? 0 })] };
 }
 
 /**

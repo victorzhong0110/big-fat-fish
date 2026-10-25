@@ -40,6 +40,7 @@ export function planPlayerMovement(context, input) {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @implementationScope core-preview
+ * @calls domain/geometry.js#normalizeVector
  * @calls domain/motionSolver.js#resolveBodyDestination
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
@@ -53,9 +54,14 @@ export function planEntityMotion(context) {
     if (entity.kind === 'projectile' && (entity.runtime.exhausted === true || entity.expiresAt !== null && entity.expiresAt < context.state.tick)) { changes.push(createStateChange('world', entity.id, 'removeEntity', {})); continue; }
     if (entity.dead || entity.dying || !['player', 'enemy', 'projectile'].includes(entity.kind)) continue;
     if (!entity.velocity.x && !entity.velocity.y && entity.previousPosition.x === entity.position.x && entity.previousPosition.y === entity.position.y) continue;
-    const desired = { x: entity.position.x + entity.velocity.x / 60, y: entity.position.y + entity.velocity.y / 60 };
+    let velocity = entity.velocity;
+    if (typeof entity.runtime.homingTargetId === 'string') {
+      const target = context.state.world.entities[entity.runtime.homingTargetId];
+      if (target && !target.dead) { const direction = dependency2.normalizeVector({ x: target.position.x - entity.position.x, y: target.position.y - entity.position.y }); velocity = { x: direction.x * Number(entity.runtime.speed), y: direction.y * Number(entity.runtime.speed) }; }
+    }
+    const desired = { x: entity.position.x + velocity.x / 60, y: entity.position.y + velocity.y / 60 };
     const position = entity.kind === 'projectile' ? desired : resolveBodyDestination(context, entity, desired);
-    changes.push(createStateChange('entity', entity.id, 'setEntityKinematics', { position, previousPosition: entity.position, velocity: entity.velocity, facingRadians: entity.facingRadians }));
+    changes.push(createStateChange('entity', entity.id, 'setEntityKinematics', { position, previousPosition: entity.position, velocity, facingRadians: entity.facingRadians }));
   }
   return { ...createEmptyPlan(), changes };
 }

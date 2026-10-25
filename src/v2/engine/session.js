@@ -35,7 +35,7 @@ function step(session, domain) {
     const due = orderPendingCommands(record.commands, tick, domain);
     const next = domain === 'world' ? advancePreviewWorldTick(record.state, due, record.catalog) : advancePreviewUiCommands(record.state, due, record.catalog);
     record.state = next.next;
-    if (domain === 'ui' || ['exploring', 'boss'].includes(record.state.flow.phase)) {
+    if (domain === 'ui' || next.next.tick === tick) {
       const consumed = new Set(due.map(command => command.id)); record.commands = record.commands.filter(command => !consumed.has(command.id));
     }
     return structuredClone(next);

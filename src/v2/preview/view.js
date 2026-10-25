@@ -60,6 +60,8 @@ export function renderPreviewFrame(ctx,view,width,height,pixelRatio,popups=[]) {
     if(entity.kind==='objective'){
       const pulse=2+Math.sin(view.tick/35)*2;ctx.strokeStyle='#b5dbba44';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,38+pulse,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#8dbbb0';ctx.fillRect(x-17,y-8,34,20);ctx.fillStyle='#d7e7ca';ctx.fillRect(x-12,y-13,24,8);ctx.fillStyle='#446b65';ctx.fillRect(x-8,y-3,16,5);ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#c8e6d4';ctx.fillText('检查点 · F',x,y+49);continue;
     }
+    if(entity.spriteId==='distilled_bot'){ctx.globalAlpha=.65;ctx.fillStyle='#a8e5ce';ctx.fillRect(x-9,y-9,18,18);ctx.fillStyle='#28535c';ctx.fillRect(x-5,y-4,3,4);ctx.fillRect(x+2,y-4,3,4);ctx.fillRect(x-4,y+3,8,2);ctx.globalAlpha=1;continue;}
+    if(entity.spriteId==='distilled_bubble'){ctx.fillStyle='#c9afff';ctx.beginPath();ctx.arc(x,y,entity.radius,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#eee2ff';ctx.stroke();continue;}
     if(entity.kind==='projectile'){ctx.fillStyle='#bceff6';ctx.beginPath();ctx.arc(x,y,entity.radius,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#f1ffff';ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#fff';ctx.fillRect(x-entity.radius*.3,y-entity.radius*.5,2,2);continue;}
     if(entity.kind==='player'){
       if(entity.shieldAmount>0){ctx.strokeStyle='#9bdef0';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,29,0,Math.PI*2);ctx.stroke();}

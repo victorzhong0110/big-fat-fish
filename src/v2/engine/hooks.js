@@ -4,6 +4,7 @@
  * Incremental V2 implementation. Per-function status is in architecture-manifest.json.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
+import { planDistillEvent } from '../domain/distill.js';
 import * as dependency1 from '../dispatch/dsh.js';
 import * as dependency2 from '../dispatch/mechanics.js';
 import * as dependency3 from '../dispatch/models.js';
@@ -17,13 +18,13 @@ import * as dependency6 from '../domain/plans.js';
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：过滤已启用/实际订阅的handler；次级伤害不冒充基础武器命中；不再次发布同eventId。
  * @implementationScope core-preview
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/distill.js#planDistillEvent
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').DomainEvent} event
  * @returns {import('../contracts.d.ts').SystemPlan}
  */
 export function planEventHooks(context, event) {
   if (context.state.start.runtimeProfile !== 'core-preview') throw new Error('Full content event subscriptions are not connected');
-  if (context.state.plugins.length || context.state.start.dsh.length || context.state.start.difficulty.mechanicIds.length) throw new Error('Content hooks are not enabled in the combat preview');
-  return dependency6.createEmptyPlan();
+  if (context.state.plugins.some(plugin => !['plugin_distill', 'plugin_collect', 'plugin_guard', 'plugin_5h'].includes(plugin.id)) || context.state.start.dsh.length || context.state.start.difficulty.mechanicIds.length) throw new Error('Content hooks are not enabled in the combat preview');
+  return planDistillEvent(context, event);
 }

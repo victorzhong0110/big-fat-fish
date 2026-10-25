@@ -78,13 +78,13 @@ export interface BossState { entityId: Id; faction: Faction; phase: number; tele
 export interface ApiState { elapsedTicks: Tick; bossIndex: number; materialMinute: number; fragmentsThisMinute: number; partsThisMinute: number; }
 export interface DifficultySnapshot { level: number | 'api'; mode: Mode; mechanicIds: readonly Id[]; difficultyPerkIds: readonly Id[]; modelProfileIds: Readonly<Record<Faction, Id>>; hpMultiplier: number; damageMultiplier: number; spawnBudgetMultiplier: number; }
 export interface StartSnapshot { runtimeProfile?: 'core-preview' | 'full'; runId?: Id; treeNodeIds: readonly Id[]; dsh: readonly DshSlot[]; loadout: Loadout; difficulty: DifficultySnapshot; }
-export interface FlowState { phase: Phase; resumePhase: Phase | null; queuedLevelRewards: readonly LevelReward[]; choice: PluginChoice | null; settlementPending: boolean; }
+export interface FlowState { phase: Phase; resumePhase: Phase | null; queuedLevelRewards: readonly LevelReward[]; choice: PluginChoice | null; settlementPending: boolean; pluginRerollsUsed?: number; }
 export interface GameState {
   versions: Versions; runId: Id; seed: number; tick: Tick; uiTick: Tick; revision: number; lastWorldAdvanceTick: Tick | null; input: InputState; lastCommandSeq: number;
   start: StartSnapshot; flow: FlowState; random: RandomStreams; player: PlayerState; world: WorldState;
   level: number; xpRemainder: number; totalTokens: number; plugins: readonly PluginState[];
   dshRuntime: Readonly<Record<Id, Json>>; dshCycle: DshCycleState; lora: LoraState;
-  distill: Readonly<Record<Faction, DistillTrack>>; damageBudgets: Readonly<Record<Id, readonly DamageBudgetEntry[]>>;
+  distillRuntime?: Readonly<Record<string, Json>>; distill: Readonly<Record<Faction, DistillTrack>>; damageBudgets: Readonly<Record<Id, readonly DamageBudgetEntry[]>>;
   bosses: readonly BossState[]; api: ApiState | null; inventory: { gpuFragments: number; parts: number };
   attackHits: readonly AttackHitRecord[]; processedRewardIds: readonly Id[]; processedCommandIds: readonly Id[]; pendingEffects: EffectQueue;
 }

@@ -1,6 +1,7 @@
 // @ts-check
 import { createEmptyPlan, createStateChange } from '../domain/plans.js';
-import { serializeCanonical } from '../domain/serialization.js';
+import { planDistilledAbilities, planDistillEvent } from '../domain/distill.js';
+import { planProgressionPanels } from './flow.js';
 import { planStatusAdvance } from '../domain/status.js';
 import { planEnemyAi } from '../domain/ai.js';
 import { planPlayerMovement, planEntityMotion, planPickupMotion } from '../domain/movement.js';
@@ -18,6 +19,8 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls domain/attacks.js#planWeaponFire
  * @calls domain/collision.js#detectCollisions
  * @calls domain/deaths.js#resolveTerminalOutcome
+ * @calls domain/distill.js#planDistillEvent
+ * @calls domain/distill.js#planDistilledAbilities
  * @calls domain/movement.js#planEntityMotion
  * @calls domain/movement.js#planPickupMotion
  * @calls domain/movement.js#planPlayerMovement
@@ -28,6 +31,7 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls engine/commands.js#orderPendingCommands
  * @calls engine/commands.js#planGameCommand
  * @calls engine/effectLoop.js#drainEffectQueue
+ * @calls engine/flow.js#planProgressionPanels
  * @calls engine/reducer.js#applySystemPlan
  * @calls engine/reducer.js#commitWorkingState
  * @param {import('../contracts.d.ts').StateSnapshot} state
@@ -43,13 +47,14 @@ export function advancePreviewWorldTick(state, commands, catalog) {
   const outbox = { events: /** @type {import('../contracts.d.ts').DomainEvent[]} */ ([]), persistence: /** @type {import('../contracts.d.ts').PersistenceIntent[]} */ ([]), diagnostics: /** @type {import('../contracts.d.ts').Diagnostic[]} */ ([]) };
   const effects = /** @type {import('../contracts.d.ts').EffectRequest[]} */ ([]);
   const context = () => ({ state: working, catalog, event: null, entityId: null, random: working.random.combat });
-  const apply = (/** @type {import('../contracts.d.ts').SystemPlan} */ plan) => { if (plan.changes.length) working = applySystemPlan(working, plan); effects.push(...plan.effects); outbox.events.push(...plan.events); outbox.persistence.push(...plan.persistence); outbox.diagnostics.push(...plan.diagnostics); };
+  const apply = (/** @type {import('../contracts.d.ts').SystemPlan} */ plan) => { if (plan.changes.length) working = applySystemPlan(working, plan); effects.push(...plan.effects); outbox.events.push(...plan.events); outbox.persistence.push(...plan.persistence); outbox.diagnostics.push(...plan.diagnostics); for (const event of plan.events) if (event.type === 'WeaponFired') { const hook = planDistillEvent(context(), event); if (hook.changes.length) working = applySystemPlan(working, hook); effects.push(...hook.effects); } };
   for (const command of orderPendingCommands(commands, working.tick, 'world')) apply(planGameCommand(context(), command).plan);
   apply(planStatusAdvance(context()));
   apply(planEnemyAi(context()));
   apply(planPlayerMovement(context(), working.input));
   apply(planEntityMotion(context()));
   apply(planWeaponFire({ ...context(), aim: working.input.aim, weapon: working.player.loadout.weapons[working.player.loadout.activeWeaponIndex] }));
+  apply(planDistilledAbilities(context()));
   apply(planCollisionEffects(context(), detectCollisions(context())));
   apply(planPickupMotion(context()));
   const drained = effects.length ? drainEffectQueue(context(), { pending: effects, processedIds: [], spawnedThisTick: 0 }) : { nextWorking: working, deaths: [], events: [], persistence: [], diagnostics: [], exhausted: false };
@@ -58,12 +63,14 @@ export function advancePreviewWorldTick(state, commands, catalog) {
   apply(planDeathRewards(context(), drained.deaths).plan);
   const outcome = resolveTerminalOutcome(context(), drained.deaths);
   if (outcome) apply({ ...createEmptyPlan(), changes: [createStateChange('flow', 'phase', 'setFlowPhase', { phase: outcome, resumePhase: null }), createStateChange('runtime', 'input', 'setInput', { ...working.input, move: { x: 0, y: 0 }, firing: false })] });
+  if (!outcome) for (let i = 0; i < 128; i++) { const plan = planProgressionPanels(context()); if (!plan.changes.length) break; apply(plan); if (i === 127) throw new Error('Growth queue did not settle'); }
   return commitWorkingState(state, working, catalog, outbox);
 }
 /** Process pause/resume immediately without advancing the stopped UI/world clock.
  * @implementationScope core-preview
  * @calls engine/commands.js#orderPendingCommands
  * @calls engine/commands.js#planGameCommand
+ * @calls engine/flow.js#planProgressionPanels
  * @calls engine/reducer.js#applySystemPlan
  * @calls engine/reducer.js#commitWorkingState
  * @param {import('../contracts.d.ts').StateSnapshot} state
@@ -77,5 +84,7 @@ export function advancePreviewUiCommands(state, commands, catalog) {
   if (!due.length) return { next: working, events: [], persistence: [], diagnostics: [] };
   const diagnostics = /** @type {import('../contracts.d.ts').Diagnostic[]} */ ([]);
   for (const command of due) { const result = planGameCommand({ state: working, catalog, event: null, entityId: null, random: working.random.combat }, command); working = applySystemPlan(working, result.plan); diagnostics.push(...result.plan.diagnostics); }
-  return commitWorkingState(state, working, catalog, { events: [], persistence: [], diagnostics });
+  const events = /** @type {import('../contracts.d.ts').DomainEvent[]} */ ([]);
+  for (let i = 0; i < 128; i++) { const plan = planProgressionPanels({ state: working, catalog, event: null, entityId: null, random: working.random.reward }); if (!plan.changes.length) break; working = applySystemPlan(working, plan); events.push(...plan.events); if (i === 127) throw new Error('Growth queue did not settle'); }
+  return commitWorkingState(state, working, catalog, { events, persistence: [], diagnostics });
 }

@@ -29,10 +29,15 @@ export function validateGameCommand(state, command) {
   try { serializeCanonical(command); } catch { return { valid: false, diagnostics: [{ code: 'INVALID_COMMAND', message: 'Non-plain command', relatedIds: [] }] }; }
   const terminal = ['victory', 'defeat', 'withdrawal'].includes(state.flow.phase);
   if (typeof command.id !== 'string' || !command.id || typeof command.type !== 'string' || !Number.isSafeInteger(command.seq) || command.seq < 0 || command.seq <= state.lastCommandSeq || !Number.isSafeInteger(command.targetTick) || command.targetTick < 0 || !['world', 'ui'].includes(command.clock) || state.processedCommandIds.includes(command.id) || terminal) diagnostics.push({ code: 'INVALID_COMMAND', message: 'Invalid, stale or terminal command', relatedIds: [command.id] });
-  const ui = ['Pause', 'Resume'].includes(command.type);
+  const ui = ['Pause', 'Resume', 'SelectPlugin', 'RerollPlugin', 'SkipPlugin'].includes(command.type);
   if (ui && command.clock !== 'ui' || !ui && command.clock !== 'world') diagnostics.push({ code: 'WRONG_CLOCK', message: 'Command is in the wrong clock domain', relatedIds: [command.id] });
-  if (!['SetInput', 'Pause', 'Resume', 'Dash', 'Skill', 'SwitchWeapon'].includes(command.type)) diagnostics.push({ code: 'UNSUPPORTED_COMMAND', message: 'Command is not available in the combat preview', relatedIds: [command.id] });
+  if (!['SetInput', 'Pause', 'Resume', 'Dash', 'Skill', 'SwitchWeapon', 'SelectPlugin', 'RerollPlugin', 'SkipPlugin'].includes(command.type)) diagnostics.push({ code: 'UNSUPPORTED_COMMAND', message: 'Command is not available in the combat preview', relatedIds: [command.id] });
   if (!ui && !['exploring', 'boss'].includes(state.flow.phase)) diagnostics.push({ code: 'WRONG_PHASE', message: 'World input is suspended', relatedIds: [command.id] });
+  if (['SelectPlugin', 'RerollPlugin', 'SkipPlugin'].includes(command.type)) {
+    const payload = /** @type {{choiceId?:string;optionId?:string;replaceId?:string}|null} */ (command.payload), choice = state.flow.choice;
+    if (state.flow.phase !== 'pluginChoice' || !choice || choice.resolved || payload?.choiceId !== choice.id || command.type === 'SelectPlugin' && !choice.candidates.some(candidate => candidate.id === payload?.optionId) || command.type === 'RerollPlugin' && (state.flow.pluginRerollsUsed ?? 0) >= 1) diagnostics.push({ code: 'INVALID_CHOICE', message: 'Stale or invalid plugin choice', relatedIds: [command.id] });
+  }
+  if (command.type === 'Pause' && !['exploring', 'boss', 'paused'].includes(state.flow.phase) || command.type === 'Resume' && state.flow.phase !== 'paused') diagnostics.push({ code: 'WRONG_PHASE', message: 'Pause/resume is not valid in this phase', relatedIds: [command.id] });
   const p = /** @type {Record<string, import('../contracts.d.ts').Json> | null} */ (command.payload);
   if (command.type === 'SetInput') {
     const move = /** @type {Record<string, import('../contracts.d.ts').Json> | null} */ (p?.move), aim = /** @type {Record<string, import('../contracts.d.ts').Json> | null} */ (p?.aim);
@@ -49,6 +54,9 @@ export function validateGameCommand(state, command) {
  * @calls domain/attacks.js#planDash
  * @calls domain/attacks.js#planLoadoutChange
  * @calls domain/attacks.js#planSkillCast
+ * @calls domain/draft.js#planPluginReroll
+ * @calls domain/draft.js#planPluginSelection
+ * @calls domain/draft.js#planPluginSkip
  * @calls domain/geometry.js#normalizeVector
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
@@ -63,13 +71,16 @@ export function planGameCommand(context, command) {
   const report = validateGameCommand(context.state, command);
   if (!report.valid) return { accepted: false, reason: report.diagnostics[0].message, plan: { ...createEmptyPlan(), diagnostics: report.diagnostics } };
   let plan = createEmptyPlan();
-  if (command.type === 'Pause') plan = dependency6.planPause(context, 'user');
+  if (command.type === 'SelectPlugin') plan = dependency2.planPluginSelection(context, command);
+  else if (command.type === 'RerollPlugin') plan = dependency2.planPluginReroll(context, command);
+  else if (command.type === 'SkipPlugin') plan = dependency2.planPluginSkip(context, command);
+  else if (command.type === 'Pause') plan = dependency6.planPause(context, 'user');
   else if (command.type === 'Resume') plan = dependency6.planResume(context);
   else if (command.type === 'Dash') plan = dependency1.planDash(context, command);
   else if (command.type === 'SwitchWeapon') plan = dependency1.planLoadoutChange(context, command);
   else if (command.type === 'Skill') plan = dependency1.planSkillCast({ ...context, aim: context.state.input.aim, weapon: context.state.player.loadout.weapons[context.state.player.loadout.activeWeaponIndex] });
   else if (command.type === 'SetInput') {
-    const p = /** @type {{move: import('../contracts.d.ts').Vec2; aim: import('../contracts.d.ts').Vec2; firing: boolean}} */ (command.payload);
+  const p = /** @type {{move: import('../contracts.d.ts').Vec2; aim: import('../contracts.d.ts').Vec2; firing: boolean}} */ (command.payload);
     const move = normalizeVector(p.move), aim = normalizeVector(p.aim);
     plan = { ...plan, changes: [createStateChange('runtime', 'input', 'setInput', { move, aim: aim.x || aim.y ? aim : context.state.input.aim, firing: p.firing, heldKeys: [], pointerIds: [] })] };
   }

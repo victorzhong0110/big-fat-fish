@@ -5,6 +5,16 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { chromium } from 'playwright-core';
 
+import { loadContentCatalog } from '../src/v2/content/catalog.js';
+import { resolveDifficultySnapshot } from '../src/v2/domain/difficulty.js';
+import { createGameSession, readSessionState, disposeGameSession } from '../src/v2/engine/session.js';
+import { createCheckpoint } from '../src/v2/domain/checkpoint.js';
+const catalog=loadContentCatalog();
+const fixtureSession=createGameSession({runtimeProfile:'core-preview',runId:'browser:growth',treeNodeIds:[],dsh:[],difficulty:resolveDifficultySnapshot({mode:'tutorial',difficulty:0},catalog).value,loadout:{weapons:[{instanceId:'bubble',definitionId:'mcp_bubble',originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null}],activeWeaponIndex:0,skillId:'skill_cache',skillCooldown:8,companionId:null,companionCooldown:0,dashCooldown:0}},19,catalog);
+const growthState=readSessionState(fixtureSession);disposeGameSession(fixtureSession);
+growthState.world.entities=Object.fromEntries(Object.entries(growthState.world.entities).filter(([,entity])=>entity.kind!=='enemy'));
+growthState.world.pickups.rice={id:'rice',kind:'riceXp',amount:120,position:{...growthState.world.entities.fish.position},collected:false,instanceId:null};
+const growthCheckpoint=createCheckpoint(growthState);
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const executablePath=process.env.V2_CHROMIUM_EXECUTABLE;
 if(!executablePath)throw new Error('Set V2_CHROMIUM_EXECUTABLE to an installed Chromium executable; this check never silently skips the browser.');
@@ -36,6 +46,17 @@ try{
  check(await page.locator('#pause-menu').isHidden(),'Movement and shooting remain live after restore');
  await page.screenshot({path:path.join(output,'desktop-combat.png')});
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollHeight>innerHeight+1);check(!overflow,'Desktop has no page overflow');
+ // Controlled saved-state fixture; rice is collected and converted by the real browser Session.
+ await page.evaluate(checkpoint=>localStorage.setItem('big-fat-fish:v2-combat-preview:checkpoint',JSON.stringify(checkpoint)),growthCheckpoint);
+ await page.reload();await page.locator('#continue').click();await page.locator('#resume').click();await page.locator('#plugin-menu').waitFor({state:'visible'});
+ check(await page.locator('#level').textContent()==='2'&&await page.locator('[data-plugin-id="plugin_distill"]').count()===1,'Real rice pickup opens level-two plugin choice with guaranteed distill');
+ const choiceCooldown=await page.locator('#skill-cd').textContent();await page.waitForTimeout(200);check(await page.locator('#skill-cd').textContent()===choiceCooldown,'Plugin choice freezes world cooldowns');
+ await page.screenshot({path:path.join(output,'desktop-growth.png')});
+ await page.locator('[data-plugin-id="plugin_distill"]').click();await page.waitForFunction(()=>document.querySelector('#level')?.textContent==='4');
+ check((await page.locator('#plugins-label').textContent()).includes('蒸馏1')&&await page.locator('#hp-label').textContent()==='106 / 106','Choice installs distill, processes level three then opens level four exactly once');
+ await page.locator('#plugin-reroll').click();await page.waitForFunction(()=>document.querySelector('#plugin-reroll')?.hasAttribute('disabled'));check(await page.locator('#plugin-options button').count()===3,'Reroll creates a new unique three-card group and consumes its whole-run use');
+ await page.locator('#plugin-skip').click();await page.locator('#plugin-menu').waitFor({state:'hidden'});check(await page.locator('#pause-menu').isHidden(),'Skipping resolves the queue and resumes the world');
+ await page.locator('#checkpoint').click();await page.waitForTimeout(120);await page.reload();await page.locator('#continue').click();await page.locator('#pause-menu').waitFor({state:'visible'});check((await page.locator('#plugins-label').textContent()).includes('蒸馏1')&&await page.locator('#level').textContent()==='4','Actual save and reload preserve the chosen plugin and progression');
  // Synthetic pointer cancellation is exercised with trusted multi-touch input via CDP.
  const mobile=await browser.newContext({viewport:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});const phone=await mobile.newPage();phone.on('pageerror',error=>errors.push(error.message));
  await phone.goto(base+'/v2.html');await phone.evaluate(()=>document.fonts.ready);await phone.screenshot({path:path.join(output,'mobile-menu.png')});await phone.locator('#start').tap();await phone.waitForTimeout(150);
@@ -48,6 +69,10 @@ try{
  check(!(await phone.locator('#left-stick span').getAttribute('style'))&&!(await phone.locator('#right-stick span').getAttribute('style')),'Pointer cancellation clears both virtual sticks');
  await phone.locator('#pause').tap();await phone.locator('#pause-menu').waitFor({state:'visible'});check(await phone.locator('#pause-menu').isVisible(),'Mobile can pause through its button');
  check(!(await phone.evaluate(()=>document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollHeight>innerHeight+1)),'Mobile landscape has no page overflow');
+ await phone.evaluate(checkpoint=>localStorage.setItem('big-fat-fish:v2-combat-preview:checkpoint',JSON.stringify(checkpoint)),growthCheckpoint);await phone.reload();await phone.locator('#continue').tap();await phone.locator('#resume').tap();await phone.locator('#plugin-menu').waitFor({state:'visible'});
+ check(await phone.locator('[data-plugin-id="plugin_distill"]').isVisible(),'Mobile plugin choice exposes a real touch-selectable distill card');await phone.screenshot({path:path.join(output,'mobile-growth.png')});
+ const actionBounds=await phone.locator('#plugin-skip').boundingBox();check(actionBounds.y>=0&&actionBounds.y+actionBounds.height<=390,'Landscape plugin actions fit onscreen without hidden bottom controls');
+ await phone.setViewportSize({width:390,height:844});await phone.screenshot({path:path.join(output,'mobile-growth-portrait.png')});check(!(await phone.evaluate(()=>document.documentElement.scrollWidth>innerWidth)),'Portrait plugin choice fits the phone width');await phone.setViewportSize({width:844,height:390});await phone.locator('[data-plugin-id="plugin_distill"]').tap();await phone.waitForFunction(()=>document.querySelector('#level')?.textContent==='4');await phone.locator('#plugin-skip').tap();await phone.locator('#plugin-menu').waitFor({state:'hidden'});check((await phone.locator('#plugins-label').textContent()).includes('蒸馏1'),'Mobile touch choices install the plugin and finish queued growth');
  check(errors.length===0,`No browser page errors: ${errors.join('; ')}`);
  const report={checks:checks.length,passed:checks,errors,scope:'Browser automation, not human playtest',screenshots:output};await fs.writeFile(path.join(output,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
  // The serverless single-process build closes all contexts with the browser.

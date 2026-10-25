@@ -1,6 +1,6 @@
 # 11 · V2架构骨架、状态权限与调用规则
 
-状态：**独立战斗试作v2.html已可操作，完整冒险仍未完成**。用户已授权先由Codex编码。115个函数有实现，196个显式TODO；带core-preview标记的实现仅覆盖当前试作。实际范围见[开发进度](13-development-status.md)。旧src/main.js保持独立。
+状态：**独立战斗试作v2.html已可操作，完整冒险仍未完成**。用户已授权先由Codex编码。129个函数有实现，182个显式TODO；带core-preview标记的实现仅覆盖当前试作。实际范围见[开发进度](13-development-status.md)。旧src/main.js保持独立。
 
 入口文档：[全部函数目录](12-function-catalog.md)；入口源码：[bootstrap.js](../../src/v2/bootstrap.js)；类型契约：[contracts.d.ts](../../src/v2/contracts.d.ts)；机器可读依赖与绑定：[architecture-manifest.json](../../src/v2/architecture-manifest.json)。函数目录和manifest列出全部跨模块接口以及逐内容处理器，Grok填写函数体时应保留接口/约束，新增公共函数要同步契约。
 
@@ -116,9 +116,9 @@ ChatGPT重置只走`planGptReset`，绝不能调用checkpoint恢复或创建新S
 
 ## 10. 当前验证与实现修正
 
-- 81个JS模块、311个公开函数：115有实现、196显式TODO。95项处理器绑定与33项声明式数据消费者仍为设计覆盖数量，不能等同于已实现内容数量。
+- 81个JS模块、311个公开函数：129有实现、182显式TODO。95项处理器绑定与33项声明式数据消费者仍为设计覆盖数量，不能等同于已实现内容数量。
 - `npm run check:v2`执行TypeScript 5.9.3 strict/checkJs及AST审计：实际导出、参数、import、函数状态、已实现函数的公开调用边、剩余TODO异常、模块/函数DAG与内容绑定。
-- `npm test`：37文件514项通过，其中V2共124项；双入口构建通过。Chromium桌面/手机触控仿真19项通过，尚无真人完整冒险验收。
+- `npm test`：38文件533项通过，其中V2共143项；双入口构建通过。Chromium桌面/手机触控仿真29项通过，尚无真人完整冒险验收。
 
 当前实现对原占位契约做了必要补全，详见13：
 
@@ -140,3 +140,5 @@ ChatGPT重置只走`planGptReset`，绝不能调用checkpoint恢复或创建新S
 Session的模块私有step/getRecord不导出，但其转达的公开依赖已由AST工具展开到函数图。工具不会因公有函数只调用私有helper，就漏掉它实际进入previewTick的边。snapshot不暴露私有引用；Renderer只画图，不运行另一套物理。
 
 当前Canvas2D是试作表现，正式Phaser适配器仍TODO。registry仅声明六项实际开放能力；目录134项定义包括计划内容，不代表所有参数和效果已实现。完整范围、调试检查点和后续顺序以13为准。
+
+本批成长接口补全：`createPluginChoice`返回`Result<{choice,nextRandom}>`，候选与随机流必须同一计划提交；`flow.pluginRerollsUsed`保存整局次数，`distillRuntime`独立保存内置冷却，避免移除再装备重置。实际串联顺序与范围见13，LoRA升级面板仍未接通。
