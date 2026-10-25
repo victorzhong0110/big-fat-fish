@@ -1,0 +1,38 @@
+// @ts-check
+/**
+ * 累计机制稳定ID分派，不得把所有候选处理器依次执行。
+ * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
+ * Calls listed below are contracts, not implemented execution.
+ */
+import * as dependency1 from '../content/handlers/mechanics.js';
+
+/**
+ * 按合法稳定id和已实现绑定只调用一个对应处理器。
+ * 调用阶段：dispatch；下游模式：dispatch。
+ * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
+ * 约束：@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。
+ * @calls content/handlers/mechanics.js#planMechanic01Exploration
+ * @calls content/handlers/mechanics.js#planMechanic02Reinforcements
+ * @calls content/handlers/mechanics.js#planMechanic03GptSupport
+ * @calls content/handlers/mechanics.js#planMechanic04ClaudeBreak
+ * @calls content/handlers/mechanics.js#planMechanic05BossCombo
+ * @calls content/handlers/mechanics.js#planMechanic06AlarmCache
+ * @calls content/handlers/mechanics.js#planMechanic07Tide
+ * @calls content/handlers/mechanics.js#planMechanic08GrokFlanks
+ * @calls content/handlers/mechanics.js#planMechanic09GptReposition
+ * @calls content/handlers/mechanics.js#planMechanic10BossArena
+ * @calls content/handlers/mechanics.js#planMechanic11ObjectiveSignal
+ * @calls content/handlers/mechanics.js#planMechanic11Glasswing
+ * @calls content/handlers/mechanics.js#planMechanic12GptFourRoles
+ * @calls content/handlers/mechanics.js#planMechanic13Handoff
+ * @calls content/handlers/mechanics.js#planMechanic14Anomaly
+ * @calls content/handlers/mechanics.js#planMechanic15Integration
+ * @param {import('../contracts.d.ts').EvaluationContext} context
+ * @param {import('../contracts.d.ts').Id} definitionId
+ * @param {import('../contracts.d.ts').DomainEvent} event
+ * @returns {import('../contracts.d.ts').EffectPlan}
+ * @throws {Error} TODO placeholder until Grok implements this contract.
+ */
+export function dispatchMechanicsHandler(context, definitionId, event) {
+  throw new Error('TODO V2: dispatch/mechanics.js#dispatchMechanicsHandler');
+}
