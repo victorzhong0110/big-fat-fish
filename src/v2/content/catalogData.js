@@ -524,7 +524,7 @@ export const CATALOG_DATA = {
           "难度1及以上首次击败Claude",
           "技能/伙伴封禁持续时间×0.8；不缩短普通禁锢，不减少封印物命中数"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -572,7 +572,7 @@ export const CATALOG_DATA = {
           "难度10及以上首次击败Claude",
           "出发前选择“保护技能”或“保护伙伴”，每海域免疫第一次该类封禁；不免疫禁锢"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },

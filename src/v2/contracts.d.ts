@@ -91,7 +91,7 @@ export interface GameState {
 export interface GameSession { readonly runId: Id; readonly revision: number; }
 export interface Definition { id: Id; kind: string; displayName: string; parameters: Readonly<Record<string, Json>>; version: string; }
 export interface MechanicDefinition extends Definition { unlockAt: number; scope: 'ai' | 'world' | 'objective' | 'event' | 'boss'; appliesTo: readonly Id[]; handlerId: Id; exclusions: readonly Id[]; }
-export interface ContentCatalog { modLock?: readonly ModLockEntry[]; version: string; definitions: Readonly<Record<Id, Definition>>; mechanics: readonly MechanicDefinition[]; }
+export interface ContentCatalog { modWeapons?: Readonly<Record<Id, {templateId: 'mcp_bubble'|'mcp_fan'; packId:Id}>>; modLock?: readonly ModLockEntry[]; version: string; definitions: Readonly<Record<Id, Definition>>; mechanics: readonly MechanicDefinition[]; }
 export interface ValidationReport { valid: boolean; diagnostics: readonly Diagnostic[]; }
 export interface EvaluationContext { state: StateSnapshot; catalog: Readonly<ContentCatalog>; event: DomainEvent | null; entityId: Id | null; random: RandomState; }
 export interface AttackContext extends EvaluationContext { aim: Vec2; weapon: WeaponState | null; }
@@ -146,5 +146,8 @@ export interface TickResult { next: GameState; events: readonly DomainEvent[]; p
 
 /** Community SDK 1.0: local, declarative packs; never executed JavaScript. */
 export interface ModPatch { id: Id; displayName?: string; parameters?: Readonly<Record<string, number>>; }
-export interface ModPackage { formatVersion: 1; apiVersion: '1.0'; id: Id; version: string; name: string; author: string; description: string; gameVersion: string; dependencies: Readonly<Record<Id, string>>; conflicts: readonly Id[]; patches: readonly ModPatch[]; }
+export interface ModPackage { formatVersion: 1; apiVersion: '1.0'|'1.1'; id: Id; version: string; name: string; author: string; description: string; gameVersion: string; dependencies: Readonly<Record<Id, string>>; conflicts: readonly Id[]; patches: readonly ModPatch[]; weapons?:readonly ModWeaponRecipe[]; }
 export interface ModLockEntry { id: Id; version: string; digest: string; }
+export type NestAction = { type:'buyTree' | 'build' | 'unlock'; id:Id } | { type:'respec' } | { type:'equipDsh'; slots:readonly DshSlot[] };
+
+export interface ModWeaponRecipe { id:string; templateId:'mcp_bubble'|'mcp_fan'; displayName:string; parameters:Readonly<Record<string,number>>; }

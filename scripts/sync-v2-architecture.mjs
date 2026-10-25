@@ -25,7 +25,7 @@ for(const module of sourceModel){
   const currentDescriptions={
    createAdventureMapPlan:'构建Pro1连续地图：三信标、两检查点、资源箱、驻守敌人与有限追兵预算。',
    planClaudeEncounter:'任意两个信标完成后，以稳定ID创建一次Claude首领并切换boss阶段。',
-   createInitialGameState:'创建Free或Pro1显式范围初态并验证模组锁；完整冒险和局外树尚未开放。',
+   createInitialGameState:'创建Free或Pro1初态，验证树前置/DSH槽/模组锁并一次应用永久基础属性；full仍拒绝。',
    createMapPlan:'按运行范围生成Free演练或Pro1三信标地图；不假装完整区域生成已完成。',
    createGameSession:'校验内容与初始世界后发布Free/Pro1私有Session；模组仅允许Free练习。',
    restoreGameSession:'校验版本、模组锁及状态后构建暂停Session；失败保留原检查点。',
@@ -49,15 +49,31 @@ for(const module of sourceModel){
    planReinforcementGroup:'按阶段压力和屏幕外规则预留一组Bot预算，不积累补刷债务。',
    planEnemySpawn:'仅消费到期且位置合法的出生请求；实际出生才把预留预算转为已使用。',
    validateSpawnLocation:'共享逻辑相机，要求视野外128余量、距玩家420、合法地形和数量上限。',
-   parseModPackage:'校验SDK1.0清单/版本/补丁/参数边界及大小，拒绝未知功能和未实现内容。',
+   parseModPackage:'校验SDK1.0/1.1清单、补丁和独立MCP配方；限制模板、命名空间、参数边界与大小。',
    resolveModLoadOrder:'检查精确依赖版本与冲突，生成稳定拓扑顺序，拒绝依赖环。',
    composeModCatalog:'从原版复制并组装声明式模组；重复字段报错，生成内容指纹和存档锁。',
    mountModManager:'提供本地JSON安装、启停、移除与持久化菜单，只影响下次Free出发。'
   };
   if(currentDescriptions[fn.name])item.description=currentDescriptions[fn.name];
+  const nestDescriptions={
+   isTreeSnapshotValid:'校验出发树ID去重、真实前置与DSH基础树消费门槛。',
+   createTreeBaseStats:'一次构造初始生命/护甲/移速；MCP专属输出由武器派生消费，不影响全部技能。',
+   resolveTreeSurvival:'实际生命伤害更新无伤时钟；低血治疗一次，致死保命一次并给2秒保护，返回结果不改状态。',
+   planTreeWeaponSwitch:'切换成功时规划下一发+25%与1秒移速；分别保存5秒/8秒内置冷却。',
+   executeNestAction:'读取最新Profile，拒绝活动冒险，规划购买/退款/建设/解锁/DSH并事务提交；CAS冲突最多重算三次。',
+   prepareAdventureStart:'验证永久拥有与已实现能力，复制树/DSH/基础品质装备为Pro1出发快照。',
+   mountNestManager:'组装27节点、设施、装备、DSH和收藏小窝UI；所有消费经应用用例，不接触GameState。',
+   resolveWeaponTemplate:'解析原版MCP或拥有已锁定模组注册的独立配方，只允许已实现泡泡/扇面模板。',
+   listRuntimeWeapons:'列出实际可运行的原版与社区MCP，供练习出发选择。',
+   mountCombatPreview:'组装Free/Pro1、输入、正式小窝消费与配装、事务结算和本地模组；返回完整清理函数。'
+  };
+  if(nestDescriptions[fn.name])item.description=nestDescriptions[fn.name];
+  if(fn.name==='executeNestAction'){item.ownership='只经注入StoragePort事务修改Profile，不写Session';item.phase='profile-command';item.rule='仅无活动检查点的小窝可执行；冲突重读重算';}
+  if(fn.name==='mountNestManager')item.ownership='宿主只读Profile副本，经应用服务消费；不修改GameState';
+
   if(fn.name==='loadContentCatalog')item.description='返回来源于设计表格的正式版本化内容副本；数据存在不表示其处理器已经实现。';
   if(fn.name==='createHandlerRegistry')item.description='返回95项设计绑定与显式implementedIds能力集合，不把未实现条目声明为可运行。';
-  if(fn.name==='validateContentCatalog')item.description='校验各目录数量、稳定ID/引用、160点树花费及前置DAG、累计机制和运行能力声明。';
+  if(fn.name==='validateContentCatalog')item.description='校验原版目录数量、社区MCP注册与锁、稳定ID/引用、160点树前置DAG及运行能力声明。';
   if(fn.name==='mountCombatPreview')item.ownership='宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState';
   const index=source.indexOf(`export ${fn.async?'async ':''}function ${fn.name}(`);
   const start=source.lastIndexOf('/**',index);

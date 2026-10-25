@@ -65,6 +65,7 @@ export function createMapPlan(start, catalog, random) {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @implementationScope adventure-slice
+ * @calls domain/geometry.js#distanceSquared
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @param {import('../../contracts.d.ts').EvaluationContext} context
@@ -73,8 +74,13 @@ export function createMapPlan(start, catalog, random) {
 export function planMapExploration(context) {
   const state=context.state,player=state.world.entities[state.player.entityId],size=160,cx=Math.floor(player.position.x/size),cy=Math.floor(player.position.y/size),cells=new Set(state.world.map.exploredCells);
   for(let dx=-2;dx<=2;dx++)for(let dy=-2;dy<=2;dy++){const x=cx+dx,y=cy+dy;if(x>=0&&y>=0&&x*size<state.world.map.width&&y*size<state.world.map.height)cells.add(`${x}:${y}`);}
-  if(cells.size===state.world.map.exploredCells.length)return createEmptyPlan();
-  return {...createEmptyPlan(),changes:[createStateChange('world',state.world.map.id,'setMap',{...state.world.map,exploredCells:[...cells].sort()})]};
+  const changes = cells.size === state.world.map.exploredCells.length ? [] : [createStateChange('world',state.world.map.id,'setMap',{...state.world.map,exploredCells:[...cells].sort()})];
+  const hinted = /** @type {readonly number[]} */(player.runtime.secretHintBiomes ?? []);
+  if (state.start.treeNodeIds.includes('tree_explore_f') && !hinted.includes(state.world.map.biomeIndex)) {
+    const secret = Object.values(state.world.entities).filter(entity => entity.runtime.secret === true && entity.runtime.opened !== true && dependency1.distanceSquared(player.position,entity.position) <= 350 ** 2).sort((a,b)=>a.id.localeCompare(b.id))[0];
+    if (secret) changes.push(createStateChange('entity',player.id,'setEntityRuntime',{runtime:{...player.runtime,secretHintBiomes:[...hinted,state.world.map.biomeIndex],secretHint:{targetId:secret.id,expiresAt:state.tick+360}}}));
+  }
+  return {...createEmptyPlan(),changes};
 }
 
 /**
@@ -100,7 +106,7 @@ export function planWorldInteraction(context, command) {
   if (entity.runtime.opened === true) return createEmptyPlan();
   const reward = dependency3.planWorldReward(context, `cache:${entity.id}`);
   const changes=[...reward.plan.changes,createStateChange('entity',entity.id,'setEntityRuntime',{runtime:{...entity.runtime,opened:true}})],events=[...reward.plan.events],persistence=[...reward.plan.persistence];
-  if(entity.id==='cache:0'&&state.player.loadout.weapons.length<2){
+  if(entity.id==='cache:0'&&state.player.loadout.weapons.length<2&&!state.player.loadout.weapons.some(weapon=>weapon.definitionId==='mcp_fan')){
     changes.push(createStateChange('player',player.id,'setLoadout',{...state.player.loadout,weapons:[...state.player.loadout.weapons,{instanceId:`${state.runId}:found:fan`,definitionId:'mcp_fan',originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null}]}));
     const event={id:`discovery:${state.runId}:mcp_fan`,runId:state.runId,tick:state.tick,seq:0,type:'ContentDiscovered',sourceId:player.id,targetId:entity.id,payload:{definitionId:'mcp_fan'}};events.push(event);persistence.push({id:event.id,kind:'discovery',payload:/** @type {import('../../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(event)))});
   }

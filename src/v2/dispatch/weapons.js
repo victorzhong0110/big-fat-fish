@@ -4,6 +4,7 @@
  * Incremental V2 implementation. Per-function status is in architecture-manifest.json.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
+import { resolveWeaponTemplate } from '../content/weaponCapabilities.js';
 import * as dependency1 from '../content/handlers/weapons.js';
 
 /**
@@ -14,12 +15,14 @@ import * as dependency1 from '../content/handlers/weapons.js';
  * @implementationScope core-preview
  * @calls content/handlers/weapons.js#planWeaponBubble
  * @calls content/handlers/weapons.js#planWeaponFan
+ * @calls content/weaponCapabilities.js#resolveWeaponTemplate
  * @param {import('../contracts.d.ts').AttackContext} context
  * @param {import('../contracts.d.ts').Id} definitionId
  * @returns {import('../contracts.d.ts').EffectPlan}
  */
 export function dispatchWeaponsHandler(context, definitionId) {
-  if (definitionId === 'mcp_bubble') return dependency1.planWeaponBubble(context);
-  if (definitionId === 'mcp_fan') return dependency1.planWeaponFan(context);
+  const templateId = resolveWeaponTemplate(context.catalog,definitionId);
+  if (templateId === 'mcp_bubble') return dependency1.planWeaponBubble(context);
+  if (templateId === 'mcp_fan') return dependency1.planWeaponFan(context);
   throw new Error(`Weapon handler not available: ${definitionId}`);
 }

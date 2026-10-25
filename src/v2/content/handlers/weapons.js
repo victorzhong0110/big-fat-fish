@@ -1,4 +1,5 @@
 // @ts-check
+import { resolveWeaponTemplate } from '../weaponCapabilities.js';
 import { planNativeProjectiles } from '../../domain/projectiles.js';
 /**
  * weapons逐项占位处理器；实际参数仍以玩法规格为准。
@@ -13,12 +14,13 @@ import * as dependency1 from '../../domain/plans.js';
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
  * @implementationScope core-preview
+ * @calls content/weaponCapabilities.js#resolveWeaponTemplate
  * @calls domain/projectiles.js#planNativeProjectiles
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
  */
 export function planWeaponBubble(context) {
-  if (context.weapon?.definitionId !== 'mcp_bubble') throw new Error('Bubble handler received the wrong weapon');
+  if (resolveWeaponTemplate(context.catalog,context.weapon?.definitionId??'') !== 'mcp_bubble') throw new Error('Bubble handler received the wrong weapon');
   return planNativeProjectiles(context);
 }
 
@@ -28,12 +30,13 @@ export function planWeaponBubble(context) {
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
  * @implementationScope core-preview
+ * @calls content/weaponCapabilities.js#resolveWeaponTemplate
  * @calls domain/projectiles.js#planNativeProjectiles
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
  */
 export function planWeaponFan(context) {
-  if (context.weapon?.definitionId !== 'mcp_fan') throw new Error('Fan handler received the wrong weapon');
+  if (resolveWeaponTemplate(context.catalog,context.weapon?.definitionId??'') !== 'mcp_fan') throw new Error('Fan handler received the wrong weapon');
   return planNativeProjectiles(context);
 }
 

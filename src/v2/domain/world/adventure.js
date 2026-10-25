@@ -28,7 +28,7 @@ export function createAdventureMapPlan(start, catalog) {
   }
  }
  put(createEntityState('boss:gate','world_gate','objective','neutral',{x:2500,y:1700},{radius:70,runtime:{interaction:'bossGate',unlocked:false}}));
- for(let i=0;i<3;i++)put(createEntityState(`cache:${i}`,'world_cache','objective','neutral',[{x:450,y:1000},{x:2000,y:1000},{x:2300,y:2000}][i],{radius:28,runtime:{interaction:'cache',opened:false}}));
+ for(let i=0;i<3;i++)put(createEntityState(`cache:${i}`,'world_cache','objective','neutral',[{x:450,y:1000},{x:2000,y:1000},{x:2300,y:2000}][i],{radius:28,runtime:{interaction:'cache',opened:false,secret:i===2}}));
  changes.push(createStateChange('world','adventure:claude-short','setMap',{id:'adventure:claude-short',biomeIndex:0,width:3000,height:2200,exploredCells:[],obstacleIds,checkpointIds:['checkpoint:home','checkpoint:central'],exitIds:['boss:gate'],navigationRevision:0}),createStateChange('world','objectives','setObjectives',{objectives}),createStateChange('world','pursuers','setSpawnDirector',{queue:[],budgets:[{id:'pursuers',total:340,reserved:0,spawned:0,maxAlive:24}],nextAt:720}));
  return {...createEmptyPlan(),changes};
 }

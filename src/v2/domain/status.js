@@ -189,7 +189,7 @@ export function planStatusAdvance(context) {
   const recovery = state.lora.overfitRemaining > 0 ? 0.6 : 1;
   changes.push({ target: 'player', id: player.id, operation: 'setPlayerTimers', payload: {
     invulnerableRemaining: decrease(state.player.invulnerableRemaining), controlImmuneRemaining: rootExpired ? 2 : decrease(state.player.controlImmuneRemaining),
-    skillCooldown: decrease(loadout.skillCooldown, recovery), dashCooldown: decrease(loadout.dashCooldown, recovery), companionCooldown: companionBanned ? loadout.companionCooldown : decrease(loadout.companionCooldown),
+    skillCooldown: decrease(loadout.skillCooldown, recovery), dashCooldown: decrease(loadout.dashCooldown, recovery * (state.start.treeNodeIds.includes('tree_skill_b') && state.tick - Number(player.runtime.lastHpDamageAt ?? 0) >= 480 ? 1.15 : 1)), companionCooldown: companionBanned ? loadout.companionCooldown : decrease(loadout.companionCooldown),
     weaponCooldowns: loadout.weapons.map(weapon => ({ instanceId: weapon.instanceId, cooldown: decrease(weapon.cooldown) })),
   } });
   changes.push({ target: 'runtime', id: 'worldTimers', operation: 'setWorldTimers', payload: { lastWorldAdvanceTick: state.tick, underfitRemaining: decrease(state.lora.underfitRemaining), overfitRemaining: decrease(state.lora.overfitRemaining) } });

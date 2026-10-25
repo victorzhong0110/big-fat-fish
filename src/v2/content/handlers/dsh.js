@@ -17,10 +17,10 @@ import * as dependency3 from '../../domain/plans.js';
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planDshClaudeAppeal(context, event) {
-  throw new Error('TODO V2: content/handlers/dsh.js#planDshClaudeAppeal');
+  // Duration consumer: resolveControlRequest, after Glasswing and before status creation.
+  return dependency3.createEmptyPlan();
 }
 
 /**
@@ -62,10 +62,10 @@ export function planDshGrokLicense(context, event) {
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planDshClaudeAllowlist(context, event) {
-  throw new Error('TODO V2: content/handlers/dsh.js#planDshClaudeAllowlist');
+  // Interceptor consumer: selectControlInterceptor; usedBiomes persists through checkpoints.
+  return dependency3.createEmptyPlan();
 }
 
 /**

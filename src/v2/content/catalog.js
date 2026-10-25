@@ -34,7 +34,8 @@ export function validateContentCatalog(catalog, registry) {
   try {
     serializeCanonical(catalog);
     const counts = { tree: 27, facility: 6, plugin: 30, dsh: 10, weapon: 6, skill: 8, companion: 6, enemy: 9, model: 10, mechanic: 16 };
-    for (const [kind, count] of Object.entries(counts)) if (Object.values(catalog.definitions).filter(definition => definition.kind === kind).length !== count) fail(`Wrong ${kind} count`);
+    for (const [kind, count] of Object.entries(counts)) if (Object.values(catalog.definitions).filter(definition => definition.kind === kind && !Object.hasOwn(catalog.modWeapons ?? {},definition.id)).length !== count) fail(`Wrong ${kind} count`);
+    if (Object.keys(catalog.modWeapons ?? {}).length > 64 || Object.entries(catalog.modWeapons ?? {}).some(([id,recipe]) => catalog.definitions[id]?.kind !== 'weapon' || !['mcp_bubble','mcp_fan'].includes(recipe.templateId) || !id.startsWith(`${recipe.packId}:`) || !catalog.modLock?.some(pack => pack.id === recipe.packId))) fail('Invalid community weapon registration');
     for (const [id, definition] of Object.entries(catalog.definitions)) {
       if (definition.id !== id || !id || !definition.displayName || definition.version !== catalog.version) fail(`Invalid definition ${id}`);
       if (definition.kind === 'tree') {

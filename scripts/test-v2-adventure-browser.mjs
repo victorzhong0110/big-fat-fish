@@ -18,7 +18,7 @@ fixture.world.entities=Object.fromEntries(Object.entries(fixture.world.entities)
 fixture.world.objectives[1]={...fixture.world.objectives[1],completed:true,active:false,progress:2100};
 fixture.world.budgets[0].total=0;fixture.inventory={gpuFragments:9,parts:11};
 const checkpoint=createCheckpoint(fixture),output=path.join(root,'dist','v2-adventure-browser-check');await fs.mkdir(output,{recursive:true});
-const server=await createServer({root,server:{host:'127.0.0.1',port:0}});await server.listen();
+const server=await createServer({root,server:{host:'127.0.0.1',port:0,watch:null,hmr:false}});await server.listen();
 const browser=await chromium.launch({executablePath,headless:true,args:['--no-sandbox','--single-process','--no-zygote','--disable-gpu','--disable-gpu-compositing','--disable-webgl']});
 const checks=[],errors=[];const check=(condition,label)=>{assert(condition,label);checks.push(label);console.log(label);};
 const page=await browser.newPage({viewport:{width:1280,height:800}});page.on('pageerror',e=>errors.push(e.message));

@@ -30,6 +30,6 @@ import * as dependency6 from '../domain/plans.js';
  */
 export function planEventHooks(context, event) {
   if (!['core-preview', 'adventure-slice'].includes(String(context.state.start.runtimeProfile))) throw new Error('Full content event subscriptions are not connected');
-  if (context.state.plugins.some(plugin => !['plugin_distill', 'plugin_collect', 'plugin_guard', 'plugin_5h', 'plugin_compress', 'plugin_parallel'].includes(plugin.id)) || context.state.start.dsh.some(slot => !['dsh_lora', 'dsh_gpt_branch'].includes(slot.id)) || context.state.start.difficulty.mechanicIds.some(id => !(context.state.start.runtimeProfile === 'adventure-slice' && id === 'mech_01_exploration'))) throw new Error('Content hooks are not enabled in the combat preview');
+  if (context.state.plugins.some(plugin => !['plugin_distill', 'plugin_collect', 'plugin_guard', 'plugin_5h', 'plugin_compress', 'plugin_parallel'].includes(plugin.id)) || context.state.start.dsh.some(slot => !['dsh_lora', 'dsh_gpt_branch', 'dsh_claude_appeal', 'dsh_claude_allowlist'].includes(slot.id)) || context.state.start.difficulty.mechanicIds.some(id => !(context.state.start.runtimeProfile === 'adventure-slice' && id === 'mech_01_exploration'))) throw new Error('Content hooks are not enabled in the combat preview');
   return dependency6.mergeSystemPlans([planDistillEvent(context, event), planSealRelease(context, event),planPluginParallel(context,event)]);
 }

@@ -14,7 +14,8 @@
     "sync:v2": "node scripts/sync-v2-architecture.mjs",
     "test:v2:browser": "node scripts/test-v2-browser.mjs",
     "test:v2:adventure": "node scripts/test-v2-adventure-browser.mjs",
-    "test:v2:mods": "node scripts/test-v2-mods-browser.mjs"
+    "test:v2:mods": "node scripts/test-v2-mods-browser.mjs",
+    "test:v2:nest": "node scripts/test-v2-nest-browser.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"

@@ -4,6 +4,7 @@
  * Incremental V2 implementation; remaining TODO bodies are intentionally unavailable.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
+import { resolveTreeSurvival } from './treeRuntime.js';
 import * as dependency1 from './quotas.js';
 import * as dependency2 from './shells.js';
 import * as dependency3 from './shields.js';
@@ -21,6 +22,7 @@ import * as dependency5 from './random.js';
  * @calls domain/shells.js#resolveShellContact
  * @calls domain/shields.js#resolveShieldAbsorption
  * @calls domain/stats.js#derivePlayerStats
+ * @calls domain/treeRuntime.js#resolveTreeSurvival
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').DamageRequest} request
  * @returns {import('../contracts.d.ts').DamageResolution}
@@ -40,6 +42,7 @@ export function resolveDamageRequest(context, request) {
   const shell = dependency2.resolveShellContact(context, { ...request, baseDamage: incoming });
   plans.push(shell.plan);
   let hpDamage = 0, shieldDamage = 0;
+  const treeEvents = /** @type {import('../contracts.d.ts').DomainEvent[]} */([]);
   if (!shell.blocked) {
     const stats = target.id === state.player.entityId ? dependency4.derivePlayerStats(state, context.catalog) : null;
     let damage = incoming * 100 / (100 + Math.max(0, Math.min(60, stats?.armor ?? target.armor)));
@@ -57,14 +60,20 @@ export function resolveDamageRequest(context, request) {
     plans.push(shield.plan); shieldDamage = shield.absorbed;
     hpDamage = Math.min(target.hp, shield.remainingDamage);
     if (hpDamage > 0) {
-      changes.push({ target: 'entity', id: target.id, operation: 'setHp', payload: { hp: target.hp - hpDamage } });
+      const survival = target.id === state.player.entityId ? resolveTreeSurvival(state, hpDamage) : null;
+      if (survival) hpDamage = survival.hpDamage;
+      changes.push({ target: 'entity', id: target.id, operation: 'setHp', payload: { hp: survival?.hp ?? target.hp - hpDamage } });
       changes.push({ target: 'entity', id: target.id, operation: 'setDamageCredit', payload: { sourceId: request.sourceId, creditOwner: request.creditOwner } });
-      if (target.id === state.player.entityId) changes.push({ target: 'player', id: target.id, operation: 'setInvulnerable', payload: { remaining: 0.6 } });
+      if (survival) {
+        for (const nodeId of survival.events) treeEvents.push({id:`tree:${nodeId}:${request.id}`,runId:state.runId,tick:state.tick,seq:treeEvents.length,type:'TreeTriggered',sourceId:target.id,targetId:target.id,payload:{nodeId}});
+        changes.push({ target: 'entity', id: target.id, operation: 'setEntityRuntime', payload: { runtime: { ...survival.runtime, lastDamageSourceId: request.sourceId, lastDamageCreditOwner: request.creditOwner } } });
+        changes.push({ target: 'player', id: target.id, operation: 'setInvulnerable', payload: { remaining: survival.invulnerable } });
+      }
     }
   }
   const event = { id: `damage:${request.id}`, runId: state.runId, tick: state.tick, seq: 0, type: 'DamageResolved', sourceId: request.sourceId, targetId: target.id, payload: { hpDamage, shieldDamage, shellDamage: shell.damage, attackId: request.attackId, sourceKind: request.sourceKind } };
   return { accepted: true, allowedBeforeDefense: incoming, shellDamage: shell.damage, shieldDamage, hpDamage, plan: {
-    changes: [...plans.flatMap(plan => plan.changes), ...changes], effects: plans.flatMap(plan => plan.effects), events: [...plans.flatMap(plan => plan.events), event], persistence: [], diagnostics: plans.flatMap(plan => plan.diagnostics),
+    changes: [...plans.flatMap(plan => plan.changes), ...changes], effects: plans.flatMap(plan => plan.effects), events: [...plans.flatMap(plan => plan.events), ...treeEvents, event], persistence: [], diagnostics: plans.flatMap(plan => plan.diagnostics),
   } };
 }
 

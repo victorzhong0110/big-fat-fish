@@ -42,7 +42,7 @@ export function mountModManager(root, base, notify) {
       card.append(name, description, toggle, remove); list.append(card);
     }
     root.dispatchEvent(new Event('modschange'));
-    status.textContent = installed.length ? `已安装 ${installed.length} 个 · 已启用 ${installed.filter(item => item.enabled).length} 个。仅影响下次 Free 出发；原版和每组模组使用独立检查点。` : '暂无模组。SDK 1.0支持泡泡/扇面MCP参数和已实现内容的名称。仅在Free练习生效。';
+    status.textContent = installed.length ? `已安装 ${installed.length} 个 · 已启用 ${installed.filter(item => item.enabled).length} 个。仅影响下次 Free 出发；原版和每组模组使用独立检查点。` : '暂无模组。SDK 1.0/1.1支持MCP参数、名称和新武器配方。仅在Free练习生效。';
   }
   function read() {
     try {

@@ -1,4 +1,7 @@
 // @ts-check
+import { listRuntimeWeapons } from '../content/weaponCapabilities.js';
+import { mountNestManager } from './nestManager.js';
+import { prepareAdventureStart } from '../application/nest.js';
 import { mountModManager } from './modManager.js';
 import { createStoragePort } from '../adapters/storage.js';
 import { readProfileRepository, commitProfilePlan, mergePersistenceIntents } from '../application/repository.js';
@@ -15,12 +18,14 @@ import { getPreviewCamera, renderPreviewFrame } from './view.js';
  * are isolated; the adventure uses transactional permanent Profile storage. Returns cleanup.
  * @implementationScope core-preview + adventure-slice
  * @calls adapters/storage.js#createStoragePort
+ * @calls application/nest.js#prepareAdventureStart
  * @calls application/repository.js#commitProfilePlan
  * @calls application/repository.js#mergePersistenceIntents
  * @calls application/repository.js#readProfileRepository
  * @calls content/catalog.js#loadContentCatalog
  * @calls content/catalog.js#validateContentCatalog
  * @calls content/registry.js#createHandlerRegistry
+ * @calls content/weaponCapabilities.js#listRuntimeWeapons
  * @calls domain/checkpoint.js#canCreateCheckpoint
  * @calls domain/checkpoint.js#createCheckpoint
  * @calls domain/clock.js#createClockState
@@ -37,6 +42,7 @@ import { getPreviewCamera, renderPreviewFrame } from './view.js';
  * @calls engine/session.js#stepSessionUi
  * @calls engine/session.js#stepSessionWorld
  * @calls preview/modManager.js#mountModManager
+ * @calls preview/nestManager.js#mountNestManager
  * @calls preview/view.js#getPreviewCamera
  * @calls preview/view.js#renderPreviewFrame
  * @param {string} mountElementId
@@ -87,13 +93,16 @@ export function mountCombatPreview(mountElementId) {
   /** @param {string} type @param {string|null} optionId */
   function choose(type,optionId=null){if(!session)return;const choice=readSessionState(session).flow.choice;if(!choice)return;clearInput();if(send(type,{choiceId:choice.id,optionId},'ui'))stepSessionUi(session,false);clock=resumeClock(clock);lastTime=performance.now();canvas.focus();}
   /** @param {readonly import('../contracts.d.ts').DomainEvent[]} events */
-  function showEvents(events){for(const event of events){if(event.type==='LoraResolved'){const p=/** @type {{result:string;actualDelta:number}} */(event.payload);toast(`${p.result==='perfect'?'完美训练！':p.result==='underfit'?'欠拟合':'过拟合'} 属性变化 ${p.actualDelta>0?'+':''}${Number(p.actualDelta.toFixed(3))}`);}else if(event.type==='ObjectiveCompleted'){toast('信标已点亮！占领任意两个即可挑战首领。');}else if(event.type==='ContentDiscovered'){toast('发现扇面 MCP，按Q切换试试。');}else if(event.type==='DshCycleResolved'){toast(/** @type {{outcome:string}} */(event.payload).outcome==='update'?'更新！当前 MCP 强化28秒。':'重置！装备技能和冲刺冷却已清零。');}}}
+  function showEvents(events){for(const event of events){if(event.type==='TreeTriggered'){toast(/** @type {{nodeId:string}} */(event.payload).nodeId==='tree_body_f'?'我还能游！挡住了这次致命伤害。':'这一口留着：恢复12生命。');}else if(event.type==='LoraResolved'){const p=/** @type {{result:string;actualDelta:number}} */(event.payload);toast(`${p.result==='perfect'?'完美训练！':p.result==='underfit'?'欠拟合':'过拟合'} 属性变化 ${p.actualDelta>0?'+':''}${Number(p.actualDelta.toFixed(3))}`);}else if(event.type==='ObjectiveCompleted'){toast('信标已点亮！占领任意两个即可挑战首领。');}else if(event.type==='ContentDiscovered'){toast('发现扇面 MCP，按Q切换试试。');}else if(event.type==='DshCycleResolved'){toast(/** @type {{outcome:string}} */(event.payload).outcome==='update'?'更新！当前 MCP 强化28秒。':'重置！装备技能和冲刺冷却已清零。');}}}
   /** @param {boolean} release */
   function train(release=false){if(!session)return;const state=readSessionState(session),trial=state.lora.active;if(!trial)return;if(!release&&state.flow.phase!=='loraTraining')return;const type=release?'ReleaseTraining':trial.phase==='ready'?'StartTraining':'ConfirmTraining';if(send(type,{trialId:trial.id,edge:release?'release':'press',repeat:false},'ui')){const result=stepSessionUi(session,false);showEvents(result.events);if(result.next.flow.phase!==state.flow.phase||result.next.lora.active?.phase!==trial.phase){clock=resumeClock(clock);lastTime=performance.now();}}}
+  const nest=mountNestManager(node('nest-manager'),baseCatalog,profilePort,record=>{profileRecord=record;updateWallet();},toast);removers.push(()=>nest.dispose());
   const mods=mountModManager(node('mods-manager'),baseCatalog,toast);removers.push(()=>mods.dispose());
-  function selectCatalog(adventure=false){catalog=adventure?baseCatalog:mods.getCatalog();checkpointKey=catalog.modLock?.length?`big-fat-fish:v2-combat-preview:checkpoint:${catalog.version}`:'big-fat-fish:v2-combat-preview:checkpoint';}
+  function selectCatalog(adventure=false){catalog=adventure?baseCatalog:mods.getCatalog();
+    if(!session)for(const [index,id] of ['practice-weapon-a','practice-weapon-b'].entries()){const select=/** @type {HTMLSelectElement} */(node(id)),previous=select.value;select.replaceChildren();for(const weaponId of listRuntimeWeapons(catalog)){const option=document.createElement('option');option.value=weaponId;option.textContent=catalog.definitions[weaponId].displayName;select.append(option);}select.value=listRuntimeWeapons(catalog).includes(previous)?previous:index===0?'mcp_bubble':'mcp_fan';select.disabled=adventure;}
+    checkpointKey=catalog.modLock?.length?`big-fat-fish:v2-combat-preview:checkpoint:${catalog.version}`:'big-fat-fish:v2-combat-preview:checkpoint';}
   function refreshContinue(){try{const adventure=/** @type {HTMLSelectElement} */(node('mode-select')).value==='short';if(!session)selectCatalog(adventure);node('continue').toggleAttribute('disabled',adventure?!profileRecord?.profile.checkpoint:!localStorage.getItem(checkpointKey));}catch{node('continue').setAttribute('disabled','');}}
-  function updateWallet(){if(disposed)return;node('wallet').textContent=profileRecord?`小窝 · 算力卡 ${profileRecord.profile.gpuCards} · 碎片 ${profileRecord.profile.gpuFragments}/5 · 零件 ${profileRecord.profile.parts}`:'小窝档案暂不可用';refreshContinue();}
+  function updateWallet(){if(disposed)return;nest.setProfile(profileRecord);node('wallet').textContent=profileRecord?`小窝 · 算力卡 ${profileRecord.profile.gpuCards} · 碎片 ${profileRecord.profile.gpuFragments}/5 · 零件 ${profileRecord.profile.parts}`:'小窝档案暂不可用';refreshContinue();}
   async function loadProfile(){const result=await readProfileRepository(profilePort,baseCatalog);if(result.ok)profileRecord=result.value;else toast(`小窝档案读取失败：${result.message}`);updateWallet();}
   async function flushProfile(){
     if(profileWorking||!pendingPersistence.length)return;profileWorking=true;profileFailed=false;
@@ -119,9 +128,9 @@ export function mountCombatPreview(mountElementId) {
         else{
           if(record.value.profile.checkpoint)throw new Error('请先继续或放弃现有冒险');
           const seed=Number(/** @type {HTMLInputElement} */(node('seed')).value);if(!Number.isSafeInteger(seed)||seed<0||seed>0xffffffff)throw new Error('请输入有效整数种子');
-          const difficulty=resolveDifficultySnapshot({mode:'short',difficulty:1,seed,weaponIds:['mcp_bubble'],skillId:'skill_disconnect',companionId:null},catalog);if(!difficulty.ok)throw new Error(difficulty.message);
           const runId=`adventure:${Array.from(crypto.getRandomValues(new Uint32Array(4)),value=>value.toString(16).padStart(8,'0')).join('')}`;
-          replacement=createGameSession({runtimeProfile:'adventure-slice',runId,treeNodeIds:[],dsh:[],difficulty:difficulty.value,loadout:{weapons:[{instanceId:`${runId}:bubble`,definitionId:'mcp_bubble',originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null}],activeWeaponIndex:0,skillId:'skill_disconnect',skillCooldown:0,companionId:null,companionCooldown:0,dashCooldown:0}},seed,catalog);
+          const prepared=prepareAdventureStart(record.value.profile,{mode:'short',difficulty:1,seed,...nest.getLoadout(),companionId:null},catalog,runId);if(!prepared.ok)throw new Error(prepared.message);
+          replacement=createGameSession(prepared.value,seed,catalog);
           const checkpoint=createCheckpoint(readSessionState(replacement)),plan=mergePersistenceIntents(record.value.profile,[{id:checkpoint.id,kind:'checkpoint',payload:/** @type {import('../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(checkpoint)))}],catalog);if(!plan.ok)throw new Error(plan.message);const saved=await commitProfilePlan(profilePort,plan.value,baseCatalog);if(!saved.ok)throw new Error(saved.message);profileRecord=saved.value;
         }
       }else if(restore){
@@ -130,11 +139,12 @@ export function mountCombatPreview(mountElementId) {
         const seed=Number(/** @type {HTMLInputElement} */(node('seed')).value);if(!Number.isSafeInteger(seed)||seed<0||seed>0xffffffff)throw new Error('请输入有效整数种子');
         const difficulty=resolveDifficultySnapshot({mode:'tutorial',difficulty:0,seed,weaponIds:['mcp_bubble','mcp_fan'],skillId:'skill_cache',companionId:null},catalog);if(!difficulty.ok)throw new Error(difficulty.message);
         const skillId=/** @type {HTMLSelectElement} */(node('skill-select')).value;
-        replacement=createGameSession({modLock:catalog.modLock??[],runtimeProfile:'core-preview',runId:`preview:${Array.from(crypto.getRandomValues(new Uint32Array(4)),value=>value.toString(16).padStart(8,'0')).join('')}`,treeNodeIds:[],dsh:/** @type {HTMLSelectElement} */(node('dsh-select')).value?[{id:/** @type {HTMLSelectElement} */(node('dsh-select')).value,options:{}}]:[],difficulty:difficulty.value,loadout:{weapons:['bubble','fan'].map(name=>({instanceId:`mcp:${name}`,definitionId:`mcp_${name}`,originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null})),activeWeaponIndex:0,skillId,skillCooldown:0,companionId:null,companionCooldown:0,dashCooldown:0}},seed,catalog);
+        const practiceWeapons=['practice-weapon-a','practice-weapon-b'].map(id=>/** @type {HTMLSelectElement} */(node(id)).value);if(new Set(practiceWeapons).size!==2)throw new Error('请为练习选择两把不同的MCP');
+        replacement=createGameSession({modLock:catalog.modLock??[],runtimeProfile:'core-preview',runId:`preview:${Array.from(crypto.getRandomValues(new Uint32Array(4)),value=>value.toString(16).padStart(8,'0')).join('')}`,treeNodeIds:[],dsh:/** @type {HTMLSelectElement} */(node('dsh-select')).value?[{id:/** @type {HTMLSelectElement} */(node('dsh-select')).value,options:{}}]:[],difficulty:difficulty.value,loadout:{weapons:practiceWeapons.map((id,index)=>({instanceId:`practice:mcp:${index}`,definitionId:id,originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null})),activeWeaponIndex:0,skillId,skillCooldown:0,companionId:null,companionCooldown:0,dashCooldown:0}},seed,catalog);
       }
       if(session)disposeGameSession(session);session=replacement;replacement=null;formal=adventure;settledRunId='';profileFailed=false;sequence=readSessionState(session).lastCommandSeq+1;
       displayedChoice='';displayedTrial='';node('lora-menu').classList.add('hidden');node('plugin-menu').classList.add('hidden');view=readSessionView(session);clock=createClockState();lastTime=performance.now();clearInput();popups=[];saveRequested=false;
-      node('menu').classList.add('hidden');node('hud').classList.remove('hidden');node('controls').classList.remove('hidden');mount?.classList.add('started');node('mods-panel').classList.add('hidden');updateWallet();
+      node('menu').classList.add('hidden');node('hud').classList.remove('hidden');node('controls').classList.remove('hidden');mount?.classList.add('started');node('mods-panel').classList.add('hidden');node('nest-panel').classList.add('hidden');updateWallet();
       toast(restore?'已恢复原进度，点击继续才开始。':formal?'占领任意两个信标，前往右下方首领入口。F交互，R保存检查点。':'WASD移动，鼠标射击。F交互，R保存起点检查点。');canvas.focus();
     }catch(error){if(replacement)disposeGameSession(replacement);toast(`未能开始：${error instanceof Error?error.message:String(error)}`);}finally{node('start').removeAttribute('disabled');refreshContinue();}
   }
@@ -165,11 +175,13 @@ export function mountCombatPreview(mountElementId) {
   attachStick('left-stick',true);attachStick('right-stick',false);
   on(node('escape-assist'),'change',()=>canvas.focus());
   on(node('escape-input'),'pointerdown',event=>{blockTrainingClick=true;event.preventDefault();escape(false);});on(window,'pointerup',()=>{if(escapePressing)escape(true);});
+  on(node('nest-panel'),'toggle',()=>{if(/** @type {HTMLDetailsElement} */(node('nest-panel')).open)/** @type {HTMLDetailsElement} */(node('mods-panel')).open=false;});
+  on(node('mods-panel'),'toggle',()=>{if(/** @type {HTMLDetailsElement} */(node('mods-panel')).open)/** @type {HTMLDetailsElement} */(node('nest-panel')).open=false;});
   on(node('mods-manager'),'modschange',()=>refreshContinue());
   on(node('mode-select'),'change',()=>{const adventure=/** @type {HTMLSelectElement} */(node('mode-select')).value==='short';if(adventure){/** @type {HTMLSelectElement} */(node('skill-select')).value='skill_disconnect';/** @type {HTMLSelectElement} */(node('dsh-select')).value='';}node('skill-select').toggleAttribute('disabled',adventure);node('dsh-select').toggleAttribute('disabled',adventure);refreshContinue();});on(node('retry-profile'),'click',()=>{void flushProfile();});on(node('interact'),'click',()=>{send('Interact');});
   on(node('abandon'),'click',()=>{if(send('Abandon',{},'ui')&&session)stepSessionUi(session,false);});
   on(node('start'),'click',()=>begin(false));on(node('continue'),'click',()=>begin(true));on(node('pause'),'click',()=>session&&readSessionState(session).flow.phase==='paused'?resume():pause());on(node('resume'),'click',()=>resume());
-  on(node('restart'),'click',()=>{if(formal&&session&&settledRunId!==session.runId){pause();return;}if(session)disposeGameSession(session);session=null;view=null;displayedChoice='';displayedTrial='';node('lora-menu').classList.add('hidden');node('plugin-menu').classList.add('hidden');clearInput();node('menu').classList.remove('hidden');node('pause-menu').classList.add('hidden');node('hud').classList.add('hidden');node('controls').classList.add('hidden');mount?.classList.remove('started');node('mods-panel').classList.remove('hidden');refreshContinue();});
+  on(node('restart'),'click',()=>{if(formal&&session&&settledRunId!==session.runId){pause();return;}if(session)disposeGameSession(session);session=null;view=null;displayedChoice='';displayedTrial='';node('lora-menu').classList.add('hidden');node('plugin-menu').classList.add('hidden');clearInput();node('menu').classList.remove('hidden');node('pause-menu').classList.add('hidden');node('hud').classList.add('hidden');node('controls').classList.add('hidden');mount?.classList.remove('started');node('mods-panel').classList.remove('hidden');node('nest-panel').classList.remove('hidden');refreshContinue();});
   on(window,'pointerdown',()=>{blockTrainingClick=false;},true);on(window,'click',event=>{if(blockTrainingClick&&/** @type {MouseEvent} */(event).detail>0){blockTrainingClick=false;event.preventDefault();event.stopImmediatePropagation();}},true);
   on(node('training-input'),'pointerdown',event=>{blockTrainingClick=true;event.preventDefault();train(false);});on(window,'pointerup',()=>train(true));on(node('training-input'),'click',event=>{if(/** @type {MouseEvent} */(event).detail===0){train(false);train(true);}});
   on(node('plugin-reroll'),'click',()=>choose('RerollPlugin'));on(node('plugin-skip'),'click',()=>choose('SkipPlugin'));
@@ -218,7 +230,7 @@ export function mountCombatPreview(mountElementId) {
           node('lora-title').textContent=`Lv.${trial.level} · ${trial.phase==='ready'?'训练准备':'训练中'}`;node('lora-target').textContent=`本次微调：${labels[trial.target]}`;node('lora-pointer').style.left=`${trial.uiTick/120*100}%`;node('lora-pointer').parentElement?.setAttribute('aria-valuenow',String(trial.uiTick));node('training-input').textContent=trial.phase==='ready'?'开始训练 · Space':'确认位置 · Space';node('training-input').toggleAttribute('disabled',growth.lora.inputHeld===true);node('lora-description').textContent=trial.phase==='ready'?'首次按下只开始。松开后，在绿色区域再次按下。':growth.lora.inputHeld?'请先松开，再次按下确认。':'指针匀速前进；绿色区域为完美训练，2秒后自动过拟合。';
         }
         if(!trial)displayedTrial='';
-        node('dsh-label').textContent=growth.start.dsh.some(slot=>slot.id==='dsh_lora')?`LoRA：欠拟合${growth.lora.underfitRemaining.toFixed(1)}s / 过拟合${growth.lora.overfitRemaining.toFixed(1)}s`:growth.start.dsh.some(slot=>slot.id==='dsh_gpt_branch')?`更新/重置：${growth.dshCycle.remaining.toFixed(1)}s`:'';
+        node('dsh-label').textContent=growth.start.dsh.map(slot=>catalog.definitions[slot.id]?.displayName??slot.id).join(' / ')+(growth.start.dsh.some(slot=>slot.id==='dsh_lora')?`LoRA：欠拟合${growth.lora.underfitRemaining.toFixed(1)}s / 过拟合${growth.lora.overfitRemaining.toFixed(1)}s`:growth.start.dsh.some(slot=>slot.id==='dsh_gpt_branch')?`更新/重置：${growth.dshCycle.remaining.toFixed(1)}s`:'');
         node('plugin-menu').classList.toggle('hidden',growth.flow.phase!=='pluginChoice');
         if(growth.flow.phase==='pluginChoice'&&choice&&choice.id!==displayedChoice){
           clearInput();clock=resumeClock(clock);displayedChoice=choice.id;
@@ -234,6 +246,7 @@ export function mountCombatPreview(mountElementId) {
         const player=growth.world.entities[growth.player.entityId],rootId=player.statusIds.find(id=>growth.world.statuses[id]?.kind==='root'),root=rootId?growth.world.statuses[rootId]:null;
         node('escape-input').classList.toggle('hidden',!root);node('escape-assist-label').classList.toggle('hidden',!root);node('escape-count').textContent=root?`${root.completedInputs}/${root.requiredInputs}`:'';
         const completed=growth.world.objectives.filter(objective=>objective.kind==='beacon'&&objective.completed).length;const targets=completed>=2?[growth.world.entities['boss:gate']]:growth.world.objectives.filter(objective=>objective.active&&!objective.completed).map(objective=>growth.world.entities[objective.id]);const target=targets.filter(Boolean).sort((a,b)=>Math.hypot(a.position.x-player.position.x,a.position.y-player.position.y)-Math.hypot(b.position.x-player.position.x,b.position.y-player.position.y))[0];const distance=target?Math.hypot(target.position.x-player.position.x,target.position.y-player.position.y):0;const direction=target?['→','↘','↓','↙','←','↖','↑','↗'][(Math.round(Math.atan2(target.position.y-player.position.y,target.position.x-player.position.x)/(Math.PI/4))+8)%8]:'';node('objective-label').textContent=formal?`${growth.flow.phase==='boss'?'击败封禁管理员':completed>=2?`首领入口已开放 · ${direction} ${Math.round(distance)}`:`信标 ${completed}/2 · ${direction} ${Math.round(distance)} · 圈内35秒`}`:'';node('materials-label').textContent=formal?`背包：碎片 ${growth.inventory.gpuFragments} · 零件 ${growth.inventory.parts}`:'';
+        const secretHint=/** @type {{targetId?:string;expiresAt?:number}|undefined} */(player.runtime.secretHint),secret=secretHint?.targetId?growth.world.entities[secretHint.targetId]:null;if(secret&&Number(secretHint?.expiresAt)>growth.tick&&secret.runtime.opened!==true){const arrow=['→','↘','↓','↙','←','↖','↑','↗'][(Math.round(Math.atan2(secret.position.y-player.position.y,secret.position.x-player.position.x)/(Math.PI/4))+8)%8];node('objective-label').textContent+=` · 秘密雷达 ${arrow} ${Math.round(Math.hypot(secret.position.x-player.position.x,secret.position.y-player.position.y))}`;}
         const boss=growth.bosses.map(boss=>growth.world.entities[boss.entityId]).find(entity=>entity&&!entity.dead);node('boss-hud').classList.toggle('hidden',!boss);if(boss){node('boss-hp').textContent=`${Math.ceil(boss.hp)} / ${Math.ceil(boss.maxHp)}`;node('boss-fill').style.width=`${Math.max(0,boss.hp/boss.maxHp*100)}%`;}
         node('skill').toggleAttribute('disabled',growth.player.loadout.skillCooldown>0||player.statusIds.some(id=>growth.world.statuses[id]?.kind==='skillBan'));
         view=readSessionView(session);

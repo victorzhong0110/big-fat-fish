@@ -8,7 +8,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),execu
 if(!executablePath)throw new Error('Set V2_CHROMIUM_EXECUTABLE; browser verification never silently skips.');
 const output=path.join(root,'dist','v2-mods-browser-check');await fs.mkdir(output,{recursive:true});
 const example=JSON.parse(await fs.readFile(path.join(root,'public/mods/community-bubbles.json'),'utf8'));
-const server=await createServer({root,server:{host:'127.0.0.1',port:0}});await server.listen();
+const server=await createServer({root,server:{host:'127.0.0.1',port:0,watch:null,hmr:false}});await server.listen();
 const browser=await chromium.launch({executablePath,headless:true,args:['--no-sandbox','--single-process','--no-zygote','--disable-gpu','--disable-gpu-compositing','--disable-webgl']});
 const checks=[],errors=[];function check(value,label){assert(value,label);checks.push(label);}
 try{
@@ -42,9 +42,15 @@ try{
  await page.locator('.mod-card').filter({hasText:'依赖测试'}).getByRole('button',{name:'启用',exact:true}).click();check((await page.locator('#toast').textContent()).includes('缺少依赖'),'Missing exact dependency blocks activation');
  await install({...example,id:'community.invalid',script:'window.bad=1'});await page.waitForFunction(()=>document.querySelector('#toast').textContent.includes('安装失败'));
  check((await page.locator('.mod-card').count())===3,'Unknown executable fields fail import without modifying installed entries');
+ const trident=JSON.parse(await fs.readFile(path.join(root,'public/mods/community-trident.json'),'utf8'));await install(trident);await page.getByText('铁盆三叉戟 · 1.0.0',{exact:true}).waitFor();await page.locator('.mod-card').filter({hasText:'铁盆三叉戟 · 1.0.0'}).getByRole('button',{name:'启用',exact:true}).click();
+ check(await page.locator('#practice-weapon-a option[value="community.trident:trident"]').count()===1,'SDK1.1 adds a new namespaced MCP to the actual departure menu');
+ await page.locator('#practice-weapon-a').selectOption('community.trident:trident');await page.locator('#start').click();await page.waitForFunction(()=>document.querySelector('#weapon-label').textContent==='铁盆三叉戟');check(await page.locator('#weapon-label').textContent()==='铁盆三叉戟','The new community weapon is equipped in a real Session');
+ await page.locator('#checkpoint').click();await page.waitForFunction(()=>Object.keys(localStorage).some(key=>key.startsWith('big-fat-fish:v2-combat-preview:checkpoint:')&&JSON.parse(localStorage.getItem(key)).state.player.loadout.weapons[0].definitionId==='community.trident:trident'));
+ await page.reload();await page.locator('#continue').click();await page.locator('#pause-menu').waitFor({state:'visible'});await page.locator('#resume').click();await page.waitForFunction(()=>document.querySelector('#weapon-label').textContent==='铁盆三叉戟');check(await page.locator('#weapon-label').textContent()==='铁盆三叉戟','A real checkpoint restores the independent mod weapon with its exact package set');
+ await page.locator('#pause').click();await page.locator('#restart').click();await page.locator('#mods-panel summary').click();
  await page.setViewportSize({width:390,height:844});check(!(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)),'Community mod manager fits a phone without horizontal overflow');
  const bounds=await page.locator('.mod-card button').first().boundingBox();check(bounds.height>=44,'Mod actions retain a 44px mobile touch target');
  await page.screenshot({path:path.join(output,'mod-manager-mobile.png'),fullPage:true});
  check(errors.length===0,`No page errors: ${errors.join('; ')}`);
- const report={checks:checks.length,passed:checks,errors,scope:'Local SDK1.0 Free practice only; no Workshop or new content IDs'};await fs.writeFile(path.join(output,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+ const report={checks:checks.length,passed:checks,errors,scope:'Local SDK1.0/1.1 practice, including new MCP recipes; no Workshop'};await fs.writeFile(path.join(output,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
 }finally{await browser.close();await server.close();}

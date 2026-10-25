@@ -23,7 +23,7 @@ const executablePath=process.env.V2_CHROMIUM_EXECUTABLE;
 if(!executablePath)throw new Error('Set V2_CHROMIUM_EXECUTABLE to an installed Chromium executable; this check never silently skips the browser.');
 const output=process.env.V2_BROWSER_OUTPUT||path.join(root,'dist','v2-browser-check');
 await fs.mkdir(output,{recursive:true});
-const server=await createServer({root,server:{host:'127.0.0.1',port:0}});await server.listen();
+const server=await createServer({root,server:{host:'127.0.0.1',port:0,watch:null,hmr:false}});await server.listen();
 const address=server.httpServer.address();const base=`http://127.0.0.1:${address.port}`;
 const browser=await chromium.launch({executablePath,headless:true,args:['--no-sandbox','--single-process','--no-zygote','--disable-gpu','--disable-gpu-compositing','--disable-webgl']});
 const checks=[];const errors=[];

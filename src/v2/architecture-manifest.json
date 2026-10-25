@@ -897,6 +897,87 @@
       ]
     },
     {
+      "path": "application/nest.js",
+      "layer": "domain",
+      "purpose": "Execute a nest command against the latest revision; recompute after CAS conflicts, never during a run.",
+      "dependencies": [
+        "application/repository.js",
+        "content/registry.js",
+        "domain/difficulty.js",
+        "domain/profile/nest.js",
+        "domain/profile/tree.js"
+      ],
+      "functions": [
+        {
+          "description": "读取最新Profile，拒绝活动冒险，规划购买/退款/建设/解锁/DSH并事务提交；CAS冲突最多重算三次。",
+          "rule": "仅无活动检查点的小窝可执行；冲突重读重算",
+          "ownership": "只经注入StoragePort事务修改Profile，不写Session",
+          "phase": "profile-command",
+          "callMode": "sequence",
+          "name": "executeNestAction",
+          "args": [
+            {
+              "name": "storage",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            },
+            {
+              "name": "action",
+              "type": "untyped"
+            }
+          ],
+          "result": "Promise<Result<StorageRecord>>",
+          "implementation": "implemented",
+          "calls": [
+            "application/repository.js#commitProfilePlan",
+            "application/repository.js#readProfileRepository",
+            "content/registry.js#createHandlerRegistry",
+            "domain/profile/nest.js#planDshEquipment",
+            "domain/profile/nest.js#planFacilityPurchase",
+            "domain/profile/nest.js#planPermanentUnlock",
+            "domain/profile/tree.js#planTreePurchase",
+            "domain/profile/tree.js#planTreeRespec"
+          ]
+        },
+        {
+          "description": "验证永久拥有与已实现能力，复制树/DSH/基础品质装备为Pro1出发快照。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "prepareAdventureStart",
+          "args": [
+            {
+              "name": "profile",
+              "type": "untyped"
+            },
+            {
+              "name": "request",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            },
+            {
+              "name": "runId",
+              "type": "untyped"
+            }
+          ],
+          "result": "Result<StartSnapshot>",
+          "implementation": "implemented",
+          "calls": [
+            "content/registry.js#createHandlerRegistry",
+            "domain/difficulty.js#resolveDifficultySnapshot",
+            "domain/profile/nest.js#validateStartRequest"
+          ]
+        }
+      ]
+    },
+    {
       "path": "application/replay.js",
       "layer": "application",
       "purpose": "可复现录制/摘要入口，与真实session共用路径。",
@@ -1233,7 +1314,7 @@
             }
           ],
           "result": "ValidationReport",
-          "description": "校验各目录数量、稳定ID/引用、160点树花费及前置DAG、累计机制和运行能力声明。",
+          "description": "校验原版目录数量、社区MCP注册与锁、稳定ID/引用、160点树前置DAG及运行能力声明。",
           "calls": [
             "domain/serialization.js#serializeCanonical"
           ],
@@ -1473,7 +1554,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planDshGptPreview",
@@ -1542,7 +1623,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planDshGptBranch",
@@ -3408,6 +3489,7 @@
       "layer": "content-handler",
       "purpose": "weapons逐项占位处理器；实际参数仍以玩法规格为准。",
       "dependencies": [
+        "content/weaponCapabilities.js",
         "domain/plans.js",
         "domain/projectiles.js"
       ],
@@ -3423,6 +3505,7 @@
           "result": "EffectPlan",
           "description": "mcp_bubble / 标准输出 · 泡泡接口：1 发泡泡，伤害 12，弹速 600，半径 7，命中消失；0.32 秒；720；初始",
           "calls": [
+            "content/weaponCapabilities.js#resolveWeaponTemplate",
             "domain/projectiles.js#planNativeProjectiles"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
@@ -3443,6 +3526,7 @@
           "result": "EffectPlan",
           "description": "mcp_fan / 多模态 · 扇面接口：5 发，每发 5 伤，扇面总夹角 32°，弹速 550，半径 5；0.70 秒；460；6 零件",
           "calls": [
+            "content/weaponCapabilities.js#resolveWeaponTemplate",
             "domain/projectiles.js#planNativeProjectiles"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
@@ -3541,7 +3625,7 @@
       ],
       "functions": [
         {
-          "description": "校验SDK1.0清单/版本/补丁/参数边界及大小，拒绝未知功能和未实现内容。",
+          "description": "校验SDK1.0/1.1清单、补丁和独立MCP配方；限制模板、命名空间、参数边界与大小。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -3630,6 +3714,54 @@
           "phase": "query",
           "callMode": "sequence",
           "implementation": "implemented"
+        }
+      ]
+    },
+    {
+      "path": "content/weaponCapabilities.js",
+      "layer": "content",
+      "purpose": "Resolve native behavior for an official weapon or an explicitly registered community recipe.",
+      "dependencies": [],
+      "functions": [
+        {
+          "description": "解析原版MCP或拥有已锁定模组注册的独立配方，只允许已实现泡泡/扇面模板。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolveWeaponTemplate",
+          "args": [
+            {
+              "name": "catalog",
+              "type": "untyped"
+            },
+            {
+              "name": "id",
+              "type": "untyped"
+            }
+          ],
+          "result": "'mcp_bubble'|'mcp_fan'|null",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "列出实际可运行的原版与社区MCP，供练习出发选择。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "listRuntimeWeapons",
+          "args": [
+            {
+              "name": "catalog",
+              "type": "untyped"
+            }
+          ],
+          "result": "readonly string[]",
+          "implementation": "implemented",
+          "calls": [
+            "content/weaponCapabilities.js#resolveWeaponTemplate"
+          ]
         }
       ]
     },
@@ -3957,7 +4089,8 @@
       "layer": "dispatch",
       "purpose": "MCP稳定ID分派，不得把所有候选处理器依次执行。",
       "dependencies": [
-        "content/handlers/weapons.js"
+        "content/handlers/weapons.js",
+        "content/weaponCapabilities.js"
       ],
       "functions": [
         {
@@ -3976,7 +4109,8 @@
           "description": "按合法稳定id和已实现绑定只调用一个对应处理器。",
           "calls": [
             "content/handlers/weapons.js#planWeaponBubble",
-            "content/handlers/weapons.js#planWeaponFan"
+            "content/handlers/weapons.js#planWeaponFan",
+            "content/weaponCapabilities.js#resolveWeaponTemplate"
           ],
           "rule": "@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -4076,7 +4210,8 @@
         "domain/geometry.js",
         "domain/plans.js",
         "domain/serialization.js",
-        "domain/stats.js"
+        "domain/stats.js",
+        "domain/treeRuntime.js"
       ],
       "functions": [
         {
@@ -4165,7 +4300,8 @@
           "description": "当前只支持Q切枪与0.3秒切换锁，地面换装明确拒绝。",
           "calls": [
             "domain/plans.js#createEmptyPlan",
-            "domain/plans.js#createStateChange"
+            "domain/plans.js#createStateChange",
+            "domain/treeRuntime.js#planTreeWeaponSwitch"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -4667,7 +4803,8 @@
         "domain/random.js",
         "domain/shells.js",
         "domain/shields.js",
-        "domain/stats.js"
+        "domain/stats.js",
+        "domain/treeRuntime.js"
       ],
       "functions": [
         {
@@ -4690,7 +4827,8 @@
             "domain/random.js#drawRandom",
             "domain/shells.js#resolveShellContact",
             "domain/shields.js#resolveShieldAbsorption",
-            "domain/stats.js#derivePlayerStats"
+            "domain/stats.js#derivePlayerStats",
+            "domain/treeRuntime.js#resolveTreeSurvival"
           ],
           "rule": "有壳目标先外壳分支；对敌暴击只在原生武器允许处一次计算；额度只用于敌→玩家。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -5349,14 +5487,16 @@
       "layer": "domain",
       "purpose": "Create an unpublished initial state. Map plans are applied before Session publishes it.",
       "dependencies": [
+        "content/weaponCapabilities.js",
         "domain/entities.js",
         "domain/random.js",
         "domain/serialization.js",
+        "domain/treeRuntime.js",
         "versions.js"
       ],
       "functions": [
         {
-          "description": "创建Free或Pro1显式范围初态并验证模组锁；完整冒险和局外树尚未开放。",
+          "description": "创建Free或Pro1初态，验证树前置/DSH槽/模组锁并一次应用永久基础属性；full仍拒绝。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -5379,9 +5519,12 @@
           "result": "GameState",
           "implementation": "implemented",
           "calls": [
+            "content/weaponCapabilities.js#resolveWeaponTemplate",
             "domain/entities.js#createEntityState",
             "domain/random.js#createRandomStreams",
-            "domain/serialization.js#serializeCanonical"
+            "domain/serialization.js#serializeCanonical",
+            "domain/treeRuntime.js#createTreeBaseStats",
+            "domain/treeRuntime.js#isTreeSnapshotValid"
           ],
           "implementationScope": "core-preview + adventure-slice"
         }
@@ -6792,7 +6935,9 @@
       "layer": "domain",
       "purpose": "保存与提交共用的单局状态不变量检查；避免domain反向依赖engine。",
       "dependencies": [
-        "domain/serialization.js"
+        "content/weaponCapabilities.js",
+        "domain/serialization.js",
+        "domain/treeRuntime.js"
       ],
       "functions": [
         {
@@ -6810,7 +6955,9 @@
           "result": "ValidationReport",
           "description": "检查版本、有限数据、实体引用、壳、护盾、机制累计集合、槽位与命中账本。",
           "calls": [
-            "domain/serialization.js#serializeCanonical"
+            "content/weaponCapabilities.js#resolveWeaponTemplate",
+            "domain/serialization.js#serializeCanonical",
+            "domain/treeRuntime.js#isTreeSnapshotValid"
           ],
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
@@ -7065,6 +7212,95 @@
       ]
     },
     {
+      "path": "domain/treeRuntime.js",
+      "layer": "domain",
+      "purpose": "Permanent tree runtime rules. All reads use the departure snapshot, never the live Profile.",
+      "dependencies": [
+        "domain/plans.js"
+      ],
+      "functions": [
+        {
+          "description": "校验出发树ID去重、真实前置与DSH基础树消费门槛。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "isTreeSnapshotValid",
+          "args": [
+            {
+              "name": "ids",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            }
+          ],
+          "result": "boolean",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "一次构造初始生命/护甲/移速；MCP专属输出由武器派生消费，不影响全部技能。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createTreeBaseStats",
+          "args": [
+            {
+              "name": "ids",
+              "type": "untyped"
+            }
+          ],
+          "result": "BaseStats",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "实际生命伤害更新无伤时钟；低血治疗一次，致死保命一次并给2秒保护，返回结果不改状态。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolveTreeSurvival",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            },
+            {
+              "name": "hpDamage",
+              "type": "untyped"
+            }
+          ],
+          "result": "{hpDamage:number; hp:number; invulnerable:number; runtime:Record<string,Json>; events:readonly string[]}",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "切换成功时规划下一发+25%与1秒移速；分别保存5秒/8秒内置冷却。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planTreeWeaponSwitch",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ]
+        }
+      ]
+    },
+    {
       "path": "domain/world/adventure.js",
       "layer": "domain",
       "purpose": "Claude短途纵切的连续地图；首领与其他模式不因此宣称完整实现。",
@@ -7178,6 +7414,7 @@
           "result": "SystemPlan",
           "description": "按玩家位置揭示160单位网格，只有新格子才生成修改计划。",
           "calls": [
+            "domain/geometry.js#distanceSquared",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange"
           ],
@@ -8402,20 +8639,23 @@
       "purpose": "Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,",
       "dependencies": [
         "adapters/storage.js",
+        "application/nest.js",
         "application/repository.js",
         "content/catalog.js",
         "content/registry.js",
+        "content/weaponCapabilities.js",
         "domain/checkpoint.js",
         "domain/clock.js",
         "domain/difficulty.js",
         "domain/settlement.js",
         "engine/session.js",
         "preview/modManager.js",
+        "preview/nestManager.js",
         "preview/view.js"
       ],
       "functions": [
         {
-          "description": "组装Free/Pro1、键鼠/双摇杆、Profile事务结算及本地模组菜单；返回完整清理函数。",
+          "description": "组装Free/Pro1、输入、正式小窝消费与配装、事务结算和本地模组；返回完整清理函数。",
           "rule": "",
           "ownership": "宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState",
           "phase": "query",
@@ -8431,12 +8671,14 @@
           "implementation": "implemented",
           "calls": [
             "adapters/storage.js#createStoragePort",
+            "application/nest.js#prepareAdventureStart",
             "application/repository.js#commitProfilePlan",
             "application/repository.js#mergePersistenceIntents",
             "application/repository.js#readProfileRepository",
             "content/catalog.js#loadContentCatalog",
             "content/catalog.js#validateContentCatalog",
             "content/registry.js#createHandlerRegistry",
+            "content/weaponCapabilities.js#listRuntimeWeapons",
             "domain/checkpoint.js#canCreateCheckpoint",
             "domain/checkpoint.js#createCheckpoint",
             "domain/clock.js#createClockState",
@@ -8453,6 +8695,7 @@
             "engine/session.js#stepSessionUi",
             "engine/session.js#stepSessionWorld",
             "preview/modManager.js#mountModManager",
+            "preview/nestManager.js#mountNestManager",
             "preview/view.js#getPreviewCamera",
             "preview/view.js#renderPreviewFrame"
           ],
@@ -8494,6 +8737,56 @@
           "calls": [
             "content/mods.js#composeModCatalog",
             "content/mods.js#parseModPackage"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "preview/nestManager.js",
+      "layer": "host",
+      "purpose": "Mount the nest dashboard; Profile changes go through the application service and transactional port.",
+      "dependencies": [
+        "application/nest.js",
+        "content/registry.js",
+        "domain/profile/tree.js"
+      ],
+      "functions": [
+        {
+          "description": "组装27节点、设施、装备、DSH和收藏小窝UI；所有消费经应用用例，不接触GameState。",
+          "rule": "",
+          "ownership": "宿主只读Profile副本，经应用服务消费；不修改GameState",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "mountNestManager",
+          "args": [
+            {
+              "name": "root",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            },
+            {
+              "name": "storage",
+              "type": "untyped"
+            },
+            {
+              "name": "onProfile",
+              "type": "untyped"
+            },
+            {
+              "name": "notify",
+              "type": "untyped"
+            }
+          ],
+          "result": "{setProfile:(record:StorageRecord|null)=>void; getLoadout:()=>{weaponIds:string[];skillId:string};dispose:()=>void}",
+          "implementation": "implemented",
+          "calls": [
+            "application/nest.js#executeNestAction",
+            "content/registry.js#createHandlerRegistry",
+            "domain/profile/tree.js#resolveDshSlotCount",
+            "domain/profile/tree.js#validateTreePurchase"
           ]
         }
       ]
@@ -9503,9 +9796,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 84,
-    "functions": 320,
-    "implemented": 178,
-    "placeholders": 142
+    "modules": 88,
+    "functions": 329,
+    "implemented": 189,
+    "placeholders": 140
   }
 }

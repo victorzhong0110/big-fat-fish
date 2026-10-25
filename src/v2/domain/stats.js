@@ -16,7 +16,7 @@ import * as dependency1 from '../content/catalog.js';
  * @returns {import('../contracts.d.ts').BaseStats}
  */
 export function derivePlayerStats(state, catalog) {
-  // Start tree bonuses are materialized once in baseStats; handlers own source modifiers.
+  // Initial HP/armor/movement tree bonuses are materialized once; MCP-only bonuses are derived below.
   // Expired temporary modifiers are ignored even before the cleanup phase removes them.
   const modifiers = [...state.player.modifiers, ...state.lora.modifiers].filter(modifier => modifier.expiresAt === null || modifier.expiresAt > state.tick);
   const base = state.player.baseStats;
@@ -60,9 +60,11 @@ export function deriveWeaponStats(state, weapon, catalog) {
   const player = derivePlayerStats(state, catalog);
   const topUpdate = updated && weapon.originalQuality === 2 ? 1.2 : 1;
   const underfit = state.lora.underfitRemaining > 0 ? 0.8 : 1;
+  const tree = state.start.treeNodeIds, switchBonus = state.world.entities[state.player.entityId].runtime.treeSwitchShot === true ? 1.25 : 1;
+  const treeDamage = 1 + (tree.includes('tree_mcp_a') ? 0.05 : 0) + (tree.includes('tree_mcp_e') ? 0.07 : 0);
   const compress=state.plugins.find(plugin=>plugin.id==='plugin_compress');
-  return { damage: (compress?compress.rank===1?1.3:1.45:1)*Number(p.damage) * qualityMultiplier * player.damageMultiplier * topUpdate * underfit,
-    interval: resolveStatModifier(Number(p.interval), modifiers.filter(modifier => modifier.stat === 'weaponInterval'), 0.05, Number.MAX_SAFE_INTEGER),
+  return { damage: (compress?compress.rank===1?1.3:1.45:1)*Number(p.damage) * treeDamage * switchBonus * qualityMultiplier * player.damageMultiplier * topUpdate * underfit,
+    interval: resolveStatModifier(Number(p.interval) * (tree.includes('tree_mcp_c') ? 0.95 : 1), modifiers.filter(modifier => modifier.stat === 'weaponInterval'), 0.05, Number.MAX_SAFE_INTEGER),
     projectileSpeed: Number(p.projectileSpeed), projectileRadius: Number(p.projectileRadius), pellets: Number(p.pellets), spreadRadians: Number(p.spreadRadians), range: Number(p.range)*(compress?0.75:1), maxHits: Number(p.maxHits), damageMultiplierApplied: true,
   };
 }

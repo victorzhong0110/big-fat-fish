@@ -1,4 +1,5 @@
 // @ts-check
+import { planTreeWeaponSwitch } from './treeRuntime.js';
 import { toJson } from './serialization.js';
 import { createEmptyPlan, createStateChange } from './plans.js';
 /**
@@ -28,7 +29,9 @@ export function planWeaponFire(context) {
   if (!state.input.firing || !weapon || weapon.cooldown > 1e-9 || !['exploring', 'boss'].includes(state.flow.phase)) return createEmptyPlan();
   const stats = dependency4.deriveWeaponStats(state, weapon, context.catalog);
   const plan = dependency2.dispatchWeaponsHandler(context, weapon.definitionId);
-  return { ...plan, changes: [...plan.changes, createStateChange('player', state.player.entityId, 'setLoadout', { ...state.player.loadout, weapons: state.player.loadout.weapons.map(item => item.instanceId === weapon.instanceId ? { ...item, cooldown: stats.interval } : item) })] };
+  const player = state.world.entities[state.player.entityId];
+  const consumed = player.runtime.treeSwitchShot === true ? [createStateChange('entity', player.id, 'setEntityRuntime', { runtime: { ...player.runtime, treeSwitchShot: false } })] : [];
+  return { ...plan, changes: [...plan.changes, ...consumed, createStateChange('player', state.player.entityId, 'setLoadout', { ...state.player.loadout, weapons: state.player.loadout.weapons.map(item => item.instanceId === weapon.instanceId ? { ...item, cooldown: stats.interval } : item) })] };
 }
 
 /**
@@ -48,7 +51,7 @@ export function planSkillCast(context) {
   const plan = dependency1.dispatchSkillsHandler(context, state.player.loadout.skillId);
   const cooldown = Number(context.catalog.definitions[state.player.loadout.skillId]?.parameters.cooldown);
   if (!Number.isFinite(cooldown) || cooldown < 3) throw new Error('Invalid equipped skill cooldown');
-  return { ...plan, changes: [...plan.changes, createStateChange('player', player.id, 'setLoadout', { ...state.player.loadout, skillCooldown: cooldown })], events: [...plan.events, { id: `skill:${state.tick}`, runId: state.runId, tick: state.tick, seq: 0, type: 'SkillCast', sourceId: player.id, targetId: null, payload: { skillId: state.player.loadout.skillId } }] };
+  return { ...plan, changes: [...plan.changes, createStateChange('player', player.id, 'setLoadout', { ...state.player.loadout, skillCooldown: cooldown * (state.start.treeNodeIds.includes('tree_skill_a') ? 0.96 : 1) * (state.start.treeNodeIds.includes('tree_skill_e') ? 0.94 : 1) })], events: [...plan.events, { id: `skill:${state.tick}`, runId: state.runId, tick: state.tick, seq: 0, type: 'SkillCast', sourceId: player.id, targetId: null, payload: { skillId: state.player.loadout.skillId } }] };
 }
 
 /**
@@ -69,7 +72,7 @@ export function planDash(context, command) {
   const direction = dependency3.normalizeVector(input);
   return { ...createEmptyPlan(), changes: [
     createStateChange('entity', player.id, 'setEntityRuntime', { runtime: { ...player.runtime, dashUntil: state.tick + 11, dashDirection: { ...direction } } }),
-    createStateChange('player', player.id, 'setLoadout', { ...state.player.loadout, dashCooldown: 3 }),
+    createStateChange('player', player.id, 'setLoadout', { ...state.player.loadout, dashCooldown: 3 * (state.start.treeNodeIds.includes('tree_skill_c') ? 0.95 : 1) }),
     createStateChange('player', player.id, 'setInvulnerable', { remaining: Math.max(0.18, state.player.invulnerableRemaining) }),
   ] };
 }
@@ -81,6 +84,7 @@ export function planDash(context, command) {
  * @implementationScope core-preview
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
+ * @calls domain/treeRuntime.js#planTreeWeaponSwitch
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').Command} command
  * @returns {import('../contracts.d.ts').SystemPlan}
@@ -90,7 +94,9 @@ export function planLoadoutChange(context, command) {
   if (command.type !== 'SwitchWeapon') throw new Error('Ground equipment swaps are not available in the combat preview');
   const player = state.world.entities[state.player.entityId];
   if (Number(player.runtime.switchReadyAt ?? 0) > state.tick || state.player.loadout.weapons.length < 2) return createEmptyPlan();
-  return { ...createEmptyPlan(), changes: [createStateChange('player', player.id, 'setLoadout', { ...state.player.loadout, activeWeaponIndex: (state.player.loadout.activeWeaponIndex + 1) % state.player.loadout.weapons.length }), createStateChange('entity', player.id, 'setEntityRuntime', { runtime: { ...player.runtime, switchReadyAt: state.tick + 18 } })] };
+  const treePlan = planTreeWeaponSwitch(context), runtime = treePlan.changes.find(change => change.operation === 'setEntityRuntime')?.payload;
+  const mergedRuntime = runtime && typeof runtime === 'object' && !Array.isArray(runtime) ? /** @type {Record<string,import('../contracts.d.ts').Json>} */(runtime).runtime : player.runtime;
+  return { ...treePlan, changes: [...treePlan.changes.filter(change => change.operation !== 'setEntityRuntime'), createStateChange('player', player.id, 'setLoadout', { ...state.player.loadout, activeWeaponIndex: (state.player.loadout.activeWeaponIndex + 1) % state.player.loadout.weapons.length }), createStateChange('entity', player.id, 'setEntityRuntime', { runtime: { .../** @type {Record<string,import('../contracts.d.ts').Json>} */(mergedRuntime), switchReadyAt: state.tick + 18 } })] };
 }
 
 /**

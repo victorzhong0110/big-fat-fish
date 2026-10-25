@@ -1,6 +1,6 @@
 # V2 开发源码
 
-当前84个JS模块、320个公开函数：178个有实现，142个显式TODO。**Free练习与Pro1 Claude短途纵切可操作，完整游戏仍未完成。** `implementationScope: core-preview`标记当前范围有限的实现。
+当前88个JS模块、329个公开函数：189个有实现，140个显式TODO。**Free练习与Pro1 Claude短途纵切可操作，完整游戏仍未完成。** `implementationScope: core-preview`标记当前范围有限的实现。
 
 运行`npm run dev`后打开`/v2.html`。构建同时生成旧版index与新试作v2，不替换旧入口。键鼠WASD/瞄准射击，Q换MCP，E技能，Space冲刺，F交互，R检查点，Esc暂停；手机双摇杆与按钮。
 
@@ -19,6 +19,8 @@ npm run build
 V2_CHROMIUM_EXECUTABLE=/path/to/chromium npm run test:v2:browser
 ```
 
-当前世界入口是engine/previewTick，宿主是preview/host，Session唯一持有单局状态。正式bootstrap/application/engine/tick仍保持TODO；full模式明确拒绝。未实现内容不得靠空返回蒙混可用性：registry的95项设计绑定与14项已开放能力分开校验。武器/技能/树等定义存在不代表运行效果已实现。
+当前世界入口是engine/previewTick，宿主是preview/host，Session唯一持有单局状态。正式bootstrap/application/engine/tick仍保持TODO；full模式明确拒绝。未实现内容不得靠空返回蒙混可用性：registry的95项设计绑定与16项已开放能力分开校验。武器/技能/树等定义存在不代表运行效果已实现。
 
-Free使用独立localStorage调试槽；Pro1使用正式IndexedDB Profile，已接通结算与原子删档。首批6插件可选，蒸馏按阵营积累。小窝/树/DSH完整界面与全内容仍待开发。最终像素资源和指定音乐待接入。
+Free使用独立localStorage调试槽；Pro1使用正式IndexedDB Profile，已接通结算与原子删档。首批6插件可选，蒸馏按阵营积累。小窝已接通27节点购买/全退、设施、永久解锁、实际树效果和4种DSH配装；伙伴效果及全内容仍待开发。最终像素资源和指定音乐待接入。
+
+社区SDK1.0/1.1：菜单导入参数包或独立新MCP配方，在练习出发列表选择；示例见public/mods。小窝消费由application/nest编排，全部经StoragePort事务；活动冒险期间禁止更改。
