@@ -1,4 +1,4 @@
-/** V2 architecture contracts only. No gameplay implementation. */
+/** V2 data and port contracts. Per-function implementation status is in architecture-manifest.json. */
 export type Id = string;
 export type Tick = number;
 export type Faction = 'claude' | 'gpt' | 'grok';
@@ -6,7 +6,7 @@ export type Mode = 'tutorial' | 'short' | 'expedition' | 'api';
 export type Phase = 'preparing' | 'exploring' | 'boss' | 'pluginChoice' | 'loraTraining' | 'paused' | 'victory' | 'defeat' | 'withdrawal';
 export type Vec2 = Readonly<{ x: number; y: number }>;
 export type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
-export type DeepReadonly<T> = T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } : T;
+export type DeepReadonly<T> = T extends Json ? T : T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } : T;
 export type StateSnapshot = DeepReadonly<GameState>;
 export type Result<T> = { ok: true; value: T } | { ok: false; code: string; message: string };
 export interface Versions { schema: number; core: string; content: string; }
@@ -14,7 +14,7 @@ export interface Diagnostic { code: string; message: string; relatedIds: readonl
 export interface RandomState { seed: number; cursor: number; }
 export interface RandomDraw { value: number; next: RandomState; }
 export type RandomStreams = Readonly<Record<'world' | 'reward' | 'combat' | 'dsh' | 'lora' | 'event', RandomState>>;
-export interface ClockState { accumulatorMs: number; suspended: boolean; backlogMs: number; }
+export interface ClockState { accumulatorMs: number; suspended: boolean; backlogMs: number; domain: 'world' | 'ui' | null; }
 export interface FrameSchedule { worldSteps: number; uiSteps: number; nextClock: ClockState; performancePause: boolean; }
 export interface Command { id: Id; seq: number; clock: 'world' | 'ui'; targetTick: Tick; type: string; payload: Json; }
 export interface InputSample { device: 'keyboard' | 'mouse' | 'touch' | 'system'; type: string; timestampMs: number; payload: Json; }
@@ -66,25 +66,27 @@ export interface WorldState { map: MapState; entities: Readonly<Record<Id, Entit
 export interface PluginState { id: Id; rank: 1 | 2; origin: 'run' | 'difficulty'; runtime: Readonly<Record<string, Json>>; }
 export interface DshSlot { id: Id; options: Readonly<Record<string, string>>; }
 export interface DistillTrack { stage: 0 | 1 | 2 | 3; samples: number; }
+export interface AttackHitRecord { attackId: Id; targetId: Id; expiresAt: Tick; }
 export interface DamageBudgetEntry { tick: Tick; spent: number; }
 export interface PluginChoice { id: Id; level: number; candidates: readonly { id: Id; rank: 1 | 2 }[]; rerollsUsed: number; replacingId: Id | null; resolved: boolean; }
 export interface LevelReward { id: Id; level: number; loraRequired: boolean; pluginRequired: boolean; }
 export interface LoraTrial { id: Id; level: number; target: 'maxHp' | 'damageMultiplier' | 'moveSpeed' | 'armor'; phase: 'ready' | 'running' | 'resolved'; uiTick: Tick; result: 'perfect' | 'underfit' | 'overfit' | null; }
+export interface LoraTrialCreation { trial: LoraTrial; nextRandom: RandomState; }
 export interface LoraState { active: LoraTrial | null; pendingLevels: readonly number[]; modifiers: readonly StatModifier[]; underfitRemaining: number; overfitRemaining: number; resolvedTrialIds: readonly Id[]; }
-export interface DshCycleState { remaining: number; pendingOutcome: 'update' | 'reset' | null; triggerSeq: number; }
+export interface DshCycleState { remaining: number; pendingOutcome: 'update' | 'reset' | null; triggerSeq: number; lastAdvancedTick: Tick | null; }
 export interface BossState { entityId: Id; faction: Faction; phase: number; telegraph: Json; resetNodes: readonly { id: Id; hp: number; consumed: boolean; position: Vec2 }[]; resetRemaining: number; resetCooldown: number; spawnGroupSeq: number; }
 export interface ApiState { elapsedTicks: Tick; bossIndex: number; materialMinute: number; fragmentsThisMinute: number; partsThisMinute: number; }
 export interface DifficultySnapshot { level: number | 'api'; mode: Mode; mechanicIds: readonly Id[]; difficultyPerkIds: readonly Id[]; modelProfileIds: Readonly<Record<Faction, Id>>; hpMultiplier: number; damageMultiplier: number; spawnBudgetMultiplier: number; }
 export interface StartSnapshot { treeNodeIds: readonly Id[]; dsh: readonly DshSlot[]; loadout: Loadout; difficulty: DifficultySnapshot; }
 export interface FlowState { phase: Phase; resumePhase: Phase | null; queuedLevelRewards: readonly LevelReward[]; choice: PluginChoice | null; settlementPending: boolean; }
 export interface GameState {
-  versions: Versions; runId: Id; seed: number; tick: Tick; uiTick: Tick; revision: number;
+  versions: Versions; runId: Id; seed: number; tick: Tick; uiTick: Tick; revision: number; lastWorldAdvanceTick: Tick | null;
   start: StartSnapshot; flow: FlowState; random: RandomStreams; player: PlayerState; world: WorldState;
   level: number; xpRemainder: number; totalTokens: number; plugins: readonly PluginState[];
   dshRuntime: Readonly<Record<Id, Json>>; dshCycle: DshCycleState; lora: LoraState;
   distill: Readonly<Record<Faction, DistillTrack>>; damageBudgets: Readonly<Record<Id, readonly DamageBudgetEntry[]>>;
   bosses: readonly BossState[]; api: ApiState | null; inventory: { gpuFragments: number; parts: number };
-  processedRewardIds: readonly Id[]; processedCommandIds: readonly Id[]; pendingEffects: EffectQueue;
+  attackHits: readonly AttackHitRecord[]; processedRewardIds: readonly Id[]; processedCommandIds: readonly Id[]; pendingEffects: EffectQueue;
 }
 export interface GameSession { readonly runId: Id; readonly revision: number; }
 export interface Definition { id: Id; kind: string; displayName: string; parameters: Readonly<Record<string, Json>>; version: string; }
@@ -98,7 +100,7 @@ export interface Collision { id: Id; sourceId: Id; targetId: Id; contact: Vec2; 
 export interface CollisionResult { hits: readonly Collision[]; diagnostics: readonly Diagnostic[]; }
 export interface NavigationQuery { entityId: Id; origin: Vec2; destination: Vec2; collisionProfileId: Id; }
 export interface NavigationResult { reachable: boolean; path: readonly Vec2[]; }
-export interface DamageRequest { id: Id; sourceId: Id; creditOwner: EntityState['creditOwner']; sourceKind: 'weapon_primary' | 'weapon_secondary' | 'skill' | 'plugin_secondary' | 'companion' | 'distilled' | 'dsh' | 'enemy'; attackId: Id; projectileId: Id | null; targetId: Id; baseDamage: number; contact: Vec2; incomingDirection: Vec2; generation: number; chainId: Id; critEligible: boolean; }
+export interface DamageRequest { id: Id; sourceId: Id; creditOwner: EntityState['creditOwner']; sourceKind: 'weapon_primary' | 'weapon_secondary' | 'skill' | 'plugin_secondary' | 'companion' | 'distilled' | 'dsh' | 'enemy'; attackId: Id; projectileId: Id | null; targetId: Id; baseDamage: number; contact: Vec2; incomingDirection: Vec2; generation: number; chainId: Id; critEligible: boolean; expiresAt: Tick; }
 export interface DamageResolution { accepted: boolean; allowedBeforeDefense: number; shellDamage: number; shieldDamage: number; hpDamage: number; plan: SystemPlan; }
 export interface QuotaResolution { sourceId: Id; allowedDamage: number; budgetSpent: number; plan: SystemPlan; }
 export interface WeaponStats { damage: number; interval: number; projectileSpeed: number; projectileRadius: number; pellets: number; spreadRadians: number; range: number; maxHits: number; damageMultiplierApplied: boolean; }

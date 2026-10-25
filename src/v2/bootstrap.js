@@ -2,7 +2,7 @@
 /**
  * 依赖组装入口；本次不接入旧main.js。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from './adapters/audio.js';
 import * as dependency2 from './adapters/input.js';

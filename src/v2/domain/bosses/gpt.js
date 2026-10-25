@@ -2,7 +2,7 @@
 /**
  * ChatGPT三个节点的局部重置事务。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 
 /**
@@ -25,7 +25,7 @@ export function planGptBoss(context, boss) {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：绝不调用checkpoint.restore或重建整局；当tick已致死则不再重置。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').BossState} boss
  * @returns {import('../../contracts.d.ts').EffectPlan}
@@ -39,7 +39,7 @@ export function planGptReset(context, boss) {
  * 击碎节点消费一次尝试并进入10秒保护；不恢复Boss血量。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').BossState} boss
  * @param {import('../../contracts.d.ts').Id} nodeId

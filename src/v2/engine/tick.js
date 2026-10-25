@@ -2,7 +2,7 @@
 /**
  * 世界/UI两种固定步的唯一顺序定义。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../domain/ai.js';
 import * as dependency2 from '../domain/attacks.js';

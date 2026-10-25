@@ -1,6 +1,6 @@
 # 11 · V2架构骨架、状态权限与调用规则
 
-状态：架构骨架，**不是已实现的V2游戏**。用户要求所有具体代码使用占位符，因此`src/v2/**/*.js`每个函数体统一抛出明确的TODO错误；没有假返回值、空成功对象、伪存档或自动运行的占位玩法。旧`src/main.js`没有接入此骨架。
+状态：核心规则逐步实现，**尚不是可启动的V2游戏**。用户已授权先由Codex编码。60个公开函数已有实现，239个仍为显式TODO；实际范围见[开发进度](13-development-status.md)。旧`src/main.js`仍未接入V2。
 
 入口文档：[全部函数目录](12-function-catalog.md)；入口源码：[bootstrap.js](../../src/v2/bootstrap.js)；类型契约：[contracts.d.ts](../../src/v2/contracts.d.ts)；机器可读依赖与绑定：[architecture-manifest.json](../../src/v2/architecture-manifest.json)。函数目录和manifest列出全部跨模块接口以及逐内容处理器，Grok填写函数体时应保留接口/约束，新增公共函数要同步契约。
 
@@ -32,7 +32,7 @@ flowchart TD
 
 ## 3. 上下游调用如何阅读
 
-本次共69个JS模块、296个具名函数，类型与manifest另列。每个函数都有：具名参数和类型、返回类型、功能描述、阶段、状态权限、允许调用的下游、特殊约束。源码JSDoc的`@calls`与manifest、12目录对应。
+当前共72个JS模块、299个具名函数，类型与manifest另列。每个函数都有：具名参数和类型、返回类型、功能描述、阶段、状态权限、允许调用的下游、特殊约束。源码JSDoc的`@calls`与manifest、12目录对应。
 
 - `sequence`：声明阶段依赖与先后，但需要相应合法性/phase/目标存在等条件。不能把列出的函数不带参数、无条件全部调用。
 - `dispatch`：列出可能分支，按type或稳定id只调用一个对应分支；例如一次MCP射击不能把六把武器处理器全跑。
@@ -111,16 +111,22 @@ ChatGPT重置只走`planGptReset`，绝不能调用checkpoint恢复或创建新S
 
 本次95项内容绑定：逐项覆盖30插件、10DSH、6MCP、8技能、6伙伴、9普通敌人、Claude5/GPT4/Grok1共10模型profile、16累计机制。树27节点与6设施是声明式数据定义，分别由树/设施用例处理，**不为每个加一护甲的节点造一套独立业务函数**。其dataDefinitions同样列在manifest，绑定不存在必须阻止启动。
 
-全部公开函数签名、类型、功能/权限、上下游关系已落文件，具体函数体由Grok填写。不能把TODO异常替换成空return就当完成；必须按06的实现顺序完成并验证玩法。新测试以真实契约/边界为依据，不只检查“函数存在”。本次只做骨架结构、语法、类型与旧版回归检查，不声称已验证V2行为。
+全部公开函数签名、类型、功能/权限、上下游关系已落文件，逐函数实现状态见12及manifest。后续编码保留明确TODO，不能用空return冒充完成。当前已验证核心规则及纯逻辑集成，尚未验证完整V2玩法与表现。
 
 
-## 10. 本次骨架验证
+## 10. 当前验证与实现修正
 
-- 69个JS模块、296个具名导出函数、95项处理器绑定、33项数据定义（27树节点/6设施）。
-- AST核对全部函数体只含唯一的TODO异常；逐函数导入调用也只产生对应TODO，未伪装为成功。
-- 实际import与manifest依赖一致，模块图与函数调用契约图均无环；无无法解析的下游、非公共孤立函数或越层反向依赖。
-- TypeScript 5.9.3对JSDoc JS与contracts.d.ts执行strict/checkJs/noEmit检查通过。
-- 文档相对链接/代码围栏、源码签名与manifest、95项内容绑定数量/唯一性检查通过。
-- 旧版npm test：30文件390项通过；npm run build通过。V2占位入口未接入旧main，未执行V2游戏玩法/浏览器平衡验收。
+- 72个JS模块、299个公开函数：60已实现、239显式TODO。95项处理器绑定与33项声明式数据消费者仍为设计覆盖数量，不能等同于已实现内容数量。
+- `npm run check:v2`执行TypeScript 5.9.3 strict/checkJs及AST审计：实际导出、参数、import、函数状态、已实现函数的公开调用边、剩余TODO异常、模块/函数DAG与内容绑定。
+- `npm test`：36文件500项通过，其中V2新增110项；旧版构建通过。V2尚未接入浏览器。
 
-后续填实现会改变依赖和行为，Grok必须按06补真实边界测试，不能把本次“占位都抛错”当成功能测试。
+当前实现对原占位契约做了必要补全，详见13：
+
+1. ClockState带当前world/UI域，切换模式时不把余下的世界时间用于训练。
+2. GameState带有到期时间的attackHits；DamageRequest必须提供expiresAt。发射端使用不可复用的攻击ID；同一目标可分别受击的多弹/回旋去回/爆炸阶段需分配不同的攻击ID，并共享chainId进行派生预算管理。
+3. GameState.lastWorldAdvanceTick与DshCycleState.lastAdvancedTick使世界计时/28秒计时每tick至多推进一次；保存时完整保留。
+4. `createLoraTrial`返回LoraTrialCreation（trial、nextRandom），调用者同一计划提交二者，不能只选目标而丢掉随机游标。
+5. `commitWorkingState(previous, working, catalog, outbox)`增加显式目录与outbox参数。Reducer只应用changes，不自动把plan.effects/events/persistence写回状态；tick编排器负责效果队列与outbox，最终只提交一次。提交器重新编号事件seq，拒绝重复事件、跨局或错误时钟域提交。
+6. domain/stateValidation复用状态校验，避免检查点反向import engine；序列化/版本常量同样是实际依赖。
+
+恢复低层检查点只构造新状态，设为paused并记录resumePhase；没有推进时间或授予生命/资源。`createCheckpoint`是编码器，应用入口必须先通过canCreateCheckpoint；当前尚未实现应用层及StoragePort事务，不宣称浏览器磁盘保存已经可用。

@@ -2,7 +2,7 @@
 /**
  * plugins逐项占位处理器；实际参数仍以玩法规格为准。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../../domain/distill.js';
 import * as dependency2 from '../../domain/plans.js';

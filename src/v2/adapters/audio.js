@@ -2,14 +2,14 @@
 /**
  * 用户手势播放指定实际音源；不生成代替曲。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 
 /**
  * 准备音乐/音效资源记录，缺Let Me Go实际文件要报告未接入。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {readonly import('../contracts.d.ts').AssetRequest[]} assets
  * @returns {import('../contracts.d.ts').AudioHandle}
  * @throws {Error} TODO placeholder until Grok implements this contract.
@@ -22,7 +22,7 @@ export function createAudioAdapter(assets) {
  * 只在有效用户手势后恢复AudioContext，处理拒绝。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').AudioHandle} handle
  * @returns {Promise<void>}
  * @throws {Error} TODO placeholder until Grok implements this contract.
@@ -35,7 +35,7 @@ export async function unlockAudio(handle) {
  * 消费可听事件并防重播，不推进任何游戏计时。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：仅音频宿主状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').AudioHandle} handle
  * @param {readonly import('../contracts.d.ts').DomainEvent[]} events
  * @returns {void}
@@ -49,7 +49,7 @@ export function playAudioEvents(handle, events) {
  * 暂停/后台处理音频，不用音频时钟改变战斗。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：仅音频宿主状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').AudioHandle} handle
  * @returns {void}
  * @throws {Error} TODO placeholder until Grok implements this contract.
@@ -62,7 +62,7 @@ export function suspendAudio(handle) {
  * 停止节点/循环、释放资源与监听。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：仅音频生命周期。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').AudioHandle} handle
  * @returns {void}
  * @throws {Error} TODO placeholder until Grok implements this contract.

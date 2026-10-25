@@ -2,7 +2,7 @@
 /**
  * 候选、升级、换槽与一次性重抽。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../content/catalog.js';
 import * as dependency2 from './random.js';
@@ -26,7 +26,7 @@ export function createPluginChoice(context, reward) {
  * 校验choiceId/optionId，升级同id或确认满槽替换，Pro5h单独origin不占槽。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').Command} command
  * @returns {import('../contracts.d.ts').SystemPlan}
@@ -54,7 +54,7 @@ export function planPluginReroll(context, command) {
  * 一次跳过治疗8并完成该选择，不转换永久资源。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').Command} command
  * @returns {import('../contracts.d.ts').SystemPlan}

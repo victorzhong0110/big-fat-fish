@@ -2,7 +2,7 @@
 /**
  * 流程转移与升级界面互斥。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../domain/draft.js';
 import * as dependency2 from '../domain/levels.js';
@@ -12,7 +12,7 @@ import * as dependency3 from '../domain/lora.js';
  * 校验允许的状态边，记录恢复phase，禁止终态回到playing。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').Phase} nextPhase
  * @returns {import('../contracts.d.ts').SystemPlan}

@@ -2,7 +2,7 @@
 /**
  * 可达性/寻路与碰撞共享规则。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from './collision.js';
 import * as dependency2 from './geometry.js';

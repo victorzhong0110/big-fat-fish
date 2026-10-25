@@ -2,7 +2,7 @@
 /**
  * AI系统收集意图，模型和难度共同生效。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../dispatch/companions.js';
 import * as dependency2 from '../dispatch/enemies.js';

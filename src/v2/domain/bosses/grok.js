@@ -2,7 +2,7 @@
 /**
  * Grok首领只有简单火箭和召集人海。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../world/spawning.js';
 

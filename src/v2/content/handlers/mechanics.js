@@ -2,7 +2,7 @@
 /**
  * 16个累计难度机制的逐项处理器。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../../domain/plans.js';
 

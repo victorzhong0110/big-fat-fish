@@ -2,7 +2,7 @@
 /**
  * 设施、永久装备/技能、伙伴与出发配装。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from './tree.js';
 
@@ -10,7 +10,7 @@ import * as dependency1 from './tree.js';
  * 扣零件、建设设施，默认装备仍可用；重复购买拒绝。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../../contracts.d.ts').Profile} profile
  * @param {import('../../contracts.d.ts').Id} facilityId
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
@@ -25,7 +25,7 @@ export function planFacilityPurchase(profile, facilityId, catalog) {
  * 已发现且满足设施时购买武器/技能出发选择权，不赠高品质实例。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../../contracts.d.ts').Profile} profile
  * @param {import('../../contracts.d.ts').Id} definitionId
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
@@ -55,7 +55,7 @@ export function planDshEquipment(profile, slots, catalog) {
  * 检查模式/难度/武器/伙伴/设施和活动存档覆盖确认。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../../contracts.d.ts').Profile} profile
  * @param {import('../../contracts.d.ts').StartRequest} request
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog

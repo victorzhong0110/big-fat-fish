@@ -2,7 +2,7 @@
 /**
  * 四档模型逐项接口，Fable/Mythos分别可追溯。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../../domain/plans.js';
 

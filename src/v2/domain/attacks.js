@@ -2,7 +2,7 @@
 /**
  * 武器/技能/换装入口；不通过UI直接生成子弹。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../dispatch/skills.js';
 import * as dependency2 from '../dispatch/weapons.js';
@@ -54,7 +54,7 @@ export function planDash(context, command) {
  * 切枪/换技能/地面实例交换，遵守冷却继承，不重复产装备。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').Command} command
  * @returns {import('../contracts.d.ts').SystemPlan}
@@ -68,7 +68,7 @@ export function planLoadoutChange(context, command) {
  * 将碰撞翻译为唯一伤害/控制/拾取请求，不直接递归结算。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').CollisionResult} collisions
  * @returns {import('../contracts.d.ts').SystemPlan}

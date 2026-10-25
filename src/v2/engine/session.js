@@ -2,7 +2,7 @@
 /**
  * 每局唯一状态所有者与公开门面。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../domain/checkpoint.js';
 import * as dependency2 from '../domain/random.js';
@@ -32,7 +32,7 @@ export function createGameSession(start, seed, catalog) {
  * 只排队不重入tick，拒绝终态/重复命令。
  * 调用阶段：enqueue；下游模式：sequence。
  * 状态权限：只写Session待处理命令队列。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').GameSession} session
  * @param {import('../contracts.d.ts').Command} command
  * @returns {import('../contracts.d.ts').Result<import('../contracts.d.ts').Command>}
@@ -72,7 +72,7 @@ export function stepSessionUi(session) {
  * 返回防修改快照或结构化复制，不能泄露私有可变引用。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').GameSession} session
  * @returns {import('../contracts.d.ts').StateSnapshot}
  * @throws {Error} TODO placeholder until Grok implements this contract.
@@ -112,7 +112,7 @@ export function restoreGameSession(checkpoint, catalog) {
  * 标记废弃、清队列，后续命令拒绝，不能再结算一次。
  * 调用阶段：dispose；下游模式：sequence。
  * 状态权限：释放Session私有资源引用。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').GameSession} session
  * @returns {void}
  * @throws {Error} TODO placeholder until Grok implements this contract.

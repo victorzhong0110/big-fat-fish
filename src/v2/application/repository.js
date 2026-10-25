@@ -2,7 +2,7 @@
 /**
  * 局外档与活动检查点的单写者事务入口。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../domain/profile/unlocks.js';
 import * as dependency2 from '../domain/settlement.js';

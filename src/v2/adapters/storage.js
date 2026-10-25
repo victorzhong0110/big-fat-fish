@@ -2,7 +2,7 @@
 /**
  * 唯一真实存储I/O适配器，单记录CAS语义。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 
 /**
@@ -23,7 +23,7 @@ export function createStoragePort(key) {
  * 读取原始记录并解析，坏档返回错误且不覆盖。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {string} key
  * @returns {Promise<import('../contracts.d.ts').Result<import('../contracts.d.ts').StorageRecord>>}
  * @throws {Error} TODO placeholder until Grok implements this contract.
@@ -37,7 +37,7 @@ export async function readStorageRecord(key) {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：唯一磁盘写者，不能拆余额/检查点两次写。
  * 约束：localStorage不具跨标签页CAS能力，若选它必须加可靠单写者协调；否则使用IndexedDB事务。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {string} key
  * @param {number} expectedRevision
  * @param {import('../contracts.d.ts').StorageRecord} next

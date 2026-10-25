@@ -2,7 +2,7 @@
 /**
  * 游戏用例协调；只依赖核心和端口，不import具体浏览器适配器。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from './repository.js';
 import * as dependency2 from '../content/catalog.js';
@@ -83,7 +83,7 @@ export function advanceApplicationFrame(app, elapsedMs) {
  * 只把持久化请求排入串行工作队列，不在tick中写档。
  * 调用阶段：enqueue；下游模式：sequence。
  * 状态权限：仅写应用持久化待办队列。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').ApplicationHandle} app
  * @param {readonly import('../contracts.d.ts').PersistenceIntent[]} intents
  * @returns {void}
@@ -207,7 +207,7 @@ export function readApplicationView(app) {
  * 一个宿主帧只取一次表现事件批次，同一批交给画面和音频，不重复消费。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：仅清应用表现outbox，不改变战斗世界。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').ApplicationHandle} app
  * @returns {readonly import('../contracts.d.ts').DomainEvent[]}
  * @throws {Error} TODO placeholder until Grok implements this contract.

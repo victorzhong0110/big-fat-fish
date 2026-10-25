@@ -2,7 +2,7 @@
 /**
  * 事件投影到效果计划，切断伤害与插件的循环依赖。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../dispatch/dsh.js';
 import * as dependency2 from '../dispatch/mechanics.js';

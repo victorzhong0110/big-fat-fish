@@ -2,7 +2,7 @@
 /**
  * 有界队列处理替代伤害/死亡直接递归。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../domain/damage.js';
 import * as dependency2 from '../domain/deaths.js';

@@ -2,7 +2,7 @@
 /**
  * 模型阶段稳定ID分派，不得把所有候选处理器依次执行。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../content/handlers/models.js';
 

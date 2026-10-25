@@ -2,7 +2,7 @@
 /**
  * 键鼠/双摇杆与系统输入归一化；不访问实体。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../domain/geometry.js';
 
@@ -10,7 +10,7 @@ import * as dependency1 from '../domain/geometry.js';
  * 挂载键鼠/触屏监听并返回可清理句柄，默认键与辅助挣脱按01。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {string} mountElementId
  * @returns {import('../contracts.d.ts').InputHandle}
  * @throws {Error} TODO placeholder until Grok implements this contract.
@@ -39,7 +39,7 @@ export function normalizeInputSamples(samples, previous, mapping) {
  * 后台/暂停/销毁清理所有指针与持键，避免卡住射击。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：仅输入适配器自身宿主状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').InputHandle} handle
  * @returns {void}
  * @throws {Error} TODO placeholder until Grok implements this contract.
@@ -52,7 +52,7 @@ export function clearHeldInput(handle) {
  * 撤销全部订阅，重复销毁安全。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：仅输入适配器监听器生命周期。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').InputHandle} handle
  * @returns {void}
  * @throws {Error} TODO placeholder until Grok implements this contract.
@@ -65,7 +65,7 @@ export function disposeInputAdapter(handle) {
  * 取一次宿主输入缓冲供bootstrap归一化；不调用Session。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').InputHandle} handle
  * @returns {readonly import('../contracts.d.ts').InputSample[]}
  * @throws {Error} TODO placeholder until Grok implements this contract.
@@ -93,7 +93,7 @@ export function createInputPort(handle) {
  * 将有效单调时间戳映射到对应世界/UI tick，LoRA精度不取决于渲染帧；后台/暂停不得快进。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../contracts.d.ts').InputSample} sample
  * @param {import('../contracts.d.ts').InputClockMapping} mapping
  * @returns {{ clock: 'world' | 'ui'; targetTick: import('../contracts.d.ts').Tick }}

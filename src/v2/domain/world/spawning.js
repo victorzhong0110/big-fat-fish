@@ -2,7 +2,7 @@
 /**
  * 驻守、追兵、Grok群组和API预算。
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
- * Calls listed below are contracts, not implemented execution.
+ * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../../content/catalog.js';
 import * as dependency2 from '../collision.js';
@@ -43,7 +43,7 @@ export function planEnemySpawn(context, request) {
  * 为一组入口/信号援军预留预算和奖励策略；同group只排一次。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部函数；仅执行本函数契约（尚未实现）。
+ * @calls 无内部公开函数。
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').Id} groupId
  * @param {import('../../contracts.d.ts').Id} budgetId
