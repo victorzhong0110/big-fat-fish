@@ -54,3 +54,12 @@ export function createDataDigest(value) {
   }
   return `fnv1a64:${hash.toString(16).padStart(16, '0')}`;
 }
+
+/** Detached canonical plain data at typed payload boundaries.
+ * @calls domain/serialization.js#serializeCanonical
+ * @param {object | import('../contracts.d.ts').Json} value
+ * @returns {import('../contracts.d.ts').Json}
+ */
+export function toJson(value) {
+  return /** @type {import('../contracts.d.ts').Json} */ (JSON.parse(serializeCanonical(value)));
+}

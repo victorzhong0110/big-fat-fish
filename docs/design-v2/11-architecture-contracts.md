@@ -1,6 +1,6 @@
 # 11 · V2架构骨架、状态权限与调用规则
 
-状态：核心规则逐步实现，**尚不是可启动的V2游戏**。用户已授权先由Codex编码。60个公开函数已有实现，239个仍为显式TODO；实际范围见[开发进度](13-development-status.md)。旧`src/main.js`仍未接入V2。
+状态：**独立战斗试作v2.html已可操作，完整冒险仍未完成**。用户已授权先由Codex编码。115个函数有实现，196个显式TODO；带core-preview标记的实现仅覆盖当前试作。实际范围见[开发进度](13-development-status.md)。旧src/main.js保持独立。
 
 入口文档：[全部函数目录](12-function-catalog.md)；入口源码：[bootstrap.js](../../src/v2/bootstrap.js)；类型契约：[contracts.d.ts](../../src/v2/contracts.d.ts)；机器可读依赖与绑定：[architecture-manifest.json](../../src/v2/architecture-manifest.json)。函数目录和manifest列出全部跨模块接口以及逐内容处理器，Grok填写函数体时应保留接口/约束，新增公共函数要同步契约。
 
@@ -32,7 +32,7 @@ flowchart TD
 
 ## 3. 上下游调用如何阅读
 
-当前共72个JS模块、299个具名函数，类型与manifest另列。每个函数都有：具名参数和类型、返回类型、功能描述、阶段、状态权限、允许调用的下游、特殊约束。源码JSDoc的`@calls`与manifest、12目录对应。
+当前共81个JS模块、311个具名函数，类型与manifest另列。每个函数都有：具名参数和类型、返回类型、功能描述、阶段、状态权限、允许调用的下游、特殊约束。源码JSDoc的`@calls`与manifest、12目录对应。
 
 - `sequence`：声明阶段依赖与先后，但需要相应合法性/phase/目标存在等条件。不能把列出的函数不带参数、无条件全部调用。
 - `dispatch`：列出可能分支，按type或稳定id只调用一个对应分支；例如一次MCP射击不能把六把武器处理器全跑。
@@ -116,9 +116,9 @@ ChatGPT重置只走`planGptReset`，绝不能调用checkpoint恢复或创建新S
 
 ## 10. 当前验证与实现修正
 
-- 72个JS模块、299个公开函数：60已实现、239显式TODO。95项处理器绑定与33项声明式数据消费者仍为设计覆盖数量，不能等同于已实现内容数量。
+- 81个JS模块、311个公开函数：115有实现、196显式TODO。95项处理器绑定与33项声明式数据消费者仍为设计覆盖数量，不能等同于已实现内容数量。
 - `npm run check:v2`执行TypeScript 5.9.3 strict/checkJs及AST审计：实际导出、参数、import、函数状态、已实现函数的公开调用边、剩余TODO异常、模块/函数DAG与内容绑定。
-- `npm test`：36文件500项通过，其中V2新增110项；旧版构建通过。V2尚未接入浏览器。
+- `npm test`：37文件514项通过，其中V2共124项；双入口构建通过。Chromium桌面/手机触控仿真19项通过，尚无真人完整冒险验收。
 
 当前实现对原占位契约做了必要补全，详见13：
 
@@ -129,4 +129,14 @@ ChatGPT重置只走`planGptReset`，绝不能调用checkpoint恢复或创建新S
 5. `commitWorkingState(previous, working, catalog, outbox)`增加显式目录与outbox参数。Reducer只应用changes，不自动把plan.effects/events/persistence写回状态；tick编排器负责效果队列与outbox，最终只提交一次。提交器重新编号事件seq，拒绝重复事件、跨局或错误时钟域提交。
 6. domain/stateValidation复用状态校验，避免检查点反向import engine；序列化/版本常量同样是实际依赖。
 
-恢复低层检查点只构造新状态，设为paused并记录resumePhase；没有推进时间或授予生命/资源。`createCheckpoint`是编码器，应用入口必须先通过canCreateCheckpoint；当前尚未实现应用层及StoragePort事务，不宣称浏览器磁盘保存已经可用。
+恢复低层检查点只构造新状态，设为paused并记录resumePhase；没有推进时间或授予生命/资源。`createCheckpoint`是编码器，应用入口必须先通过canCreateCheckpoint；当前试作宿主已用独立localStorage单键保存/继续完整检查点；正式应用层Profile/StoragePort原子事务仍待实现。
+
+## 11. 当前战斗试作的调用入口
+
+`v2.html → src/v2-preview.js → preview/host.mountCombatPreview`组装独立宿主，不修改旧main。host只持Session句柄、输入与表现；`createGameSession`只接受显式core-preview/0级，拒绝full和未开放能力。正式engine/tick依然TODO；预览使用engine/previewTick，不跳过未实现系统后假装正式模式完成。
+
+世界：enqueue命令→Session筛出到期命令→previewTick推进world tick→命令/计时/AI/移动/开火/扫掠/拾取→有界效果队列逐次伤害与死亡声明→唯一掉落→校验与commit一次→新投影。UI暂停/继续由Session立即消费UI命令，不推进停止的时钟。暂停清除持有输入，宿主恢复时清空墙钟积压。
+
+Session的模块私有step/getRecord不导出，但其转达的公开依赖已由AST工具展开到函数图。工具不会因公有函数只调用私有helper，就漏掉它实际进入previewTick的边。snapshot不暴露私有引用；Renderer只画图，不运行另一套物理。
+
+当前Canvas2D是试作表现，正式Phaser适配器仍TODO。registry仅声明六项实际开放能力；目录134项定义包括计划内容，不代表所有参数和效果已实现。完整范围、调试检查点和后续顺序以13为准。

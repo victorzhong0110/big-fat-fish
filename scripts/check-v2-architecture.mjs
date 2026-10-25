@@ -3,11 +3,13 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import assert from 'node:assert/strict';
 import ts from 'typescript';
+import { readV2SourceModel } from './v2-source-model.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sourceRoot = path.join(root, 'src/v2');
 const manifest = JSON.parse(await fs.readFile(path.join(sourceRoot, 'architecture-manifest.json'), 'utf8'));
 const modules = new Map(manifest.modules.map(module => [module.path, module]));
+const sources = new Map((await readV2SourceModel(sourceRoot)).map(module => [module.path, module]));
 const exports = new Map();
 const moduleGraph = new Map();
 const functionGraph = new Map();
@@ -53,20 +55,8 @@ for (const [file, module] of modules) {
     if (isTodo) placeholders++; else implemented++;
     const declaredCalls = contract.calls.map(call => normalizeCall(file, call)).sort();
     if (!isTodo) {
-      const actualCalls = new Set();
-      function visit(node) {
-        if (ts.isCallExpression(node)) {
-          const expression = node.expression;
-          if (ts.isIdentifier(expression)) {
-            if (imported.has(expression.text)) actualCalls.add(imported.get(expression.text));
-            else if (module.functions.some(item => item.name === expression.text)) actualCalls.add(`${file}#${expression.text}`);
-          } else if (ts.isPropertyAccessExpression(expression) && ts.isIdentifier(expression.expression) && namespaces.has(expression.expression.text)) actualCalls.add(`${namespaces.get(expression.expression.text)}#${expression.name.text}`);
-          assert(!ts.isPropertyAccessExpression(expression) || expression.getText(parsed) !== 'Math.random', `Ambient randomness: ${id}`);
-        }
-        ts.forEachChild(node, visit);
-      }
-      visit(fn.body);
-      assert.deepEqual([...actualCalls].sort(), declaredCalls, `Call contract drift: ${id}`);
+      const actual = sources.get(file).functions.find(item => item.name === fn.name.text);
+      assert.deepEqual(actual.actualCalls, declaredCalls, `Call contract drift: ${id}`);
     }
     const comments = source.slice(source.lastIndexOf('/**', fn.getStart(parsed)), fn.getStart(parsed));
     for (const call of declaredCalls) assert(comments.includes(`@calls ${call}`), `Missing @calls ${id} -> ${call}`);
@@ -94,6 +84,11 @@ for (const [file, dependencies] of moduleGraph) {
 assert.equal(manifest.bindings.length, 95);
 assert.equal(new Set(manifest.bindings.map(binding => binding.id)).size, 95);
 for (const binding of manifest.bindings) assert(exports.has(`${binding.module}#${binding.function}`), `Missing binding: ${binding.id}`);
+const { createHandlerRegistry } = await import(pathToFileURL(path.join(sourceRoot, 'content/registry.js')).href);
+for (const id of createHandlerRegistry().implementedIds) {
+  const binding = manifest.bindings.find(binding => binding.id === id);
+  assert(binding && exports.get(`${binding.module}#${binding.function}`).implementation === 'implemented', `False implemented capability: ${id}`);
+}
 assert.equal(manifest.dataDefinitions.length, 33);
 assert.equal(new Set(manifest.dataDefinitions.map(definition => definition.id)).size, 33);
 assert(!(await fs.readFile(path.join(root, 'src/main.js'), 'utf8')).includes('/v2/'), 'Legacy entry must remain isolated until V2 is playable');

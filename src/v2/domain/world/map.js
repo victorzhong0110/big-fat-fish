@@ -1,4 +1,6 @@
 // @ts-check
+import { createStateChange } from '../plans.js';
+import { createEntityState } from '../entities.js';
 /**
  * 连续地图生成、探索与安全交互。
  * Incremental V2 implementation; remaining TODO bodies are intentionally unavailable.
@@ -12,15 +14,46 @@ import * as dependency3 from '../rewards.js';
  * 按模式生成连续地图、合法目标/检查点/箱子；不生成房间清场门。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
+ * @implementationScope core-preview
+ * @calls domain/entities.js#createEntityState
+ * @calls domain/plans.js#createStateChange
  * @calls domain/random.js#drawRandom
  * @param {import('../../contracts.d.ts').StartSnapshot} start
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
  * @param {import('../../contracts.d.ts').RandomState} random
  * @returns {import('../../contracts.d.ts').SystemPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function createMapPlan(start, catalog, random) {
-  throw new Error('TODO V2: domain/world/map.js#createMapPlan');
+  if (start.runtimeProfile !== 'core-preview') throw new Error('Full adventure map generation is not implemented');
+  const changes = /** @type {import('../../contracts.d.ts').StateChange[]} */ ([]);
+  const rocks = [{ x: 650, y: 420 }, { x: 650, y: 610 }, { x: 1150, y: 420 }, { x: 1450, y: 800 }, { x: 1750, y: 500 }];
+  const obstacleIds = rocks.map((point, index) => {
+    const id = `rock:${index}`;
+    changes.push(createStateChange('world', id, 'putEntity', createEntityState(id, 'terrain_rock', 'obstacle', 'neutral', point, { radius: 48, hp: 9999, maxHp: 9999, runtime: { highWall: true, solid: true } })));
+    return id;
+  });
+  const clutter = createEntityState('clutter:0', 'terrain_clutter', 'obstacle', 'neutral', { x: 1120, y: 920 }, { radius: 26, hp: 99, maxHp: 99, runtime: { low: true, grok_passable: true, solid: true } });
+  obstacleIds.push(clutter.id); changes.push(createStateChange('world', clutter.id, 'putEntity', clutter));
+  const checkpoint = createEntityState('checkpoint:home', 'world_checkpoint', 'objective', 'neutral', { x: 230, y: 270 }, { radius: 28, runtime: { interaction: 'checkpoint' } });
+  changes.push(createStateChange('world', checkpoint.id, 'putEntity', checkpoint));
+  const map = { id: 'preview:continuous-sea', biomeIndex: 0, width: 2200, height: 1400, exploredCells: [], obstacleIds, checkpointIds: [checkpoint.id], exitIds: [], navigationRevision: 0 };
+  changes.push(createStateChange('world', map.id, 'setMap', map));
+  const draw = dependency2.drawRandom(random);
+  const positions = [{ x: 900, y: 300 }, { x: 1000, y: 650 }, { x: 1550, y: 380 }, { x: 1750, y: 1000 }, { x: 1200, y: 1050 }, { x: 1900, y: 700 }];
+  positions.forEach((point, index) => {
+    const grok = index >= 3, definitionId = grok ? 'enemy_grok_bot' : 'enemy_claude_guard';
+    const p = catalog.definitions[definitionId]?.parameters;
+    if (!p) throw new Error('Missing preview enemy');
+    for (let member = 0; member < (grok ? 4 : 1); member++) {
+    const id = `resident:${index}:${member}`;
+    changes.push(createStateChange('world', id, 'putEntity', createEntityState(id, definitionId, 'enemy', 'enemy', { x: point.x + (grok ? (member % 2) * 30 : 0), y: point.y + Math.floor(member / 2) * 30 + (draw.value - 0.5) * 90 }, {
+      faction: grok ? 'grok' : 'claude', hp: Number(p.hp) * start.difficulty.hpMultiplier, maxHp: Number(p.hp) * start.difficulty.hpMultiplier, radius: Number(p.radius), modelProfileId: grok ? 'grok_bot' : 'claude_haiku', rewardPolicy: 'normal', distillEligible: true,
+      runtime: { moveSpeed: Number(p.moveSpeed), contactDamage: Number(p.contactDamage) * start.difficulty.damageMultiplier, damageMultiplier: start.difficulty.damageMultiplier, nextAttackAt: 0, spawnGroup: 'residents' },
+    })));
+    }
+  });
+  changes.push(createStateChange('random', 'world', 'setRandomStream', draw.next));
+  return { changes, effects: [], events: [], persistence: [], diagnostics: [] };
 }
 
 /**

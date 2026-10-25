@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION, CORE_VERSION } from '../../src/v2/versions.js';
 import { createRandomStreams } from '../../src/v2/domain/random.js';
 
 export function entity(id, overrides = {}) {
@@ -19,7 +20,7 @@ export function catalog() {
 }
 export function state() {
   return {
-    versions: { schema: 2, core: '2.0.0-core.1', content: 'v2-core.1' }, runId: 'run:1', seed: 19, tick: 0, uiTick: 0, revision: 0, lastWorldAdvanceTick: null,
+    versions: { schema: SCHEMA_VERSION, core: CORE_VERSION, content: 'v2-core.1' }, runId: 'run:1', seed: 19, tick: 0, uiTick: 0, revision: 0, lastWorldAdvanceTick: null, lastCommandSeq: -1, input: { move: { x: 0, y: 0 }, aim: { x: 1, y: 0 }, firing: false, heldKeys: [], pointerIds: [] },
     start: { treeNodeIds: [], dsh: [], loadout: { weapons: [{ instanceId: 'bubble:1', definitionId: 'mcp_bubble', originalQuality: 0, cooldown: 0, temporaryQuality: null, updateExpiresAt: null }], activeWeaponIndex: 0, skillId: 'skill_disconnect', skillCooldown: 8, companionId: 'companion_rice', companionCooldown: 9, dashCooldown: 4 }, difficulty: { level: 1, mode: 'short', mechanicIds: ['mech_1'], difficultyPerkIds: ['plugin_5h'], modelProfileIds: { claude: 'claude_haiku', gpt: 'gpt_astra', grok: 'grok_bot' }, hpMultiplier: 1, damageMultiplier: 1, spawnBudgetMultiplier: 1 } },
     flow: { phase: 'exploring', resumePhase: null, queuedLevelRewards: [], choice: null, settlementPending: false }, random: createRandomStreams(19),
     player: { entityId: 'fish', baseStats: { maxHp: 100, moveSpeed: 220, armor: 0, damageMultiplier: 1, critChance: 0.05, critMultiplier: 1.5 }, modifiers: [], loadout: { weapons: [{ instanceId: 'bubble:1', definitionId: 'mcp_bubble', originalQuality: 0, cooldown: 0, temporaryQuality: null, updateExpiresAt: null }], activeWeaponIndex: 0, skillId: 'skill_disconnect', skillCooldown: 8, companionId: 'companion_rice', companionCooldown: 9, dashCooldown: 4 }, invulnerableRemaining: 0, controlImmuneRemaining: 0 },

@@ -22,7 +22,7 @@ export function derivePlayerStats(state, catalog) {
   const base = state.player.baseStats;
   return {
     maxHp: resolveStatModifier(base.maxHp, modifiers.filter(m => m.stat === 'maxHp'), 1, Number.MAX_SAFE_INTEGER),
-    moveSpeed: resolveStatModifier(base.moveSpeed, modifiers.filter(m => m.stat === 'moveSpeed'), 1, Number.MAX_SAFE_INTEGER),
+    moveSpeed: resolveStatModifier(base.moveSpeed, modifiers.filter(m => m.stat === 'moveSpeed'), 1, base.moveSpeed * 1.8),
     armor: resolveStatModifier(base.armor, modifiers.filter(m => m.stat === 'armor'), 0, 60),
     damageMultiplier: resolveStatModifier(base.damageMultiplier, modifiers.filter(m => m.stat === 'damageMultiplier'), 0, Number.MAX_SAFE_INTEGER),
     critChance: resolveStatModifier(base.critChance, modifiers.filter(m => m.stat === 'critChance'), 0, 0.75),
@@ -57,7 +57,7 @@ export function deriveWeaponStats(state, weapon, catalog) {
   const topUpdate = updated && weapon.originalQuality === 2 ? 1.2 : 1;
   const underfit = state.lora.underfitRemaining > 0 ? 0.8 : 1;
   return { damage: Number(p.damage) * qualityMultiplier * player.damageMultiplier * topUpdate * underfit,
-    interval: resolveStatModifier(Number(p.interval), modifiers.filter(modifier => modifier.stat === 'weaponInterval'), 1 / 60, Number.MAX_SAFE_INTEGER),
+    interval: resolveStatModifier(Number(p.interval), modifiers.filter(modifier => modifier.stat === 'weaponInterval'), 0.05, Number.MAX_SAFE_INTEGER),
     projectileSpeed: Number(p.projectileSpeed), projectileRadius: Number(p.projectileRadius), pellets: Number(p.pellets), spreadRadians: Number(p.spreadRadians), range: Number(p.range), maxHits: Number(p.maxHits), damageMultiplierApplied: true,
   };
 }

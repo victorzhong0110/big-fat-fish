@@ -167,3 +167,11 @@ describe('V2 special mechanic boundaries', () => {
     expect(applyGlasswingModifier(context({ ...game, bosses: [] }), request)).toEqual(request);
   });
 });
+
+
+it('honors the specified 1.8× base movement cap and 0.05-second weapon interval floor', () => {
+  const game = state();
+  game.player.modifiers = [{ id: 'speed', sourceId: 'test', stat: 'moveSpeed', operation: 'multiply', value: 10, expiresAt: null }, { id: 'rate', sourceId: 'test', stat: 'weaponInterval', operation: 'multiply', value: 0.001, expiresAt: null }];
+  expect(derivePlayerStats(game, catalog()).moveSpeed).toBe(220 * 1.8);
+  expect(deriveWeaponStats(game, game.player.loadout.weapons[0], catalog()).interval).toBe(0.05);
+});

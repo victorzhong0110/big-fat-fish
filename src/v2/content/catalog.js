@@ -1,4 +1,6 @@
 // @ts-check
+import { serializeCanonical } from '../domain/serialization.js';
+import { CATALOG_DATA } from './catalogData.js';
 /**
  * 玩法定义与版本的唯一读取入口；值尚未填充，规格见02–09。
  * Incremental V2 implementation; remaining TODO bodies are intentionally unavailable.
@@ -11,10 +13,9 @@
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @calls 无内部公开函数。
  * @returns {import('../contracts.d.ts').ContentCatalog}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function loadContentCatalog() {
-  throw new Error('TODO V2: content/catalog.js#loadContentCatalog');
+  return structuredClone(/** @type {import('../contracts.d.ts').ContentCatalog} */ (CATALOG_DATA));
 }
 
 /**
@@ -22,14 +23,44 @@ export function loadContentCatalog() {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：27树节点、30局内插件、10DSH、16机制、6MCP、8技能、6伙伴、9敌人；覆盖1–15含11级双机制。
- * @calls 无内部公开函数。
+ * @calls domain/serialization.js#serializeCanonical
  * @param {Readonly<import('../contracts.d.ts').ContentCatalog>} catalog
  * @param {import('../contracts.d.ts').HandlerRegistry} registry
  * @returns {import('../contracts.d.ts').ValidationReport}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function validateContentCatalog(catalog, registry) {
-  throw new Error('TODO V2: content/catalog.js#validateContentCatalog');
+  const diagnostics = /** @type {import('../contracts.d.ts').Diagnostic[]} */ ([]);
+  const fail = (/** @type {string} */ message) => diagnostics.push({ code: 'INVALID_CONTENT', message, relatedIds: [] });
+  try {
+    serializeCanonical(catalog);
+    const counts = { tree: 27, facility: 6, plugin: 30, dsh: 10, weapon: 6, skill: 8, companion: 6, enemy: 9, model: 10, mechanic: 16 };
+    for (const [kind, count] of Object.entries(counts)) if (Object.values(catalog.definitions).filter(definition => definition.kind === kind).length !== count) fail(`Wrong ${kind} count`);
+    for (const [id, definition] of Object.entries(catalog.definitions)) {
+      if (definition.id !== id || !id || !definition.displayName || definition.version !== catalog.version) fail(`Invalid definition ${id}`);
+      if (definition.kind === 'tree') {
+        const prerequisites = definition.parameters.prerequisites;
+        if (!Array.isArray(prerequisites) || prerequisites.some(parent => typeof parent !== 'string' || catalog.definitions[parent]?.kind !== 'tree') || !Number.isSafeInteger(definition.parameters.cost) || Number(definition.parameters.cost) < 0) fail(`Invalid tree node ${id}`);
+      }
+      if (definition.kind === 'weapon' && ['damage', 'interval', 'projectileSpeed', 'projectileRadius', 'pellets', 'spreadRadians', 'range', 'maxHits'].some(key => typeof definition.parameters[key] !== 'number' || Number(definition.parameters[key]) < 0) || definition.kind === 'weapon' && (Number(definition.parameters.interval) <= 0 || Number(definition.parameters.projectileSpeed) <= 0 || !Number.isInteger(definition.parameters.pellets) || Number(definition.parameters.pellets) < 1 || !Number.isInteger(definition.parameters.maxHits) || Number(definition.parameters.maxHits) < 1)) fail(`Invalid weapon ${id}`);
+    }
+    if (Object.values(catalog.definitions).filter(definition => definition.kind === 'tree').reduce((sum, node) => sum + Number(node.parameters.cost), 0) !== 160) fail('Tree cost must total 160');
+    if (catalog.mechanics.length !== 16 || new Set(catalog.mechanics.map(mechanic => mechanic.id)).size !== 16 || Array.from({ length: 15 }, (_, index) => index + 1).some(level => !catalog.mechanics.some(mechanic => mechanic.unlockAt === level))) fail('Missing cumulative mechanisms');
+    for (const mechanic of catalog.mechanics) if (!Number.isInteger(mechanic.unlockAt) || !['ai', 'world', 'objective', 'event', 'boss'].includes(mechanic.scope) || mechanic.unlockAt < 1 || mechanic.unlockAt > 15 || catalog.definitions[mechanic.id]?.kind !== 'mechanic' || registry.bindings[mechanic.id] !== mechanic.handlerId) fail(`Invalid mechanism ${mechanic.id}`);
+    if (Object.keys(registry.bindings).length !== 95 || Object.keys(registry.bindings).some(id => !catalog.definitions[id])) fail('Handler bindings incomplete');
+    if (registry.implementedIds.some(id => !registry.bindings[id] || catalog.definitions[id]?.parameters.previewAvailable !== true)) fail('Runtime capability declaration differs from catalog');
+    // Prerequisites are a DAG, not just references to existing nodes.
+    const visiting = new Set(), visited = new Set();
+    const visit = (/** @type {string} */ id) => {
+      if (visited.has(id)) return;
+      if (visiting.has(id)) throw new Error('Tree prerequisite cycle');
+      visiting.add(id);
+      const parents = catalog.definitions[id]?.parameters.prerequisites;
+      if (Array.isArray(parents)) for (const parent of parents) if (typeof parent === 'string') visit(parent);
+      visiting.delete(id); visited.add(id);
+    };
+    for (const definition of Object.values(catalog.definitions).filter(definition => definition.kind === 'tree')) visit(definition.id);
+  } catch { fail('Malformed, non-finite or cyclic catalog'); }
+  return { valid: diagnostics.length === 0, diagnostics };
 }
 
 /**

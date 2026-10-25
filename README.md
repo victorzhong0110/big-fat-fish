@@ -1,8 +1,8 @@
 # 大肥鱼历险记 · Big Fat Fish
 
-> **V2 设计交接**：[玩法、技能树、插件、DSH、敌人与实现任务](docs/design-v2/00-README.md)。
-> V2 正在开发：已有60个核心函数和110项新测试，尚未接通可玩入口；[实现进度](docs/design-v2/13-development-status.md)。下面的运行说明与玩法介绍描述旧版。
-> [V2开发源码](src/v2/README.md) · [调用规则](docs/design-v2/11-architecture-contracts.md) · [全部函数](docs/design-v2/12-function-catalog.md)。逐函数标注已实现/剩余TODO。
+> **V2 已有独立战斗试作**：运行 `npm run dev` 后打开 `/v2.html`。键鼠/手机双摇杆，两把MCP、两个技能、棕蟹/Bot、暂停和检查点保存/继续。
+> [实际进度与剩余任务](docs/design-v2/13-development-status.md) · [玩法规格](docs/design-v2/00-README.md) · [架构](docs/design-v2/11-architecture-contracts.md) · [函数目录](docs/design-v2/12-function-catalog.md)。当前115个函数有实现，196个TODO，完整升级插件/冒险/局外尚未接通。
+> 以下玩法介绍仍描述旧版 `index.html`。
 
 > 纯代码生成的 2D 肉鸽生存射击。**零美术素材、零音频素材、零外部依赖** ——
 > 所有图形由 Phaser Graphics 在运行时生成，所有音效用 WebAudio 振荡器合成，

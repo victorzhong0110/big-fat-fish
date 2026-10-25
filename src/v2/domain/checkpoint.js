@@ -23,6 +23,7 @@ export function canCreateCheckpoint(context) {
   const player = state.world.entities[state.player.entityId];
   if (!player || player.hp <= 0 || player.dead || player.dying) diagnostics.push({ code: 'CHECKPOINT_DEAD', message: 'A living player is required', relatedIds: [] });
   if (state.flow.phase !== 'exploring' || state.flow.choice || state.flow.queuedLevelRewards.length || state.lora.active || state.lora.pendingLevels.length || state.pendingEffects.pending.length || state.flow.settlementPending) diagnostics.push({ code: 'CHECKPOINT_BUSY', message: 'Finish combat and pending level/effect processing', relatedIds: [] });
+  if (state.start.runtimeProfile === 'core-preview' && (state.input.firing || state.input.move.x || state.input.move.y)) diagnostics.push({ code: 'CHECKPOINT_INPUT_ACTIVE', message: 'Release movement and shooting before saving', relatedIds: [] });
   const nearby = player && state.world.map.checkpointIds.some(id => {
     const checkpoint = state.world.entities[id];
     return checkpoint && !checkpoint.dead && (checkpoint.position.x - player.position.x) ** 2 + (checkpoint.position.y - player.position.y) ** 2 <= 96 ** 2;

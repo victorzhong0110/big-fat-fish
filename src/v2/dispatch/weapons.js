@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * MCP稳定ID分派，不得把所有候选处理器依次执行。
- * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
+ * Incremental V2 implementation. Per-function status is in architecture-manifest.json.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../content/handlers/weapons.js';
@@ -11,17 +11,15 @@ import * as dependency1 from '../content/handlers/weapons.js';
  * 调用阶段：dispatch；下游模式：dispatch。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。
+ * @implementationScope core-preview
  * @calls content/handlers/weapons.js#planWeaponBubble
  * @calls content/handlers/weapons.js#planWeaponFan
- * @calls content/handlers/weapons.js#planWeaponVector
- * @calls content/handlers/weapons.js#planWeaponStream
- * @calls content/handlers/weapons.js#planWeaponReturn
- * @calls content/handlers/weapons.js#planWeaponBatch
  * @param {import('../contracts.d.ts').AttackContext} context
  * @param {import('../contracts.d.ts').Id} definitionId
  * @returns {import('../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function dispatchWeaponsHandler(context, definitionId) {
-  throw new Error('TODO V2: dispatch/weapons.js#dispatchWeaponsHandler');
+  if (definitionId === 'mcp_bubble') return dependency1.planWeaponBubble(context);
+  if (definitionId === 'mcp_fan') return dependency1.planWeaponFan(context);
+  throw new Error(`Weapon handler not available: ${definitionId}`);
 }

@@ -10,7 +10,9 @@
     "test": "vitest run",
     "shoot": "node scripts/shoot.mjs",
     "check:v2": "tsc -p tsconfig.v2.json && node scripts/check-v2-architecture.mjs",
-    "test:v2": "vitest run tests/v2"
+    "test:v2": "vitest run tests/v2",
+    "sync:v2": "node scripts/sync-v2-architecture.mjs",
+    "test:v2:browser": "node scripts/test-v2-browser.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"

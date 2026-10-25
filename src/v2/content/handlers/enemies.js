@@ -1,7 +1,8 @@
 // @ts-check
+import { planMeleeEnemy } from '../../domain/meleeAi.js';
 /**
  * enemies逐项占位处理器；实际参数仍以玩法规格为准。
- * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
+ * Incremental V2 implementation. Per-function status is in architecture-manifest.json.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../../domain/plans.js';
@@ -116,14 +117,14 @@ export function planEnemyGptStacky(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview
+ * @calls domain/meleeAi.js#planMeleeEnemy
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planEnemyClaudeGuard(context, event) {
-  throw new Error('TODO V2: content/handlers/enemies.js#planEnemyClaudeGuard');
+  return planMeleeEnemy(context, true);
 }
 
 /**
@@ -131,12 +132,12 @@ export function planEnemyClaudeGuard(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview
+ * @calls domain/meleeAi.js#planMeleeEnemy
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planEnemyGrokBot(context, event) {
-  throw new Error('TODO V2: content/handlers/enemies.js#planEnemyGrokBot');
+  return planMeleeEnemy(context, false);
 }

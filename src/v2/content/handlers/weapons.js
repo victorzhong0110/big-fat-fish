@@ -1,7 +1,8 @@
 // @ts-check
+import { planNativeProjectiles } from '../../domain/projectiles.js';
 /**
  * weapons逐项占位处理器；实际参数仍以玩法规格为准。
- * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
+ * Incremental V2 implementation. Per-function status is in architecture-manifest.json.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../../domain/plans.js';
@@ -11,13 +12,14 @@ import * as dependency1 from '../../domain/plans.js';
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview
+ * @calls domain/projectiles.js#planNativeProjectiles
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planWeaponBubble(context) {
-  throw new Error('TODO V2: content/handlers/weapons.js#planWeaponBubble');
+  if (context.weapon?.definitionId !== 'mcp_bubble') throw new Error('Bubble handler received the wrong weapon');
+  return planNativeProjectiles(context);
 }
 
 /**
@@ -25,13 +27,14 @@ export function planWeaponBubble(context) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview
+ * @calls domain/projectiles.js#planNativeProjectiles
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planWeaponFan(context) {
-  throw new Error('TODO V2: content/handlers/weapons.js#planWeaponFan');
+  if (context.weapon?.definitionId !== 'mcp_fan') throw new Error('Fan handler received the wrong weapon');
+  return planNativeProjectiles(context);
 }
 
 /**

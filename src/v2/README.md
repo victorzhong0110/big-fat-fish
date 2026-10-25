@@ -1,21 +1,24 @@
 # V2 开发源码
 
-当前72个JS模块、299个公开函数：60个已有实现，239个仍显式抛TODO。**启动入口、Session、地图和界面尚未接通，不能作为V2可玩版本启动。** 旧版入口独立保留。
+当前81个JS模块、311个公开函数：115个有实现，196个显式TODO。**独立战斗试作可启动，完整冒险仍未完成。** `implementationScope: core-preview`标记当前范围有限的实现。
 
-- [实际实现范围与后续任务](../../docs/design-v2/13-development-status.md)
-- [架构与调用顺序](../../docs/design-v2/11-architecture-contracts.md)
-- [逐函数状态、功能与上下游](../../docs/design-v2/12-function-catalog.md)
-- [数据与端口类型](contracts.d.ts)
-- [机器可读依赖与实现状态](architecture-manifest.json)
+运行`npm run dev`后打开`/v2.html`。构建同时生成旧版index与新试作v2，不替换旧入口。键鼠WASD/瞄准射击，Q换MCP，E技能，Space冲刺，F检查点，Esc暂停；手机双摇杆与按钮。
+
+- [实际完成范围、运行/验收和后续任务](../../docs/design-v2/13-development-status.md)
+- [架构与调用规则](../../docs/design-v2/11-architecture-contracts.md)
+- [逐函数签名/状态/功能/上下游](../../docs/design-v2/12-function-catalog.md)
+- [数据类型](contracts.d.ts) · [机器可读架构](architecture-manifest.json)
 
 ```bash
 npm ci
-npm run check:v2   # strict/checkJs + AST接口/依赖/调用图/剩余TODO检查
-npm run test:v2    # 110项V2规则及集成边界测试
-npm test          # 共500项，含旧版390项
-npm run build     # 目前只构建旧版入口
+npm run sync:v2
+npm run check:v2
+npm run test:v2
+npm test
+npm run build
+V2_CHROMIUM_EXECUTABLE=/path/to/chromium npm run test:v2:browser
 ```
 
-后续按06实现任务顺序推进。未实现的函数继续明确失败，不能用空return、空存档或空战斗伪装完成。原占位函数名保持，新增序列化/不变量函数与必要签名调整已经同步到manifest和目录。
+当前世界入口是engine/previewTick，宿主是preview/host，Session唯一持有单局状态。正式bootstrap/application/engine/tick仍保持TODO；full模式明确拒绝。未实现内容不得靠空返回蒙混可用性：registry的95项设计绑定与6项已开放能力分开校验。武器/技能/树等定义存在不代表运行效果已实现。
 
-`applySystemPlan`只应用changes；效果队列与outbox由编排器管理。`commitWorkingState(previous, working, catalog, outbox)`显式接收领域事件/持久化意图/诊断。`createLoraTrial`返回trial及nextRandom，二者必须一起提交。完整规则与剩余工作见13。
+试作浏览器存档使用独立localStorage调试检查点；不包含完整Profile经济或CAS结算。大白饭可拾取，暂未转换等级/插件。最终像素资源和指定音乐待接入。

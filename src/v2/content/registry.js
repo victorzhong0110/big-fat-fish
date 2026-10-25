@@ -1,7 +1,8 @@
 // @ts-check
+import { CONTENT_BINDINGS } from './catalogData.js';
 /**
  * 所有内容ID到显式处理器绑定；不构造假可用实例。
- * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
+ * Incremental V2 implementation. Per-function status is in architecture-manifest.json.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 
@@ -11,8 +12,7 @@
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @calls 无内部公开函数。
  * @returns {import('../contracts.d.ts').HandlerRegistry}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function createHandlerRegistry() {
-  throw new Error('TODO V2: content/registry.js#createHandlerRegistry');
+  return { bindings: Object.fromEntries(CONTENT_BINDINGS.map(binding => [binding.id, `${binding.module}#${binding.function}`])), implementedIds: ['mcp_bubble', 'mcp_fan', 'skill_cache', 'skill_disconnect', 'enemy_claude_guard', 'enemy_grok_bot'] };
 }

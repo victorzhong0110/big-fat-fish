@@ -1,7 +1,8 @@
 // @ts-check
+import { mergeSystemPlans } from './plans.js';
 /**
  * AI系统收集意图，模型和难度共同生效。
- * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
+ * Incremental V2 implementation. Per-function status is in architecture-manifest.json.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../dispatch/companions.js';
@@ -18,17 +19,16 @@ import * as dependency8 from './navigation.js';
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：分派为每个合法entity/handler一次，不能把声明的所有分支直接全跑。
+ * @implementationScope core-preview
  * @calls dispatch/enemies.js#dispatchEnemiesHandler
- * @calls dispatch/models.js#dispatchModelsHandler
- * @calls dispatch/mechanics.js#dispatchMechanicsHandler
- * @calls domain/navigation.js#findNavigationPath
- * @calls domain/navigation.js#chooseRetreatPoint
+ * @calls domain/plans.js#mergeSystemPlans
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @returns {import('../contracts.d.ts').SystemPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planEnemyAi(context) {
-  throw new Error('TODO V2: domain/ai.js#planEnemyAi');
+  const event = context.event ?? { id: `world:${context.state.tick}`, runId: context.state.runId, tick: context.state.tick, seq: 0, type: 'WorldTick', sourceId: null, targetId: null, payload: null };
+  const plans = Object.values(context.state.world.entities).filter(entity => entity.kind === 'enemy' && !entity.dead && !entity.dying && !context.state.bosses.some(boss => boss.entityId === entity.id)).sort((a, b) => a.id < b.id ? -1 : 1).map(entity => dependency2.dispatchEnemiesHandler({ ...context, entityId: entity.id }, entity.definitionId, event));
+  return mergeSystemPlans(plans);
 }
 
 /**

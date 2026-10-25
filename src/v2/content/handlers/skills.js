@@ -1,7 +1,11 @@
 // @ts-check
+import { planShieldGrant } from '../../domain/shields.js';
+import { createEmptyPlan, createStateChange } from '../../domain/plans.js';
+import { resolveBodyDestination } from '../../domain/motionSolver.js';
+import { normalizeVector, distanceSquared } from '../../domain/geometry.js';
 /**
  * skills逐项占位处理器；实际参数仍以玩法规格为准。
- * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
+ * Incremental V2 implementation. Per-function status is in architecture-manifest.json.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../../domain/plans.js';
@@ -11,13 +15,29 @@ import * as dependency1 from '../../domain/plans.js';
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
+ * @implementationScope core-preview
+ * @calls domain/geometry.js#distanceSquared
+ * @calls domain/geometry.js#normalizeVector
+ * @calls domain/motionSolver.js#resolveBodyDestination
  * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/plans.js#createStateChange
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planSkillDisconnect(context) {
-  throw new Error('TODO V2: content/handlers/skills.js#planSkillDisconnect');
+  const state = context.state, player = state.world.entities[state.player.entityId];
+  const removed = player.statusIds.filter(id => ['root', 'slow'].includes(state.world.statuses[id]?.kind));
+  const changes = /** @type {import('../../contracts.d.ts').StateChange[]} */ ([]);
+  for (const id of removed) changes.push(createStateChange('world', id, 'removeStatus', {}));
+  if (removed.some(id => state.world.statuses[id]?.kind === 'root')) changes.push(createStateChange('player', player.id, 'setControlImmune', { remaining: Math.max(2, state.player.controlImmuneRemaining) }));
+  changes.push(createStateChange('entity', player.id, 'setStatusIds', { ids: player.statusIds.filter(id => !removed.includes(id)) }));
+  for (const enemy of Object.values(state.world.entities).filter(entity => entity.kind === 'enemy' && !entity.dead && !state.bosses.some(boss => boss.entityId === entity.id) && distanceSquared(entity.position, player.position) <= 180 ** 2)) {
+    let direction = normalizeVector({ x: enemy.position.x - player.position.x, y: enemy.position.y - player.position.y });
+    if (!direction.x && !direction.y) direction = context.aim;
+    const position = resolveBodyDestination(context, enemy, { x: enemy.position.x + direction.x * 120, y: enemy.position.y + direction.y * 120 });
+    changes.push(createStateChange('entity', enemy.id, 'setEntityKinematics', { position, previousPosition: position, velocity: enemy.velocity, facingRadians: enemy.facingRadians }));
+  }
+  return { ...createEmptyPlan(), changes };
 }
 
 /**
@@ -25,13 +45,13 @@ export function planSkillDisconnect(context) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview
+ * @calls domain/shields.js#planShieldGrant
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planSkillCache(context) {
-  throw new Error('TODO V2: content/handlers/skills.js#planSkillCache');
+  return planShieldGrant(context, context.state.player.entityId, 'skill_cache', 25, 5);
 }
 
 /**

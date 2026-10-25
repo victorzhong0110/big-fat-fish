@@ -56,6 +56,19 @@ export function validateSystemPlan(plan) {
     const ids = (/** @type {string} */ key) => Array.isArray(p[key]) && p[key].every(id => typeof id === 'string' && id.length > 0);
     let valid = false;
     switch (change.operation) {
+      case 'putEntity': valid = change.target === 'world' && p.id === change.id && typeof p.definitionId === 'string' && typeof p.sourceId === 'string' && ['player', 'enemy', 'companion', 'projectile', 'pickup', 'obstacle', 'objective', 'decoy'].includes(String(p.kind)) && ['player', 'enemy', 'neutral'].includes(String(p.team)) && nonnegative('hp') && nonnegative('maxHp') && nonnegative('radius') && Array.isArray(p.statusIds) && Array.isArray(p.shieldIds); break;
+      case 'removeEntity': valid = change.target === 'world' && Object.keys(p).length === 0; break;
+      case 'setEntityKinematics': valid = change.target === 'entity' && Object.keys(p).length === 4 && ['position', 'previousPosition', 'velocity'].every(key => { const point = /** @type {Record<string, import('../contracts.d.ts').Json> | null} */ (p[key]); return point && typeof point === 'object' && typeof point.x === 'number' && typeof point.y === 'number'; }) && typeof p.facingRadians === 'number'; break;
+      case 'setEntityRuntime': valid = change.target === 'entity' && !!p.runtime && typeof p.runtime === 'object' && !Array.isArray(p.runtime); break;
+      case 'setMap': valid = change.target === 'world' && p.id === change.id && nonnegative('width') && nonnegative('height') && Array.isArray(p.obstacleIds) && Array.isArray(p.checkpointIds) && Array.isArray(p.exitIds); break;
+      case 'setInput': valid = change.target === 'runtime' && change.id === 'input' && typeof p.firing === 'boolean' && !!p.move && typeof p.move === 'object' && !!p.aim && typeof p.aim === 'object' && Array.isArray(p.heldKeys) && Array.isArray(p.pointerIds); break;
+      case 'ackCommand': valid = change.target === 'runtime' && Number.isSafeInteger(p.seq) && Number(p.seq) >= 0; break;
+      case 'setFlowPhase': valid = change.target === 'flow' && ['preparing', 'exploring', 'boss', 'paused', 'defeat', 'victory', 'withdrawal', 'pluginChoice', 'loraTraining'].includes(String(p.phase)) && (p.resumePhase === null || typeof p.resumePhase === 'string'); break;
+      case 'setLoadout': valid = change.target === 'player' && Array.isArray(p.weapons) && p.weapons.length >= 1 && p.weapons.length <= 2 && Number.isInteger(p.activeWeaponIndex) && nonnegative('skillCooldown') && nonnegative('companionCooldown') && nonnegative('dashCooldown') && typeof p.skillId === 'string'; break;
+      case 'putPickup': valid = change.target === 'world' && p.id === change.id && ['riceXp', 'gpuFragment', 'part', 'weapon', 'skill'].includes(String(p.kind)) && nonnegative('amount') && !!p.position && typeof p.position === 'object' && typeof p.collected === 'boolean'; break;
+      case 'removePickup': valid = change.target === 'world' && Object.keys(p).length === 0; break;
+      case 'recordReward': valid = change.target === 'runtime' && Object.keys(p).length === 0; break;
+      case 'addCollectedResource': valid = change.target === 'progression' && ['riceXp', 'gpuFragment', 'part'].includes(String(p.kind)) && Number.isSafeInteger(p.amount) && Number(p.amount) >= 0; break;
       case 'setPlayerTimers': valid = change.target === 'player' && ['invulnerableRemaining', 'controlImmuneRemaining', 'skillCooldown', 'dashCooldown', 'companionCooldown'].every(nonnegative) && Array.isArray(p.weaponCooldowns) && p.weaponCooldowns.every(item => item && typeof item === 'object' && !Array.isArray(item) && typeof item.instanceId === 'string' && typeof item.cooldown === 'number' && item.cooldown >= 0); break;
       case 'setWorldTimers': valid = change.target === 'runtime' && change.id === 'worldTimers' && Number.isSafeInteger(p.lastWorldAdvanceTick) && Number(p.lastWorldAdvanceTick) >= 0 && nonnegative('underfitRemaining') && nonnegative('overfitRemaining'); break;
       case 'removeStatus': case 'removeShield': valid = change.target === 'world' && Object.keys(p).length === 0; break;
@@ -85,6 +98,7 @@ export function validateSystemPlan(plan) {
       case 'setShell': valid = change.target === 'entity' && nonnegative('maxHp') && nonnegative('hp') && Number(p.hp) <= Number(p.maxHp) && typeof p.broken === 'boolean' && nonnegative('weakArcDegrees') && Number(p.weakArcDegrees) <= 360 && nonnegative('stunRemaining') && typeof p.enraged === 'boolean'; break;
       case 'setShieldIds': valid = change.target === 'entity' && ids('ids') && new Set(/** @type {string[]} */ (p.ids)).size === /** @type {string[]} */ (p.ids).length; break;
       case 'setShield': valid = change.target === 'world' && p.id === change.id && typeof p.sourceId === 'string' && nonnegative('amount') && Number.isSafeInteger(p.expiresAt) && Number(p.expiresAt) >= 0 && Number.isSafeInteger(p.seq) && Number(p.seq) >= 0; break;
+      case 'setControlImmune': valid = change.target === 'player' && nonnegative('remaining'); break;
       case 'setInvulnerable': valid = change.target === 'player' && nonnegative('remaining'); break;
       case 'setDamageBudget': valid = change.target === 'runtime' && Array.isArray(p.entries) && p.entries.every(entry => entry && typeof entry === 'object' && !Array.isArray(entry) && Number.isSafeInteger(entry.tick) && Number(entry.tick) >= 0 && typeof entry.spent === 'number' && entry.spent >= 0); break;
       case 'registerHit': valid = change.target === 'runtime' && typeof p.attackId === 'string' && p.attackId.length > 0 && typeof p.targetId === 'string' && p.targetId.length > 0 && Number.isSafeInteger(p.expiresAt) && Number(p.expiresAt) >= 0; break;
@@ -101,4 +115,16 @@ export function validateSystemPlan(plan) {
   for (const event of plan.events) if (!event || !event.id || !event.runId || !event.type || !Number.isSafeInteger(event.tick) || event.tick < 0 || !Number.isSafeInteger(event.seq) || event.seq < 0) reject('Invalid event');
   for (const intent of plan.persistence) if (!intent || !intent.id || !['discovery', 'checkpoint', 'settlement', 'unlock'].includes(intent.kind)) reject('Invalid persistence intent');
   return { valid: diagnostics.length === 0, diagnostics };
+}
+
+/** Create one validated plain-data change without untyped casts in each system.
+ * @calls domain/serialization.js#serializeCanonical
+ * @param {import('../contracts.d.ts').StateChange['target']} target
+ * @param {string} id
+ * @param {string} operation
+ * @param {object | import('../contracts.d.ts').Json} payload
+ * @returns {import('../contracts.d.ts').StateChange}
+ */
+export function createStateChange(target, id, operation, payload) {
+  return { target, id, operation, payload: /** @type {import('../contracts.d.ts').Json} */ (JSON.parse(serializeCanonical(payload))) };
 }

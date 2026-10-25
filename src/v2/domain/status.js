@@ -87,7 +87,7 @@ export function planStatusAdvance(context) {
   const changes = /** @type {import('../contracts.d.ts').StateChange[]} */ ([]);
   const events = /** @type {import('../contracts.d.ts').DomainEvent[]} */ ([]);
   const expiredStatuses = new Set();
-  for (const status of Object.values(state.world.statuses)) {
+  for (const status of Object.values(state.world.statuses).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)) {
     const remaining = decrease(status.remaining);
     if (remaining === 0) {
       expiredStatuses.add(status.id);

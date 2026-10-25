@@ -22,13 +22,43 @@ export function applySystemPlan(working, plan) {
   const report = dependency1.validateSystemPlan(plan);
   if (!report.valid) throw new Error(report.diagnostics.map(item => item.message).join('; '));
   // Copy first: a rejected change cannot leak a partly applied tick to any reader.
-  const next = /** @type {import('../contracts.d.ts').GameState} */ (JSON.parse(serializeCanonical(working)));
+  const next = structuredClone(working);
   next.attackHits = next.attackHits.filter(hit => hit.expiresAt >= next.tick);
-  for (const change of plan.changes) {
+  const ownedChanges = structuredClone(plan.changes);
+  for (const change of ownedChanges) {
     const p = /** @type {Record<string, import('../contracts.d.ts').Json>} */ (change.payload);
     const entity = next.world.entities[change.id];
     if (change.target === 'entity' && !entity) throw new Error(`Unknown entity: ${change.id}`);
     switch (change.operation) {
+      case 'putEntity':
+        if (next.world.entities[change.id]) throw new Error('Duplicate entity spawn');
+        next.world.entities = { ...next.world.entities, [change.id]: /** @type {import('../contracts.d.ts').EntityState} */ (JSON.parse(serializeCanonical(p))) }; break;
+      case 'removeEntity': {
+        if (change.id === next.player.entityId) throw new Error('Cannot remove player');
+        const entities = { ...next.world.entities }; delete entities[change.id]; next.world.entities = entities;
+        next.attackHits = next.attackHits.filter(hit => hit.targetId !== change.id); break;
+      }
+      case 'setEntityKinematics': {
+        const data = /** @type {Pick<import('../contracts.d.ts').EntityState, 'position' | 'previousPosition' | 'velocity' | 'facingRadians'>} */ (JSON.parse(serializeCanonical(p)));
+        entity.position = data.position; entity.previousPosition = data.previousPosition; entity.velocity = data.velocity; entity.facingRadians = data.facingRadians; break;
+      }
+      case 'setEntityRuntime': entity.runtime = /** @type {Record<string, import('../contracts.d.ts').Json>} */ (p.runtime); break;
+      case 'setMap': next.world.map = /** @type {import('../contracts.d.ts').MapState} */ (JSON.parse(serializeCanonical(p))); break;
+      case 'setInput': next.input = /** @type {import('../contracts.d.ts').InputState} */ (JSON.parse(serializeCanonical(p))); break;
+      case 'ackCommand':
+        if (Number(p.seq) <= next.lastCommandSeq) throw new Error('Stale command sequence');
+        next.lastCommandSeq = Number(p.seq); next.processedCommandIds = [...next.processedCommandIds, change.id].slice(-512); break;
+      case 'setFlowPhase': next.flow = { ...next.flow, phase: /** @type {import('../contracts.d.ts').Phase} */ (p.phase), resumePhase: /** @type {import('../contracts.d.ts').Phase | null} */ (p.resumePhase) }; break;
+      case 'setLoadout':
+        if (change.id !== next.player.entityId) throw new Error('Player id mismatch');
+        next.player.loadout = /** @type {import('../contracts.d.ts').Loadout} */ (JSON.parse(serializeCanonical(p))); break;
+      case 'putPickup': next.world.pickups = { ...next.world.pickups, [change.id]: /** @type {import('../contracts.d.ts').PickupState} */ (JSON.parse(serializeCanonical(p))) }; break;
+      case 'removePickup': { const pickups = { ...next.world.pickups }; delete pickups[change.id]; next.world.pickups = pickups; break; }
+      case 'recordReward':
+        if (!next.processedRewardIds.includes(change.id)) next.processedRewardIds = [...next.processedRewardIds, change.id]; break;
+      case 'addCollectedResource':
+        if (p.kind === 'riceXp') { next.totalTokens += Number(p.amount); next.xpRemainder += Number(p.amount); }
+        else if (p.kind === 'gpuFragment') next.inventory.gpuFragments += Number(p.amount); else next.inventory.parts += Number(p.amount); break;
       case 'setPlayerTimers': {
         if (change.id !== next.player.entityId) throw new Error('Player id mismatch');
         const weaponCooldowns = /** @type {Record<string, import('../contracts.d.ts').Json>[]} */ (p.weaponCooldowns);
@@ -89,6 +119,9 @@ export function applySystemPlan(working, plan) {
       case 'setShell': entity.shell = { maxHp: Number(p.maxHp), hp: Number(p.hp), broken: p.broken === true, weakArcDegrees: Number(p.weakArcDegrees), stunRemaining: Number(p.stunRemaining), enraged: p.enraged === true }; break;
       case 'setShieldIds': entity.shieldIds = /** @type {string[]} */ (p.ids); break;
       case 'setShield': next.world.shields = { ...next.world.shields, [change.id]: { id: String(p.id), sourceId: String(p.sourceId), amount: Number(p.amount), expiresAt: Number(p.expiresAt), seq: Number(p.seq) } }; break;
+      case 'setControlImmune':
+        if (change.id !== next.player.entityId) throw new Error('Player id mismatch');
+        next.player.controlImmuneRemaining = Number(p.remaining); break;
       case 'setInvulnerable':
         if (change.id !== next.player.entityId) throw new Error('Player id mismatch');
         next.player.invulnerableRemaining = Number(p.remaining); break;
@@ -108,8 +141,8 @@ export function applySystemPlan(working, plan) {
     }
   }
   // Effects/events/persistence are returned to the tick orchestrator, never silently reapplied here.
-  // Clone payloads again so later mutation of a caller-owned plan cannot modify the private state.
-  return structuredClone(next);
+  // Both the working copy and payloads are detached from caller-owned objects.
+  return next;
 }
 
 /**
@@ -130,7 +163,6 @@ export function validateStateInvariants(state, catalog) {
  * 调用阶段：commit；下游模式：sequence。
  * 状态权限：唯一GameState提交点；不执行外部I/O。
  * @calls domain/plans.js#validateSystemPlan
- * @calls domain/serialization.js#serializeCanonical
  * @calls engine/reducer.js#validateStateInvariants
  * @param {import('../contracts.d.ts').StateSnapshot} previous
  * @param {import('../contracts.d.ts').GameState} working
@@ -147,7 +179,7 @@ export function commitWorkingState(previous, working, catalog, outbox = { events
   const worldAdvanced = working.tick > previous.tick, uiAdvanced = working.uiTick > previous.uiTick;
   if (worldAdvanced && uiAdvanced || worldAdvanced && !['exploring', 'boss'].includes(previous.flow.phase) || uiAdvanced && previous.flow.phase !== 'loraTraining') throw new Error('Wrong clock domain at commit');
   if (previous.revision >= Number.MAX_SAFE_INTEGER) throw new Error('Revision overflow');
-  const next = /** @type {import('../contracts.d.ts').GameState} */ (JSON.parse(serializeCanonical(working)));
+  const next = structuredClone(working);
   next.revision = previous.revision + 1;
   const events = outbox.events.map((event, seq) => ({ ...structuredClone(event), seq }));
   if (new Set(events.map(event => event.id)).size !== events.length || events.some(event => event.runId !== next.runId)) throw new Error('Duplicate event or wrong run');
