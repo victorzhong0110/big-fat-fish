@@ -22,9 +22,9 @@ import * as dependency3 from '../domain/lora.js';
  */
 export function planFlowTransition(context, nextPhase) {
   const previous = context.state.flow.phase;
-  const allowed = previous === 'exploring' || previous === 'boss' ? ['paused', 'defeat', 'victory', 'withdrawal'] : previous === 'paused' ? [context.state.flow.resumePhase] : [];
+  const allowed = ['exploring', 'boss', 'pluginChoice', 'loraTraining'].includes(previous) ? ['paused', 'defeat', 'victory', 'withdrawal'] : previous === 'paused' ? [context.state.flow.resumePhase] : [];
   if (!allowed.includes(nextPhase)) throw new Error(`Illegal phase transition ${previous} -> ${nextPhase}`);
-  return { ...createEmptyPlan(), changes: [createStateChange('flow', 'phase', 'setFlowPhase', { phase: nextPhase, resumePhase: nextPhase === 'paused' ? previous : null })] };
+  return { ...createEmptyPlan(), changes: [createStateChange('flow', 'phase', 'setFlowPhase', { phase: nextPhase, resumePhase: nextPhase === 'paused' ? previous : ['pluginChoice', 'loraTraining'].includes(nextPhase) ? context.state.flow.suspendedResumePhase ?? 'exploring' : null, suspendedResumePhase: nextPhase === 'paused' ? context.state.flow.resumePhase : null })] };
 }
 
 /**
@@ -35,6 +35,7 @@ export function planFlowTransition(context, nextPhase) {
  * @calls domain/draft.js#createPluginChoice
  * @calls domain/levels.js#planLevelProgression
  * @calls domain/levels.js#planNextLevelReward
+ * @calls domain/lora.js#createLoraTrial
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @param {import('../contracts.d.ts').EvaluationContext} context
@@ -45,7 +46,10 @@ export function planProgressionPanels(context) {
   if (['paused', 'pluginChoice', 'loraTraining', 'victory', 'defeat', 'withdrawal'].includes(state.flow.phase)) return createEmptyPlan();
   if (!reward) return state.flow.phase === 'preparing' ? { ...createEmptyPlan(), changes: [createStateChange('flow', 'phase', 'setFlowPhase', { phase: state.flow.resumePhase ?? 'exploring', resumePhase: null })] } : dependency2.planLevelProgression(context);
   const growth = dependency2.planNextLevelReward(context); if (growth.changes.length) return growth;
-  if (reward.loraRequired) throw new Error('LoRA progression is not enabled in the combat preview');
+  if (reward.loraRequired && !state.lora.resolvedTrialIds.includes(`lora:${state.runId}:${reward.level}`)) {
+    const creation = dependency3.createLoraTrial(context, reward.level);
+    return { ...createEmptyPlan(), changes: [createStateChange('runtime', 'dsh_lora', 'queueLoraLevel', { level: reward.level }), createStateChange('random', 'lora', 'setRandomStream', creation.nextRandom), createStateChange('runtime', 'dsh_lora', 'beginLoraTrial', { trial: creation.trial }), createStateChange('runtime', 'input', 'setInput', { ...state.input, move: { x: 0, y: 0 }, firing: false, heldKeys: [], pointerIds: [] })] };
+  }
   if (reward.pluginRequired) {
     const result = dependency1.createPluginChoice(context, reward); if (!result.ok) throw new Error(result.message);
     return { ...createEmptyPlan(), changes: [createStateChange('random', 'reward', 'setRandomStream', result.value.nextRandom), createStateChange('flow', 'growth', 'setGrowthFlow', { rewards: state.flow.queuedLevelRewards, choice: result.value.choice, rerollsUsed: state.flow.pluginRerollsUsed ?? 0 }), createStateChange('flow', 'phase', 'setFlowPhase', { phase: 'pluginChoice', resumePhase: state.flow.phase === 'boss' ? 'boss' : state.flow.resumePhase ?? 'exploring' }), createStateChange('runtime', 'input', 'setInput', { ...state.input, move: { x: 0, y: 0 }, firing: false, heldKeys: [], pointerIds: [] })] };
@@ -68,7 +72,7 @@ export function planProgressionPanels(context) {
 export function planPause(context, reason) {
   if (context.state.flow.phase === 'paused') return createEmptyPlan();
   const plan = planFlowTransition(context, 'paused');
-  return { ...plan, changes: [...plan.changes, createStateChange('runtime', 'input', 'setInput', { ...context.state.input, move: { x: 0, y: 0 }, firing: false, heldKeys: [], pointerIds: [] })] };
+  return { ...plan, changes: [...plan.changes, createStateChange('runtime', 'dsh_lora', 'setLoraInputHeld', { held: false }), createStateChange('runtime', 'input', 'setInput', { ...context.state.input, move: { x: 0, y: 0 }, firing: false, heldKeys: [], pointerIds: [] })] };
 }
 
 /**
@@ -83,6 +87,6 @@ export function planPause(context, reason) {
  */
 export function planResume(context) {
   const phase = context.state.flow.resumePhase;
-  if (context.state.flow.phase !== 'paused' || phase !== 'exploring' && phase !== 'boss') return createEmptyPlan();
-  return planFlowTransition(context, phase);
+  if (context.state.flow.phase !== 'paused' || !['exploring', 'boss', 'loraTraining', 'pluginChoice'].includes(String(phase))) return createEmptyPlan();
+  return planFlowTransition(context, /** @type {import('../contracts.d.ts').Phase} */ (phase));
 }

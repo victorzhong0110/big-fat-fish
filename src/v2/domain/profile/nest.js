@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * 设施、永久装备/技能、伙伴与出发配装。
- * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
+ * Incremental implementation; unavailable functions remain explicit TODOs.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from './tree.js';
@@ -15,10 +15,11 @@ import * as dependency1 from './tree.js';
  * @param {import('../../contracts.d.ts').Id} facilityId
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
  * @returns {import('../../contracts.d.ts').Result<import('../../contracts.d.ts').ProfilePlan>}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planFacilityPurchase(profile, facilityId, catalog) {
-  throw new Error('TODO V2: domain/profile/nest.js#planFacilityPurchase');
+  const definition = catalog.definitions[facilityId], cost = Number(definition?.parameters.partCost);
+  if (definition?.kind !== 'facility' || !Number.isSafeInteger(cost) || cost < 0 || profile.facilities.includes(facilityId) || profile.parts < cost) return { ok: false, code: 'FACILITY_REJECTED', message: 'Facility is unknown, owned or unaffordable' };
+  return { ok: true, value: { expectedRevision: profile.revision, next: { ...structuredClone(profile), revision: profile.revision + 1, parts: profile.parts - cost, facilities: [...profile.facilities, facilityId] }, events: [] } };
 }
 
 /**
@@ -30,10 +31,15 @@ export function planFacilityPurchase(profile, facilityId, catalog) {
  * @param {import('../../contracts.d.ts').Id} definitionId
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
  * @returns {import('../../contracts.d.ts').Result<import('../../contracts.d.ts').ProfilePlan>}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPermanentUnlock(profile, definitionId, catalog) {
-  throw new Error('TODO V2: domain/profile/nest.js#planPermanentUnlock');
+  const definition = catalog.definitions[definitionId], cost = Number(definition?.parameters.partCost);
+  const weapon = definition?.kind === 'weapon', skill = definition?.kind === 'skill';
+  const owned = weapon ? profile.unlockedWeapons : profile.unlockedSkills;
+  if (!weapon && !skill || !Number.isSafeInteger(cost) || cost < 0 || !profile.discovered.includes(definitionId) || owned.includes(definitionId) || profile.parts < cost || !profile.facilities.includes(weapon ? 'home_bench' : 'home_terminal')) return { ok: false, code: 'UNLOCK_REJECTED', message: 'Discover the item, build its facility and provide the required parts' };
+  const next = { ...structuredClone(profile), revision: profile.revision + 1, parts: profile.parts - cost };
+  if (weapon) next.unlockedWeapons = [...owned, definitionId]; else next.unlockedSkills = [...owned, definitionId];
+  return { ok: true, value: { expectedRevision: profile.revision, next, events: [] } };
 }
 
 /**
@@ -45,10 +51,11 @@ export function planPermanentUnlock(profile, definitionId, catalog) {
  * @param {readonly import('../../contracts.d.ts').DshSlot[]} slots
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
  * @returns {import('../../contracts.d.ts').Result<import('../../contracts.d.ts').ProfilePlan>}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planDshEquipment(profile, slots, catalog) {
-  throw new Error('TODO V2: domain/profile/nest.js#planDshEquipment');
+  const ids = slots.map(slot => slot.id);
+  if (slots.length > dependency1.resolveDshSlotCount(profile, catalog) || new Set(ids).size !== ids.length || slots.some(slot => !profile.unlockedDsh.includes(slot.id) || catalog.definitions[slot.id]?.kind !== 'dsh' || Object.values(slot.options).some(value => typeof value !== 'string') || slot.id === 'dsh_claude_allowlist' && !['skillBan', 'companionBan'].includes(slot.options.protect))) return { ok: false, code: 'DSH_EQUIPMENT_REJECTED', message: 'Invalid DSH ownership, slots, duplicate or protection option' };
+  return { ok: true, value: { expectedRevision: profile.revision, next: { ...structuredClone(profile), revision: profile.revision + 1, equippedDsh: structuredClone(slots) }, events: [] } };
 }
 
 /**
@@ -60,8 +67,16 @@ export function planDshEquipment(profile, slots, catalog) {
  * @param {import('../../contracts.d.ts').StartRequest} request
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
  * @returns {import('../../contracts.d.ts').ValidationReport}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function validateStartRequest(profile, request, catalog) {
-  throw new Error('TODO V2: domain/profile/nest.js#validateStartRequest');
+  const diagnostics = /** @type {import('../../contracts.d.ts').Diagnostic[]} */ ([]);
+  const fail = (/** @type {string} */ message) => diagnostics.push({ code: 'START_REJECTED', message, relatedIds: [] });
+  if (!Number.isSafeInteger(request.seed) || request.seed < 0 || request.seed > 0xffffffff) fail('Invalid seed');
+  if (!['tutorial', 'short', 'expedition', 'api'].includes(request.mode)) fail('Unknown mode');
+  if (request.mode === 'tutorial' ? request.difficulty !== 0 : request.mode === 'api' ? request.difficulty !== 'api' || !profile.apiUnlocked : typeof request.difficulty !== 'number' || !Number.isInteger(request.difficulty) || request.difficulty < 1 || request.difficulty > Math.min(15, profile.highestDifficulty + 1)) fail('Difficulty is not unlocked for this mode');
+  if (request.weaponIds.length < 1 || request.weaponIds.length > 2 || new Set(request.weaponIds).size !== request.weaponIds.length || request.weaponIds.some(id => !profile.unlockedWeapons.includes(id) || catalog.definitions[id]?.kind !== 'weapon') || request.weaponIds.length === 2 && !profile.purchasedTree.includes('tree_mcp_d')) fail('Invalid owned weapon loadout or second start slot');
+  if (!profile.unlockedSkills.includes(request.skillId) || catalog.definitions[request.skillId]?.kind !== 'skill') fail('Skill is not owned');
+  if (request.companionId !== null && (!profile.unlockedCompanions.includes(request.companionId) || request.companionId !== 'companion_rice' && !profile.facilities.includes('home_guest'))) fail('Companion is not available');
+  if (profile.checkpoint) fail('An active checkpoint exists; explicitly retire it before starting another run');
+  return { valid: !diagnostics.length, diagnostics };
 }

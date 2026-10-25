@@ -25,15 +25,15 @@ function getRecord(session) {
   if (!record || record.disposed) throw new Error('Unknown or disposed Session');
   return record;
 }
-/** @param {import('../contracts.d.ts').GameSession} session @param {'world' | 'ui'} domain @returns {import('../contracts.d.ts').TickResult} */
-function step(session, domain) {
+/** @param {import('../contracts.d.ts').GameSession} session @param {'world' | 'ui'} domain @param {boolean} advanceClock @returns {import('../contracts.d.ts').TickResult} */
+function step(session, domain, advanceClock = false) {
   const record = getRecord(session);
   if (record.running) throw new Error('Reentrant Session step');
   record.running = true;
   try {
     const tick = domain === 'world' ? record.state.tick + 1 : record.state.uiTick;
     const due = orderPendingCommands(record.commands, tick, domain);
-    const next = domain === 'world' ? advancePreviewWorldTick(record.state, due, record.catalog) : advancePreviewUiCommands(record.state, due, record.catalog);
+    const next = domain === 'world' ? advancePreviewWorldTick(record.state, due, record.catalog) : advancePreviewUiCommands(record.state, due, record.catalog, advanceClock);
     record.state = next.next;
     if (domain === 'ui' || next.next.tick === tick) {
       const consumed = new Set(due.map(command => command.id)); record.commands = record.commands.filter(command => !consumed.has(command.id));
@@ -112,10 +112,11 @@ export function stepSessionWorld(session) {
  * @calls engine/previewTick.js#advancePreviewUiCommands
  * @calls engine/previewTick.js#advancePreviewWorldTick
  * @param {import('../contracts.d.ts').GameSession} session
+ * @param {boolean} advanceClock
  * @returns {import('../contracts.d.ts').TickResult}
  */
-export function stepSessionUi(session) {
-  return step(session, 'ui');
+export function stepSessionUi(session, advanceClock = true) {
+  return step(session, 'ui', advanceClock);
 }
 
 /**

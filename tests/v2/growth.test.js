@@ -20,7 +20,7 @@ const catalog=loadContentCatalog();
 function game(){return createInitialGameState({runtimeProfile:'core-preview',runId:'growth:test',treeNodeIds:[],dsh:[],difficulty:resolveDifficultySnapshot({mode:'tutorial',difficulty:0},catalog).value,loadout:{weapons:[{instanceId:'bubble',definitionId:'mcp_bubble',originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null}],activeWeaponIndex:0,skillId:'skill_cache',skillCooldown:0,companionId:null,companionCooldown:0,dashCooldown:0}},19,catalog);}
 function ctx(state){return {state,catalog,random:state.random.reward,event:null,entityId:null};}
 function plugin(id='plugin_distill',rank=1){return {id,rank,origin:'run',runtime:{}};}
-function ui(state,type,extra={}){return {id:`cmd:${state.lastCommandSeq+1}`,seq:state.lastCommandSeq+1,targetTick:state.uiTick,clock:'ui',type,payload:{choiceId:state.flow.choice?.id,...extra}};}
+function ui(state,type,extra={}){return {id:`cmd:${state.lastCommandSeq+1}`,seq:state.lastCommandSeq+1,targetTick:state.uiTick,clock:'ui',type,payload:{...(state.flow.choice?{choiceId:state.flow.choice.id}:{}),...extra}};}
 function apply(state,plan){return applySystemPlan(state,plan);}
 function gain(amount=120){let s=game();s.world.pickups.rice={id:'rice',kind:'riceXp',amount,position:{...s.world.entities.fish.position},collected:false,instanceId:null};return advancePreviewWorldTick(freeze(s),[],catalog).next;}
 function death(state,faction='claude',policy='normal',id='crab'){
@@ -95,5 +95,30 @@ describe('distillation: credited kills and persistent sample tracks',()=>{
   const req={id:'hit',sourceId:'fish',creditOwner:'player',sourceKind:'weapon_primary',attackId:'attack',projectileId:null,targetId:'crab',baseDamage:12,contact:{x:400,y:270},incomingDirection:{x:1,y:0},generation:0,chainId:'hit',critEligible:false,expiresAt:10};const result=drainEffectQueue(ctx(s),{pending:[{id:'hit',chainId:'hit',sourceId:'fish',kind:'damage',generation:0,payload:req}],processedIds:[],spawnedThisTick:0});expect(result.deaths).toHaveLength(1);expect(result.nextWorking.distill.claude.samples).toBe(3);expect(result.nextWorking.world.entities.crab.dead).toBe(true);
   const enemy=createEntityState('attacker','enemy_grok_bot','enemy','enemy',{x:230,y:270},{faction:'grok'});s.world.entities.attacker=enemy;
   const hurt={...req,id:'hurt',sourceId:'attacker',creditOwner:'enemy',sourceKind:'enemy',attackId:'hurt',targetId:'fish',baseDamage:10};const defended=drainEffectQueue(ctx(s),{pending:[{id:'hurt',chainId:'hurt',sourceId:'attacker',kind:'damage',generation:0,payload:hurt}],processedIds:[],spawnedThisTick:0});expect(defended.nextWorking.world.entities.fish.hp).toBeLessThan(100);expect(Object.values(defended.nextWorking.world.shields)[0].amount).toBe(5);expect(defended.nextWorking.distillRuntime.shieldReadyAt).toBe(600);
+ });
+});
+
+describe('connected LoRA order and independent UI time',()=>{
+ function trainingGame(amount=120){const s=game();s.start.dsh=[{id:'dsh_lora',options:{}}];s.world.pickups.rice={id:'rice',kind:'riceXp',amount,position:{...s.world.entities.fish.position},collected:false,instanceId:null};return advancePreviewWorldTick(s,[],catalog).next;}
+ function trainCommand(s,type,extra={}){return ui(s,type,{trialId:s.lora.active?.id,edge:type==='ReleaseTraining'?'release':'press',repeat:false,...extra});}
+ function startTrial(s){s=advancePreviewUiCommands(s,[trainCommand(s,'StartTraining')],catalog).next;return advancePreviewUiCommands(s,[trainCommand(s,'ReleaseTraining')],catalog).next;}
+ function advance(s,n){for(let i=0;i<n;i++)s=advancePreviewUiCommands(s,[],catalog,true).next;return s;}
+ it('applies normal HP first, then opens one ready LoRA trial before any plugin or next level',()=>{
+  const s=trainingGame();expect(s.level).toBe(2);expect(s.world.entities.fish.hp).toBe(102);expect(s.flow.phase).toBe('loraTraining');expect(s.flow.choice).toBeNull();expect(s.lora.active.phase).toBe('ready');expect(s.random.lora.cursor).toBe(1);expect(s.random.reward.cursor).toBe(0);expect(s.lora.pendingLevels).toEqual([2]);
+ });
+ it('does not tick a ready pointer or the world; holding start prevents a second press without release',()=>{
+  let s=trainingGame();expect(advance(s,10)).toEqual(s);s=advancePreviewUiCommands(s,[trainCommand(s,'StartTraining')],catalog).next;expect(s.lora.inputHeld).toBe(true);const held=advancePreviewUiCommands(s,[trainCommand(s,'ConfirmTraining')],catalog);expect(held.next.lora.active.phase).toBe('running');expect(held.diagnostics[0].code).toBe('INVALID_TRAINING_INPUT');expect(s.uiTick).toBe(0);s=advance(s,60);expect(s.tick).toBe(1);expect(s.uiTick).toBe(60);expect(s.lora.active.uiTick).toBe(60);
+ });
+ it('confirms perfect once, opens that level plugin, and only after choosing begins next-level training',()=>{
+  let s=startTrial(trainingGame());s=advance(s,60);const result=advancePreviewUiCommands(s,[trainCommand(s,'ConfirmTraining')],catalog);s=result.next;expect(result.events.some(e=>e.type==='LoraResolved'&&e.payload.result==='perfect')).toBe(true);expect(s.flow.phase).toBe('pluginChoice');expect(s.level).toBe(2);expect(s.lora.resolvedTrialIds).toHaveLength(1);expect(s.random.reward.cursor).toBeGreaterThan(0);s=advancePreviewUiCommands(s,[ui(s,'SelectPlugin',{optionId:'plugin_distill'})],catalog).next;expect(s.level).toBe(3);expect(s.flow.phase).toBe('loraTraining');expect(s.lora.active.phase).toBe('ready');expect(s.lora.active.level).toBe(3);expect(s.lora.inputHeld).toBe(false);
+ });
+ it('times out on exactly 120 UI ticks, does not advance native cooldowns and then opens the plugin',()=>{
+  let s=trainingGame();s.player.loadout.skillCooldown=7;s=startTrial(s);s=advance(s,119);expect(s.flow.phase).toBe('loraTraining');expect(s.lora.active.uiTick).toBe(119);s=advance(s,1);expect(s.flow.phase).toBe('pluginChoice');expect(s.lora.overfitRemaining).toBe(8);expect(s.player.loadout.skillCooldown).toBe(7);expect(s.tick).toBe(1);expect(s.uiTick).toBe(120);
+ });
+ it('pauses and resumes a training pointer while retaining its original boss return phase',()=>{
+  let s=trainingGame();s.flow.resumePhase='boss';s=startTrial(s);s=advance(s,30);s=advancePreviewUiCommands(s,[ui(s,'Pause')],catalog).next;expect(s.flow.phase).toBe('paused');expect(s.flow.resumePhase).toBe('loraTraining');expect(s.flow.suspendedResumePhase).toBe('boss');expect(advance(s,120)).toEqual(s);s=advancePreviewUiCommands(s,[ui(s,'Resume')],catalog).next;expect(s.flow.phase).toBe('loraTraining');expect(s.flow.resumePhase).toBe('boss');expect(s.lora.active.uiTick).toBe(30);expect(s.lora.inputHeld).toBe(false);
+ });
+ it('keeps independent UI pointer and 28-second DSH clock frozen in modal states',()=>{
+  let s=game();s.start.dsh=[{id:'dsh_gpt_branch',options:{}}];s.dshCycle.remaining=1/60;s.player.loadout.skillCooldown=8;s.player.loadout.dashCooldown=3;const result=advancePreviewWorldTick(s,[],catalog);expect(result.events.some(e=>e.type==='DshCycleResolved')).toBe(true);expect(result.next.random.dsh.cursor).toBe(1);expect(result.next.dshCycle.triggerSeq).toBe(1);s=advancePreviewUiCommands(result.next,[ui(result.next,'Pause')],catalog).next;const remaining=s.dshCycle.remaining;expect(advancePreviewWorldTick(s,[],catalog).next.dshCycle.remaining).toBe(remaining);
  });
 });

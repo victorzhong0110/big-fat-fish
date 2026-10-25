@@ -485,7 +485,9 @@
       "path": "adapters/storage.js",
       "layer": "adapter",
       "purpose": "唯一真实存储I/O适配器，单记录CAS语义。",
-      "dependencies": [],
+      "dependencies": [
+        "domain/serialization.js"
+      ],
       "functions": [
         {
           "name": "createStoragePort",
@@ -498,14 +500,14 @@
           "result": "StoragePort",
           "description": "创建带revision的原子记录读写端口，具体选IndexedDB或单键localStorage实现。",
           "calls": [
-            "adapters/storage.js#readStorageRecord",
-            "adapters/storage.js#compareAndSwapStorageRecord"
+            "adapters/storage.js#compareAndSwapStorageRecord",
+            "adapters/storage.js#readStorageRecord"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "readStorageRecord",
@@ -522,7 +524,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "compareAndSwapStorageRecord",
@@ -542,12 +544,14 @@
           ],
           "result": "Promise<Result<StorageRecord>>",
           "description": "原子校验revision并写整条Profile+checkpoint；并发冲突返回错误。",
-          "calls": [],
+          "calls": [
+            "domain/serialization.js#serializeCanonical"
+          ],
           "rule": "localStorage不具跨标签页CAS能力，若选它必须加可靠单写者协调；否则使用IndexedDB事务。",
           "ownership": "唯一磁盘写者，不能拆余额/检查点两次写",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -974,8 +978,11 @@
       "layer": "application",
       "purpose": "局外档与活动检查点的单写者事务入口。",
       "dependencies": [
+        "domain/checkpoint.js",
         "domain/profile/unlocks.js",
-        "domain/settlement.js"
+        "domain/serialization.js",
+        "domain/settlement.js",
+        "versions.js"
       ],
       "functions": [
         {
@@ -993,13 +1000,14 @@
           "result": "Promise<Result<StorageRecord>>",
           "description": "通过注入存储读取并验证档案，坏档不覆盖；不在世界tick内等待I/O。",
           "calls": [
+            "domain/settlement.js#createDefaultProfile",
             "domain/settlement.js#validateProfileRecord"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "commitProfilePlan",
@@ -1011,18 +1019,23 @@
             {
               "name": "plan",
               "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
             }
           ],
           "result": "Promise<Result<StorageRecord>>",
           "description": "以expectedRevision原子提交一个余额/解锁/检查点计划；冲突必须重读重算，不覆盖他人更新。",
           "calls": [
+            "domain/serialization.js#serializeCanonical",
             "domain/settlement.js#validateProfileRecord"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "mergePersistenceIntents",
@@ -1043,16 +1056,19 @@
           "result": "Result<ProfilePlan>",
           "description": "稳定顺序合并发现/解锁/结算/存档，读取账本去重，输出单次revision计划。",
           "calls": [
-            "domain/profile/unlocks.js#planDiscoveryUnlock",
+            "domain/checkpoint.js#validateCheckpoint",
             "domain/profile/unlocks.js#planBossUnlock",
+            "domain/profile/unlocks.js#planDiscoveryUnlock",
             "domain/profile/unlocks.js#planEasterUnlock",
-            "domain/settlement.js#planSettlementCommit"
+            "domain/serialization.js#serializeCanonical",
+            "domain/settlement.js#planSettlementCommit",
+            "domain/settlement.js#validateProfileRecord"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "dispatch",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -1549,7 +1565,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planDshGrokSalvage",
@@ -1664,7 +1680,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -3600,22 +3616,15 @@
           "result": "EffectPlan",
           "description": "按合法稳定id和已实现绑定只调用一个对应处理器。",
           "calls": [
-            "content/handlers/dsh.js#planDshClaudeAppeal",
-            "content/handlers/dsh.js#planDshGptPreview",
-            "content/handlers/dsh.js#planDshGrokLicense",
-            "content/handlers/dsh.js#planDshClaudeAllowlist",
             "content/handlers/dsh.js#planDshGptBranch",
-            "content/handlers/dsh.js#planDshGrokSalvage",
-            "content/handlers/dsh.js#planDshSleep",
-            "content/handlers/dsh.js#planDshRice",
-            "content/handlers/dsh.js#planDshOpen",
             "content/handlers/dsh.js#planDshLora"
           ],
           "rule": "@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "dispatch",
           "callMode": "dispatch",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview"
         }
       ]
     },
@@ -5834,7 +5843,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPermanentUnlock",
@@ -5859,7 +5868,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planDshEquipment",
@@ -5886,7 +5895,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "validateStartRequest",
@@ -5911,7 +5920,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -5944,7 +5953,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planTreePurchase",
@@ -5971,7 +5980,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planTreeRespec",
@@ -5992,7 +6001,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "resolveDshSlotCount",
@@ -6013,7 +6022,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -6046,7 +6055,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planBossUnlock",
@@ -6071,7 +6080,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planEasterUnlock",
@@ -6096,7 +6105,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -6422,7 +6431,12 @@
       "path": "domain/settlement.js",
       "layer": "domain",
       "purpose": "对局结果与局外余额同事务计划。",
-      "dependencies": [],
+      "dependencies": [
+        "domain/checkpoint.js",
+        "domain/profile/tree.js",
+        "domain/serialization.js",
+        "versions.js"
+      ],
       "functions": [
         {
           "name": "createSettlement",
@@ -6443,7 +6457,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planSettlementCommit",
@@ -6463,12 +6477,14 @@
           ],
           "result": "Result<ProfilePlan>",
           "description": "去重、入账、碎片换卡、解锁并清当前检查点，单个revision计划。",
-          "calls": [],
+          "calls": [
+            "domain/settlement.js#validateProfileRecord"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "validateProfileRecord",
@@ -6484,12 +6500,29 @@
           ],
           "result": "ValidationReport",
           "description": "校验余额/树前置/槽位/去重/活动存档引用；迁移失败不覆盖原数据。",
-          "calls": [],
+          "calls": [
+            "domain/checkpoint.js#validateCheckpoint",
+            "domain/profile/tree.js#resolveDshSlotCount",
+            "domain/profile/tree.js#validateTreePurchase",
+            "domain/serialization.js#serializeCanonical"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
+        },
+        {
+          "description": "createDefaultProfile",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createDefaultProfile",
+          "args": [],
+          "result": "Profile",
+          "implementation": "implemented",
+          "calls": []
         }
       ]
     },
@@ -7239,6 +7272,7 @@
             "domain/draft.js#planPluginSelection",
             "domain/draft.js#planPluginSkip",
             "domain/geometry.js#normalizeVector",
+            "domain/lora.js#planLoraInput",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
             "engine/commands.js#validateGameCommand",
@@ -7378,7 +7412,7 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "预览只开放战斗→暂停/终态与暂停→原战斗状态；完整成长面板状态边未接入。",
+          "description": "预览只开放战斗→暂停/终态与暂停→原战斗状态；保留暂停前面板及其原世界返回阶段。",
           "calls": [
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange"
@@ -7404,6 +7438,7 @@
             "domain/draft.js#createPluginChoice",
             "domain/levels.js#planLevelProgression",
             "domain/levels.js#planNextLevelReward",
+            "domain/lora.js#createLoraTrial",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange"
           ],
@@ -7449,7 +7484,7 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "当前恢复预览的exploring/boss，不推进暂停期间墙钟；LoRA菜单恢复尚未接入。",
+          "description": "恢复战斗或LoRA/插件面板原阶段，保留指针和原世界返回位置，不补跑墙钟。",
           "calls": [
             "domain/plans.js#createEmptyPlan",
             "engine/flow.js#planFlowTransition"
@@ -7489,7 +7524,7 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "预览分派蒸馏死亡/受伤钩子；其他三插件由属性/额度/拾取消费者处理；DSH/完整机制仍明确拒绝。",
+          "description": "预览分派蒸馏死亡/受伤钩子；其他三插件由属性/额度/拾取消费者处理；仅接受LoRA/更新重置两种试装DSH，完整机制仍拒绝。",
           "calls": [
             "domain/distill.js#planDistillEvent"
           ],
@@ -7512,6 +7547,8 @@
         "domain/collision.js",
         "domain/deaths.js",
         "domain/distill.js",
+        "domain/dshCycle.js",
+        "domain/lora.js",
         "domain/movement.js",
         "domain/plans.js",
         "domain/rewards.js",
@@ -7553,6 +7590,7 @@
             "domain/deaths.js#resolveTerminalOutcome",
             "domain/distill.js#planDistillEvent",
             "domain/distill.js#planDistilledAbilities",
+            "domain/dshCycle.js#planDshCycleEvent",
             "domain/movement.js#planEntityMotion",
             "domain/movement.js#planPickupMotion",
             "domain/movement.js#planPlayerMovement",
@@ -7588,11 +7626,17 @@
             {
               "name": "catalog",
               "type": "untyped"
+            },
+            {
+              "name": "advanceClock",
+              "default": "false",
+              "type": "untyped"
             }
           ],
           "result": "TickResult",
           "implementation": "implemented",
           "calls": [
+            "domain/lora.js#planLoraUiStep",
             "engine/commands.js#orderPendingCommands",
             "engine/commands.js#planGameCommand",
             "engine/flow.js#planProgressionPanels",
@@ -7799,10 +7843,15 @@
             {
               "name": "session",
               "type": "untyped"
+            },
+            {
+              "name": "advanceClock",
+              "default": "true",
+              "type": "untyped"
             }
           ],
           "result": "TickResult",
-          "description": "消费预览暂停/继续与插件选择/重抽/跳过，结算后续等级；训练UI步仍未接入。",
+          "description": "消费预览暂停/继续与插件选择/重抽/跳过，结算后续等级；可选择独立UI步推进LoRA，命令flush不推进指针。",
           "calls": [
             "engine/commands.js#orderPendingCommands",
             "engine/previewTick.js#advancePreviewUiCommands",
@@ -9115,8 +9164,8 @@
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
     "modules": 81,
-    "functions": 311,
-    "implemented": 129,
-    "placeholders": 182
+    "functions": 312,
+    "implemented": 153,
+    "placeholders": 159
   }
 }

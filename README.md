@@ -1,7 +1,7 @@
 # 大肥鱼历险记 · Big Fat Fish
 
 > **V2 已有独立战斗试作**：运行 `npm run dev` 后打开 `/v2.html`。键鼠/手机双摇杆，两把MCP、两个技能、棕蟹/Bot、暂停和检查点保存/继续。
-> [实际进度与剩余任务](docs/design-v2/13-development-status.md) · [玩法规格](docs/design-v2/00-README.md) · [架构](docs/design-v2/11-architecture-contracts.md) · [函数目录](docs/design-v2/12-function-catalog.md)。当前129个函数有实现，182个TODO，已接通首批升级插件；完整冒险与局外尚未接通。
+> [实际进度与剩余任务](docs/design-v2/13-development-status.md) · [玩法规格](docs/design-v2/00-README.md) · [架构](docs/design-v2/11-architecture-contracts.md) · [函数目录](docs/design-v2/12-function-catalog.md)。当前153个函数有实现，159个TODO，已接通首批升级插件；完整冒险与局外尚未接通。
 > 以下玩法介绍仍描述旧版 `index.html`。
 
 > 纯代码生成的 2D 肉鸽生存射击。**零美术素材、零音频素材、零外部依赖** ——

@@ -72,13 +72,13 @@ export interface PluginChoice { id: Id; level: number; candidates: readonly { id
 export interface LevelReward { id: Id; level: number; loraRequired: boolean; pluginRequired: boolean; }
 export interface LoraTrial { id: Id; level: number; target: 'maxHp' | 'damageMultiplier' | 'moveSpeed' | 'armor'; phase: 'ready' | 'running' | 'resolved'; uiTick: Tick; result: 'perfect' | 'underfit' | 'overfit' | null; }
 export interface LoraTrialCreation { trial: LoraTrial; nextRandom: RandomState; }
-export interface LoraState { active: LoraTrial | null; pendingLevels: readonly number[]; modifiers: readonly StatModifier[]; underfitRemaining: number; overfitRemaining: number; resolvedTrialIds: readonly Id[]; }
+export interface LoraState { inputHeld?: boolean; active: LoraTrial | null; pendingLevels: readonly number[]; modifiers: readonly StatModifier[]; underfitRemaining: number; overfitRemaining: number; resolvedTrialIds: readonly Id[]; }
 export interface DshCycleState { remaining: number; pendingOutcome: 'update' | 'reset' | null; triggerSeq: number; lastAdvancedTick: Tick | null; }
 export interface BossState { entityId: Id; faction: Faction; phase: number; telegraph: Json; resetNodes: readonly { id: Id; hp: number; consumed: boolean; position: Vec2 }[]; resetRemaining: number; resetCooldown: number; spawnGroupSeq: number; }
 export interface ApiState { elapsedTicks: Tick; bossIndex: number; materialMinute: number; fragmentsThisMinute: number; partsThisMinute: number; }
 export interface DifficultySnapshot { level: number | 'api'; mode: Mode; mechanicIds: readonly Id[]; difficultyPerkIds: readonly Id[]; modelProfileIds: Readonly<Record<Faction, Id>>; hpMultiplier: number; damageMultiplier: number; spawnBudgetMultiplier: number; }
 export interface StartSnapshot { runtimeProfile?: 'core-preview' | 'full'; runId?: Id; treeNodeIds: readonly Id[]; dsh: readonly DshSlot[]; loadout: Loadout; difficulty: DifficultySnapshot; }
-export interface FlowState { phase: Phase; resumePhase: Phase | null; queuedLevelRewards: readonly LevelReward[]; choice: PluginChoice | null; settlementPending: boolean; pluginRerollsUsed?: number; }
+export interface FlowState { suspendedResumePhase?: Phase | null; phase: Phase; resumePhase: Phase | null; queuedLevelRewards: readonly LevelReward[]; choice: PluginChoice | null; settlementPending: boolean; pluginRerollsUsed?: number; }
 export interface GameState {
   versions: Versions; runId: Id; seed: number; tick: Tick; uiTick: Tick; revision: number; lastWorldAdvanceTick: Tick | null; input: InputState; lastCommandSeq: number;
   start: StartSnapshot; flow: FlowState; random: RandomStreams; player: PlayerState; world: WorldState;
@@ -121,7 +121,7 @@ export interface Profile {
 export interface ProfilePlan { expectedRevision: number; next: Profile; events: readonly DomainEvent[]; }
 export interface StartRequest { mode: Mode; difficulty: number | 'api'; seed: number; weaponIds: readonly Id[]; skillId: Id; companionId: Id | null; }
 export interface Checkpoint { id: Id; versions: Versions; revision: number; digest: string; state: GameState; }
-export interface Settlement { id: Id; runId: Id; outcome: 'victory' | 'defeat' | 'withdrawal'; gpuFragments: number; parts: number; survivedTicks: number; bossKills: number; discoveries: readonly Id[]; }
+export interface Settlement { difficulty?: number | 'api'; mode?: Mode; id: Id; runId: Id; outcome: 'victory' | 'defeat' | 'withdrawal'; gpuFragments: number; parts: number; survivedTicks: number; bossKills: number; discoveries: readonly Id[]; }
 export interface StorageRecord { revision: number; profile: Profile; }
 export interface StoragePort { read(): Promise<Result<StorageRecord>>; compareAndSwap(expectedRevision: number, next: StorageRecord): Promise<Result<StorageRecord>>; }
 export interface AssetRequest { id: Id; source: string; kind: 'sprite' | 'music' | 'sfx'; }

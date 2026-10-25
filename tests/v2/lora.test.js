@@ -17,7 +17,7 @@ function prepared(target = 'maxHp') {
 const input = (type, id, extra = {}) => ({ id, seq: 1, clock: 'ui', targetTick: 0, type, payload: { edge: 'press', repeat: false }, ...extra });
 function start(game) { return applySystemPlan(game, planLoraInput(context(game), input('StartTraining', 'start'))); }
 function at(game, ticks) { for (let n = 0; n < ticks; n++) { game.uiTick++; game = applySystemPlan(game, planLoraUiStep(context(game))); } return game; }
-function confirm(game) { const plan = planLoraInput(context(game), input('ConfirmTraining', 'confirm')); return { plan, game: applySystemPlan(game, plan) }; }
+function confirm(game) { game = applySystemPlan(game, planLoraInput(context(game), input('ReleaseTraining', 'release', { payload: { edge: 'release' } }))); const plan = planLoraInput(context(game), input('ConfirmTraining', 'confirm')); return { plan, game: applySystemPlan(game, plan) }; }
 
 describe('V2 LoRA training domain', () => {
   it('queues only actual newly gained levels while equipped, excludes initial level and suppresses replayed events', () => {

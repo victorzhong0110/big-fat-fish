@@ -74,12 +74,14 @@ export function planLoraInput(context, command) {
   const state = context.state, active = state.lora.active;
   const empty = { changes: [], effects: [], events: [], persistence: [], diagnostics: [] };
   const payload = /** @type {Record<string, import('../contracts.d.ts').Json> | null} */ (command.payload);
+  if (command.type === 'ReleaseTraining' && ['loraTraining', 'paused'].includes(state.flow.phase) && active && command.clock === 'ui' && payload?.edge === 'release') return { ...empty, changes: [{ target: 'runtime', id: 'dsh_lora', operation: 'setLoraInputHeld', payload: { held: false } }] };
+  if (state.lora.inputHeld) return empty;
   if (state.flow.phase !== 'loraTraining' || !active || command.clock !== 'ui' || command.targetTick > state.uiTick || state.processedCommandIds.includes(command.id) || !payload || typeof payload !== 'object' || Array.isArray(payload) || payload.edge !== 'press' || payload.repeat === true) return empty;
   let plan;
   if (command.type === 'StartTraining' && active.phase === 'ready') plan = { ...empty, changes: [{ target: /** @type {const} */ ('runtime'), id: 'dsh_lora', operation: 'startLoraPointer', payload: {} }] };
   else if (command.type === 'ConfirmTraining' && active.phase === 'running') plan = planLoraOutcome(context, { ...active, phase: 'resolved', result: resolveLoraOutcome(active) });
   else return empty;
-  return { ...plan, changes: [...plan.changes, { target: 'runtime', id: command.id, operation: 'registerCommand', payload: {} }] };
+  return { ...plan, changes: [...plan.changes, { target: 'runtime', id: 'dsh_lora', operation: 'setLoraInputHeld', payload: { held: true } }, { target: 'runtime', id: command.id, operation: 'registerCommand', payload: {} }] };
 }
 
 /**

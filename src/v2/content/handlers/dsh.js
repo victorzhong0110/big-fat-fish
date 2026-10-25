@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * dsh逐项占位处理器；实际参数仍以玩法规格为准。
- * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
+ * Incremental implementation; unavailable functions remain explicit TODOs.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../../domain/dshCycle.js';
@@ -77,10 +77,9 @@ export function planDshClaudeAllowlist(context, event) {
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planDshGptBranch(context, event) {
-  throw new Error('TODO V2: content/handlers/dsh.js#planDshGptBranch');
+  return dependency1.planDshCycleEvent(context, event);
 }
 
 /**
@@ -152,8 +151,7 @@ export function planDshOpen(context, event) {
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planDshLora(context, event) {
-  throw new Error('TODO V2: content/handlers/dsh.js#planDshLora');
+  return dependency2.planLoraLevel(context, event);
 }

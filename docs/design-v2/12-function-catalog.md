@@ -1,6 +1,6 @@
 # 12 · 全部函数目录与调用契约
 
-当前81个JS模块、311个公开函数：129个有实现，182个明确TODO。标注core-preview的函数仅覆盖战斗试作；不能当完整冒险实现。参见[进度与边界](13-development-status.md)。
+当前81个JS模块、312个公开函数：153个有实现，159个明确TODO。标注core-preview的函数仅覆盖战斗试作；不能当完整冒险实现。参见[进度与边界](13-development-status.md)。
 
 调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。
 
@@ -127,19 +127,19 @@ Phaser只表现，UI只发送UiAction。
 
 [源码](../../src/v2/adapters/storage.js)；层：`adapter`。
 
-直接依赖：无。
+直接依赖：`domain/serialization.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `createStoragePort(key: untyped)` | `StoragePort` | TODO | 创建带revision的原子记录读写端口，具体选IndexedDB或单键localStorage实现。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `readStorageRecord(key: untyped)` | `Promise<Result<StorageRecord>>` | TODO | 读取原始记录并解析，坏档返回错误且不覆盖。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `compareAndSwapStorageRecord(key: untyped, expectedRevision: untyped, next: untyped)` | `Promise<Result<StorageRecord>>` | TODO | 原子校验revision并写整条Profile+checkpoint；并发冲突返回错误。；localStorage不具跨标签页CAS能力，若选它必须加可靠单写者协调；否则使用IndexedDB事务。；状态权限：唯一磁盘写者，不能拆余额/检查点两次写 |
+| `createStoragePort(key: untyped)` | `StoragePort` | 已实现 | 创建带revision的原子记录读写端口，具体选IndexedDB或单键localStorage实现。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `readStorageRecord(key: untyped)` | `Promise<Result<StorageRecord>>` | 已实现 | 读取原始记录并解析，坏档返回错误且不覆盖。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `compareAndSwapStorageRecord(key: untyped, expectedRevision: untyped, next: untyped)` | `Promise<Result<StorageRecord>>` | 已实现 | 原子校验revision并写整条Profile+checkpoint；并发冲突返回错误。；localStorage不具跨标签页CAS能力，若选它必须加可靠单写者协调；否则使用IndexedDB事务。；状态权限：唯一磁盘写者，不能拆余额/检查点两次写 |
 
 公开函数下游：
 
-- `createStoragePort` → `adapters/storage.js#readStorageRecord`、`adapters/storage.js#compareAndSwapStorageRecord`。
+- `createStoragePort` → `adapters/storage.js#compareAndSwapStorageRecord`、`adapters/storage.js#readStorageRecord`。
 - `readStorageRecord` → 无内部公开函数。
-- `compareAndSwapStorageRecord` → 无内部公开函数。
+- `compareAndSwapStorageRecord` → `domain/serialization.js#serializeCanonical`。
 
 公开函数上游：
 
@@ -238,19 +238,19 @@ Phaser只表现，UI只发送UiAction。
 
 [源码](../../src/v2/application/repository.js)；层：`application`。
 
-直接依赖：`domain/profile/unlocks.js`、`domain/settlement.js`。
+直接依赖：`domain/checkpoint.js`、`domain/profile/unlocks.js`、`domain/serialization.js`、`domain/settlement.js`、`versions.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `readProfileRepository(storage: untyped, catalog: untyped)` | `Promise<Result<StorageRecord>>` | TODO | 通过注入存储读取并验证档案，坏档不覆盖；不在世界tick内等待I/O。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `commitProfilePlan(storage: untyped, plan: untyped)` | `Promise<Result<StorageRecord>>` | TODO | 以expectedRevision原子提交一个余额/解锁/检查点计划；冲突必须重读重算，不覆盖他人更新。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `mergePersistenceIntents(profile: untyped, intents: untyped, catalog: untyped)` | `Result<ProfilePlan>` | TODO | 稳定顺序合并发现/解锁/结算/存档，读取账本去重，输出单次revision计划。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `readProfileRepository(storage: untyped, catalog: untyped)` | `Promise<Result<StorageRecord>>` | 已实现 | 通过注入存储读取并验证档案，坏档不覆盖；不在世界tick内等待I/O。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `commitProfilePlan(storage: untyped, plan: untyped, catalog: untyped)` | `Promise<Result<StorageRecord>>` | 已实现 | 以expectedRevision原子提交一个余额/解锁/检查点计划；冲突必须重读重算，不覆盖他人更新。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `mergePersistenceIntents(profile: untyped, intents: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 稳定顺序合并发现/解锁/结算/存档，读取账本去重，输出单次revision计划。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
-- `readProfileRepository` → `domain/settlement.js#validateProfileRecord`。
-- `commitProfilePlan` → `domain/settlement.js#validateProfileRecord`。
-- `mergePersistenceIntents` → `domain/profile/unlocks.js#planDiscoveryUnlock`、`domain/profile/unlocks.js#planBossUnlock`、`domain/profile/unlocks.js#planEasterUnlock`、`domain/settlement.js#planSettlementCommit`。
+- `readProfileRepository` → `domain/settlement.js#createDefaultProfile`、`domain/settlement.js#validateProfileRecord`。
+- `commitProfilePlan` → `domain/serialization.js#serializeCanonical`、`domain/settlement.js#validateProfileRecord`。
+- `mergePersistenceIntents` → `domain/checkpoint.js#validateCheckpoint`、`domain/profile/unlocks.js#planBossUnlock`、`domain/profile/unlocks.js#planDiscoveryUnlock`、`domain/profile/unlocks.js#planEasterUnlock`、`domain/serialization.js#serializeCanonical`、`domain/settlement.js#planSettlementCommit`、`domain/settlement.js#validateProfileRecord`。
 
 公开函数上游：
 
@@ -382,12 +382,12 @@ dsh逐项占位处理器；实际参数仍以玩法规格为准。
 | `planDshGptPreview(context: untyped, event: untyped)` | `EffectPlan` | TODO | dsh_gpt_preview / 分支预览：难度1及以上首次击败ChatGPT；本局第一次插件选择由3张变4张；首选仍保证含蒸馏，另外3张正常抽；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planDshGrokLicense(context: untyped, event: untyped)` | `EffectPlan` | TODO | dsh_grok_license / 发射许可：难度1及以上首次击败Grok；每海域开始获得1枚储备火箭；下一次成功装备技能施放时发射，直击30、爆炸20、半径100；每海域只能消耗1次；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planDshClaudeAllowlist(context: untyped, event: untyped)` | `EffectPlan` | TODO | dsh_claude_allowlist / 白名单：难度10及以上首次击败Claude；出发前选择“保护技能”或“保护伙伴”，每海域免疫第一次该类封禁；不免疫禁锢；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planDshGptBranch(context: untyped, event: untyped)` | `EffectPlan` | TODO | dsh_gpt_branch / “更新”还是“重置”？：难度10及以上首次击败ChatGPT；每28秒等概率触发更新/重置；更新当前MCP品质28秒（最高品质改武器伤害+20%），或清零装备技能/冲刺/伙伴冷却；详细边界见下；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planDshGptBranch(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | dsh_gpt_branch / “更新”还是“重置”？：难度10及以上首次击败ChatGPT；每28秒等概率触发更新/重置；更新当前MCP品质28秒（最高品质改武器伤害+20%），或清零装备技能/冲刺/伙伴冷却；详细边界见下；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planDshGrokSalvage(context: untyped, event: untyped)` | `EffectPlan` | TODO | dsh_grok_salvage / 清场回收：难度10及以上首次击败Grok；每12次有正常奖励的真实敌人击杀，装填1枚储备火箭，最多存1枚；下次基础射击后发射，直击20、爆炸15、半径90，触发内置冷却8秒；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planDshSleep(context: untyped, event: untyped)` | `EffectPlan` | TODO | dsh_sleep / DeepSleep：彩蛋“深度摸鱼”：任一地图隐藏躺椅交互，连续坐满8秒有效时间；连续2秒不移动且不攻击时获得8护盾持续4秒，内置冷却20秒；暂停/面板不累计坐着或不动时间；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planDshRice(context: untyped, event: untyped)` | `EffectPlan` | TODO | dsh_rice / 开饭协议：彩蛋“饭点”：同一局找到3份不同地点的留言，打开隐藏饭盒并交互；实际治疗的溢出量50%转护盾，上限10、持续5秒；同名盾不叠加，护盾不触发治疗；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planDshOpen(context: untyped, event: untyped)` | `EffectPlan` | TODO | dsh_open / 开源接口：彩蛋“接口拼图”：同一局用3种不同MCP命中训练装置的3个接口，完成交互；第一海域第一个普通武器箱额外提供另一把标准品质MCP供选择；只能拿其中一把，不能把额外选项转零件；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planDshLora(context: untyped, event: untyped)` | `EffectPlan` | TODO | dsh_lora / LoRA微调：难度6及以上首次完整通关正式短途/远征（默认解锁条件）；每次实际升级触发一次指针训练：完美提高本局基础属性；欠拟合/过拟合降低该属性并分别附加负面效果，见下；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planDshLora(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | dsh_lora / LoRA微调：难度6及以上首次完整通关正式短途/远征（默认解锁条件）；每次实际升级触发一次指针训练：完美提高本局基础属性；欠拟合/过拟合降低该属性并分别附加负面效果，见下；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
@@ -404,15 +404,15 @@ dsh逐项占位处理器；实际参数仍以玩法规格为准。
 
 公开函数上游：
 
-- `planDshClaudeAppeal` ← `dispatch/dsh.js#dispatchDshHandler`。
-- `planDshGptPreview` ← `dispatch/dsh.js#dispatchDshHandler`。
-- `planDshGrokLicense` ← `dispatch/dsh.js#dispatchDshHandler`。
-- `planDshClaudeAllowlist` ← `dispatch/dsh.js#dispatchDshHandler`。
+- `planDshClaudeAppeal` ← 宿主/工具入口或待编排。
+- `planDshGptPreview` ← 宿主/工具入口或待编排。
+- `planDshGrokLicense` ← 宿主/工具入口或待编排。
+- `planDshClaudeAllowlist` ← 宿主/工具入口或待编排。
 - `planDshGptBranch` ← `dispatch/dsh.js#dispatchDshHandler`。
-- `planDshGrokSalvage` ← `dispatch/dsh.js#dispatchDshHandler`。
-- `planDshSleep` ← `dispatch/dsh.js#dispatchDshHandler`。
-- `planDshRice` ← `dispatch/dsh.js#dispatchDshHandler`。
-- `planDshOpen` ← `dispatch/dsh.js#dispatchDshHandler`。
+- `planDshGrokSalvage` ← 宿主/工具入口或待编排。
+- `planDshSleep` ← 宿主/工具入口或待编排。
+- `planDshRice` ← 宿主/工具入口或待编排。
+- `planDshOpen` ← 宿主/工具入口或待编排。
 - `planDshLora` ← `dispatch/dsh.js#dispatchDshHandler`。
 
 ## content/handlers/enemies.js
@@ -804,11 +804,11 @@ DSH稳定ID分派，不得把所有候选处理器依次执行。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `dispatchDshHandler(context: untyped, definitionId: untyped, event: untyped)` | `EffectPlan` | TODO | 按合法稳定id和已实现绑定只调用一个对应处理器。；@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `dispatchDshHandler(context: untyped, definitionId: untyped, event: untyped)` | `EffectPlan` | 已实现 / core-preview | 按合法稳定id和已实现绑定只调用一个对应处理器。；@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
-- `dispatchDshHandler` → `content/handlers/dsh.js#planDshClaudeAppeal`、`content/handlers/dsh.js#planDshGptPreview`、`content/handlers/dsh.js#planDshGrokLicense`、`content/handlers/dsh.js#planDshClaudeAllowlist`、`content/handlers/dsh.js#planDshGptBranch`、`content/handlers/dsh.js#planDshGrokSalvage`、`content/handlers/dsh.js#planDshSleep`、`content/handlers/dsh.js#planDshRice`、`content/handlers/dsh.js#planDshOpen`、`content/handlers/dsh.js#planDshLora`。
+- `dispatchDshHandler` → `content/handlers/dsh.js#planDshGptBranch`、`content/handlers/dsh.js#planDshLora`。
 
 公开函数上游：
 
@@ -1090,7 +1090,7 @@ Grok首领只有简单火箭和召集人海。
 
 - `canCreateCheckpoint` ← `application/game.js#saveAdventureCheckpoint`、`preview/host.js#mountCombatPreview`。
 - `createCheckpoint` ← `application/game.js#saveAdventureCheckpoint`、`preview/host.js#mountCombatPreview`。
-- `validateCheckpoint` ← `domain/checkpoint.js#restoreCheckpointState`。
+- `validateCheckpoint` ← `application/repository.js#mergePersistenceIntents`、`domain/checkpoint.js#restoreCheckpointState`、`domain/settlement.js#validateProfileRecord`。
 - `restoreCheckpointState` ← `engine/session.js#restoreGameSession`。
 
 ## domain/clock.js
@@ -1300,7 +1300,7 @@ Grok首领只有简单火箭和召集人海。
 
 公开函数上游：
 
-- `planDshCycleEvent` ← `content/handlers/dsh.js#planDshGptBranch`。
+- `planDshCycleEvent` ← `content/handlers/dsh.js#planDshGptBranch`、`engine/previewTick.js#advancePreviewWorldTick`。
 - `planTemporaryWeaponUpdate` ← `domain/dshCycle.js#planDshCycleEvent`。
 - `planCooldownReset` ← `domain/dshCycle.js#planDshCycleEvent`。
 
@@ -1428,9 +1428,9 @@ Create an unpublished initial state. Map plans are applied before Session publis
 公开函数上游：
 
 - `planLoraLevel` ← `content/handlers/dsh.js#planDshLora`。
-- `createLoraTrial` ← 宿主/工具入口或待编排。
-- `planLoraUiStep` ← `engine/tick.js#advanceUiTick`。
-- `planLoraInput` ← 宿主/工具入口或待编排。
+- `createLoraTrial` ← `engine/flow.js#planProgressionPanels`。
+- `planLoraUiStep` ← `engine/previewTick.js#advancePreviewUiCommands`、`engine/tick.js#advanceUiTick`。
+- `planLoraInput` ← `engine/commands.js#planGameCommand`。
 - `resolveLoraOutcome` ← `domain/lora.js#planLoraInput`、`domain/lora.js#planLoraOutcome`。
 - `planLoraOutcome` ← `domain/lora.js#planLoraUiStep`、`domain/lora.js#planLoraInput`、`engine/tick.js#advanceUiTick`。
 
@@ -1565,10 +1565,10 @@ Sweep and slide a circular body along blocking circular terrain, then clamp map 
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planFacilityPurchase(profile: untyped, facilityId: untyped, catalog: untyped)` | `Result<ProfilePlan>` | TODO | 扣零件、建设设施，默认装备仍可用；重复购买拒绝。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planPermanentUnlock(profile: untyped, definitionId: untyped, catalog: untyped)` | `Result<ProfilePlan>` | TODO | 已发现且满足设施时购买武器/技能出发选择权，不赠高品质实例。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planDshEquipment(profile: untyped, slots: untyped, catalog: untyped)` | `Result<ProfilePlan>` | TODO | 校验拥有/重复/槽数/选项，只在小窝更换，不改当前出发快照。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `validateStartRequest(profile: untyped, request: untyped, catalog: untyped)` | `ValidationReport` | TODO | 检查模式/难度/武器/伙伴/设施和活动存档覆盖确认。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planFacilityPurchase(profile: untyped, facilityId: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 扣零件、建设设施，默认装备仍可用；重复购买拒绝。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planPermanentUnlock(profile: untyped, definitionId: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 已发现且满足设施时购买武器/技能出发选择权，不赠高品质实例。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planDshEquipment(profile: untyped, slots: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 校验拥有/重复/槽数/选项，只在小窝更换，不改当前出发快照。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `validateStartRequest(profile: untyped, request: untyped, catalog: untyped)` | `ValidationReport` | 已实现 | 检查模式/难度/武器/伙伴/设施和活动存档覆盖确认。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
@@ -1594,10 +1594,10 @@ Sweep and slide a circular body along blocking circular terrain, then clamp map 
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `validateTreePurchase(profile: untyped, nodeId: untyped, catalog: untyped)` | `ValidationReport` | TODO | 校验前置、余额与DSH基础花费门槛，不消耗资金。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planTreePurchase(profile: untyped, nodeId: untyped, catalog: untyped)` | `Result<ProfilePlan>` | TODO | 一次节点购买与余额扣除作为同个局外计划。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planTreeRespec(profile: untyped, catalog: untyped)` | `ProfilePlan` | TODO | 整树按已购成本全退，DSH槽关闭并卸下配装，收藏保留。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `resolveDshSlotCount(profile: untyped, catalog: untyped)` | `number` | TODO | 仅根据三个特殊节点返回0–3槽，不根据收藏数量增加槽。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `validateTreePurchase(profile: untyped, nodeId: untyped, catalog: untyped)` | `ValidationReport` | 已实现 | 校验前置、余额与DSH基础花费门槛，不消耗资金。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planTreePurchase(profile: untyped, nodeId: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 一次节点购买与余额扣除作为同个局外计划。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planTreeRespec(profile: untyped, catalog: untyped)` | `ProfilePlan` | 已实现 | 整树按已购成本全退，DSH槽关闭并卸下配装，收藏保留。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `resolveDshSlotCount(profile: untyped, catalog: untyped)` | `number` | 已实现 | 仅根据三个特殊节点返回0–3槽，不根据收藏数量增加槽。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
@@ -1608,10 +1608,10 @@ Sweep and slide a circular body along blocking circular terrain, then clamp map 
 
 公开函数上游：
 
-- `validateTreePurchase` ← `domain/profile/tree.js#planTreePurchase`。
+- `validateTreePurchase` ← `domain/profile/tree.js#planTreePurchase`、`domain/settlement.js#validateProfileRecord`。
 - `planTreePurchase` ← `application/game.js#submitNestAction`。
 - `planTreeRespec` ← `application/game.js#submitNestAction`。
-- `resolveDshSlotCount` ← `domain/profile/nest.js#planDshEquipment`。
+- `resolveDshSlotCount` ← `domain/profile/nest.js#planDshEquipment`、`domain/settlement.js#validateProfileRecord`。
 
 ## domain/profile/unlocks.js
 
@@ -1623,9 +1623,9 @@ Sweep and slide a circular body along blocking circular terrain, then clamp map 
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planDiscoveryUnlock(profile: untyped, event: untyped, catalog: untyped)` | `Result<ProfilePlan>` | TODO | 发现/救助立即持久化计划，恢复旧检查点不撤销也不重发资源。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planBossUnlock(profile: untyped, event: untyped, catalog: untyped)` | `Result<ProfilePlan>` | TODO | 真实Boss击败满足数字难度DSH，API不冒充数字关；完整通关才开下一难度。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planEasterUnlock(profile: untyped, event: untyped, catalog: untyped)` | `Result<ProfilePlan>` | TODO | LoRA/饭点/摸鱼等定义条件的唯一永久解锁计划，不需已开槽。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planDiscoveryUnlock(profile: untyped, event: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 发现/救助立即持久化计划，恢复旧检查点不撤销也不重发资源。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planBossUnlock(profile: untyped, event: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 真实Boss击败满足数字难度DSH，API不冒充数字关；完整通关才开下一难度。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planEasterUnlock(profile: untyped, event: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | LoRA/饭点/摸鱼等定义条件的唯一永久解锁计划，不需已开槽。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
@@ -1759,7 +1759,7 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 
 公开函数上游：
 
-- `serializeCanonical` ← `content/catalog.js#validateContentCatalog`、`domain/checkpoint.js#createCheckpoint`、`domain/checkpoint.js#validateCheckpoint`、`domain/checkpoint.js#restoreCheckpointState`、`domain/plans.js#validateSystemPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#createDataDigest`、`domain/serialization.js#toJson`、`domain/stateValidation.js#inspectGameState`、`engine/commands.js#validateGameCommand`、`engine/effectLoop.js#evaluateEffectRequest`、`engine/reducer.js#applySystemPlan`。
+- `serializeCanonical` ← `adapters/storage.js#compareAndSwapStorageRecord`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`content/catalog.js#validateContentCatalog`、`domain/checkpoint.js#createCheckpoint`、`domain/checkpoint.js#validateCheckpoint`、`domain/checkpoint.js#restoreCheckpointState`、`domain/plans.js#validateSystemPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#createDataDigest`、`domain/serialization.js#toJson`、`domain/settlement.js#validateProfileRecord`、`domain/stateValidation.js#inspectGameState`、`engine/commands.js#validateGameCommand`、`engine/effectLoop.js#evaluateEffectRequest`、`engine/reducer.js#applySystemPlan`。
 - `createDataDigest` ← `domain/checkpoint.js#createCheckpoint`、`domain/checkpoint.js#validateCheckpoint`、`engine/snapshot.js#createStateDigest`。
 - `toJson` ← `domain/attacks.js#planCollisionEffects`、`domain/meleeAi.js#planMeleeEnemy`、`engine/snapshot.js#createRenderSnapshot`。
 
@@ -1769,25 +1769,28 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 
 [源码](../../src/v2/domain/settlement.js)；层：`domain`。
 
-直接依赖：无。
+直接依赖：`domain/checkpoint.js`、`domain/profile/tree.js`、`domain/serialization.js`、`versions.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `createSettlement(state: untyped, outcome: untyped)` | `Settlement` | TODO | 计算成功/失败40或50%/API主动撤回，资源向下取整；本局id固定。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planSettlementCommit(profile: untyped, settlement: untyped, catalog: untyped)` | `Result<ProfilePlan>` | TODO | 去重、入账、碎片换卡、解锁并清当前检查点，单个revision计划。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `validateProfileRecord(profile: untyped, catalog: untyped)` | `ValidationReport` | TODO | 校验余额/树前置/槽位/去重/活动存档引用；迁移失败不覆盖原数据。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `createSettlement(state: untyped, outcome: untyped)` | `Settlement` | 已实现 | 计算成功/失败40或50%/API主动撤回，资源向下取整；本局id固定。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planSettlementCommit(profile: untyped, settlement: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 去重、入账、碎片换卡、解锁并清当前检查点，单个revision计划。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `validateProfileRecord(profile: untyped, catalog: untyped)` | `ValidationReport` | 已实现 | 校验余额/树前置/槽位/去重/活动存档引用；迁移失败不覆盖原数据。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `createDefaultProfile()` | `Profile` | 已实现 | createDefaultProfile；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
 - `createSettlement` → 无内部公开函数。
-- `planSettlementCommit` → 无内部公开函数。
-- `validateProfileRecord` → 无内部公开函数。
+- `planSettlementCommit` → `domain/settlement.js#validateProfileRecord`。
+- `validateProfileRecord` → `domain/checkpoint.js#validateCheckpoint`、`domain/profile/tree.js#resolveDshSlotCount`、`domain/profile/tree.js#validateTreePurchase`、`domain/serialization.js#serializeCanonical`。
+- `createDefaultProfile` → 无内部公开函数。
 
 公开函数上游：
 
 - `createSettlement` ← `application/game.js#settleAdventure`。
 - `planSettlementCommit` ← `application/game.js#settleAdventure`、`application/repository.js#mergePersistenceIntents`。
-- `validateProfileRecord` ← `application/game.js#createApplication`、`application/repository.js#readProfileRepository`、`application/repository.js#commitProfilePlan`。
+- `validateProfileRecord` ← `application/game.js#createApplication`、`application/repository.js#readProfileRepository`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`domain/settlement.js#planSettlementCommit`。
+- `createDefaultProfile` ← `application/repository.js#readProfileRepository`。
 
 ## domain/shells.js
 
@@ -2037,7 +2040,7 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 公开函数下游：
 
 - `validateGameCommand` → `domain/serialization.js#serializeCanonical`。
-- `planGameCommand` → `domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planSkillCast`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginSkip`、`domain/geometry.js#normalizeVector`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`engine/commands.js#validateGameCommand`、`engine/flow.js#planPause`、`engine/flow.js#planResume`。
+- `planGameCommand` → `domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planSkillCast`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginSkip`、`domain/geometry.js#normalizeVector`、`domain/lora.js#planLoraInput`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`engine/commands.js#validateGameCommand`、`engine/flow.js#planPause`、`engine/flow.js#planResume`。
 - `orderPendingCommands` → 无内部公开函数。
 
 公开函数上游：
@@ -2079,15 +2082,15 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planFlowTransition(context: untyped, nextPhase: untyped)` | `SystemPlan` | 已实现 / core-preview | 预览只开放战斗→暂停/终态与暂停→原战斗状态；完整成长面板状态边未接入。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planFlowTransition(context: untyped, nextPhase: untyped)` | `SystemPlan` | 已实现 / core-preview | 预览只开放战斗→暂停/终态与暂停→原战斗状态；保留暂停前面板及其原世界返回阶段。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planProgressionPanels(context: untyped)` | `SystemPlan` | 已实现 / core-preview | 按队首升级逐步开LoRA/插件，不能两个面板抢Space。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planPause(context: untyped, reason: untyped)` | `SystemPlan` | 已实现 / core-preview | 保留所有世界/UI剩余时间，后台/性能暂停清理持有输入。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planResume(context: untyped)` | `SystemPlan` | 已实现 / core-preview | 当前恢复预览的exploring/boss，不推进暂停期间墙钟；LoRA菜单恢复尚未接入。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planResume(context: untyped)` | `SystemPlan` | 已实现 / core-preview | 恢复战斗或LoRA/插件面板原阶段，保留指针和原世界返回位置，不补跑墙钟。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
 - `planFlowTransition` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
-- `planProgressionPanels` → `domain/draft.js#createPluginChoice`、`domain/levels.js#planLevelProgression`、`domain/levels.js#planNextLevelReward`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
+- `planProgressionPanels` → `domain/draft.js#createPluginChoice`、`domain/levels.js#planLevelProgression`、`domain/levels.js#planNextLevelReward`、`domain/lora.js#createLoraTrial`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
 - `planPause` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`engine/flow.js#planFlowTransition`。
 - `planResume` → `domain/plans.js#createEmptyPlan`、`engine/flow.js#planFlowTransition`。
 
@@ -2108,7 +2111,7 @@ Native MCP projectiles use one hit identity per pellet; a volley shares its chai
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planEventHooks(context: untyped, event: untyped)` | `SystemPlan` | 已实现 / core-preview | 预览分派蒸馏死亡/受伤钩子；其他三插件由属性/额度/拾取消费者处理；DSH/完整机制仍明确拒绝。；过滤已启用/实际订阅的handler；次级伤害不冒充基础武器命中；不再次发布同eventId。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planEventHooks(context: untyped, event: untyped)` | `SystemPlan` | 已实现 / core-preview | 预览分派蒸馏死亡/受伤钩子；其他三插件由属性/额度/拾取消费者处理；仅接受LoRA/更新重置两种试装DSH，完整机制仍拒绝。；过滤已启用/实际订阅的handler；次级伤害不冒充基础武器命中；不再次发布同eventId。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
@@ -2124,17 +2127,17 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 [源码](../../src/v2/engine/previewTick.js)；层：`engine`。
 
-直接依赖：`domain/ai.js`、`domain/attacks.js`、`domain/collision.js`、`domain/deaths.js`、`domain/distill.js`、`domain/movement.js`、`domain/plans.js`、`domain/rewards.js`、`domain/status.js`、`engine/commands.js`、`engine/effectLoop.js`、`engine/flow.js`、`engine/reducer.js`。
+直接依赖：`domain/ai.js`、`domain/attacks.js`、`domain/collision.js`、`domain/deaths.js`、`domain/distill.js`、`domain/dshCycle.js`、`domain/lora.js`、`domain/movement.js`、`domain/plans.js`、`domain/rewards.js`、`domain/status.js`、`engine/commands.js`、`engine/effectLoop.js`、`engine/flow.js`、`engine/reducer.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
 | `advancePreviewWorldTick(state: untyped, commands: untyped, catalog: untyped)` | `TickResult` | 已实现 / core-preview | 执行受范围限制的预览世界步，逐阶段应用计划、排队效果、声明死亡与掉落，最后只提交一次。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
-| `advancePreviewUiCommands(state: untyped, commands: untyped, catalog: untyped)` | `TickResult` | 已实现 / core-preview | 不推进已暂停时钟，立即处理暂停/恢复命令。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `advancePreviewUiCommands(state: untyped, commands: untyped, catalog: untyped, advanceClock: untyped = false)` | `TickResult` | 已实现 / core-preview | 不推进已暂停时钟，立即处理暂停/恢复命令。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
-- `advancePreviewWorldTick` → `domain/ai.js#planEnemyAi`、`domain/attacks.js#planCollisionEffects`、`domain/attacks.js#planWeaponFire`、`domain/collision.js#detectCollisions`、`domain/deaths.js#resolveTerminalOutcome`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/movement.js#planPlayerMovement`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#planDeathRewards`、`domain/status.js#planStatusAdvance`、`engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/effectLoop.js#drainEffectQueue`、`engine/flow.js#planProgressionPanels`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
-- `advancePreviewUiCommands` → `engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/flow.js#planProgressionPanels`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
+- `advancePreviewWorldTick` → `domain/ai.js#planEnemyAi`、`domain/attacks.js#planCollisionEffects`、`domain/attacks.js#planWeaponFire`、`domain/collision.js#detectCollisions`、`domain/deaths.js#resolveTerminalOutcome`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/dshCycle.js#planDshCycleEvent`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/movement.js#planPlayerMovement`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#planDeathRewards`、`domain/status.js#planStatusAdvance`、`engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/effectLoop.js#drainEffectQueue`、`engine/flow.js#planProgressionPanels`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
+- `advancePreviewUiCommands` → `domain/lora.js#planLoraUiStep`、`engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/flow.js#planProgressionPanels`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
 
 公开函数上游：
 
@@ -2180,7 +2183,7 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 | `createGameSession(start: untyped, seed: untyped, catalog: untyped)` | `GameSession` | 已实现 / core-preview | 只创建显式core-preview/0级范围的私有Session，校验内容/初始世界后才发布句柄。；；状态权限：创建Session私有状态；不接触Profile和宿主对象 |
 | `enqueueSessionCommand(session: untyped, command: untyped)` | `Result<Command>` | 已实现 / core-preview | 只排队不重入tick，拒绝终态/重复命令。；；状态权限：只写Session待处理命令队列 |
 | `stepSessionWorld(session: untyped)` | `TickResult` | 已实现 / core-preview | 消费到期世界命令，调用独立预览世界步并原子提交；正式世界tick仍未实现。；；状态权限：唯一门面允许提交世界状态 |
-| `stepSessionUi(session: untyped)` | `TickResult` | 已实现 / core-preview | 消费预览暂停/继续与插件选择/重抽/跳过，结算后续等级；训练UI步仍未接入。；；状态权限：唯一门面允许提交UI状态 |
+| `stepSessionUi(session: untyped, advanceClock: untyped = true)` | `TickResult` | 已实现 / core-preview | 消费预览暂停/继续与插件选择/重抽/跳过，结算后续等级；可选择独立UI步推进LoRA，命令flush不推进指针。；；状态权限：唯一门面允许提交UI状态 |
 | `readSessionState(session: untyped)` | `StateSnapshot` | 已实现 | 返回防修改快照或结构化复制，不能泄露私有可变引用。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `readSessionView(session: untyped)` | `RenderSnapshot` | 已实现 | 供表现读取投影，不把整个Session交给Phaser。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `restoreGameSession(checkpoint: untyped, catalog: untyped)` | `Result<GameSession>` | 已实现 / core-preview | 验证检查点后构建新的暂停预览Session；完整冒险范围明确拒绝。；；状态权限：构建替代Session，调用者先dispose旧表现订阅 |

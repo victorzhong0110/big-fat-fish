@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * 发现/彩蛋/Boss里程碑，独立幂等id。
- * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
+ * Incremental implementation; unavailable functions remain explicit TODOs.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 
@@ -14,10 +14,14 @@
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
  * @returns {import('../../contracts.d.ts').Result<import('../../contracts.d.ts').ProfilePlan>}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planDiscoveryUnlock(profile, event, catalog) {
-  throw new Error('TODO V2: domain/profile/unlocks.js#planDiscoveryUnlock');
+  const payload = /** @type {{definitionId?:string;companionId?:string}} */ (event.payload);
+  const id = event.type === 'CompanionRescued' ? payload?.companionId : payload?.definitionId;
+  if (!['ContentDiscovered', 'CompanionRescued'].includes(event.type) || !id || !catalog.definitions[id] || event.type === 'CompanionRescued' && catalog.definitions[id].kind !== 'companion') return { ok: false, code: 'INVALID_DISCOVERY', message: 'Discovery must reference known content or a rescued companion' };
+  const ledgerId = `discovery:${event.id}`;
+  if (profile.discoveryLedger.includes(ledgerId)) return { ok: true, value: { expectedRevision: profile.revision, next: structuredClone(profile), events: [] } };
+  return { ok: true, value: { expectedRevision: profile.revision, next: { ...structuredClone(profile), revision: profile.revision + 1, discovered: [...new Set([...profile.discovered, id])], unlockedCompanions: event.type === 'CompanionRescued' ? [...new Set([...profile.unlockedCompanions, id])] : [...profile.unlockedCompanions], discoveryLedger: [...profile.discoveryLedger, ledgerId] }, events: [] } };
 }
 
 /**
@@ -29,10 +33,18 @@ export function planDiscoveryUnlock(profile, event, catalog) {
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
  * @returns {import('../../contracts.d.ts').Result<import('../../contracts.d.ts').ProfilePlan>}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planBossUnlock(profile, event, catalog) {
-  throw new Error('TODO V2: domain/profile/unlocks.js#planBossUnlock');
+  const p = /** @type {{faction?:string;difficulty?:number|string;mode?:string;entityId?:string}} */ (event.payload);
+  if (event.type !== 'BossDefeated' || !['claude', 'gpt', 'grok'].includes(p?.faction ?? '') || !p?.entityId || !['short', 'expedition', 'api'].includes(p.mode ?? '')) return { ok: false, code: 'INVALID_BOSS_UNLOCK', message: 'Expected an actual boss-defeat event' };
+  const id = `boss:${event.runId}:${p.entityId}`;
+  if (profile.unlockLedger.includes(id)) return { ok: true, value: { expectedRevision: profile.revision, next: structuredClone(profile), events: [] } };
+  const number = typeof p.difficulty === 'number' && Number.isInteger(p.difficulty) && p.difficulty >= 1 && p.difficulty <= 15 && p.mode !== 'api' ? p.difficulty : 0;
+  const base = { claude: 'dsh_claude_appeal', gpt: 'dsh_gpt_preview', grok: 'dsh_grok_license' }[/** @type {'claude'|'gpt'|'grok'} */ (p.faction)];
+  const advanced = { claude: 'dsh_claude_allowlist', gpt: 'dsh_gpt_branch', grok: 'dsh_grok_salvage' }[/** @type {'claude'|'gpt'|'grok'} */ (p.faction)];
+  const unlocked = [...profile.unlockedDsh, ...(number >= 1 ? [base] : []), ...(number >= 10 ? [advanced] : [])];
+  if (unlocked.some(id => catalog.definitions[id]?.kind !== 'dsh')) return { ok: false, code: 'MISSING_DSH', message: 'Unlock references missing content' };
+  return { ok: true, value: { expectedRevision: profile.revision, next: { ...structuredClone(profile), revision: profile.revision + 1, unlockedDsh: [...new Set(unlocked)], unlockLedger: [...profile.unlockLedger, id] }, events: [] } };
 }
 
 /**
@@ -44,8 +56,14 @@ export function planBossUnlock(profile, event, catalog) {
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
  * @returns {import('../../contracts.d.ts').Result<import('../../contracts.d.ts').ProfilePlan>}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planEasterUnlock(profile, event, catalog) {
-  throw new Error('TODO V2: domain/profile/unlocks.js#planEasterUnlock');
+  const p = /** @type {{easterId?:string;satTicks?:number;noteIds?:string[];openedBox?:boolean;weaponIds?:string[];interfaces?:string[]}} */ (event.payload);
+  const dshId = { easter_sleep: 'dsh_sleep', easter_rice: 'dsh_rice', easter_open: 'dsh_open' }[/** @type {'easter_sleep'|'easter_rice'|'easter_open'} */ (p?.easterId)];
+  const unique = (/** @type {readonly string[]|undefined} */ values) => Array.isArray(values) && values.every(id => typeof id === 'string' && id) ? new Set(values).size : 0;
+  const valid = p?.easterId === 'easter_sleep' ? Number.isSafeInteger(p.satTicks) && Number(p.satTicks) >= 480 : p?.easterId === 'easter_rice' ? unique(p.noteIds) >= 3 && p.openedBox === true : unique(p?.weaponIds) >= 3 && p.weaponIds?.every(id => catalog.definitions[id]?.kind === 'weapon') && unique(p.interfaces) >= 3;
+  if (event.type !== 'EasterCompleted' || !dshId || !valid) return { ok: false, code: 'INVALID_EASTER', message: 'Easter egg requires its completed evidence' };
+  const id = `easter:${dshId}`;
+  if (profile.unlockLedger.includes(id)) return { ok: true, value: { expectedRevision: profile.revision, next: structuredClone(profile), events: [] } };
+  return { ok: true, value: { expectedRevision: profile.revision, next: { ...structuredClone(profile), revision: profile.revision + 1, unlockedDsh: [...new Set([...profile.unlockedDsh, dshId])], unlockLedger: [...profile.unlockLedger, id] }, events: [] } };
 }

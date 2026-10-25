@@ -81,6 +81,7 @@ export function validateSystemPlan(plan) {
       case 'removeDamageBudget': valid = change.target === 'runtime' && Object.keys(p).length === 0; break;
       case 'setStatusIds': valid = change.target === 'entity' && ids('ids'); break;
       case 'setStatus': valid = change.target === 'world' && p.id === change.id && typeof p.kind === 'string' && typeof p.sourceId === 'string' && nonnegative('remaining') && Number.isInteger(p.requiredInputs) && Number(p.requiredInputs) >= 0 && Number.isInteger(p.completedInputs) && Number(p.completedInputs) >= 0 && ids('modifiersApplied'); break;
+      case 'setLoraInputHeld': valid = change.target === 'runtime' && change.id === 'dsh_lora' && typeof p.held === 'boolean'; break;
       case 'queueLoraLevel': valid = change.target === 'runtime' && change.id === 'dsh_lora' && Number.isSafeInteger(p.level) && Number(p.level) >= 2; break;
       case 'beginLoraTrial': {
         const trial = /** @type {Record<string, import('../contracts.d.ts').Json> | null} */ (p.trial);

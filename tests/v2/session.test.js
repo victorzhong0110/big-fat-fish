@@ -20,7 +20,7 @@ function ctx(state) {return {state,catalog,random:state.random.combat,entityId:n
 
 describe('source-backed V2 catalog',()=>{
  it('has all declared categories, exact 160-GPU tree cost, explicit runtime capabilities and detached loads',()=>{
-  const registry=createHandlerRegistry();expect(validateContentCatalog(catalog,registry)).toEqual({valid:true,diagnostics:[]});expect(registry.implementedIds).toHaveLength(10);expect(Object.keys(registry.bindings)).toHaveLength(95);
+  const registry=createHandlerRegistry();expect(validateContentCatalog(catalog,registry)).toEqual({valid:true,diagnostics:[]});expect(registry.implementedIds).toHaveLength(12);expect(Object.keys(registry.bindings)).toHaveLength(95);
   const copy=loadContentCatalog();copy.definitions.mcp_bubble.parameters.damage=99;expect(loadContentCatalog().definitions.mcp_bubble.parameters.damage).toBe(12);
  });
  it('rejects missing data, wrong tree totals, cyclic prerequisites and false capabilities',()=>{
@@ -33,7 +33,7 @@ describe('private V2 Session and command boundaries',()=>{
  it('requires explicit preview scope/identity and refuses to pretend full gameplay exists',()=>{
   expect(()=>createGameSession({...start(),runtimeProfile:'full'},19,catalog)).toThrow(/unfinished/);
   expect(()=>createGameSession({...start(),runId:undefined},19,catalog)).toThrow(/runId/);
-  expect(()=>createGameSession({...start(),dsh:[{id:'dsh_lora',options:{}}]},19,catalog)).toThrow(/not enabled/);
+  expect(()=>createGameSession({...start(),dsh:[{id:'dsh_open',options:{}}]},19,catalog)).toThrow(/not enabled/);
  });
  it('owns its state, start/catalog copies and output snapshots; disposed handles cannot operate',()=>{
   const initial=start(), data=loadContentCatalog(), session=createGameSession(initial,19,data);

@@ -46,14 +46,14 @@ export function mountCombatPreview(mountElementId) {
   let session=/** @type {import('../contracts.d.ts').GameSession|null} */(null);
   let view=/** @type {import('../contracts.d.ts').RenderSnapshot|null} */(null);
   let clock=createClockState(),lastTime=0,sequence=0,frameId=0,disposed=false,saveRequested=false;
-  let displayedChoice='';
+  let displayedChoice='',displayedTrial='',blockTrainingClick=false;
   let aim={x:1,y:0},mouseFiring=false,stickFiring=false,leftMove={x:0,y:0},lastInput='',toastUntil=0;
   let popups=/** @type {{x:number;y:number;amount:number;tick:number}[]} */([]);
   const keys=new Set();
   const stickResetters=/** @type {(() => void)[]} */([]);
   const removers=/** @type {(() => void)[]} */([]);
-  /** @param {EventTarget} target @param {string} type @param {EventListener} listener */
-  function on(target,type,listener){target.addEventListener(type,listener);removers.push(()=>target.removeEventListener(type,listener));}
+  /** @param {EventTarget} target @param {string} type @param {EventListener} listener @param {boolean} capture */
+  function on(target,type,listener,capture=false){target.addEventListener(type,listener,capture);removers.push(()=>target.removeEventListener(type,listener,capture));}
   /** @param {string} message */
   function toast(message){node('toast').textContent=message;node('toast').classList.add('visible');toastUntil=performance.now()+3800;}
   function clearInput(){for(const reset of stickResetters)reset();keys.clear();mouseFiring=false;stickFiring=false;leftMove={x:0,y:0};lastInput='';node('left-stick').querySelector('span')?.removeAttribute('style');node('right-stick').querySelector('span')?.removeAttribute('style');}
@@ -66,12 +66,16 @@ export function mountCombatPreview(mountElementId) {
   }
   function pause(){
     if(!session)return;
-    const state=readSessionState(session);if(!['exploring','boss'].includes(state.flow.phase))return;
-    clearInput();if(send('Pause',{},'ui'))stepSessionUi(session);clock=resumeClock(clock);lastTime=performance.now();
+    const state=readSessionState(session);if(!['exploring','boss','pluginChoice','loraTraining'].includes(state.flow.phase))return;
+    clearInput();if(send('Pause',{},'ui'))stepSessionUi(session,false);clock=resumeClock(clock);lastTime=performance.now();
   }
-  function resume(){if(!session)return;clearInput();node('toast').classList.remove('visible');toastUntil=0;if(send('Resume',{},'ui'))stepSessionUi(session);clock=resumeClock(clock);lastTime=performance.now();canvas.focus();}
+  function resume(){if(!session)return;clearInput();node('toast').classList.remove('visible');toastUntil=0;if(send('Resume',{},'ui'))stepSessionUi(session,false);clock=resumeClock(clock);lastTime=performance.now();canvas.focus();}
   /** @param {string} type @param {string|null} optionId */
-  function choose(type,optionId=null){if(!session)return;const choice=readSessionState(session).flow.choice;if(!choice)return;clearInput();if(send(type,{choiceId:choice.id,optionId},'ui'))stepSessionUi(session);clock=resumeClock(clock);lastTime=performance.now();canvas.focus();}
+  function choose(type,optionId=null){if(!session)return;const choice=readSessionState(session).flow.choice;if(!choice)return;clearInput();if(send(type,{choiceId:choice.id,optionId},'ui'))stepSessionUi(session,false);clock=resumeClock(clock);lastTime=performance.now();canvas.focus();}
+  /** @param {readonly import('../contracts.d.ts').DomainEvent[]} events */
+  function showEvents(events){for(const event of events){if(event.type==='LoraResolved'){const p=/** @type {{result:string;actualDelta:number}} */(event.payload);toast(`${p.result==='perfect'?'完美训练！':p.result==='underfit'?'欠拟合':'过拟合'} 属性变化 ${p.actualDelta>0?'+':''}${Number(p.actualDelta.toFixed(3))}`);}else if(event.type==='DshCycleResolved'){toast(/** @type {{outcome:string}} */(event.payload).outcome==='update'?'更新！当前 MCP 强化28秒。':'重置！装备技能和冲刺冷却已清零。');}}}
+  /** @param {boolean} release */
+  function train(release=false){if(!session)return;const state=readSessionState(session),trial=state.lora.active;if(!trial)return;if(!release&&state.flow.phase!=='loraTraining')return;const type=release?'ReleaseTraining':trial.phase==='ready'?'StartTraining':'ConfirmTraining';if(send(type,{trialId:trial.id,edge:release?'release':'press',repeat:false},'ui')){const result=stepSessionUi(session,false);showEvents(result.events);if(result.next.flow.phase!==state.flow.phase||result.next.lora.active?.phase!==trial.phase){clock=resumeClock(clock);lastTime=performance.now();}}}
   function refreshContinue(){try{node('continue').toggleAttribute('disabled',!localStorage.getItem(checkpointKey));}catch{node('continue').setAttribute('disabled','');}}
   /** @param {boolean} restore */
   function begin(restore=false){
@@ -88,10 +92,10 @@ export function mountCombatPreview(mountElementId) {
         const difficulty=resolveDifficultySnapshot({mode:'tutorial',difficulty:0,seed,weaponIds:['mcp_bubble','mcp_fan'],skillId:'skill_cache',companionId:null},catalog);
         if(!difficulty.ok)throw new Error(difficulty.message);
         const skillId=/** @type {HTMLSelectElement} */(node('skill-select')).value;
-        replacement=createGameSession({runtimeProfile:'core-preview',runId:`preview:${Array.from(crypto.getRandomValues(new Uint32Array(4)), value => value.toString(16).padStart(8, '0')).join('')}`,treeNodeIds:[],dsh:[],difficulty:difficulty.value,loadout:{weapons:['bubble','fan'].map(name=>({instanceId:`mcp:${name}`,definitionId:`mcp_${name}`,originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null})),activeWeaponIndex:0,skillId,skillCooldown:0,companionId:null,companionCooldown:0,dashCooldown:0}},seed,catalog);
+        replacement=createGameSession({runtimeProfile:'core-preview',runId:`preview:${Array.from(crypto.getRandomValues(new Uint32Array(4)), value => value.toString(16).padStart(8, '0')).join('')}`,treeNodeIds:[],dsh:/** @type {HTMLSelectElement} */(node('dsh-select')).value?[{id:/** @type {HTMLSelectElement} */(node('dsh-select')).value,options:{}}]:[],difficulty:difficulty.value,loadout:{weapons:['bubble','fan'].map(name=>({instanceId:`mcp:${name}`,definitionId:`mcp_${name}`,originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null})),activeWeaponIndex:0,skillId,skillCooldown:0,companionId:null,companionCooldown:0,dashCooldown:0}},seed,catalog);
       }
       if(session)disposeGameSession(session);session=replacement;sequence=readSessionState(session).lastCommandSeq+1;
-      displayedChoice='';node('plugin-menu').classList.add('hidden');view=readSessionView(session);clock=createClockState();lastTime=performance.now();clearInput();popups=[];saveRequested=false;
+      displayedChoice='';displayedTrial='';node('lora-menu').classList.add('hidden');node('plugin-menu').classList.add('hidden');view=readSessionView(session);clock=createClockState();lastTime=performance.now();clearInput();popups=[];saveRequested=false;
       node('menu').classList.add('hidden');node('hud').classList.remove('hidden');node('controls').classList.remove('hidden');mount?.classList.add('started');
       if(restore)toast('已恢复到检查点原进度。点击“继续游”恢复战斗。');else toast('起点的饭盆是检查点。WASD 移动，按住左键射击。');
       canvas.focus();
@@ -121,18 +125,21 @@ export function mountCombatPreview(mountElementId) {
   }
   attachStick('left-stick',true);attachStick('right-stick',false);
   on(node('start'),'click',()=>begin(false));on(node('continue'),'click',()=>begin(true));on(node('pause'),'click',()=>session&&readSessionState(session).flow.phase==='paused'?resume():pause());on(node('resume'),'click',()=>resume());
-  on(node('restart'),'click',()=>{if(session)disposeGameSession(session);session=null;view=null;displayedChoice='';node('plugin-menu').classList.add('hidden');clearInput();node('menu').classList.remove('hidden');node('pause-menu').classList.add('hidden');node('hud').classList.add('hidden');node('controls').classList.add('hidden');mount?.classList.remove('started');refreshContinue();});
+  on(node('restart'),'click',()=>{if(session)disposeGameSession(session);session=null;view=null;displayedChoice='';displayedTrial='';node('lora-menu').classList.add('hidden');node('plugin-menu').classList.add('hidden');clearInput();node('menu').classList.remove('hidden');node('pause-menu').classList.add('hidden');node('hud').classList.add('hidden');node('controls').classList.add('hidden');mount?.classList.remove('started');refreshContinue();});
+  on(window,'pointerdown',()=>{blockTrainingClick=false;},true);on(window,'click',event=>{if(blockTrainingClick&&/** @type {MouseEvent} */(event).detail>0){blockTrainingClick=false;event.preventDefault();event.stopImmediatePropagation();}},true);
+  on(node('training-input'),'pointerdown',event=>{blockTrainingClick=true;event.preventDefault();train(false);});on(window,'pointerup',()=>train(true));on(node('training-input'),'click',event=>{if(/** @type {MouseEvent} */(event).detail===0){train(false);train(true);}});
   on(node('plugin-reroll'),'click',()=>choose('RerollPlugin'));on(node('plugin-skip'),'click',()=>choose('SkipPlugin'));
   on(node('switch'),'click',()=>{send('SwitchWeapon');});on(node('skill'),'click',()=>{send('Skill');});on(node('dash'),'click',()=>{send('Dash');});on(node('checkpoint'),'click',()=>requestSave());
   on(window,'keydown',event=>{const e=/** @type {KeyboardEvent} */(event);if(!session||e.target instanceof HTMLInputElement||e.target instanceof HTMLSelectElement)return;const key=e.code;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(key))e.preventDefault();if(e.repeat)return;
     if(key==='Escape'){readSessionState(session).flow.phase==='paused'?resume():pause();return;}keys.add(key);
+    if(key==='Space'&&readSessionState(session).flow.phase==='loraTraining'){train(false);return;}
     if(key==='Space')send('Dash');else if(key==='KeyE')send('Skill');else if(key==='KeyQ')send('SwitchWeapon');else if(key==='KeyF')requestSave();
   });
-  on(window,'keyup',event=>{keys.delete(/** @type {KeyboardEvent} */(event).code);});
+  on(window,'keyup',event=>{const key=/** @type {KeyboardEvent} */(event).code;keys.delete(key);if(key==='Space')train(true);});
   on(canvas,'pointermove',event=>{const e=/** @type {PointerEvent} */(event);if(e.pointerType==='mouse')aimFromPointer(e);});
   on(canvas,'pointerdown',event=>{const e=/** @type {PointerEvent} */(event);if(e.pointerType==='mouse'&&e.button===0){aimFromPointer(e);mouseFiring=true;canvas.focus();}});
   on(window,'pointerup',event=>{if(/** @type {PointerEvent} */(event).pointerType==='mouse')mouseFiring=false;});
-  on(window,'pointercancel',()=>clearInput());on(window,'blur',()=>pause());on(document,'visibilitychange',()=>{if(document.hidden)pause();});
+  on(window,'pointercancel',()=>{clearInput();train(true);});on(window,'blur',()=>pause());on(document,'visibilitychange',()=>{if(document.hidden)pause();});
   /** @param {number} now */
   function frame(now){
     if(disposed)return;
@@ -148,15 +155,25 @@ export function mountCombatPreview(mountElementId) {
         const state=frameState,schedule=scheduleFrame(clock,lastTime?Math.max(0,now-lastTime):0,state.flow.phase);clock=schedule.nextClock;
         if(schedule.performancePause){pause();toast('帧积压较多，已暂停。继续时不会快进战斗。');}
         for(let index=0;index<schedule.worldSteps;index++){
-          const result=stepSessionWorld(session);
+          const result=stepSessionWorld(session);showEvents(result.events);
           for(const event of result.events)if(event.type==='DamageResolved'){
             const p=/** @type {{hpDamage:number;shellDamage:number;shieldDamage:number}} */(event.payload),entity=event.targetId?result.next.world.entities[event.targetId]:null;
             if(entity&&p.hpDamage+p.shellDamage>0)popups.push({x:entity.position.x,y:entity.position.y,amount:p.hpDamage+p.shellDamage,tick:result.next.tick});
           }
           if(result.next.flow.phase!=='exploring')break;
         }
+        for(let index=0;index<schedule.uiSteps;index++){const result=stepSessionUi(session,true);showEvents(result.events);if(result.next.flow.phase!=='loraTraining'||result.next.lora.active?.phase!=='running')break;}
         if(saveRequested){const pending=readSessionState(session);if(pending.flow.phase!=='exploring'||!pending.input.firing&&!pending.input.move.x&&!pending.input.move.y){saveRequested=false;save();}}
         const growth=readSessionState(session),choice=growth.flow.choice;
+        const trial=growth.lora.active;
+        node('lora-menu').classList.toggle('hidden',growth.flow.phase!=='loraTraining');
+        if(growth.flow.phase==='loraTraining'&&trial){
+          if(displayedTrial!==trial.id){clearInput();clock=resumeClock(clock);displayedTrial=trial.id;}
+          const labels={maxHp:'最大生命',damageMultiplier:'通用输出',moveSpeed:'移动速度',armor:'护甲'};
+          node('lora-title').textContent=`Lv.${trial.level} · ${trial.phase==='ready'?'训练准备':'训练中'}`;node('lora-target').textContent=`本次微调：${labels[trial.target]}`;node('lora-pointer').style.left=`${trial.uiTick/120*100}%`;node('lora-pointer').parentElement?.setAttribute('aria-valuenow',String(trial.uiTick));node('training-input').textContent=trial.phase==='ready'?'开始训练 · Space':'确认位置 · Space';node('training-input').toggleAttribute('disabled',growth.lora.inputHeld===true);node('lora-description').textContent=trial.phase==='ready'?'首次按下只开始。松开后，在绿色区域再次按下。':growth.lora.inputHeld?'请先松开，再次按下确认。':'指针匀速前进；绿色区域为完美训练，2秒后自动过拟合。';
+        }
+        if(!trial)displayedTrial='';
+        node('dsh-label').textContent=growth.start.dsh.some(slot=>slot.id==='dsh_lora')?`LoRA：欠拟合${growth.lora.underfitRemaining.toFixed(1)}s / 过拟合${growth.lora.overfitRemaining.toFixed(1)}s`:growth.start.dsh.some(slot=>slot.id==='dsh_gpt_branch')?`更新/重置：${growth.dshCycle.remaining.toFixed(1)}s`:'';
         node('plugin-menu').classList.toggle('hidden',growth.flow.phase!=='pluginChoice');
         if(growth.flow.phase==='pluginChoice'&&choice&&choice.id!==displayedChoice){
           clearInput();clock=resumeClock(clock);displayedChoice=choice.id;

@@ -48,7 +48,7 @@ export function applySystemPlan(working, plan) {
       case 'ackCommand':
         if (Number(p.seq) <= next.lastCommandSeq) throw new Error('Stale command sequence');
         next.lastCommandSeq = Number(p.seq); next.processedCommandIds = [...next.processedCommandIds, change.id].slice(-512); break;
-      case 'setFlowPhase': next.flow = { ...next.flow, phase: /** @type {import('../contracts.d.ts').Phase} */ (p.phase), resumePhase: /** @type {import('../contracts.d.ts').Phase | null} */ (p.resumePhase) }; break;
+      case 'setFlowPhase': next.flow = { ...next.flow, ...(Object.hasOwn(p, 'suspendedResumePhase') ? { suspendedResumePhase: /** @type {import('../contracts.d.ts').Phase | null} */ (p.suspendedResumePhase) } : {}), phase: /** @type {import('../contracts.d.ts').Phase} */ (p.phase), resumePhase: /** @type {import('../contracts.d.ts').Phase | null} */ (p.resumePhase) }; break;
       case 'setLoadout':
         if (change.id !== next.player.entityId) throw new Error('Player id mismatch');
         next.player.loadout = /** @type {import('../contracts.d.ts').Loadout} */ (JSON.parse(serializeCanonical(p))); break;
@@ -87,12 +87,14 @@ export function applySystemPlan(working, plan) {
       case 'removeDamageBudget': { const budgets = { ...next.damageBudgets }; delete budgets[change.id]; next.damageBudgets = budgets; break; }
       case 'setStatusIds': entity.statusIds = /** @type {string[]} */ (p.ids); break;
       case 'setStatus': next.world.statuses = { ...next.world.statuses, [change.id]: { id: String(p.id), kind: String(p.kind), sourceId: String(p.sourceId), remaining: Number(p.remaining), requiredInputs: Number(p.requiredInputs), completedInputs: Number(p.completedInputs), modifiersApplied: /** @type {string[]} */ (p.modifiersApplied) } }; break;
+      case 'setLoraInputHeld': next.lora.inputHeld = p.held === true; break;
       case 'queueLoraLevel':
         if (Number(p.level) > next.level) throw new Error('Cannot train a future level');
         if (!next.lora.pendingLevels.includes(Number(p.level))) next.lora.pendingLevels = [...next.lora.pendingLevels, Number(p.level)]; break;
       case 'beginLoraTrial': {
         const trial = /** @type {Record<string, import('../contracts.d.ts').Json>} */ (p.trial);
         if (next.lora.active || !next.start.dsh.some(slot => slot.id === 'dsh_lora') || !next.lora.pendingLevels.includes(Number(trial.level)) || next.lora.resolvedTrialIds.includes(String(trial.id)) || !['exploring', 'boss', 'preparing'].includes(next.flow.phase)) throw new Error('Invalid training entry');
+        next.lora.inputHeld = false;
         next.lora.active = { id: String(trial.id), level: Number(trial.level), target: /** @type {'maxHp' | 'damageMultiplier' | 'moveSpeed' | 'armor'} */ (trial.target), phase: 'ready', uiTick: 0, result: null };
         next.flow = { ...next.flow, phase: 'loraTraining', resumePhase: next.flow.phase === 'boss' ? 'boss' : next.flow.resumePhase ?? 'exploring' }; break;
       }

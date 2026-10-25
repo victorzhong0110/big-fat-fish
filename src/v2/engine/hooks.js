@@ -25,6 +25,6 @@ import * as dependency6 from '../domain/plans.js';
  */
 export function planEventHooks(context, event) {
   if (context.state.start.runtimeProfile !== 'core-preview') throw new Error('Full content event subscriptions are not connected');
-  if (context.state.plugins.some(plugin => !['plugin_distill', 'plugin_collect', 'plugin_guard', 'plugin_5h'].includes(plugin.id)) || context.state.start.dsh.length || context.state.start.difficulty.mechanicIds.length) throw new Error('Content hooks are not enabled in the combat preview');
+  if (context.state.plugins.some(plugin => !['plugin_distill', 'plugin_collect', 'plugin_guard', 'plugin_5h'].includes(plugin.id)) || context.state.start.dsh.some(slot => !['dsh_lora', 'dsh_gpt_branch'].includes(slot.id)) || context.state.start.difficulty.mechanicIds.length) throw new Error('Content hooks are not enabled in the combat preview');
   return planDistillEvent(context, event);
 }

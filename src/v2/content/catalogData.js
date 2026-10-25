@@ -1,6 +1,6 @@
 // Source-backed definitions. Data presence does not imply its handler is implemented.
 export const CATALOG_DATA = {
-  "version": "2.0.0-preview.3",
+  "version": "2.0.0-preview.4",
   "definitions": {
     "plugin_parallel": {
       "id": "plugin_parallel",
@@ -16,7 +16,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_batch": {
       "id": "plugin_batch",
@@ -32,7 +32,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_compress": {
       "id": "plugin_compress",
@@ -48,7 +48,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_cache": {
       "id": "plugin_cache",
@@ -64,7 +64,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_retry": {
       "id": "plugin_retry",
@@ -80,7 +80,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_temperature": {
       "id": "plugin_temperature",
@@ -96,7 +96,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_collect": {
       "id": "plugin_collect",
@@ -116,7 +116,7 @@ export const CATALOG_DATA = {
           "大白饭吸附半径增加140，替换一级的80。经验与收入不变。"
         ]
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_cooldown": {
       "id": "plugin_cooldown",
@@ -132,7 +132,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_offload": {
       "id": "plugin_offload",
@@ -148,7 +148,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_keepalive": {
       "id": "plugin_keepalive",
@@ -164,7 +164,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_redirect": {
       "id": "plugin_redirect",
@@ -180,7 +180,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_backoff": {
       "id": "plugin_backoff",
@@ -196,7 +196,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_distill": {
       "id": "plugin_distill",
@@ -216,7 +216,7 @@ export const CATALOG_DATA = {
           "每阶样本降至蟹4 / GPT4 / Bot7，已有样本立即结算。能力仍最多3阶。"
         ]
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_5h": {
       "id": "plugin_5h",
@@ -236,7 +236,7 @@ export const CATALOG_DATA = {
           "每个敌人的10秒伤害额度降至12。沿用最近10秒记录，不会重新发放额度。"
         ]
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_failover": {
       "id": "plugin_failover",
@@ -252,7 +252,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_sandbox": {
       "id": "plugin_sandbox",
@@ -268,7 +268,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_hallucination": {
       "id": "plugin_hallucination",
@@ -284,7 +284,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_chain": {
       "id": "plugin_chain",
@@ -300,7 +300,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_context": {
       "id": "plugin_context",
@@ -316,7 +316,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_hotplug": {
       "id": "plugin_hotplug",
@@ -332,7 +332,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_guard": {
       "id": "plugin_guard",
@@ -352,7 +352,7 @@ export const CATALOG_DATA = {
           "单次防御前伤害达到20时，该次伤害额外降低30%。小额攻击不变。"
         ]
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_prefill": {
       "id": "plugin_prefill",
@@ -368,7 +368,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_toolchain": {
       "id": "plugin_toolchain",
@@ -384,7 +384,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_mirror": {
       "id": "plugin_mirror",
@@ -400,7 +400,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_recursion": {
       "id": "plugin_recursion",
@@ -416,7 +416,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_moe": {
       "id": "plugin_moe",
@@ -432,7 +432,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_speculate": {
       "id": "plugin_speculate",
@@ -448,7 +448,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_window": {
       "id": "plugin_window",
@@ -464,7 +464,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_agent": {
       "id": "plugin_agent",
@@ -480,7 +480,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "plugin_breaker": {
       "id": "plugin_breaker",
@@ -496,7 +496,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "dsh_claude_appeal": {
       "id": "dsh_claude_appeal",
@@ -512,7 +512,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "dsh_gpt_preview": {
       "id": "dsh_gpt_preview",
@@ -528,7 +528,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "dsh_grok_license": {
       "id": "dsh_grok_license",
@@ -544,7 +544,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "dsh_claude_allowlist": {
       "id": "dsh_claude_allowlist",
@@ -560,7 +560,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "dsh_gpt_branch": {
       "id": "dsh_gpt_branch",
@@ -574,9 +574,9 @@ export const CATALOG_DATA = {
           "难度10及以上首次击败ChatGPT",
           "每28秒等概率触发更新/重置；更新当前MCP品质28秒（最高品质改武器伤害+20%），或清零装备技能/冲刺/伙伴冷却；详细边界见下"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "dsh_grok_salvage": {
       "id": "dsh_grok_salvage",
@@ -592,7 +592,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "dsh_sleep": {
       "id": "dsh_sleep",
@@ -608,7 +608,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "dsh_rice": {
       "id": "dsh_rice",
@@ -624,7 +624,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "dsh_open": {
       "id": "dsh_open",
@@ -640,7 +640,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "dsh_lora": {
       "id": "dsh_lora",
@@ -654,9 +654,9 @@ export const CATALOG_DATA = {
           "难度6及以上首次完整通关正式短途/远征（默认解锁条件）",
           "每次实际升级触发一次指针训练：完美提高本局基础属性；欠拟合/过拟合降低该属性并分别附加负面效果，见下"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "mcp_bubble": {
       "id": "mcp_bubble",
@@ -679,9 +679,10 @@ export const CATALOG_DATA = {
         "spreadRadians": 0.0,
         "range": 720,
         "maxHits": 1,
-        "previewAvailable": true
+        "previewAvailable": true,
+        "partCost": 0
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "mcp_fan": {
       "id": "mcp_fan",
@@ -704,9 +705,10 @@ export const CATALOG_DATA = {
         "spreadRadians": 0.5585053606381855,
         "range": 460,
         "maxHits": 1,
-        "previewAvailable": true
+        "previewAvailable": true,
+        "partCost": 6
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "mcp_vector": {
       "id": "mcp_vector",
@@ -729,9 +731,10 @@ export const CATALOG_DATA = {
         "spreadRadians": 0.0,
         "range": 900,
         "maxHits": 4,
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 8
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "mcp_stream": {
       "id": "mcp_stream",
@@ -754,9 +757,10 @@ export const CATALOG_DATA = {
         "spreadRadians": 0.0,
         "range": 600,
         "maxHits": 1,
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 8
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "mcp_return": {
       "id": "mcp_return",
@@ -779,9 +783,10 @@ export const CATALOG_DATA = {
         "spreadRadians": 0.0,
         "range": 500,
         "maxHits": 1,
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 10
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "mcp_batch": {
       "id": "mcp_batch",
@@ -804,9 +809,10 @@ export const CATALOG_DATA = {
         "spreadRadians": 0.0,
         "range": 600,
         "maxHits": 1,
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 12
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "skill_disconnect": {
       "id": "skill_disconnect",
@@ -822,9 +828,10 @@ export const CATALOG_DATA = {
           "初始"
         ],
         "cooldown": 12,
-        "previewAvailable": true
+        "previewAvailable": true,
+        "partCost": 0
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "skill_cache": {
       "id": "skill_cache",
@@ -840,9 +847,10 @@ export const CATALOG_DATA = {
           "6 零件"
         ],
         "cooldown": 16,
-        "previewAvailable": true
+        "previewAvailable": true,
+        "partCost": 6
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "skill_batch": {
       "id": "skill_batch",
@@ -858,9 +866,10 @@ export const CATALOG_DATA = {
           "8 零件"
         ],
         "cooldown": 12,
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 8
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "skill_redirect": {
       "id": "skill_redirect",
@@ -876,9 +885,10 @@ export const CATALOG_DATA = {
           "10 零件"
         ],
         "cooldown": 15,
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 10
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "skill_sandbox": {
       "id": "skill_sandbox",
@@ -894,9 +904,10 @@ export const CATALOG_DATA = {
           "8 零件"
         ],
         "cooldown": 14,
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 8
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "skill_fork": {
       "id": "skill_fork",
@@ -912,9 +923,10 @@ export const CATALOG_DATA = {
           "10 零件"
         ],
         "cooldown": 18,
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 10
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "skill_rollback": {
       "id": "skill_rollback",
@@ -930,9 +942,10 @@ export const CATALOG_DATA = {
           "12 零件"
         ],
         "cooldown": 20,
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 12
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "skill_overclock": {
       "id": "skill_overclock",
@@ -948,9 +961,10 @@ export const CATALOG_DATA = {
           "12 零件"
         ],
         "cooldown": 18,
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 12
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "companion_rice": {
       "id": "companion_rice",
@@ -966,7 +980,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "companion_patch": {
       "id": "companion_patch",
@@ -982,7 +996,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "companion_cache": {
       "id": "companion_cache",
@@ -998,7 +1012,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "companion_router": {
       "id": "companion_router",
@@ -1014,7 +1028,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "companion_decoy": {
       "id": "companion_decoy",
@@ -1030,7 +1044,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "companion_rocket": {
       "id": "companion_rocket",
@@ -1046,7 +1060,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "enemy_gpt_codex": {
       "id": "enemy_gpt_codex",
@@ -1068,7 +1082,7 @@ export const CATALOG_DATA = {
           "8"
         ]
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "enemy_gpt_dewey": {
       "id": "enemy_gpt_dewey",
@@ -1090,7 +1104,7 @@ export const CATALOG_DATA = {
           "8"
         ]
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "enemy_gpt_fireball": {
       "id": "enemy_gpt_fireball",
@@ -1112,7 +1126,7 @@ export const CATALOG_DATA = {
           "8"
         ]
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "enemy_gpt_hoots": {
       "id": "enemy_gpt_hoots",
@@ -1134,7 +1148,7 @@ export const CATALOG_DATA = {
           "8"
         ]
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "enemy_gpt_rocky": {
       "id": "enemy_gpt_rocky",
@@ -1156,7 +1170,7 @@ export const CATALOG_DATA = {
           "8"
         ]
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "enemy_gpt_seedy": {
       "id": "enemy_gpt_seedy",
@@ -1178,7 +1192,7 @@ export const CATALOG_DATA = {
           "8"
         ]
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "enemy_gpt_stacky": {
       "id": "enemy_gpt_stacky",
@@ -1200,7 +1214,7 @@ export const CATALOG_DATA = {
           "8"
         ]
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "enemy_claude_guard": {
       "id": "enemy_claude_guard",
@@ -1222,7 +1236,7 @@ export const CATALOG_DATA = {
           "24"
         ]
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "enemy_grok_bot": {
       "id": "enemy_grok_bot",
@@ -1244,7 +1258,7 @@ export const CATALOG_DATA = {
           "4"
         ]
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "claude_haiku": {
       "id": "claude_haiku",
@@ -1256,7 +1270,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/models.js#planModelClaudeHaiku",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "claude_sonnet": {
       "id": "claude_sonnet",
@@ -1268,7 +1282,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/models.js#planModelClaudeSonnet",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "claude_opus": {
       "id": "claude_opus",
@@ -1280,7 +1294,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/models.js#planModelClaudeOpus",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "claude_fable": {
       "id": "claude_fable",
@@ -1292,7 +1306,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/models.js#planModelClaudeFable",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "claude_mythos": {
       "id": "claude_mythos",
@@ -1304,7 +1318,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/models.js#planModelClaudeMythos",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "gpt_astra": {
       "id": "gpt_astra",
@@ -1316,7 +1330,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/models.js#planModelGptAstra",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "gpt_sol": {
       "id": "gpt_sol",
@@ -1328,7 +1342,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/models.js#planModelGptSol",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "gpt_terra": {
       "id": "gpt_terra",
@@ -1340,7 +1354,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/models.js#planModelGptTerra",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "gpt_luna": {
       "id": "gpt_luna",
@@ -1352,7 +1366,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/models.js#planModelGptLuna",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "grok_bot": {
       "id": "grok_bot",
@@ -1364,7 +1378,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/models.js#planModelGrokBot",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "mech_01_exploration": {
       "id": "mech_01_exploration",
@@ -1376,7 +1390,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic01Exploration",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 1,
       "scope": "world",
       "appliesTo": [],
@@ -1393,7 +1407,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic02Reinforcements",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 2,
       "scope": "event",
       "appliesTo": [],
@@ -1410,7 +1424,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic03GptSupport",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 3,
       "scope": "ai",
       "appliesTo": [],
@@ -1427,7 +1441,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic04ClaudeBreak",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 4,
       "scope": "ai",
       "appliesTo": [],
@@ -1444,7 +1458,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic05BossCombo",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 5,
       "scope": "boss",
       "appliesTo": [],
@@ -1461,7 +1475,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic06AlarmCache",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 6,
       "scope": "objective",
       "appliesTo": [],
@@ -1478,7 +1492,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic07Tide",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 7,
       "scope": "world",
       "appliesTo": [],
@@ -1495,7 +1509,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic08GrokFlanks",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 8,
       "scope": "world",
       "appliesTo": [],
@@ -1512,7 +1526,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic09GptReposition",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 9,
       "scope": "ai",
       "appliesTo": [],
@@ -1529,7 +1543,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic10BossArena",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 10,
       "scope": "boss",
       "appliesTo": [],
@@ -1546,7 +1560,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic11ObjectiveSignal",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 11,
       "scope": "objective",
       "appliesTo": [],
@@ -1563,7 +1577,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic11Glasswing",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 11,
       "scope": "boss",
       "appliesTo": [],
@@ -1580,7 +1594,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic12GptFourRoles",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 12,
       "scope": "ai",
       "appliesTo": [],
@@ -1597,7 +1611,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic13Handoff",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 13,
       "scope": "event",
       "appliesTo": [],
@@ -1614,7 +1628,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic14Anomaly",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 14,
       "scope": "event",
       "appliesTo": [],
@@ -1631,7 +1645,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic15Integration",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 15,
       "scope": "objective",
       "appliesTo": [],
@@ -1648,7 +1662,7 @@ export const CATALOG_DATA = {
         "effect": "初始最大生命 +10",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_body_b": {
       "id": "tree_body_b",
@@ -1662,7 +1676,7 @@ export const CATALOG_DATA = {
         "effect": "基础护甲 +6",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_body_c": {
       "id": "tree_body_c",
@@ -1676,7 +1690,7 @@ export const CATALOG_DATA = {
         "effect": "基础移速 +5%",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_body_d": {
       "id": "tree_body_d",
@@ -1690,7 +1704,7 @@ export const CATALOG_DATA = {
         "effect": "每局第一次生命降到 25% 以下时治疗 12；仅一次，不免死",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_body_e": {
       "id": "tree_body_e",
@@ -1705,7 +1719,7 @@ export const CATALOG_DATA = {
         "effect": "初始最大生命再 +10",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_body_f": {
       "id": "tree_body_f",
@@ -1719,7 +1733,7 @@ export const CATALOG_DATA = {
         "effect": "每局一次，致死伤害改为生命 1 并免伤 2 秒；不刷新伙伴/技能，不恢复消耗品",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_mcp_a": {
       "id": "tree_mcp_a",
@@ -1731,7 +1745,7 @@ export const CATALOG_DATA = {
         "effect": "初始武器伤害 +5%",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_mcp_b": {
       "id": "tree_mcp_b",
@@ -1745,7 +1759,7 @@ export const CATALOG_DATA = {
         "effect": "换到另一把 MCP 后，下一次基础射击伤害 +25%；内置冷却 5 秒",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_mcp_c": {
       "id": "tree_mcp_c",
@@ -1759,7 +1773,7 @@ export const CATALOG_DATA = {
         "effect": "所有 MCP 基础射击间隔 ×0.95",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_mcp_d": {
       "id": "tree_mcp_d",
@@ -1773,7 +1787,7 @@ export const CATALOG_DATA = {
         "effect": "出发前可选择第二把已解锁的基础品质 MCP；不额外加槽位",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_mcp_e": {
       "id": "tree_mcp_e",
@@ -1788,7 +1802,7 @@ export const CATALOG_DATA = {
         "effect": "武器伤害再 +7%（与 mcp_a 加算，共 +12%）",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_mcp_f": {
       "id": "tree_mcp_f",
@@ -1802,7 +1816,7 @@ export const CATALOG_DATA = {
         "effect": "换武器后获得 1 秒、30% 移速；内置冷却 8 秒，不清除负面状态",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_skill_a": {
       "id": "tree_skill_a",
@@ -1814,7 +1828,7 @@ export const CATALOG_DATA = {
         "effect": "装备主动技能冷却 ×0.96",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_skill_b": {
       "id": "tree_skill_b",
@@ -1828,7 +1842,7 @@ export const CATALOG_DATA = {
         "effect": "连续 8 秒未受伤时，冲刺冷却恢复速度 +15%；受实际生命伤害后失效，重新计时",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_skill_c": {
       "id": "tree_skill_c",
@@ -1842,7 +1856,7 @@ export const CATALOG_DATA = {
         "effect": "冲刺冷却 ×0.95",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_skill_d": {
       "id": "tree_skill_d",
@@ -1856,7 +1870,7 @@ export const CATALOG_DATA = {
         "effect": "控制所需挣脱次数 -1，下限 3 次",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_skill_e": {
       "id": "tree_skill_e",
@@ -1871,7 +1885,7 @@ export const CATALOG_DATA = {
         "effect": "装备主动技能冷却再 ×0.94；总乘积 0.9024",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_skill_f": {
       "id": "tree_skill_f",
@@ -1885,7 +1899,7 @@ export const CATALOG_DATA = {
         "effect": "每局第一次实际被禁锢时解除它；只解控制，不解技能/伙伴封禁",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_explore_a": {
       "id": "tree_explore_a",
@@ -1897,7 +1911,7 @@ export const CATALOG_DATA = {
         "effect": "大白饭吸附半径 +25",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_explore_b": {
       "id": "tree_explore_b",
@@ -1911,7 +1925,7 @@ export const CATALOG_DATA = {
         "effect": "小地图提示已接近 300 范围的检查点、未开启补给与 NPC；不揭示整张图",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_explore_c": {
       "id": "tree_explore_c",
@@ -1925,7 +1939,7 @@ export const CATALOG_DATA = {
         "effect": "失败资源保留率由 40% 提高到 50%；不叠加其他失败保留率",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_explore_d": {
       "id": "tree_explore_d",
@@ -1939,7 +1953,7 @@ export const CATALOG_DATA = {
         "effect": "伙伴自动能力冷却 ×0.9；不影响蒸馏派生能力",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_explore_e": {
       "id": "tree_explore_e",
@@ -1954,7 +1968,7 @@ export const CATALOG_DATA = {
         "effect": "伙伴被封禁时，封印物所需有效命中次数 -1，下限 2",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_explore_f": {
       "id": "tree_explore_f",
@@ -1968,7 +1982,7 @@ export const CATALOG_DATA = {
         "effect": "每海域第一次接近未发现秘密 350 范围时，显示方向 6 秒；不代替交互/解谜",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "home_bowl": {
       "id": "home_bowl",
@@ -1978,9 +1992,10 @@ export const CATALOG_DATA = {
         "cost": 0,
         "currency": "part",
         "effect": "技能树、算力卡余额、免费重置；无被动产出",
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 0
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "home_bench": {
       "id": "home_bench",
@@ -1990,9 +2005,10 @@ export const CATALOG_DATA = {
         "cost": 6,
         "currency": "part",
         "effect": "管理已发现武器，购买出发解锁；不合成局中高品质武器",
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 6
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "home_terminal": {
       "id": "home_terminal",
@@ -2002,9 +2018,10 @@ export const CATALOG_DATA = {
         "cost": 6,
         "currency": "part",
         "effect": "管理已发现主动技能与出发选择",
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 6
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "home_guest": {
       "id": "home_guest",
@@ -2014,9 +2031,10 @@ export const CATALOG_DATA = {
         "cost": 8,
         "currency": "part",
         "effect": "与居民交流、选择一位助战、查看其救助任务",
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 8
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "home_shelf": {
       "id": "home_shelf",
@@ -2026,9 +2044,10 @@ export const CATALOG_DATA = {
         "cost": 4,
         "currency": "part",
         "effect": "摆放收藏、阅读发现；纯展示，不隐藏加战斗属性",
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 4
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "home_map": {
       "id": "home_map",
@@ -2038,9 +2057,10 @@ export const CATALOG_DATA = {
         "cost": 0,
         "currency": "part",
         "effect": "模式、阵营顺序预告、继续检查点、新局与种子信息",
-        "previewAvailable": false
+        "previewAvailable": false,
+        "partCost": 0
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_dsh_a": {
       "id": "tree_dsh_a",
@@ -2054,7 +2074,7 @@ export const CATALOG_DATA = {
         "baseSpendRequired": 0,
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_dsh_b": {
       "id": "tree_dsh_b",
@@ -2070,7 +2090,7 @@ export const CATALOG_DATA = {
         "baseSpendRequired": 24,
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "tree_dsh_c": {
       "id": "tree_dsh_c",
@@ -2086,7 +2106,7 @@ export const CATALOG_DATA = {
         "baseSpendRequired": 60,
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "player_fish": {
       "id": "player_fish",
@@ -2095,7 +2115,7 @@ export const CATALOG_DATA = {
       "parameters": {
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "projectile_bubble": {
       "id": "projectile_bubble",
@@ -2104,7 +2124,7 @@ export const CATALOG_DATA = {
       "parameters": {
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "terrain_rock": {
       "id": "terrain_rock",
@@ -2113,7 +2133,7 @@ export const CATALOG_DATA = {
       "parameters": {
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "terrain_clutter": {
       "id": "terrain_clutter",
@@ -2122,7 +2142,7 @@ export const CATALOG_DATA = {
       "parameters": {
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "world_checkpoint": {
       "id": "world_checkpoint",
@@ -2131,7 +2151,7 @@ export const CATALOG_DATA = {
       "parameters": {
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     },
     "rice_xp": {
       "id": "rice_xp",
@@ -2140,7 +2160,7 @@ export const CATALOG_DATA = {
       "parameters": {
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3"
+      "version": "2.0.0-preview.4"
     }
   },
   "mechanics": [
@@ -2154,7 +2174,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic01Exploration",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 1,
       "scope": "world",
       "appliesTo": [],
@@ -2171,7 +2191,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic02Reinforcements",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 2,
       "scope": "event",
       "appliesTo": [],
@@ -2188,7 +2208,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic03GptSupport",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 3,
       "scope": "ai",
       "appliesTo": [],
@@ -2205,7 +2225,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic04ClaudeBreak",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 4,
       "scope": "ai",
       "appliesTo": [],
@@ -2222,7 +2242,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic05BossCombo",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 5,
       "scope": "boss",
       "appliesTo": [],
@@ -2239,7 +2259,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic06AlarmCache",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 6,
       "scope": "objective",
       "appliesTo": [],
@@ -2256,7 +2276,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic07Tide",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 7,
       "scope": "world",
       "appliesTo": [],
@@ -2273,7 +2293,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic08GrokFlanks",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 8,
       "scope": "world",
       "appliesTo": [],
@@ -2290,7 +2310,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic09GptReposition",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 9,
       "scope": "ai",
       "appliesTo": [],
@@ -2307,7 +2327,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic10BossArena",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 10,
       "scope": "boss",
       "appliesTo": [],
@@ -2324,7 +2344,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic11ObjectiveSignal",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 11,
       "scope": "objective",
       "appliesTo": [],
@@ -2341,7 +2361,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic11Glasswing",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 11,
       "scope": "boss",
       "appliesTo": [],
@@ -2358,7 +2378,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic12GptFourRoles",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 12,
       "scope": "ai",
       "appliesTo": [],
@@ -2375,7 +2395,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic13Handoff",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 13,
       "scope": "event",
       "appliesTo": [],
@@ -2392,7 +2412,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic14Anomaly",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 14,
       "scope": "event",
       "appliesTo": [],
@@ -2409,7 +2429,7 @@ export const CATALOG_DATA = {
         "handler": "content/handlers/mechanics.js#planMechanic15Integration",
         "previewAvailable": false
       },
-      "version": "2.0.0-preview.3",
+      "version": "2.0.0-preview.4",
       "unlockAt": 15,
       "scope": "objective",
       "appliesTo": [],

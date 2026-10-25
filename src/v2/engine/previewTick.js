@@ -1,6 +1,8 @@
 // @ts-check
 import { createEmptyPlan, createStateChange } from '../domain/plans.js';
 import { planDistilledAbilities, planDistillEvent } from '../domain/distill.js';
+import { planLoraUiStep } from '../domain/lora.js';
+import { planDshCycleEvent } from '../domain/dshCycle.js';
 import { planProgressionPanels } from './flow.js';
 import { planStatusAdvance } from '../domain/status.js';
 import { planEnemyAi } from '../domain/ai.js';
@@ -21,6 +23,7 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls domain/deaths.js#resolveTerminalOutcome
  * @calls domain/distill.js#planDistillEvent
  * @calls domain/distill.js#planDistilledAbilities
+ * @calls domain/dshCycle.js#planDshCycleEvent
  * @calls domain/movement.js#planEntityMotion
  * @calls domain/movement.js#planPickupMotion
  * @calls domain/movement.js#planPlayerMovement
@@ -50,6 +53,7 @@ export function advancePreviewWorldTick(state, commands, catalog) {
   const apply = (/** @type {import('../contracts.d.ts').SystemPlan} */ plan) => { if (plan.changes.length) working = applySystemPlan(working, plan); effects.push(...plan.effects); outbox.events.push(...plan.events); outbox.persistence.push(...plan.persistence); outbox.diagnostics.push(...plan.diagnostics); for (const event of plan.events) if (event.type === 'WeaponFired') { const hook = planDistillEvent(context(), event); if (hook.changes.length) working = applySystemPlan(working, hook); effects.push(...hook.effects); } };
   for (const command of orderPendingCommands(commands, working.tick, 'world')) apply(planGameCommand(context(), command).plan);
   apply(planStatusAdvance(context()));
+  apply(planDshCycleEvent(context(), { id: `world:${working.tick}`, runId: working.runId, tick: working.tick, seq: 0, type: 'WorldTick', sourceId: null, targetId: null, payload: {} }));
   apply(planEnemyAi(context()));
   apply(planPlayerMovement(context(), working.input));
   apply(planEntityMotion(context()));
@@ -68,6 +72,7 @@ export function advancePreviewWorldTick(state, commands, catalog) {
 }
 /** Process pause/resume immediately without advancing the stopped UI/world clock.
  * @implementationScope core-preview
+ * @calls domain/lora.js#planLoraUiStep
  * @calls engine/commands.js#orderPendingCommands
  * @calls engine/commands.js#planGameCommand
  * @calls engine/flow.js#planProgressionPanels
@@ -76,15 +81,18 @@ export function advancePreviewWorldTick(state, commands, catalog) {
  * @param {import('../contracts.d.ts').StateSnapshot} state
  * @param {readonly import('../contracts.d.ts').Command[]} commands
  * @param {Readonly<import('../contracts.d.ts').ContentCatalog>} catalog
+ * @param {boolean} advanceClock
  * @returns {import('../contracts.d.ts').TickResult}
  */
-export function advancePreviewUiCommands(state, commands, catalog) {
+export function advancePreviewUiCommands(state, commands, catalog, advanceClock = false) {
   let working = /** @type {import('../contracts.d.ts').GameState} */ (structuredClone(state));
   const due = orderPendingCommands(commands, state.uiTick, 'ui');
-  if (!due.length) return { next: working, events: [], persistence: [], diagnostics: [] };
+  const shouldAdvance = advanceClock && state.flow.phase === 'loraTraining' && state.lora.active?.phase === 'running';
+  if (!due.length && !shouldAdvance) return { next: working, events: [], persistence: [], diagnostics: [] };
   const diagnostics = /** @type {import('../contracts.d.ts').Diagnostic[]} */ ([]);
-  for (const command of due) { const result = planGameCommand({ state: working, catalog, event: null, entityId: null, random: working.random.combat }, command); working = applySystemPlan(working, result.plan); diagnostics.push(...result.plan.diagnostics); }
   const events = /** @type {import('../contracts.d.ts').DomainEvent[]} */ ([]);
+  for (const command of due) { const result = planGameCommand({ state: working, catalog, event: null, entityId: null, random: working.random.combat }, command); working = applySystemPlan(working, result.plan); diagnostics.push(...result.plan.diagnostics); events.push(...result.plan.events); }
+  if (shouldAdvance && working.flow.phase === 'loraTraining' && working.lora.active?.id === state.lora.active?.id && working.lora.active?.phase === 'running') { working.uiTick++; const plan = planLoraUiStep({ state: working, catalog, random: working.random.lora, event: null, entityId: null }); working = applySystemPlan(working, plan); events.push(...plan.events); }
   for (let i = 0; i < 128; i++) { const plan = planProgressionPanels({ state: working, catalog, event: null, entityId: null, random: working.random.reward }); if (!plan.changes.length) break; working = applySystemPlan(working, plan); events.push(...plan.events); if (i === 127) throw new Error('Growth queue did not settle'); }
   return commitWorkingState(state, working, catalog, { events, persistence: [], diagnostics });
 }
