@@ -18,7 +18,7 @@ export interface ClockState { accumulatorMs: number; suspended: boolean; backlog
 export interface FrameSchedule { worldSteps: number; uiSteps: number; nextClock: ClockState; performancePause: boolean; }
 export interface Command { id: Id; seq: number; clock: 'world' | 'ui'; targetTick: Tick; type: string; payload: Json; }
 export interface InputSample { device: 'keyboard' | 'mouse' | 'touch' | 'system'; type: string; timestampMs: number; payload: Json; }
-export interface InputState { viewport?: {width:number;height:number}; move: Vec2; aim: Vec2; firing: boolean; heldKeys: readonly string[]; pointerIds: readonly number[]; }
+export interface InputState { aimDistance?:number; viewport?: {width:number;height:number}; move: Vec2; aim: Vec2; firing: boolean; heldKeys: readonly string[]; pointerIds: readonly number[]; }
 export interface InputClockMapping { worldTick: Tick; uiTick: Tick; phase: Phase; sampleOriginMs: number; worldOriginMs: number; uiOriginMs: number; worldPaused: boolean; uiPaused: boolean; }
 export interface CommandBatch { commands: readonly Command[]; nextInput: InputState; }
 export interface CommandResult { accepted: boolean; reason: string | null; plan: SystemPlan; }
@@ -54,9 +54,9 @@ export interface EntityState {
   runtime: Readonly<Record<string, Json>>;
 }
 export interface WeaponState { instanceId: Id; definitionId: Id; originalQuality: 0 | 1 | 2; cooldown: number; temporaryQuality: number | null; updateExpiresAt: Tick | null; }
-export interface Loadout { weapons: readonly WeaponState[]; activeWeaponIndex: number; skillId: Id; skillCooldown: number; companionId: Id | null; companionCooldown: number; dashCooldown: number; }
+export interface Loadout { skillInstanceId?:Id; weapons: readonly WeaponState[]; activeWeaponIndex: number; skillId: Id; skillCooldown: number; companionId: Id | null; companionCooldown: number; dashCooldown: number; }
 export interface PlayerState { entityId: Id; baseStats: BaseStats; modifiers: readonly StatModifier[]; loadout: Loadout; invulnerableRemaining: number; controlImmuneRemaining: number; }
-export interface PickupState { weapon?: WeaponState; id: Id; kind: 'riceXp' | 'gpuFragment' | 'part' | 'weapon' | 'skill'; amount: number; position: Vec2; instanceId: Id | null; collected: boolean; }
+export interface PickupState { exclusiveGroup?: Id; skill?:{instanceId:Id;definitionId:Id;cooldown:number}; weapon?: WeaponState; id: Id; kind: 'riceXp' | 'gpuFragment' | 'part' | 'weapon' | 'skill'; amount: number; position: Vec2; instanceId: Id | null; collected: boolean; }
 export interface ObjectiveState { id: Id; kind: string; active: boolean; completed: boolean; progress: number; requiredEntityIds: readonly Id[]; rewardId: Id; }
 export interface SpawnRequest { id: Id; groupId: Id; enemyId: Id; position: Vec2; at: Tick; modelProfileId: Id; budgetId: Id; rewardPolicy: EntityState['rewardPolicy']; distillEligible: boolean; }
 export interface EncounterBudget { id: Id; total: number; reserved: number; spawned: number; maxAlive: number; }
@@ -94,7 +94,7 @@ export interface MechanicDefinition extends Definition { unlockAt: number; scope
 export interface ContentCatalog { modWeapons?: Readonly<Record<Id, {templateId: WeaponTemplateId; packId:Id}>>; modLock?: readonly ModLockEntry[]; version: string; definitions: Readonly<Record<Id, Definition>>; mechanics: readonly MechanicDefinition[]; }
 export interface ValidationReport { valid: boolean; diagnostics: readonly Diagnostic[]; }
 export interface EvaluationContext { state: StateSnapshot; catalog: Readonly<ContentCatalog>; event: DomainEvent | null; entityId: Id | null; random: RandomState; }
-export interface AttackContext extends EvaluationContext { aim: Vec2; weapon: WeaponState | null; }
+export interface AttackContext extends EvaluationContext { skillPower?:number;skillDuration?:number;skillPush?:number;temperatureBoost?:boolean; aim: Vec2; weapon: WeaponState | null; }
 export interface HandlerRegistry { bindings: Readonly<Record<Id, string>>; implementedIds: readonly Id[]; }
 export interface Collision { id: Id; sourceId: Id; targetId: Id; contact: Vec2; incomingDirection: Vec2; timeOfImpact: number; }
 export interface CollisionResult { hits: readonly Collision[]; diagnostics: readonly Diagnostic[]; }
@@ -130,7 +130,7 @@ export interface PresentationPort { render(snapshot: RenderSnapshot): void; pres
 export interface InputPort { poll(): readonly InputSample[]; suspend(): void; dispose(): void; }
 export interface AudioPort { unlock(): Promise<void>; play(events: readonly DomainEvent[]): void; suspend(): void; dispose(): void; }
 export interface RuntimePorts { storage: StoragePort; presentation: PresentationPort; input: InputPort; audio: AudioPort; }
-export interface RenderEntity { projectileStyle?:string; quality?:number; effectRadius?:number; bossTelegraph?: Json; objectiveProgress?: number; unlocked?: boolean; opened?: boolean; radius: number; team: EntityState['team']; hp: number; maxHp: number; telegraphRemaining: number; shieldAmount: number; id: Id; kind: string; position: Vec2; facingRadians: number; spriteId: Id; modelLabel: string | null; hpFraction: number; weakArcDegrees: number | null; statusLabels: readonly string[]; }
+export interface RenderEntity { abilityKind?:string; reflected?:number; projectileStyle?:string; quality?:number; effectRadius?:number; bossTelegraph?: Json; objectiveProgress?: number; unlocked?: boolean; opened?: boolean; radius: number; team: EntityState['team']; hp: number; maxHp: number; telegraphRemaining: number; shieldAmount: number; id: Id; kind: string; position: Vec2; facingRadians: number; spriteId: Id; modelLabel: string | null; hpFraction: number; weakArcDegrees: number | null; statusLabels: readonly string[]; }
 export interface RenderSnapshot { revision: number; tick: Tick; uiTick: Tick; phase: Phase; entities: readonly RenderEntity[]; hud: Json; panel: Json; }
 export interface UiAction { id: Id; type: string; payload: Json; }
 export interface ViewHandle { id: Id; }
@@ -148,8 +148,9 @@ export interface TickResult { next: GameState; events: readonly DomainEvent[]; p
 export interface ModPatch { id: Id; displayName?: string; parameters?: Readonly<Record<string, number>>; }
 export interface ModPackage { formatVersion: 1; apiVersion: '1.0'|'1.1'|'1.2'; id: Id; version: string; name: string; author: string; description: string; gameVersion: string; dependencies: Readonly<Record<Id, string>>; conflicts: readonly Id[]; patches: readonly ModPatch[]; weapons?:readonly ModWeaponRecipe[]; }
 export interface ModLockEntry { id: Id; version: string; digest: string; }
-export type NestAction = { type:'buyTree' | 'build' | 'unlock'; id:Id } | { type:'respec' } | { type:'equipDsh'; slots:readonly DshSlot[] };
+export type NestAction = { type:'buyTree' | 'build' | 'unlock' | 'rescue'; id:Id } | { type:'respec' } | { type:'equipDsh'; slots:readonly DshSlot[] };
 
 export interface ModWeaponRecipe { id:string; templateId:WeaponTemplateId; displayName:string; parameters:Readonly<Record<string,number>>; }
 
 export type WeaponTemplateId = 'mcp_bubble'|'mcp_fan'|'mcp_vector'|'mcp_stream'|'mcp_return'|'mcp_batch';
+export type ScheduledAction = {kind:'heal';amount:number} | {kind:'shield';amount:number;duration:number;sourceId:string} | {kind:'area';point:Vec2;radius:number;amount:number} | {kind:'zone';point:Vec2;radius:number;duration:number} | {kind:'extend';entityId:string;duration:number} | {kind:'shots';entities:readonly EntityState[];multiplier:number};

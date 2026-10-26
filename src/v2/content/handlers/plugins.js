@@ -4,6 +4,7 @@
  * Incremental implementation; unavailable functions remain explicit TODOs.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
+import{planCombatPluginEvent}from'../../domain/combatPlugins.js';
 import { createWeaponProjectile } from '../../domain/projectiles.js';
 import { createEntityState } from '../../domain/entities.js';
 import { derivePlayerStats } from '../../domain/stats.js';
@@ -40,14 +41,13 @@ export function planPluginParallel(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginBatch(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginBatch');
+  return planCombatPluginEvent(context,event,'plugin_batch');
 }
 
 /**
@@ -69,14 +69,13 @@ export function planPluginCompress(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginCache(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginCache');
+  return planCombatPluginEvent(context,event,'plugin_cache');
 }
 
 /**
@@ -84,14 +83,13 @@ export function planPluginCache(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginRetry(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginRetry');
+  return planCombatPluginEvent(context,event,'plugin_retry');
 }
 
 /**
@@ -99,14 +97,13 @@ export function planPluginRetry(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginTemperature(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginTemperature');
+  return planCombatPluginEvent(context,event,'plugin_temperature');
 }
 
 /**
@@ -129,14 +126,13 @@ export function planPluginCollect(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginCooldown(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginCooldown');
+  return planCombatPluginEvent(context,event,'plugin_cooldown');
 }
 
 /**
@@ -144,14 +140,13 @@ export function planPluginCooldown(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginOffload(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginOffload');
+  return planCombatPluginEvent(context,event,'plugin_offload');
 }
 
 /**
@@ -159,14 +154,13 @@ export function planPluginOffload(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginKeepalive(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginKeepalive');
+  return planCombatPluginEvent(context,event,'plugin_keepalive');
 }
 
 /**
@@ -174,14 +168,13 @@ export function planPluginKeepalive(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginRedirect(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginRedirect');
+  return planCombatPluginEvent(context,event,'plugin_redirect');
 }
 
 /**
@@ -189,14 +182,13 @@ export function planPluginRedirect(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginBackoff(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginBackoff');
+  return planCombatPluginEvent(context,event,'plugin_backoff');
 }
 
 /**
@@ -234,14 +226,13 @@ export function planPlugin5h(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginFailover(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginFailover');
+  return planCombatPluginEvent(context,event,'plugin_failover');
 }
 
 /**
@@ -249,14 +240,13 @@ export function planPluginFailover(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginSandbox(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginSandbox');
+  return planCombatPluginEvent(context,event,'plugin_sandbox');
 }
 
 /**
@@ -264,14 +254,13 @@ export function planPluginSandbox(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginHallucination(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginHallucination');
+  return planCombatPluginEvent(context,event,'plugin_hallucination');
 }
 
 /**
@@ -279,14 +268,13 @@ export function planPluginHallucination(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginChain(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginChain');
+  return planCombatPluginEvent(context,event,'plugin_chain');
 }
 
 /**
@@ -294,14 +282,13 @@ export function planPluginChain(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginContext(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginContext');
+  return planCombatPluginEvent(context,event,'plugin_context');
 }
 
 /**
@@ -309,14 +296,13 @@ export function planPluginContext(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginHotplug(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginHotplug');
+  return planCombatPluginEvent(context,event,'plugin_hotplug');
 }
 
 /**
@@ -339,14 +325,13 @@ export function planPluginGuard(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginPrefill(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginPrefill');
+  return planCombatPluginEvent(context,event,'plugin_prefill');
 }
 
 /**
@@ -354,14 +339,13 @@ export function planPluginPrefill(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginToolchain(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginToolchain');
+  return planCombatPluginEvent(context,event,'plugin_toolchain');
 }
 
 /**
@@ -369,14 +353,13 @@ export function planPluginToolchain(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginMirror(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginMirror');
+  return planCombatPluginEvent(context,event,'plugin_mirror');
 }
 
 /**
@@ -384,14 +367,13 @@ export function planPluginMirror(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginRecursion(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginRecursion');
+  return planCombatPluginEvent(context,event,'plugin_recursion');
 }
 
 /**
@@ -399,14 +381,13 @@ export function planPluginRecursion(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginMoe(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginMoe');
+  return planCombatPluginEvent(context,event,'plugin_moe');
 }
 
 /**
@@ -414,14 +395,13 @@ export function planPluginMoe(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginSpeculate(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginSpeculate');
+  return planCombatPluginEvent(context,event,'plugin_speculate');
 }
 
 /**
@@ -429,14 +409,13 @@ export function planPluginSpeculate(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginWindow(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginWindow');
+  return planCombatPluginEvent(context,event,'plugin_window');
 }
 
 /**
@@ -444,14 +423,13 @@ export function planPluginWindow(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginAgent(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginAgent');
+  return planCombatPluginEvent(context,event,'plugin_agent');
 }
 
 /**
@@ -459,12 +437,11 @@ export function planPluginAgent(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/combatPlugins.js#planCombatPluginEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planPluginBreaker(context, event) {
-  throw new Error('TODO V2: content/handlers/plugins.js#planPluginBreaker');
+  return planCombatPluginEvent(context,event,'plugin_breaker');
 }

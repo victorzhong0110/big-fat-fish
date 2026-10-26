@@ -80,3 +80,15 @@ export function validateStartRequest(profile, request, catalog) {
   if (profile.checkpoint) fail('An active checkpoint exists; explicitly retire it before starting another run');
   return { valid: !diagnostics.length, diagnostics };
 }
+
+/** Bring the rescued rocket resident home after the actual Grok boss milestone and an explicit nest interaction.
+ * @calls 无内部公开函数。
+ * @param {import('../../contracts.d.ts').Profile} profile
+ * @param {import('../../contracts.d.ts').Id} companionId
+ * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
+ * @returns {import('../../contracts.d.ts').Result<import('../../contracts.d.ts').ProfilePlan>}
+ */
+export function planResidentRescue(profile,companionId,catalog){
+ if(companionId!=='companion_rocket'||!profile.unlockLedger.includes('milestone:grok-defeated')||profile.unlockedCompanions.includes(companionId)||catalog.definitions[companionId]?.kind!=='companion')return {ok:false,code:'RESCUE_REJECTED',message:'先击败Grok首领，再来接回小火箭。'};
+ return {ok:true,value:{expectedRevision:profile.revision,next:{...structuredClone(profile),revision:profile.revision+1,unlockedCompanions:[...profile.unlockedCompanions,companionId],discovered:[...new Set([...profile.discovered,companionId])],discoveryLedger:[...profile.discoveryLedger,'discovery:rescue:companion_rocket']},events:[]}};
+}

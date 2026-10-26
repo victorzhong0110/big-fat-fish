@@ -59,6 +59,7 @@ export function validateSystemPlan(plan) {
       case 'putEntity': valid = change.target === 'world' && p.id === change.id && typeof p.definitionId === 'string' && typeof p.sourceId === 'string' && ['player', 'enemy', 'companion', 'projectile', 'pickup', 'obstacle', 'objective', 'decoy'].includes(String(p.kind)) && ['player', 'enemy', 'neutral'].includes(String(p.team)) && nonnegative('hp') && nonnegative('maxHp') && nonnegative('radius') && Array.isArray(p.statusIds) && Array.isArray(p.shieldIds); break;
       case 'removeEntity': valid = change.target === 'world' && Object.keys(p).length === 0; break;
       case 'setEntityKinematics': valid = change.target === 'entity' && Object.keys(p).length === 4 && ['position', 'previousPosition', 'velocity'].every(key => { const point = /** @type {Record<string, import('../contracts.d.ts').Json> | null} */ (p[key]); return point && typeof point === 'object' && typeof point.x === 'number' && typeof point.y === 'number'; }) && typeof p.facingRadians === 'number'; break;
+      case 'setEntityExpiry': valid=change.target==='entity'&&Number.isSafeInteger(p.expiresAt)&&Number(p.expiresAt)>=0;break;
       case 'setProjectileLeg': valid=change.target==='entity'&&typeof p.attackId==='string'&&!!p.runtime&&typeof p.runtime==='object'&&!Array.isArray(p.runtime);break;
       case 'setEntityRuntime': valid = change.target === 'entity' && !!p.runtime && typeof p.runtime === 'object' && !Array.isArray(p.runtime); break;
       case 'setObjectives': valid=change.target==='world'&&Array.isArray(p.objectives);break;
@@ -109,6 +110,7 @@ export function validateSystemPlan(plan) {
       case 'setDeath': valid = change.target === 'entity' && p.dying === true && p.dead === true; break;
       case 'setDamageCredit': valid = change.target === 'entity' && typeof p.sourceId === 'string' && ['player', 'enemy', 'none'].includes(String(p.creditOwner)); break;
       case 'setShell': valid = change.target === 'entity' && nonnegative('maxHp') && nonnegative('hp') && Number(p.hp) <= Number(p.maxHp) && typeof p.broken === 'boolean' && nonnegative('weakArcDegrees') && Number(p.weakArcDegrees) <= 360 && nonnegative('stunRemaining') && typeof p.enraged === 'boolean'; break;
+      case 'attachShield': valid=change.target==='entity'&&typeof p.shieldId==='string'&&p.shieldId.length>0;break;
       case 'setShieldIds': valid = change.target === 'entity' && ids('ids') && new Set(/** @type {string[]} */ (p.ids)).size === /** @type {string[]} */ (p.ids).length; break;
       case 'setShield': valid = change.target === 'world' && p.id === change.id && typeof p.sourceId === 'string' && nonnegative('amount') && Number.isSafeInteger(p.expiresAt) && Number(p.expiresAt) >= 0 && Number.isSafeInteger(p.seq) && Number(p.seq) >= 0; break;
       case 'setControlImmune': valid = change.target === 'player' && nonnegative('remaining'); break;

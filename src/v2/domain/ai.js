@@ -1,4 +1,5 @@
 // @ts-check
+import {planCompanionFollow} from './companions.js';
 import { mergeSystemPlans } from './plans.js';
 /**
  * AI系统收集意图，模型和难度共同生效。
@@ -36,12 +37,14 @@ export function planEnemyAi(context) {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @calls dispatch/companions.js#dispatchCompanionsHandler
+ * @calls domain/companions.js#planCompanionFollow
+ * @calls domain/plans.js#mergeSystemPlans
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @returns {import('../contracts.d.ts').SystemPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planCompanionAi(context) {
-  throw new Error('TODO V2: domain/ai.js#planCompanionAi');
+  const state=context.state,id=state.player.loadout.companionId;if(!id)return planCompanionFollow(context);
+  return mergeSystemPlans([planCompanionFollow(context),dependency1.dispatchCompanionsHandler(context,id,{id:`companion:${state.tick}`,runId:state.runId,tick:state.tick,seq:0,type:'WorldTick',sourceId:state.player.entityId,targetId:null,payload:{}})]);
 }
 
 /**

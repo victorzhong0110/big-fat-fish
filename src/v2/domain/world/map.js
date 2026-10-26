@@ -1,4 +1,5 @@
 // @ts-check
+import {planEasterInteraction} from '../easter.js';
 import { planEquipmentInteraction } from '../equipment.js';
 import { createAdventureMapPlan, planClaudeEncounter } from './adventure.js';
 import { createEmptyPlan } from '../plans.js';
@@ -89,6 +90,7 @@ export function planMapExploration(context) {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @implementationScope adventure-slice
+ * @calls domain/easter.js#planEasterInteraction
  * @calls domain/equipment.js#planEquipmentInteraction
  * @calls domain/geometry.js#distanceSquared
  * @calls domain/plans.js#createEmptyPlan
@@ -103,13 +105,16 @@ export function planWorldInteraction(context, command) {
   const state = context.state, player = state.world.entities[state.player.entityId];
   if (state.flow.phase !== 'exploring') return createEmptyPlan();
   const equipment=planEquipmentInteraction(context);if(equipment)return equipment;
-  const candidates = Object.values(state.world.entities).filter(entity => entity.kind === 'objective' && ['cache', 'bossGate'].includes(String(entity.runtime.interaction)) && dependency1.distanceSquared(entity.position, player.position) <= 96 ** 2).sort((a,b)=>dependency1.distanceSquared(a.position,player.position)-dependency1.distanceSquared(b.position,player.position)||(a.id<b.id?-1:1));
+  const candidates = Object.values(state.world.entities).filter(entity => entity.kind === 'objective' && ['cache','bossGate','chair','note','lunchbox','console'].includes(String(entity.runtime.interaction)) && dependency1.distanceSquared(entity.position, player.position) <= 96 ** 2).sort((a,b)=>dependency1.distanceSquared(a.position,player.position)-dependency1.distanceSquared(b.position,player.position)||(a.id<b.id?-1:1));
   const entity = candidates[0]; if (!entity) return createEmptyPlan();
+  if(['chair','note','lunchbox','console'].includes(String(entity.runtime.interaction)))return planEasterInteraction(context,entity.id);
   if (entity.runtime.interaction === 'bossGate') return planClaudeEncounter(context);
   if (entity.runtime.opened === true) return createEmptyPlan();
   const reward = dependency3.planWorldReward(context, `cache:${entity.id}`);
-  const changes=[...reward.plan.changes,createStateChange('entity',entity.id,'setEntityRuntime',{runtime:{...entity.runtime,opened:true}})],events=[...reward.plan.events],persistence=[...reward.plan.persistence];
-  if(entity.id==='cache:0'&&state.player.loadout.weapons.length<2&&!state.player.loadout.weapons.some(weapon=>weapon.definitionId==='mcp_fan')){
+  const changes=[...reward.plan.changes,createStateChange('entity',entity.id,'setEntityRuntime',{runtime:{...entity.runtime,opened:true}})],events=[...reward.plan.events,{id:`cacheOpened:${state.runId}:${entity.id}`,runId:state.runId,tick:state.tick,seq:0,type:'CacheOpened',sourceId:player.id,targetId:entity.id,payload:{cacheId:entity.id,secret:entity.runtime.secret===true}}],persistence=[...reward.plan.persistence];
+  if(entity.id==='cache:0'&&state.start.dsh.some(slot=>slot.id==='dsh_open')&&state.world.map.biomeIndex===0){
+    for(const [i,definitionId]of ['mcp_fan','mcp_vector'].entries()){const instanceId=`${state.runId}:open:${i}`,id=`open:${entity.id}:${i}`;changes.push(createStateChange('world',id,'putPickup',{id,kind:'weapon',amount:1,position:{x:entity.position.x+(i?35:-35),y:entity.position.y},instanceId,collected:false,exclusiveGroup:`open:${state.runId}`,weapon:{instanceId,definitionId,originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null}}));}
+  }else if(entity.id==='cache:0'&&state.player.loadout.weapons.length<2&&!state.player.loadout.weapons.some(weapon=>weapon.definitionId==='mcp_fan')){
     changes.push(createStateChange('player',player.id,'setLoadout',{...state.player.loadout,weapons:[...state.player.loadout.weapons,{instanceId:`${state.runId}:found:fan`,definitionId:'mcp_fan',originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null}]}));
     const event={id:`discovery:${state.runId}:mcp_fan`,runId:state.runId,tick:state.tick,seq:0,type:'ContentDiscovered',sourceId:player.id,targetId:entity.id,payload:{definitionId:'mcp_fan'}};events.push(event);persistence.push({id:event.id,kind:'discovery',payload:/** @type {import('../../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(event)))});
   }

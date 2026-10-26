@@ -938,6 +938,7 @@
             "domain/profile/nest.js#planDshEquipment",
             "domain/profile/nest.js#planFacilityPurchase",
             "domain/profile/nest.js#planPermanentUnlock",
+            "domain/profile/nest.js#planResidentRescue",
             "domain/profile/tree.js#planTreePurchase",
             "domain/profile/tree.js#planTreeRespec"
           ]
@@ -1380,6 +1381,7 @@
       "layer": "content-handler",
       "purpose": "companions逐项占位处理器；实际参数仍以玩法规格为准。",
       "dependencies": [
+        "domain/companions.js",
         "domain/plans.js"
       ],
       "functions": [
@@ -1398,13 +1400,13 @@
           "result": "EffectPlan",
           "description": "companion_rice / 饭团：玩家生命低于 80% 时治疗 4；未满足条件不开始冷却；20 秒；随行",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/companions.js#planCompanionAbility"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planCompanionPatch",
@@ -1421,13 +1423,13 @@
           "result": "EffectPlan",
           "description": "companion_patch / 补丁：清除玩家一次禁锢/减速；无法解技能或自身封禁；24 秒；随行",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/companions.js#planCompanionAbility"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planCompanionCache",
@@ -1444,13 +1446,13 @@
           "result": "EffectPlan",
           "description": "companion_cache / 小缓存：生成可挡 8 伤的护盾，持续 5 秒，取最大值不叠加；18 秒；随行",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/companions.js#planCompanionAbility"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planCompanionRouter",
@@ -1467,13 +1469,13 @@
           "result": "EffectPlan",
           "description": "companion_router / 路由员：向最近敌人发射 2 个追踪泡，每发 8 伤，600 范围，弹速 380；4 秒",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/companions.js#planCompanionAbility"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planCompanionDecoy",
@@ -1490,13 +1492,13 @@
           "result": "EffectPlan",
           "description": "companion_decoy / 替身进程：放出 3 秒诱饵，吸引 300 内普通敌人；无爆炸；15 秒",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/companions.js#planCompanionAbility"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planCompanionRocket",
@@ -1513,13 +1515,13 @@
           "result": "EffectPlan",
           "description": "companion_rocket / 小火箭：发射一枚瞄准最近目标的火箭，直击 16，爆炸半径 90、12 伤；不触发玩家基础命中插件；7 秒；700 范围",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/companions.js#planCompanionAbility"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -1529,6 +1531,7 @@
       "purpose": "dsh逐项占位处理器；实际参数仍以玩法规格为准。",
       "dependencies": [
         "domain/dshCycle.js",
+        "domain/dshEffects.js",
         "domain/lora.js",
         "domain/plans.js"
       ],
@@ -1571,13 +1574,13 @@
           "result": "EffectPlan",
           "description": "dsh_gpt_preview / 分支预览：难度1及以上首次击败ChatGPT；本局第一次插件选择由3张变4张；首选仍保证含蒸馏，另外3张正常抽",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/dshEffects.js#planDshEffects"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planDshGrokLicense",
@@ -1594,13 +1597,13 @@
           "result": "EffectPlan",
           "description": "dsh_grok_license / 发射许可：难度1及以上首次击败Grok；每海域开始获得1枚储备火箭；下一次成功装备技能施放时发射，直击30、爆炸20、半径100；每海域只能消耗1次",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/dshEffects.js#planDshEffects"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planDshClaudeAllowlist",
@@ -1663,13 +1666,13 @@
           "result": "EffectPlan",
           "description": "dsh_grok_salvage / 清场回收：难度10及以上首次击败Grok；每12次有正常奖励的真实敌人击杀，装填1枚储备火箭，最多存1枚；下次基础射击后发射，直击20、爆炸15、半径90，触发内置冷却8秒",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/dshEffects.js#planDshEffects"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planDshSleep",
@@ -1686,13 +1689,13 @@
           "result": "EffectPlan",
           "description": "dsh_sleep / DeepSleep：彩蛋“深度摸鱼”：任一地图隐藏躺椅交互，连续坐满8秒有效时间；连续2秒不移动且不攻击时获得8护盾持续4秒，内置冷却20秒；暂停/面板不累计坐着或不动时间",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/dshEffects.js#planDshEffects"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planDshRice",
@@ -1709,13 +1712,13 @@
           "result": "EffectPlan",
           "description": "dsh_rice / 开饭协议：彩蛋“饭点”：同一局找到3份不同地点的留言，打开隐藏饭盒并交互；实际治疗的溢出量50%转护盾，上限10、持续5秒；同名盾不叠加，护盾不触发治疗",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/dshEffects.js#planDshEffects"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planDshOpen",
@@ -1732,13 +1735,13 @@
           "result": "EffectPlan",
           "description": "dsh_open / 开源接口：彩蛋“接口拼图”：同一局用3种不同MCP命中训练装置的3个接口，完成交互；第一海域第一个普通武器箱额外提供另一把标准品质MCP供选择；只能拿其中一把，不能把额外选项转零件",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/dshEffects.js#planDshEffects"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planDshLora",
@@ -2608,6 +2611,7 @@
       "layer": "content-handler",
       "purpose": "plugins逐项占位处理器；实际参数仍以玩法规格为准。",
       "dependencies": [
+        "domain/combatPlugins.js",
         "domain/distill.js",
         "domain/entities.js",
         "domain/plans.js",
@@ -2656,13 +2660,13 @@
           "result": "EffectPlan",
           "description": "plugin_batch / 批量处理：每 8→6 次基础武器命中，在目标处爆炸，半径 85，伤害 18；内置冷却 0.5 秒；命中计数与范围圆环",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginCompress",
@@ -2702,13 +2706,13 @@
           "result": "EffectPlan",
           "description": "plugin_cache / 缓存命中：连续命中同一目标 3 次后，基础武器对其额外伤害 +20%→+35%，持续 2 秒；切目标即清层，刷新不叠乘；目标上缓存方块",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginRetry",
@@ -2725,13 +2729,13 @@
           "result": "EffectPlan",
           "description": "plugin_retry / 自动重试：主投射物到期且一次未命中时，向 450 范围最近敌人补一发 0.5W→0.8W 追踪泡；内置冷却 1.5 秒；失败泡泡回转；只重试一次",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginTemperature",
@@ -2748,13 +2752,13 @@
           "result": "EffectPlan",
           "description": "plugin_temperature / 温度采样：每次基础射击 15%→25% 概率变成大泡，主弹伤害 ×1.6、半径 ×1.3；整组只掷一次；变大、有表情的泡泡",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginCollect",
@@ -2795,13 +2799,13 @@
           "result": "EffectPlan",
           "description": "plugin_cooldown / 空闲算力：连续 3 秒未射击时，装备主动技能剩余冷却每秒额外减少 0.5→0.8 秒；不影响其他计时；技能图标上空闲脉冲",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginOffload",
@@ -2818,13 +2822,13 @@
           "result": "EffectPlan",
           "description": "plugin_offload / 卸载缓存：冲刺结束留下一片半径 75、持续 2 秒尾流，敌人每 0.5 秒受 5→8 伤；同敌每次尾流最多 4 跳；水下尾流",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginKeepalive",
@@ -2841,13 +2845,13 @@
           "result": "EffectPlan",
           "description": "plugin_keepalive / 心跳保活：每 12→9 秒获得 6 护盾，持续 4 秒；同名护盾只刷新，不能囤积；节拍护盾",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginRedirect",
@@ -2864,13 +2868,13 @@
           "result": "EffectPlan",
           "description": "plugin_redirect / 请求转发：基础主投射物首次命中后可弹向 180→260 内另一敌人，伤害 0.5W，最多一次；原生穿透/回旋不再附加转发；折线连接",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginBackoff",
@@ -2887,13 +2891,13 @@
           "result": "EffectPlan",
           "description": "plugin_backoff / 指数退避：实际失去生命后移速 +25%→+35%，持续 2 秒；内置冷却 4 秒，不叠层；受击后加速残影",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginDistill",
@@ -2958,13 +2962,13 @@
           "result": "EffectPlan",
           "description": "plugin_failover / 故障转移：每 18→12 秒第一次被禁锢时立即解除，并在 180 范围造成 20 伤；不解除技能/伙伴封禁；封锁碎裂、插件亮起",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginSandbox",
@@ -2981,13 +2985,13 @@
           "result": "EffectPlan",
           "description": "plugin_sandbox / 沙箱隔离：基础武器命中使敌人减速 25%，持续 1.2→2 秒；Boss 效果减半，同名只刷新；明确减速边框",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginHallucination",
@@ -3004,13 +3008,13 @@
           "result": "EffectPlan",
           "description": "plugin_hallucination / 哪来的电脑病毒（幻觉）：使用装备主动技能后生成 3→5 秒鱼形诱饵，吸引 350 内普通敌人；内置冷却 10 秒；半透明笨鱼替身",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginChain",
@@ -3027,13 +3031,13 @@
           "result": "EffectPlan",
           "description": "plugin_chain / 链式调用：每 6→4 次基础武器命中释放一次电链，依次打至多 3 个不同敌人，每次跳距 180，每目标 12 伤；内置冷却 1 秒；三段清晰电链",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginContext",
@@ -3050,13 +3054,13 @@
           "result": "EffectPlan",
           "description": "plugin_context / 长上下文：连续射击时每秒武器伤害 +3%，上限 +18%→+30%；停止射击 1 秒后清空；不是命中叠层；连续输出计量条",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginHotplug",
@@ -3073,13 +3077,13 @@
           "result": "EffectPlan",
           "description": "plugin_hotplug / 热插拔：切 MCP 时发出半径 160 的冲击，造成 25→40 伤并推开普通敌人；内置冷却 6 秒；武器插拔环形波",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginGuard",
@@ -3120,13 +3124,13 @@
           "result": "EffectPlan",
           "description": "plugin_prefill / 预填充：装备主动技能就绪且满 2 秒后，下一次施放效果强化：伤害/护盾/治疗 ×1.4→×1.65；无这些数值的技能持续时间 ×1.25→×1.4；技能就绪蓄满光圈",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginToolchain",
@@ -3143,13 +3147,13 @@
           "result": "EffectPlan",
           "description": "plugin_toolchain / 工具链：使用装备主动技能后的下 3→5 次基础射击，各增加一枚 0.75W 的追踪泡；一次施放刷新次数，不累积；技能后跟随射击",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginMirror",
@@ -3166,13 +3170,13 @@
           "result": "EffectPlan",
           "description": "plugin_mirror / 镜像部署：伙伴产生一次攻击/治疗/护盾后复制该效果的 40%→60%，延迟 0.3 秒，内置冷却 5 秒；诱饵伙伴改为延长 1→2 秒；小镜像伙伴闪现",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginRecursion",
@@ -3189,13 +3193,13 @@
           "result": "EffectPlan",
           "description": "plugin_recursion / 递归：施放批量处理/缓存护盾/沙箱时，0.8 秒后在原位置再执行一次 60%→85% 效果；其他技能复制其无控制的伤害/护盾/治疗部分，若都没有则延长持续 40%→60%；内置冷却 12 秒；第二层调用轮廓",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginMoe",
@@ -3212,13 +3216,13 @@
           "result": "EffectPlan",
           "description": "plugin_moe / 混合专家：每 4→3 次基础射击，按瞄准方向额外发射携带的另一把 MCP 的一组攻击，每枚伤害为它基础伤害的 45%；两把武器冷却独立，不消耗非当前武器冷却；两把 MCP 同时现形",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginSpeculate",
@@ -3235,13 +3239,13 @@
           "result": "EffectPlan",
           "description": "plugin_speculate / 推测执行：冲刺开始后 1 秒内下一次基础射击增加 3 发扇形 0.6W→0.9W 的穿透影泡，每发最多命中 2 个敌人；冲刺后展开巨大扇面",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginWindow",
@@ -3258,13 +3262,13 @@
           "result": "EffectPlan",
           "description": "plugin_window / 窗口溢出：每拾取累计 120→90 大白饭，装备主动技能冷却减少 3 秒并向最近敌人发一枚 25 伤追踪泡；每 tick 最多 1 次，其余次数排队；经验条溢出发射",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginAgent",
@@ -3281,13 +3285,13 @@
           "result": "EffectPlan",
           "description": "plugin_agent / Agent 协作：伙伴每次非镜像能力结束后，装备主动技能剩余冷却减少 1.5→2.5 秒；施放装备技能使伙伴剩余冷却减少 2 秒；双向各有 4 秒内置冷却；玩家与伙伴连线",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPluginBreaker",
@@ -3304,13 +3308,13 @@
           "result": "EffectPlan",
           "description": "plugin_breaker / 越狱：每 20→14 秒第一次技能/伙伴封禁命中时立即解除该次封禁；3 秒内所有玩家伤害 +25%；不能破坏 Boss 重置条件；封禁印章反弹",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/combatPlugins.js#planCombatPluginEvent"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -3319,6 +3323,7 @@
       "layer": "content-handler",
       "purpose": "skills逐项占位处理器；实际参数仍以玩法规格为准。",
       "dependencies": [
+        "domain/abilities.js",
         "domain/geometry.js",
         "domain/motionSolver.js",
         "domain/plans.js",
@@ -3380,13 +3385,13 @@
           "result": "EffectPlan",
           "description": "skill_batch / 仿佛看到原子弹爆炸（批量处理）：瞄准方向 400 内、半径 130 的区域在 0.6 秒后爆发 65 伤；有清晰预警；12；8 零件",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/abilities.js#planEquippedAbility"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planSkillRedirect",
@@ -3399,13 +3404,13 @@
           "result": "EffectPlan",
           "description": "skill_redirect / 重定向：1.2 秒内将触及半径 90 的可反射敌弹转为朝瞄准方向的己方弹，每枚 15 伤，最多 12 枚；火箭/光束不可反射；15；10 零件",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/abilities.js#planEquippedAbility"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planSkillSandbox",
@@ -3418,13 +3423,13 @@
           "result": "EffectPlan",
           "description": "skill_sandbox / 沙箱：瞄准位置放置半径 160、持续 4 秒的区域，普通敌人移速 -50%，Boss -20%；14；8 零件",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/abilities.js#planEquippedAbility"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planSkillFork",
@@ -3437,13 +3442,13 @@
           "result": "EffectPlan",
           "description": "skill_fork / 分叉进程：生成持续 4 秒的鱼形诱饵，吸引 450 内非 Boss 普通敌人；结束在 100 范围爆发 25 伤；18；10 零件",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/abilities.js#planEquippedAbility"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planSkillRollback",
@@ -3456,13 +3461,13 @@
           "result": "EffectPlan",
           "description": "skill_rollback / 回滚：回到 2 秒前的合法位置，恢复这 2 秒实际失去生命的 40%，上限 15；不恢复资源/护盾/冷却，不复活；目标不合法则就近找点；20；12 零件",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/abilities.js#planEquippedAbility"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planSkillOverclock",
@@ -3475,13 +3480,13 @@
           "result": "EffectPlan",
           "description": "skill_overclock / 用户彻底怒了（超频）：4 秒内基础射击间隔 ×0.65、移速 +10%；不影响插件/伙伴内置冷却；18；12 零件",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/abilities.js#planEquippedAbility"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -3801,18 +3806,18 @@
           "result": "EffectPlan",
           "description": "按合法稳定id和已实现绑定只调用一个对应处理器。",
           "calls": [
-            "content/handlers/companions.js#planCompanionRice",
-            "content/handlers/companions.js#planCompanionPatch",
             "content/handlers/companions.js#planCompanionCache",
-            "content/handlers/companions.js#planCompanionRouter",
             "content/handlers/companions.js#planCompanionDecoy",
-            "content/handlers/companions.js#planCompanionRocket"
+            "content/handlers/companions.js#planCompanionPatch",
+            "content/handlers/companions.js#planCompanionRice",
+            "content/handlers/companions.js#planCompanionRocket",
+            "content/handlers/companions.js#planCompanionRouter"
           ],
           "rule": "@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "dispatch",
           "callMode": "dispatch",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -3844,7 +3849,13 @@
           "description": "按合法稳定id和已实现绑定只调用一个对应处理器。",
           "calls": [
             "content/handlers/dsh.js#planDshGptBranch",
-            "content/handlers/dsh.js#planDshLora"
+            "content/handlers/dsh.js#planDshGptPreview",
+            "content/handlers/dsh.js#planDshGrokLicense",
+            "content/handlers/dsh.js#planDshGrokSalvage",
+            "content/handlers/dsh.js#planDshLora",
+            "content/handlers/dsh.js#planDshOpen",
+            "content/handlers/dsh.js#planDshRice",
+            "content/handlers/dsh.js#planDshSleep"
           ],
           "rule": "@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -4019,42 +4030,42 @@
           "result": "EffectPlan",
           "description": "按合法稳定id和已实现绑定只调用一个对应处理器。",
           "calls": [
-            "content/handlers/plugins.js#planPluginParallel",
-            "content/handlers/plugins.js#planPluginBatch",
-            "content/handlers/plugins.js#planPluginCompress",
-            "content/handlers/plugins.js#planPluginCache",
-            "content/handlers/plugins.js#planPluginRetry",
-            "content/handlers/plugins.js#planPluginTemperature",
-            "content/handlers/plugins.js#planPluginCollect",
-            "content/handlers/plugins.js#planPluginCooldown",
-            "content/handlers/plugins.js#planPluginOffload",
-            "content/handlers/plugins.js#planPluginKeepalive",
-            "content/handlers/plugins.js#planPluginRedirect",
-            "content/handlers/plugins.js#planPluginBackoff",
-            "content/handlers/plugins.js#planPluginDistill",
             "content/handlers/plugins.js#planPlugin5h",
-            "content/handlers/plugins.js#planPluginFailover",
-            "content/handlers/plugins.js#planPluginSandbox",
-            "content/handlers/plugins.js#planPluginHallucination",
-            "content/handlers/plugins.js#planPluginChain",
-            "content/handlers/plugins.js#planPluginContext",
-            "content/handlers/plugins.js#planPluginHotplug",
-            "content/handlers/plugins.js#planPluginGuard",
-            "content/handlers/plugins.js#planPluginPrefill",
-            "content/handlers/plugins.js#planPluginToolchain",
-            "content/handlers/plugins.js#planPluginMirror",
-            "content/handlers/plugins.js#planPluginRecursion",
-            "content/handlers/plugins.js#planPluginMoe",
-            "content/handlers/plugins.js#planPluginSpeculate",
-            "content/handlers/plugins.js#planPluginWindow",
             "content/handlers/plugins.js#planPluginAgent",
-            "content/handlers/plugins.js#planPluginBreaker"
+            "content/handlers/plugins.js#planPluginBackoff",
+            "content/handlers/plugins.js#planPluginBatch",
+            "content/handlers/plugins.js#planPluginBreaker",
+            "content/handlers/plugins.js#planPluginCache",
+            "content/handlers/plugins.js#planPluginChain",
+            "content/handlers/plugins.js#planPluginCollect",
+            "content/handlers/plugins.js#planPluginCompress",
+            "content/handlers/plugins.js#planPluginContext",
+            "content/handlers/plugins.js#planPluginCooldown",
+            "content/handlers/plugins.js#planPluginDistill",
+            "content/handlers/plugins.js#planPluginFailover",
+            "content/handlers/plugins.js#planPluginGuard",
+            "content/handlers/plugins.js#planPluginHallucination",
+            "content/handlers/plugins.js#planPluginHotplug",
+            "content/handlers/plugins.js#planPluginKeepalive",
+            "content/handlers/plugins.js#planPluginMirror",
+            "content/handlers/plugins.js#planPluginMoe",
+            "content/handlers/plugins.js#planPluginOffload",
+            "content/handlers/plugins.js#planPluginParallel",
+            "content/handlers/plugins.js#planPluginPrefill",
+            "content/handlers/plugins.js#planPluginRecursion",
+            "content/handlers/plugins.js#planPluginRedirect",
+            "content/handlers/plugins.js#planPluginRetry",
+            "content/handlers/plugins.js#planPluginSandbox",
+            "content/handlers/plugins.js#planPluginSpeculate",
+            "content/handlers/plugins.js#planPluginTemperature",
+            "content/handlers/plugins.js#planPluginToolchain",
+            "content/handlers/plugins.js#planPluginWindow"
           ],
           "rule": "@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "dispatch",
           "callMode": "dispatch",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -4081,8 +4092,14 @@
           "result": "EffectPlan",
           "description": "按合法稳定id和已实现绑定只调用一个对应处理器。",
           "calls": [
+            "content/handlers/skills.js#planSkillBatch",
             "content/handlers/skills.js#planSkillCache",
-            "content/handlers/skills.js#planSkillDisconnect"
+            "content/handlers/skills.js#planSkillDisconnect",
+            "content/handlers/skills.js#planSkillFork",
+            "content/handlers/skills.js#planSkillOverclock",
+            "content/handlers/skills.js#planSkillRedirect",
+            "content/handlers/skills.js#planSkillRollback",
+            "content/handlers/skills.js#planSkillSandbox"
           ],
           "rule": "@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -4135,6 +4152,225 @@
       ]
     },
     {
+      "path": "domain/abilities.js",
+      "layer": "domain",
+      "purpose": "A bounded legal teleport placement, without tracing the path from the current position.",
+      "dependencies": [
+        "domain/collision.js",
+        "domain/entities.js",
+        "domain/geometry.js",
+        "domain/plans.js",
+        "domain/serialization.js",
+        "domain/stats.js"
+      ],
+      "functions": [
+        {
+          "description": "findAbilityPlacement",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "findAbilityPlacement",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "point",
+              "type": "untyped"
+            }
+          ],
+          "result": "Vec2",
+          "implementation": "implemented",
+          "calls": [
+            "domain/collision.js#canTraverseObstacle",
+            "domain/geometry.js#distanceSquared"
+          ]
+        },
+        {
+          "description": "planEquippedAbility",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planEquippedAbility",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "kind",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/abilities.js#findAbilityPlacement",
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/stats.js#derivePlayerStats"
+          ]
+        },
+        {
+          "description": "planAbilityDamage",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planAbilityDamage",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "id",
+              "type": "untyped"
+            },
+            {
+              "name": "point",
+              "type": "untyped"
+            },
+            {
+              "name": "radius",
+              "type": "untyped"
+            },
+            {
+              "name": "amount",
+              "type": "untyped"
+            },
+            {
+              "name": "sourceKind",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared",
+            "domain/geometry.js#normalizeVector",
+            "domain/plans.js#createEmptyPlan",
+            "domain/serialization.js#toJson"
+          ]
+        },
+        {
+          "description": "planAbilityFields",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planAbilityFields",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/geometry.js#intersectSweptCircles",
+            "domain/geometry.js#normalizeVector",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ]
+        },
+        {
+          "description": "planAbilityBursts",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planAbilityBursts",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/abilities.js#planAbilityDamage",
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createStateChange",
+            "domain/plans.js#mergeSystemPlans"
+          ]
+        },
+        {
+          "description": "resolveAbilityMoveScale",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolveAbilityMoveScale",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            },
+            {
+              "name": "entity",
+              "type": "untyped"
+            }
+          ],
+          "result": "number",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared"
+          ]
+        },
+        {
+          "description": "selectAbilityTarget",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "selectAbilityTarget",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            },
+            {
+              "name": "entity",
+              "type": "untyped"
+            }
+          ],
+          "result": "DeepReadonly<EntityState>",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared"
+          ]
+        },
+        {
+          "description": "planAbilityHistory",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planAbilityHistory",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ]
+        }
+      ]
+    },
+    {
       "path": "domain/ai.js",
       "layer": "system",
       "purpose": "AI系统收集意图，模型和难度共同生效。",
@@ -4146,6 +4382,7 @@
         "domain/bosses/claude.js",
         "domain/bosses/gpt.js",
         "domain/bosses/grok.js",
+        "domain/companions.js",
         "domain/navigation.js",
         "domain/plans.js"
       ],
@@ -4182,13 +4419,15 @@
           "result": "SystemPlan",
           "description": "未封禁时按原冷却和条件自动协助，输出来源companion。",
           "calls": [
-            "dispatch/companions.js#dispatchCompanionsHandler"
+            "dispatch/companions.js#dispatchCompanionsHandler",
+            "domain/companions.js#planCompanionFollow",
+            "domain/plans.js#mergeSystemPlans"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planBossAi",
@@ -4223,7 +4462,9 @@
         "domain/equipment.js",
         "domain/geometry.js",
         "domain/plans.js",
+        "domain/pluginStats.js",
         "domain/projectiles.js",
+        "domain/random.js",
         "domain/serialization.js",
         "domain/stats.js",
         "domain/treeRuntime.js"
@@ -4243,6 +4484,7 @@
             "dispatch/weapons.js#dispatchWeaponsHandler",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
+            "domain/random.js#drawRandom",
             "domain/stats.js#deriveWeaponStats"
           ],
           "rule": "",
@@ -4265,7 +4507,9 @@
           "calls": [
             "dispatch/skills.js#dispatchSkillsHandler",
             "domain/plans.js#createEmptyPlan",
-            "domain/plans.js#createStateChange"
+            "domain/plans.js#createStateChange",
+            "domain/pluginStats.js#resolveSkillPreparation",
+            "domain/serialization.js#toJson"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -4314,6 +4558,7 @@
           "result": "SystemPlan",
           "description": "处理Q切枪与探索地面实例替换；各自保留CD，实际换到当前槽才触发永久换枪效果。",
           "calls": [
+            "domain/equipment.js#planSkillPickup",
             "domain/equipment.js#planWeaponPickup",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
@@ -4360,6 +4605,7 @@
       "layer": "domain",
       "purpose": "Claude高数值/封禁招式意图；控制由统一管线处理。",
       "dependencies": [
+        "domain/entities.js",
         "domain/geometry.js",
         "domain/meleeAi.js",
         "domain/plans.js",
@@ -4415,6 +4661,7 @@
           "result": "EffectPlan",
           "description": "无合法槽则普通攻击；只发一份封禁请求和可破封装置计划。",
           "calls": [
+            "domain/entities.js#createEntityState",
             "domain/geometry.js#normalizeVector",
             "domain/plans.js#createEmptyPlan",
             "domain/serialization.js#toJson"
@@ -4812,10 +5059,211 @@
       ]
     },
     {
+      "path": "domain/combatPlugins.js",
+      "layer": "domain",
+      "purpose": "@param {import('../contracts.d.ts').EvaluationContext} c @param {import('../contracts.d.ts').Vec2} point @param {number} range @param {readonly string[]} excluded",
+      "dependencies": [
+        "content/weaponCapabilities.js",
+        "domain/abilities.js",
+        "domain/entities.js",
+        "domain/geometry.js",
+        "domain/motionSolver.js",
+        "domain/plans.js",
+        "domain/pluginStats.js",
+        "domain/projectiles.js",
+        "domain/scheduled.js",
+        "domain/serialization.js",
+        "domain/shields.js",
+        "domain/stats.js"
+      ],
+      "functions": [
+        {
+          "description": "planCombatPluginEvent",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planCombatPluginEvent",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            },
+            {
+              "name": "onlyId",
+              "default": "null",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "content/weaponCapabilities.js#resolveWeaponTemplate",
+            "domain/abilities.js#planAbilityDamage",
+            "domain/entities.js#createEntityState",
+            "domain/geometry.js#distanceSquared",
+            "domain/geometry.js#normalizeVector",
+            "domain/motionSolver.js#resolveBodyDestination",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/plans.js#mergeSystemPlans",
+            "domain/pluginStats.js#deriveRawWeaponStats",
+            "domain/projectiles.js#createWeaponProjectile",
+            "domain/scheduled.js#scheduleAbilityActions",
+            "domain/stats.js#derivePlayerStats"
+          ]
+        },
+        {
+          "description": "planCombatPluginWorld",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planCombatPluginWorld",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/abilities.js#planAbilityDamage",
+            "domain/entities.js#createEntityState",
+            "domain/geometry.js#distanceSquared",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/plans.js#mergeSystemPlans",
+            "domain/serialization.js#toJson",
+            "domain/shields.js#planShieldGrant",
+            "domain/stats.js#derivePlayerStats"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "domain/companions.js",
+      "layer": "domain",
+      "purpose": "One conditionally triggered automatic ability. No cast means no cooldown consumption.",
+      "dependencies": [
+        "domain/entities.js",
+        "domain/geometry.js",
+        "domain/plans.js",
+        "domain/serialization.js",
+        "domain/shields.js",
+        "domain/stats.js"
+      ],
+      "functions": [
+        {
+          "description": "planCompanionAbility",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planCompanionAbility",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "kind",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/geometry.js#distanceSquared",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/shields.js#planShieldGrant",
+            "domain/stats.js#derivePlayerStats"
+          ]
+        },
+        {
+          "description": "planCompanionFollow",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planCompanionFollow",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/geometry.js#distanceSquared",
+            "domain/geometry.js#normalizeVector",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ]
+        },
+        {
+          "description": "planPartnerBanContact",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planPartnerBanContact",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#intersectSweptCircles",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ]
+        },
+        {
+          "description": "planCompanionMilestones",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planCompanionMilestones",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson"
+          ]
+        }
+      ]
+    },
+    {
       "path": "domain/damage.js",
       "layer": "domain",
       "purpose": "伤害的唯一规划入口；不递归调用击杀或效果钩子。",
       "dependencies": [
+        "domain/pluginStats.js",
         "domain/quotas.js",
         "domain/random.js",
         "domain/shells.js",
@@ -4840,6 +5288,7 @@
           "description": "检查命中/无敌，分流外壳，计算额度/护甲/减伤/暴击/盾/生命，产生伤害和死亡候选。",
           "calls": [
             "domain/damage.js#isDamageRequestValid",
+            "domain/pluginStats.js#resolveCacheHitFactor",
             "domain/quotas.js#planQuotaAllowance",
             "domain/random.js#drawRandom",
             "domain/shells.js#resolveShellContact",
@@ -5142,6 +5591,8 @@
       "purpose": "候选、升级、换槽与一次性重抽。",
       "dependencies": [
         "content/registry.js",
+        "content/weaponCapabilities.js",
+        "domain/damage.js",
         "domain/distill.js",
         "domain/plans.js",
         "domain/random.js"
@@ -5163,6 +5614,7 @@
           "description": "按权重生成3/DSH首轮4个互异候选，首组保底蒸馏。",
           "calls": [
             "content/registry.js#createHandlerRegistry",
+            "content/weaponCapabilities.js#resolveWeaponTemplate",
             "domain/random.js#chooseWeightedIndex"
           ],
           "rule": "",
@@ -5239,6 +5691,7 @@
           "result": "SystemPlan",
           "description": "一次跳过治疗8并完成该选择，不转换永久资源。",
           "calls": [
+            "domain/damage.js#planLifeChange",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange"
           ],
@@ -5321,6 +5774,150 @@
       ]
     },
     {
+      "path": "domain/dshEffects.js",
+      "layer": "domain",
+      "purpose": "Native casts, credited deaths and real healing feed independent DSH counters. Never emits a native attack event.",
+      "dependencies": [
+        "domain/entities.js",
+        "domain/plans.js",
+        "domain/shields.js",
+        "domain/stats.js"
+      ],
+      "functions": [
+        {
+          "description": "planDshEffects",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planDshEffects",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            },
+            {
+              "name": "onlyId",
+              "default": "null",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/plans.js#mergeSystemPlans",
+            "domain/shields.js#planShieldGrant",
+            "domain/stats.js#derivePlayerStats"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "domain/easter.js",
+      "layer": "domain",
+      "purpose": "Place discoverable, reward-free easter objectives in the continuous map.",
+      "dependencies": [
+        "domain/entities.js",
+        "domain/plans.js",
+        "domain/serialization.js"
+      ],
+      "functions": [
+        {
+          "description": "createEasterObjectives",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createEasterObjectives",
+          "args": [],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ]
+        },
+        {
+          "description": "planEasterEvent",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planEasterEvent",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ]
+        },
+        {
+          "description": "planEasterInteraction",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planEasterInteraction",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "entityId",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson"
+          ]
+        },
+        {
+          "description": "planEasterAdvance",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planEasterAdvance",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson"
+          ]
+        }
+      ]
+    },
+    {
       "path": "domain/entities.js",
       "layer": "domain",
       "purpose": "Canonical entity constructor; callers provide stable identity and source snapshots.",
@@ -5378,7 +5975,7 @@
       ],
       "functions": [
         {
-          "description": "探索中F就近拾取地面MCP；空槽立即填入，满槽发可放弃的替换预览事件。",
+          "description": "探索中F就近拾取MCP/技能；MCP空槽填入，满槽或技能发可放弃的替换预览。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -5429,6 +6026,31 @@
             "domain/treeRuntime.js#planTreeWeaponSwitch"
           ],
           "implementationScope": "core-preview + adventure-slice"
+        },
+        {
+          "description": "planSkillPickup",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planSkillPickup",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "pickupId",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson"
+          ]
         }
       ]
     },
@@ -5831,6 +6453,7 @@
       "layer": "domain",
       "purpose": "Shared navigation/contact logic; only the brown crab has a telegraphed heavy claw.",
       "dependencies": [
+        "domain/abilities.js",
         "domain/geometry.js",
         "domain/navigation.js",
         "domain/plans.js",
@@ -5857,6 +6480,8 @@
           "result": "SystemPlan",
           "implementation": "implemented",
           "calls": [
+            "domain/abilities.js#resolveAbilityMoveScale",
+            "domain/abilities.js#selectAbilityTarget",
             "domain/geometry.js#distanceSquared",
             "domain/geometry.js#normalizeVector",
             "domain/navigation.js#findNavigationPath",
@@ -6176,6 +6801,117 @@
       ]
     },
     {
+      "path": "domain/pluginStats.js",
+      "layer": "domain",
+      "purpose": "Active rank, never an archived or difficulty-independent duplicate.",
+      "dependencies": [],
+      "functions": [
+        {
+          "description": "pluginRank",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "pluginRank",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            },
+            {
+              "name": "id",
+              "type": "untyped"
+            }
+          ],
+          "result": "number",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "deriveRawWeaponStats",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "deriveRawWeaponStats",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            },
+            {
+              "name": "weapon",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            }
+          ],
+          "result": "WeaponStats",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "resolveContextWeaponFactor",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolveContextWeaponFactor",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            }
+          ],
+          "result": "number",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "resolveCacheHitFactor",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolveCacheHitFactor",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            },
+            {
+              "name": "request",
+              "type": "untyped"
+            }
+          ],
+          "result": "number",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "resolveSkillPreparation",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolveSkillPreparation",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            }
+          ],
+          "result": "{power:number;duration:number;push:number}",
+          "implementation": "implemented",
+          "calls": [
+            "domain/pluginStats.js#pluginRank"
+          ]
+        }
+      ]
+    },
+    {
       "path": "domain/profile/nest.js",
       "layer": "domain",
       "purpose": "设施、永久装备/技能、伙伴与出发配装。",
@@ -6284,6 +7020,31 @@
           "phase": "query",
           "callMode": "sequence",
           "implementation": "implemented"
+        },
+        {
+          "description": "planResidentRescue",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planResidentRescue",
+          "args": [
+            {
+              "name": "profile",
+              "type": "untyped"
+            },
+            {
+              "name": "companionId",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            }
+          ],
+          "result": "Result<ProfilePlan>",
+          "implementation": "implemented",
+          "calls": []
         }
       ]
     },
@@ -6480,6 +7241,7 @@
         "content/weaponCapabilities.js",
         "domain/entities.js",
         "domain/plans.js",
+        "domain/pluginStats.js",
         "domain/serialization.js",
         "domain/stats.js"
       ],
@@ -6529,7 +7291,8 @@
           "implementation": "implemented",
           "calls": [
             "content/weaponCapabilities.js#resolveWeaponTemplate",
-            "domain/entities.js#createEntityState"
+            "domain/entities.js#createEntityState",
+            "domain/pluginStats.js#deriveRawWeaponStats"
           ],
           "implementationScope": "core-preview + adventure-slice"
         },
@@ -6812,6 +7575,87 @@
           "callMode": "sequence",
           "implementation": "implemented",
           "implementationScope": "core-preview"
+        }
+      ]
+    },
+    {
+      "path": "domain/scheduled.js",
+      "layer": "domain",
+      "purpose": "Store typed declarative delayed actions, never a stale mutable-state replacement plan.",
+      "dependencies": [
+        "domain/abilities.js",
+        "domain/entities.js",
+        "domain/plans.js",
+        "domain/serialization.js",
+        "domain/shields.js"
+      ],
+      "functions": [
+        {
+          "description": "scheduleAbilityActions",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "scheduleAbilityActions",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "id",
+              "type": "untyped"
+            },
+            {
+              "name": "delay",
+              "type": "untyped"
+            },
+            {
+              "name": "actions",
+              "type": "untyped"
+            },
+            {
+              "name": "point",
+              "type": "untyped"
+            },
+            {
+              "name": "radius",
+              "default": "12",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson"
+          ]
+        },
+        {
+          "description": "planScheduledActions",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planScheduledActions",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/abilities.js#planAbilityDamage",
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/plans.js#mergeSystemPlans",
+            "domain/shields.js#planShieldGrant"
+          ]
         }
       ]
     },
@@ -7140,7 +7984,8 @@
       "layer": "domain",
       "purpose": "基础/来源修饰的分离计算，派生伤害只应用一次。",
       "dependencies": [
-        "content/catalog.js"
+        "content/catalog.js",
+        "domain/pluginStats.js"
       ],
       "functions": [
         {
@@ -7186,6 +8031,7 @@
           "description": "合并原始品质/28秒临时品质/武器修饰，输出攻击参数。",
           "calls": [
             "content/catalog.js#findContentDefinition",
+            "domain/pluginStats.js#resolveContextWeaponFactor",
             "domain/stats.js#derivePlayerStats",
             "domain/stats.js#resolveStatModifier"
           ],
@@ -7473,6 +8319,7 @@
       "layer": "domain",
       "purpose": "Claude短途纵切的连续地图；首领与其他模式不因此宣称完整实现。",
       "dependencies": [
+        "domain/easter.js",
         "domain/entities.js",
         "domain/plans.js"
       ],
@@ -7497,6 +8344,7 @@
           "result": "SystemPlan",
           "implementation": "implemented",
           "calls": [
+            "domain/easter.js#createEasterObjectives",
             "domain/entities.js#createEntityState",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange"
@@ -7532,6 +8380,7 @@
       "layer": "domain",
       "purpose": "连续地图生成、探索与安全交互。",
       "dependencies": [
+        "domain/easter.js",
         "domain/entities.js",
         "domain/equipment.js",
         "domain/geometry.js",
@@ -7607,8 +8456,9 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "探索交互优先处理附近MCP，再处理补给/首领门；Boss不打开换装面板。",
+          "description": "探索交互优先装备，再处理补给/首领门/彩蛋证据；Boss不打开换装面板。",
           "calls": [
+            "domain/easter.js#planEasterInteraction",
             "domain/equipment.js#planEquipmentInteraction",
             "domain/geometry.js#distanceSquared",
             "domain/plans.js#createEmptyPlan",
@@ -8190,7 +9040,11 @@
         "dispatch/mechanics.js",
         "dispatch/models.js",
         "dispatch/plugins.js",
+        "domain/combatPlugins.js",
+        "domain/companions.js",
         "domain/distill.js",
+        "domain/dshEffects.js",
+        "domain/easter.js",
         "domain/plans.js",
         "domain/status.js"
       ],
@@ -8211,7 +9065,11 @@
           "description": "分派蒸馏、封印破坏和并行调用事件；其余首批插件由明确数据消费者处理。",
           "calls": [
             "content/handlers/plugins.js#planPluginParallel",
+            "domain/combatPlugins.js#planCombatPluginEvent",
+            "domain/companions.js#planCompanionMilestones",
             "domain/distill.js#planDistillEvent",
+            "domain/dshEffects.js#planDshEffects",
+            "domain/easter.js#planEasterEvent",
             "domain/plans.js#mergeSystemPlans",
             "domain/status.js#planSealRelease"
           ],
@@ -8229,16 +9087,22 @@
       "layer": "engine",
       "purpose": "A bounded, explicit combat-only slice. Full adventure tick remains separate and unfinished.",
       "dependencies": [
+        "domain/abilities.js",
         "domain/ai.js",
         "domain/attacks.js",
         "domain/collision.js",
+        "domain/combatPlugins.js",
+        "domain/companions.js",
         "domain/deaths.js",
         "domain/distill.js",
         "domain/dshCycle.js",
+        "domain/dshEffects.js",
+        "domain/easter.js",
         "domain/lora.js",
         "domain/movement.js",
         "domain/plans.js",
         "domain/rewards.js",
+        "domain/scheduled.js",
         "domain/status.js",
         "domain/world/map.js",
         "domain/world/objectives.js",
@@ -8274,20 +9138,29 @@
           "result": "TickResult",
           "implementation": "implemented",
           "calls": [
+            "domain/abilities.js#planAbilityBursts",
+            "domain/abilities.js#planAbilityFields",
+            "domain/abilities.js#planAbilityHistory",
             "domain/ai.js#planBossAi",
+            "domain/ai.js#planCompanionAi",
             "domain/ai.js#planEnemyAi",
             "domain/attacks.js#planCollisionEffects",
             "domain/attacks.js#planWeaponFire",
             "domain/collision.js#detectCollisions",
+            "domain/combatPlugins.js#planCombatPluginWorld",
+            "domain/companions.js#planPartnerBanContact",
             "domain/deaths.js#resolveTerminalOutcome",
             "domain/distill.js#planDistilledAbilities",
             "domain/dshCycle.js#planDshCycleEvent",
+            "domain/dshEffects.js#planDshEffects",
+            "domain/easter.js#planEasterAdvance",
             "domain/movement.js#planEntityMotion",
             "domain/movement.js#planPickupMotion",
             "domain/movement.js#planPlayerMovement",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
             "domain/rewards.js#planDeathRewards",
+            "domain/scheduled.js#planScheduledActions",
             "domain/status.js#planStatusAdvance",
             "domain/world/map.js#planMapExploration",
             "domain/world/objectives.js#planObjectiveAdvance",
@@ -8331,6 +9204,7 @@
           "result": "TickResult",
           "implementation": "implemented",
           "calls": [
+            "domain/dshEffects.js#planDshEffects",
             "domain/lora.js#planLoraUiStep",
             "engine/commands.js#orderPendingCommands",
             "engine/commands.js#planGameCommand",
@@ -8825,7 +9699,7 @@
       ],
       "functions": [
         {
-          "description": "组装Free/Pro1、输入、正式小窝消费与配装、事务结算和本地模组；返回完整清理函数。",
+          "description": "组装Free/Pro1、八技能/六伙伴/插件替换、正式小窝消费与配装、事务结算和本地模组。",
           "rule": "",
           "ownership": "宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState",
           "phase": "query",
@@ -8951,7 +9825,7 @@
               "type": "untyped"
             }
           ],
-          "result": "{setProfile:(record:StorageRecord|null)=>void; getLoadout:()=>{weaponIds:string[];skillId:string};dispose:()=>void}",
+          "result": "{setProfile:(record:StorageRecord|null)=>void; getLoadout:()=>{weaponIds:string[];skillId:string;companionId:string|null};dispose:()=>void}",
           "implementation": "implemented",
           "calls": [
             "application/nest.js#executeNestAction",
@@ -9967,9 +10841,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 89,
-    "functions": 333,
-    "implemented": 197,
-    "placeholders": 136
+    "modules": 96,
+    "functions": 361,
+    "implemented": 270,
+    "placeholders": 91
   }
 }

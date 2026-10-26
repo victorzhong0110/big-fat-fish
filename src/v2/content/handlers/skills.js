@@ -1,4 +1,5 @@
 // @ts-check
+import { planEquippedAbility } from '../../domain/abilities.js';
 import { planShieldGrant } from '../../domain/shields.js';
 import { createEmptyPlan, createStateChange } from '../../domain/plans.js';
 import { resolveBodyDestination } from '../../domain/motionSolver.js';
@@ -34,7 +35,7 @@ export function planSkillDisconnect(context) {
   for (const enemy of Object.values(state.world.entities).filter(entity => entity.kind === 'enemy' && !entity.dead && !state.bosses.some(boss => boss.entityId === entity.id) && distanceSquared(entity.position, player.position) <= 180 ** 2)) {
     let direction = normalizeVector({ x: enemy.position.x - player.position.x, y: enemy.position.y - player.position.y });
     if (!direction.x && !direction.y) direction = context.aim;
-    const position = resolveBodyDestination(context, enemy, { x: enemy.position.x + direction.x * 120, y: enemy.position.y + direction.y * 120 });
+    const position = resolveBodyDestination(context, enemy, { x: enemy.position.x + direction.x * 120*(context.skillPush??1), y: enemy.position.y + direction.y * 120*(context.skillPush??1) });
     changes.push(createStateChange('entity', enemy.id, 'setEntityKinematics', { position, previousPosition: position, velocity: enemy.velocity, facingRadians: enemy.facingRadians }));
   }
   return { ...createEmptyPlan(), changes };
@@ -51,7 +52,7 @@ export function planSkillDisconnect(context) {
  * @returns {import('../../contracts.d.ts').EffectPlan}
  */
 export function planSkillCache(context) {
-  return planShieldGrant(context, context.state.player.entityId, 'skill_cache', 25, 5);
+  return planShieldGrant(context, context.state.player.entityId, 'skill_cache', 25*(context.skillPower??1), 5);
 }
 
 /**
@@ -59,13 +60,12 @@ export function planSkillCache(context) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/abilities.js#planEquippedAbility
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planSkillBatch(context) {
-  throw new Error('TODO V2: content/handlers/skills.js#planSkillBatch');
+  return planEquippedAbility(context,'batch');
 }
 
 /**
@@ -73,13 +73,12 @@ export function planSkillBatch(context) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/abilities.js#planEquippedAbility
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planSkillRedirect(context) {
-  throw new Error('TODO V2: content/handlers/skills.js#planSkillRedirect');
+  return planEquippedAbility(context,'redirect');
 }
 
 /**
@@ -87,13 +86,12 @@ export function planSkillRedirect(context) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/abilities.js#planEquippedAbility
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planSkillSandbox(context) {
-  throw new Error('TODO V2: content/handlers/skills.js#planSkillSandbox');
+  return planEquippedAbility(context,'sandbox');
 }
 
 /**
@@ -101,13 +99,12 @@ export function planSkillSandbox(context) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/abilities.js#planEquippedAbility
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planSkillFork(context) {
-  throw new Error('TODO V2: content/handlers/skills.js#planSkillFork');
+  return planEquippedAbility(context,'fork');
 }
 
 /**
@@ -115,13 +112,12 @@ export function planSkillFork(context) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/abilities.js#planEquippedAbility
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planSkillRollback(context) {
-  throw new Error('TODO V2: content/handlers/skills.js#planSkillRollback');
+  return planEquippedAbility(context,'rollback');
 }
 
 /**
@@ -129,11 +125,10 @@ export function planSkillRollback(context) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/abilities.js#planEquippedAbility
  * @param {import('../../contracts.d.ts').AttackContext} context
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planSkillOverclock(context) {
-  throw new Error('TODO V2: content/handlers/skills.js#planSkillOverclock');
+  return planEquippedAbility(context,'overclock');
 }

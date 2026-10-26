@@ -1,6 +1,7 @@
 // @ts-check
 import { createEntityState } from './entities.js';
 import { createEmptyPlan, createStateChange } from './plans.js';
+import{deriveRawWeaponStats}from'./pluginStats.js';
 import { deriveWeaponStats } from './stats.js';
 import { resolveWeaponTemplate } from '../content/weaponCapabilities.js';
 import { toJson } from './serialization.js';
@@ -9,6 +10,7 @@ import { toJson } from './serialization.js';
  * @implementationScope core-preview + adventure-slice
  * @calls content/weaponCapabilities.js#resolveWeaponTemplate
  * @calls domain/entities.js#createEntityState
+ * @calls domain/pluginStats.js#deriveRawWeaponStats
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').WeaponState} weapon
  * @param {import('../contracts.d.ts').WeaponStats} stats
@@ -23,7 +25,7 @@ export function createWeaponProjectile(context, weapon, stats, angle, id, chainI
   const player=context.state.world.entities[context.state.player.entityId],template=resolveWeaponTemplate(context.catalog,weapon.definitionId);
   if(!template)throw new Error('Unknown weapon behavior');
   const direction={x:Math.cos(angle),y:Math.sin(angle)},position={x:player.position.x+direction.x*(player.radius+stats.projectileRadius+1),y:player.position.y+direction.y*(player.radius+stats.projectileRadius+1)};
-  const runtime=/** @type {Record<string,import('../contracts.d.ts').Json>} */({damage,sourceKind,chainId,maxHits:stats.maxHits,hitTargetIds:[],critEligible:sourceKind==='weapon_primary',weaponTemplate:template,quality:weapon.updateExpiresAt!==null&&weapon.updateExpiresAt>context.state.tick&&weapon.temporaryQuality!==null?weapon.temporaryQuality:weapon.originalQuality});
+  const runtime=/** @type {Record<string,import('../contracts.d.ts').Json>} */({weaponDefinitionId:weapon.definitionId,rawW:deriveRawWeaponStats(context.state,weapon,context.catalog).damage,damage,sourceKind,chainId,maxHits:stats.maxHits,hitTargetIds:[],critEligible:sourceKind==='weapon_primary',weaponTemplate:template,quality:weapon.updateExpiresAt!==null&&weapon.updateExpiresAt>context.state.tick&&weapon.temporaryQuality!==null?weapon.temporaryQuality:weapon.originalQuality});
   const returning=template==='mcp_return';
   if(returning){runtime.returnPhase='outbound';runtime.returnOrigin={...player.position};runtime.returnDistance=340*stats.range/500;runtime.returnMaxDistance=stats.range;runtime.speed=stats.projectileSpeed;}
   if(template==='mcp_batch'){runtime.blastDamage=damage*12/20;runtime.blastRadius=100;}
@@ -41,7 +43,7 @@ export function createWeaponProjectile(context, weapon, stats, angle, id, chainI
  */
 export function planNativeProjectiles(context) {
  const weapon=context.weapon;if(!weapon)throw new Error('Missing equipped weapon');
- const stats=deriveWeaponStats(context.state,weapon,context.catalog),angle=Math.atan2(context.aim.y,context.aim.x),chainId=`shot:${weapon.instanceId}:${context.state.tick}`,changes=[];
+ const derived=deriveWeaponStats(context.state,weapon,context.catalog),stats=context.temperatureBoost?{...derived,damage:derived.damage*1.6,projectileRadius:derived.projectileRadius*1.3}:derived,angle=Math.atan2(context.aim.y,context.aim.x),chainId=`shot:${weapon.instanceId}:${context.state.tick}`,changes=[];
  for(let pellet=0;pellet<stats.pellets;pellet++){
   const theta=angle+(stats.pellets===1?0:(pellet/(stats.pellets-1)-.5)*stats.spreadRadians),id=`${chainId}:${pellet}`;
   changes.push(createStateChange('world',id,'putEntity',createWeaponProjectile(context,weapon,stats,theta,id,chainId,'weapon_primary',stats.damage)));
@@ -62,7 +64,7 @@ export function planNativeProjectiles(context) {
  */
 export function planProjectileBurst(context,projectile,position){
  const amount=Number(projectile.runtime.blastDamage??0),radius=Number(projectile.runtime.blastRadius??0);if(amount<=0||radius<=0)return createEmptyPlan();
- const id=`${projectile.id}:blast`,sourceKind=projectile.runtime.sourceKind==='weapon_primary'?'weapon_secondary':'plugin_secondary';
+ const id=`${projectile.id}:blast`,sourceKind=projectile.runtime.sourceKind==='weapon_primary'?'weapon_secondary':['companion','skill','dsh'].includes(String(projectile.runtime.sourceKind))?String(projectile.runtime.sourceKind):'plugin_secondary';
  const effects=Object.values(context.state.world.entities).filter(target=>target.team==='enemy'&&target.kind==='enemy'&&!target.dead&&!target.dying&&Math.hypot(target.position.x-position.x,target.position.y-position.y)<=radius+target.radius).sort((a,b)=>a.id<b.id?-1:1).map(target=>({id:`${id}:${target.id}`,sourceId:projectile.sourceId,chainId:String(projectile.runtime.chainId),generation:0,kind:'damage',payload:toJson({id:`${id}:${target.id}`,sourceId:projectile.sourceId,creditOwner:projectile.creditOwner,sourceKind,attackId:id,projectileId:null,targetId:target.id,baseDamage:amount,contact:target.position,incomingDirection:{x:target.position.x-position.x,y:target.position.y-position.y},generation:0,chainId:String(projectile.runtime.chainId),critEligible:false,expiresAt:context.state.tick+1})}));
  const visual=createEntityState(id,'world_blast','objective','neutral',position,{radius,expiresAt:context.state.tick+12,runtime:{visualOnly:true,blastRadius:radius}});
  return {...createEmptyPlan(),changes:[createStateChange('world',id,'putEntity',visual)],effects};

@@ -5,7 +5,7 @@ import { readV2SourceModel } from './v2-source-model.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),sourceRoot=path.join(root,'src/v2');
 const filename=path.join(sourceRoot,'architecture-manifest.json'),manifest=JSON.parse(await fs.readFile(filename,'utf8'));
 const sourceModel=await readV2SourceModel(sourceRoot),previous=new Map(manifest.modules.map(module=>[module.path,module]));
-const descriptions={createDefaultProfile:'构造零余额、默认泡泡/断开连接/饭团及饭碗/航海桌的新档；不赠永久资源。',createStateChange:'将有类型的数据转换为独立、有限的计划载荷，统一StateChange创建。',createEntityState:'按稳定ID和来源建立完整实体默认值；调用者提供出生参数快照。',createInitialGameState:'构造未发布的初始对局；当前仅允许显式core-preview，不开放完整冒险。',resolveBodyDestination:'实体沿圆形阻挡扫掠并滑动，遵守地图边界与Grok穿障矩阵。',planNativeProjectiles:'按MCP参数生成原生弹体，每枚弹有独立attackId，同次射击共享chainId。',planMeleeEnemy:'处理近身追赶、缓存寻路、接触；棕蟹额外拥有0.9秒预警重钳。',advancePreviewWorldTick:'执行受范围限制的预览世界步，逐阶段应用计划、排队效果、声明死亡与掉落，最后只提交一次。',advancePreviewUiCommands:'处理训练/插件/暂停命令；按advanceClock选择是否推进独立LoRA UI步，不推进世界时间。',toJson:'在参数边界验证并复制规范纯JSON数据。',getPreviewCamera:'按画面尺寸计算相机与比例，绘制和鼠标映射使用同一投影。',renderPreviewFrame:'只读绘制实体、米粒、弱点/攻击预警与伤害数字，不模拟战斗。',mountCombatPreview:'组装独立浏览器战斗试作、键鼠/双摇杆、固定帧、菜单和隔离检查点；返回完整清理函数。'};
+const descriptions={createDefaultProfile:'构造零余额、默认泡泡/断开连接/饭团及饭碗/航海桌的新档；不赠永久资源。',createStateChange:'将有类型的数据转换为独立、有限的计划载荷，统一StateChange创建。',createEntityState:'按稳定ID和来源建立完整实体默认值；调用者提供出生参数快照。',createInitialGameState:'构造未发布的Free练习/Pro1 Claude短途状态；严格锁定已有能力、伙伴与DSH，不开放full。',resolveBodyDestination:'实体沿圆形阻挡扫掠并滑动，遵守地图边界与Grok穿障矩阵。',planNativeProjectiles:'按MCP参数生成原生弹体，每枚弹有独立attackId，同次射击共享chainId。',planMeleeEnemy:'处理近身追赶、缓存寻路、接触；棕蟹额外拥有0.9秒预警重钳。',advancePreviewWorldTick:'执行受范围限制的预览世界步，逐阶段应用计划、排队效果、声明死亡与掉落，最后只提交一次。',advancePreviewUiCommands:'处理训练/插件/暂停命令；按advanceClock选择是否推进独立LoRA UI步，不推进世界时间。',toJson:'在参数边界验证并复制规范纯JSON数据。',getPreviewCamera:'按画面尺寸计算相机与比例，绘制和鼠标映射使用同一投影。',renderPreviewFrame:'只读绘制实体、米粒、弱点/攻击预警与伤害数字，不模拟战斗。',mountCombatPreview:'组装独立浏览器战斗试作、键鼠/双摇杆、固定帧、菜单和隔离检查点；返回完整清理函数。'};
 const scoped=new Set(['createGameSession','restoreGameSession','stepSessionWorld','stepSessionUi','enqueueSessionCommand','validateGameCommand','planGameCommand','planFlowTransition','planPause','planResume','createMapPlan','planEnemyAi','planEventHooks','evaluateEffectRequest','drainEffectQueue','planWeaponFire','planSkillCast','planLoadoutChange','planNativeProjectiles','dispatchWeaponsHandler','dispatchSkillsHandler','dispatchEnemiesHandler','advancePreviewWorldTick','advancePreviewUiCommands','createInitialGameState','mountCombatPreview','planDeathRewards','planTokenCollection','planPlayerMovement','planEntityMotion','planPickupMotion','planCollisionEffects','planWeaponBubble','planWeaponFan','planSkillCache','planSkillDisconnect','planEnemyClaudeGuard','planEnemyGrokBot','createRenderSnapshot','renderPreviewFrame','getPreviewCamera']);
 manifest.modules=[];
 for(const module of sourceModel){
@@ -68,19 +68,19 @@ for(const module of sourceModel){
    mountNestManager:'组装27节点、设施、装备、DSH和收藏小窝UI；所有消费经应用用例，不接触GameState。',
    resolveWeaponTemplate:'解析原版MCP或拥有已锁定模组注册的独立配方，只允许已实现泡泡/扇面模板。',
    listRuntimeWeapons:'列出实际可运行的原版与社区MCP，供练习出发选择。',
-   mountCombatPreview:'组装Free/Pro1、输入、正式小窝消费与配装、事务结算和本地模组；返回完整清理函数。'
+   mountCombatPreview:'组装Free/Pro1、八技能/六伙伴/插件替换、正式小窝消费与配装、事务结算和本地模组。'
   };
   if(nestDescriptions[fn.name])item.description=nestDescriptions[fn.name];
   const equipmentDescriptions={
    createWeaponProjectile:'按原生模板建立独立弹体实例；主弹/并行次级弹共用去回程、爆破与品质快照，不重乘输出。',
    planNativeProjectiles:'六把MCP按真实参数产弹；每枚独立attackId，每次原生射击仅一个WeaponFired。',
    planProjectileBurst:'在碰撞或射程到期点结算一次非暴击范围伤害，生成12tick可视涟漪；不冒充基础命中。',
-   planEquipmentInteraction:'探索中F就近拾取地面MCP；空槽立即填入，满槽发可放弃的替换预览事件。',
+   planEquipmentInteraction:'探索中F就近拾取MCP/技能；MCP空槽填入，满槽或技能发可放弃的替换预览。',
    planWeaponPickup:'距离/阶段/槽位复核后原子交换实例，原武器留地；品质/冷却/更新有效期不重置；稳定发现事件。',
    planLoadoutChange:'处理Q切枪与探索地面实例替换；各自保留CD，实际换到当前槽才触发永久换枪效果。',
    planEntityMotion:'统一移动并推进回旋分段/回追/接回、到期爆破及可视效果清理；不跨墙或离线补跑。',
    planCollisionEffects:'连续碰撞产去重伤害；回旋碰墙下一步换程，保留本步去程命中；爆破首碰只爆一次。',
-   planWorldInteraction:'探索交互优先处理附近MCP，再处理补给/首领门；Boss不打开换装面板。',
+   planWorldInteraction:'探索交互优先装备，再处理补给/首领门/彩蛋证据；Boss不打开换装面板。',
    resolveWeaponTemplate:'原版六MCP或已锁定社区配方解析为真实原生行为，不执行任意脚本。',
    parseModPackage:'校验SDK1.0–1.2、精确依赖、补丁与六种原生模板配方；按版本开放模板并验证参数边界。',
    planWeaponFire:'按当前六种MCP/社区配方的独立CD与手动瞄准开火，消费一次换枪下一发加成。',

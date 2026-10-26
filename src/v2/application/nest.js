@@ -1,7 +1,7 @@
 // @ts-check
 import { readProfileRepository, commitProfilePlan } from './repository.js';
 import { planTreePurchase, planTreeRespec } from '../domain/profile/tree.js';
-import { planFacilityPurchase, planPermanentUnlock, planDshEquipment, validateStartRequest } from '../domain/profile/nest.js';
+import { planFacilityPurchase, planPermanentUnlock, planDshEquipment, validateStartRequest, planResidentRescue } from '../domain/profile/nest.js';
 import { resolveDifficultySnapshot } from '../domain/difficulty.js';
 import { createHandlerRegistry } from '../content/registry.js';
 
@@ -12,6 +12,7 @@ import { createHandlerRegistry } from '../content/registry.js';
  * @calls domain/profile/nest.js#planDshEquipment
  * @calls domain/profile/nest.js#planFacilityPurchase
  * @calls domain/profile/nest.js#planPermanentUnlock
+ * @calls domain/profile/nest.js#planResidentRescue
  * @calls domain/profile/tree.js#planTreePurchase
  * @calls domain/profile/tree.js#planTreeRespec
  * @param {import('../contracts.d.ts').StoragePort} storage
@@ -28,6 +29,7 @@ export async function executeNestAction(storage, catalog, action) {
     if (action.type === 'buyTree') plan = planTreePurchase(profile, action.id, catalog);
     else if (action.type === 'respec') plan = { ok: true, value: planTreeRespec(profile, catalog) };
     else if (action.type === 'build') plan = planFacilityPurchase(profile, action.id, catalog);
+    else if(action.type==='rescue')plan=planResidentRescue(profile,action.id,catalog);
     else if (action.type === 'unlock') plan = planPermanentUnlock(profile, action.id, catalog);
     else if (action.type === 'equipDsh') {
       if (action.slots.some(slot => !createHandlerRegistry().implementedIds.includes(slot.id))) return { ok: false, code: 'UNAVAILABLE_DSH', message: '此DSH运行效果尚未开放。' };
@@ -54,7 +56,7 @@ export function prepareAdventureStart(profile, request, catalog, runId) {
   const validation = validateStartRequest(profile, request, catalog);
   if (!validation.valid) return { ok: false, code: 'START_REJECTED', message: validation.diagnostics.map(item => item.message).join('; ') };
   const available = createHandlerRegistry().implementedIds;
-  if (request.mode !== 'short' || request.difficulty !== 1 || request.companionId !== null || request.weaponIds.some(id => !available.includes(id)) || !available.includes(request.skillId) || profile.equippedDsh.some(slot => !available.includes(slot.id)) || !runId) return { ok: false, code: 'UNSUPPORTED_RUNTIME', message: '当前开放Pro1短途、已实现MCP/技能/DSH；伙伴与其他模式仍在开发。' };
+  if (request.mode !== 'short' || request.difficulty !== 1 || request.companionId !== null && !available.includes(request.companionId) || request.weaponIds.some(id => !available.includes(id)) || !available.includes(request.skillId) || profile.equippedDsh.some(slot => !available.includes(slot.id)) || !runId) return { ok: false, code: 'UNSUPPORTED_RUNTIME', message: '当前开放Pro1短途、已实现MCP/技能/DSH；其他模式仍在开发。' };
   const difficulty = resolveDifficultySnapshot(request, catalog); if (!difficulty.ok) return difficulty;
-  return { ok: true, value: { runtimeProfile: 'adventure-slice', runId, treeNodeIds: [...profile.purchasedTree], dsh: structuredClone(profile.equippedDsh), difficulty: difficulty.value, loadout: { weapons: request.weaponIds.map((id, index) => ({ instanceId: `${runId}:weapon:${index}`, definitionId: id, originalQuality: 0, cooldown: 0, temporaryQuality: null, updateExpiresAt: null })), activeWeaponIndex: 0, skillId: request.skillId, skillCooldown: 0, companionId: null, companionCooldown: 0, dashCooldown: 0 } } };
+  return { ok: true, value: { runtimeProfile: 'adventure-slice', runId, treeNodeIds: [...profile.purchasedTree], dsh: structuredClone(profile.equippedDsh), difficulty: difficulty.value, loadout: { weapons: request.weaponIds.map((id, index) => ({ instanceId: `${runId}:weapon:${index}`, definitionId: id, originalQuality: 0, cooldown: 0, temporaryQuality: null, updateExpiresAt: null })), activeWeaponIndex: 0, skillId: request.skillId, skillCooldown: 0, companionId: request.companionId, companionCooldown: 0, dashCooldown: 0 } } };
 }

@@ -4,6 +4,7 @@
  * Incremental implementation; unavailable functions remain explicit TODOs.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
+import {planDshEffects} from '../../domain/dshEffects.js';
 import * as dependency1 from '../../domain/dshCycle.js';
 import * as dependency2 from '../../domain/lora.js';
 import * as dependency3 from '../../domain/plans.js';
@@ -28,14 +29,13 @@ export function planDshClaudeAppeal(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/dshEffects.js#planDshEffects
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planDshGptPreview(context, event) {
-  throw new Error('TODO V2: content/handlers/dsh.js#planDshGptPreview');
+  return planDshEffects(context,event,'dsh_gpt_preview');
 }
 
 /**
@@ -43,14 +43,13 @@ export function planDshGptPreview(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/dshEffects.js#planDshEffects
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planDshGrokLicense(context, event) {
-  throw new Error('TODO V2: content/handlers/dsh.js#planDshGrokLicense');
+  return planDshEffects(context,event,'dsh_grok_license');
 }
 
 /**
@@ -87,14 +86,13 @@ export function planDshGptBranch(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/dshEffects.js#planDshEffects
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planDshGrokSalvage(context, event) {
-  throw new Error('TODO V2: content/handlers/dsh.js#planDshGrokSalvage');
+  return planDshEffects(context,event,'dsh_grok_salvage');
 }
 
 /**
@@ -102,14 +100,13 @@ export function planDshGrokSalvage(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/dshEffects.js#planDshEffects
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planDshSleep(context, event) {
-  throw new Error('TODO V2: content/handlers/dsh.js#planDshSleep');
+  return planDshEffects(context,event,'dsh_sleep');
 }
 
 /**
@@ -117,14 +114,13 @@ export function planDshSleep(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/dshEffects.js#planDshEffects
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planDshRice(context, event) {
-  throw new Error('TODO V2: content/handlers/dsh.js#planDshRice');
+  return planDshEffects(context,event,'dsh_rice');
 }
 
 /**
@@ -132,14 +128,13 @@ export function planDshRice(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/dshEffects.js#planDshEffects
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planDshOpen(context, event) {
-  throw new Error('TODO V2: content/handlers/dsh.js#planDshOpen');
+  return planDshEffects(context,event,'dsh_open');
 }
 
 /**

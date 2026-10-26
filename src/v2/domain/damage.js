@@ -4,6 +4,7 @@
  * Incremental V2 implementation; remaining TODO bodies are intentionally unavailable.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
+import{resolveCacheHitFactor}from'./pluginStats.js';
 import { resolveTreeSurvival } from './treeRuntime.js';
 import * as dependency1 from './quotas.js';
 import * as dependency2 from './shells.js';
@@ -17,6 +18,7 @@ import * as dependency5 from './random.js';
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：有壳目标先外壳分支；对敌暴击只在原生武器允许处一次计算；额度只用于敌→玩家。
  * @calls domain/damage.js#isDamageRequestValid
+ * @calls domain/pluginStats.js#resolveCacheHitFactor
  * @calls domain/quotas.js#planQuotaAllowance
  * @calls domain/random.js#drawRandom
  * @calls domain/shells.js#resolveShellContact
@@ -33,8 +35,9 @@ export function resolveDamageRequest(context, request) {
   const state = context.state, target = state.world.entities[request.targetId];
   const plans = /** @type {import('../contracts.d.ts').SystemPlan[]} */ ([]);
   const changes = /** @type {import('../contracts.d.ts').StateChange[]} */ ([{ target: 'runtime', id: request.id, operation: 'registerHit', payload: { attackId: request.attackId, targetId: request.targetId, expiresAt: request.expiresAt } }]);
-  const seal = typeof target.runtime.sealStatusId === 'string';
-  let incoming = seal ? 1 : request.baseDamage;
+  if(target.runtime.trainingInterface===true){const weaponId=String(request.projectileId?state.world.entities[request.projectileId]?.runtime.weaponDefinitionId??'':'');return {accepted:true,allowedBeforeDefense:0,hpDamage:0,shieldDamage:0,shellDamage:0,plan:{...empty,changes,events:[{id:`training:${request.id}`,runId:state.runId,tick:state.tick,seq:0,type:'TrainingInterfaceHit',sourceId:request.sourceId,targetId:target.id,payload:{weaponId}}]}};}
+  const seal = typeof target.runtime.sealStatusId === 'string'||target.runtime.sealProjectile===true;
+  let incoming = seal ? 1 : request.baseDamage*resolveCacheHitFactor(state,request);
   if (target.id === state.player.entityId && state.world.entities[request.sourceId].team === 'enemy') {
     const quota = dependency1.planQuotaAllowance(context, request);
     incoming = quota.allowedDamage; plans.push(quota.plan);
@@ -66,7 +69,7 @@ export function resolveDamageRequest(context, request) {
       changes.push({ target: 'entity', id: target.id, operation: 'setDamageCredit', payload: { sourceId: request.sourceId, creditOwner: request.creditOwner } });
       if (survival) {
         for (const nodeId of survival.events) treeEvents.push({id:`tree:${nodeId}:${request.id}`,runId:state.runId,tick:state.tick,seq:treeEvents.length,type:'TreeTriggered',sourceId:target.id,targetId:target.id,payload:{nodeId}});
-        changes.push({ target: 'entity', id: target.id, operation: 'setEntityRuntime', payload: { runtime: { ...survival.runtime, lastDamageSourceId: request.sourceId, lastDamageCreditOwner: request.creditOwner } } });
+        changes.push({ target: 'entity', id: target.id, operation: 'setEntityRuntime', payload: { runtime: { ...survival.runtime, hpDamageTotal:Number(target.runtime.hpDamageTotal??0)+hpDamage, lastDamageSourceId: request.sourceId, lastDamageCreditOwner: request.creditOwner } } });
         changes.push({ target: 'player', id: target.id, operation: 'setInvulnerable', payload: { remaining: survival.invulnerable } });
       }
     }
@@ -97,7 +100,8 @@ export function isDamageRequestValid(context, request) {
     const projectile = state.world.entities[request.projectileId];
     if (!projectile || projectile.dead || projectile.dying || projectile.attackId !== request.attackId || projectile.sourceId !== request.sourceId) return false;
   }
-  if (typeof target.runtime.sealStatusId === 'string' && request.sourceKind !== 'weapon_primary') return false;
+  if(target.runtime.trainingInterface===true&&request.sourceKind!=='weapon_primary')return false;
+  if ((typeof target.runtime.sealStatusId === 'string'||target.runtime.sealProjectile===true) && request.sourceKind !== 'weapon_primary') return false;
   if (target.id === state.player.entityId && state.player.invulnerableRemaining > 0) return false;
   return !state.attackHits.some(hit => hit.attackId === request.attackId && hit.targetId === request.targetId && hit.expiresAt >= state.tick);
 }

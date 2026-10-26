@@ -1,8 +1,10 @@
 // @ts-check
+import {createEasterObjectives} from '../easter.js';
 import { createEmptyPlan, createStateChange } from '../plans.js';
 import { createEntityState } from '../entities.js';
 /** Claude短途纵切的连续地图；首领与其他模式不因此宣称完整实现。
  * @implementationScope adventure-slice
+ * @calls domain/easter.js#createEasterObjectives
  * @calls domain/entities.js#createEntityState
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
@@ -34,7 +36,12 @@ export function createAdventureMapPlan(start, catalog) {
   const id=`equipment:${definitionId}`,instanceId=`${start.runId}:loot:${definitionId}`,position=[{x:500,y:650},{x:1700,y:900},{x:2050,y:1500},{x:2600,y:1950}][index];
   changes.push(createStateChange('world',id,'putPickup',{id,kind:'weapon',amount:1,position,instanceId,collected:false,weapon:{instanceId,definitionId,originalQuality:index<2?0:1,cooldown:0,temporaryQuality:null,updateExpiresAt:null}}));
  }
- return {...createEmptyPlan(),changes};
+ for(const [index,definitionId]of ['skill_cache','skill_batch','skill_redirect','skill_sandbox','skill_fork','skill_rollback','skill_overclock'].entries()){
+  const id=`equipment:${definitionId}`,instanceId=`${start.runId}:loot:${definitionId}`,position=[{x:650,y:1100},{x:1100,y:800},{x:1600,y:450},{x:380,y:420},{x:1900,y:1300},{x:2600,y:1800},{x:1800,y:1700}][index];
+  changes.push(createStateChange('world',id,'putPickup',{id,kind:'skill',amount:1,position,instanceId,collected:false,skill:{instanceId,definitionId,cooldown:0}}));
+ }
+ put(createEntityState('cache:3','world_cache','objective','neutral',{x:2750,y:500},{radius:28,runtime:{interaction:'cache',opened:false,secret:true}}));
+ return {...createEmptyPlan(),changes:[...changes,...createEasterObjectives().changes]};
 }
 /** 在已开放入口启动一次Claude首领；同一实体/稳定ID不能重复生成。
  * @implementationScope adventure-slice

@@ -52,11 +52,11 @@ export function planPlayerMovement(context, input) {
  */
 export function planEntityMotion(context) {
   if (!['exploring','boss'].includes(context.state.flow.phase)) return createEmptyPlan();
-  const changes=/** @type {import('../contracts.d.ts').StateChange[]} */([]),effects=/** @type {import('../contracts.d.ts').EffectRequest[]} */([]);
+  const changes=/** @type {import('../contracts.d.ts').StateChange[]} */([]),effects=/** @type {import('../contracts.d.ts').EffectRequest[]} */([]),events=/** @type {import('../contracts.d.ts').DomainEvent[]} */([]);
   for(const entity of Object.values(context.state.world.entities)){
     if(entity.runtime.visualOnly===true&&entity.expiresAt!==null&&entity.expiresAt<context.state.tick){changes.push(createStateChange('world',entity.id,'removeEntity',{}));continue;}
     if(entity.kind==='projectile'&&(entity.runtime.exhausted===true||entity.runtime.returnCaught===true||entity.expiresAt!==null&&entity.expiresAt<context.state.tick)){
-      if(entity.runtime.exhausted!==true&&entity.runtime.returnCaught!==true){const burst=planProjectileBurst(context,entity,entity.position);changes.push(...burst.changes);effects.push(...burst.effects);}
+      if(entity.runtime.exhausted!==true&&entity.runtime.returnCaught!==true){if(entity.runtime.sourceKind==='weapon_primary'&&Array.isArray(entity.runtime.hitTargetIds)&&entity.runtime.hitTargetIds.length===0)events.push({id:`expired:${entity.id}`,runId:context.state.runId,tick:context.state.tick,seq:0,type:'PrimaryProjectileExpired',sourceId:entity.sourceId,targetId:null,payload:{position:{...entity.position},rawW:Number(entity.runtime.rawW??entity.runtime.damage),chainId:String(entity.runtime.chainId)}});const burst=planProjectileBurst(context,entity,entity.position);changes.push(...burst.changes);effects.push(...burst.effects);}
       changes.push(createStateChange('world',entity.id,'removeEntity',{}));continue;
     }
     if(entity.dead||entity.dying||!['player','enemy','projectile'].includes(entity.kind))continue;
@@ -75,7 +75,7 @@ export function planEntityMotion(context) {
     const position=entity.kind==='projectile'?desired:resolveBodyDestination(context,entity,desired);
     changes.push(createStateChange('entity',entity.id,'setEntityKinematics',{position,previousPosition:entity.position,velocity,facingRadians:entity.kind==='projectile'?Math.atan2(velocity.y,velocity.x):entity.facingRadians}));
   }
-  return {...createEmptyPlan(),changes,effects};
+  return {...createEmptyPlan(),changes,effects,events};
 }
 
 /**

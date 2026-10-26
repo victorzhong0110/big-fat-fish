@@ -4,6 +4,7 @@
  * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
+import {planCompanionAbility} from '../../domain/companions.js';
 import * as dependency1 from '../../domain/plans.js';
 
 /**
@@ -11,14 +12,13 @@ import * as dependency1 from '../../domain/plans.js';
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/companions.js#planCompanionAbility
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planCompanionRice(context, event) {
-  throw new Error('TODO V2: content/handlers/companions.js#planCompanionRice');
+  return planCompanionAbility(context,'rice');
 }
 
 /**
@@ -26,14 +26,13 @@ export function planCompanionRice(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/companions.js#planCompanionAbility
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planCompanionPatch(context, event) {
-  throw new Error('TODO V2: content/handlers/companions.js#planCompanionPatch');
+  return planCompanionAbility(context,'patch');
 }
 
 /**
@@ -41,14 +40,13 @@ export function planCompanionPatch(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/companions.js#planCompanionAbility
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planCompanionCache(context, event) {
-  throw new Error('TODO V2: content/handlers/companions.js#planCompanionCache');
+  return planCompanionAbility(context,'cache');
 }
 
 /**
@@ -56,14 +54,13 @@ export function planCompanionCache(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/companions.js#planCompanionAbility
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planCompanionRouter(context, event) {
-  throw new Error('TODO V2: content/handlers/companions.js#planCompanionRouter');
+  return planCompanionAbility(context,'router');
 }
 
 /**
@@ -71,14 +68,13 @@ export function planCompanionRouter(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/companions.js#planCompanionAbility
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planCompanionDecoy(context, event) {
-  throw new Error('TODO V2: content/handlers/companions.js#planCompanionDecoy');
+  return planCompanionAbility(context,'decoy');
 }
 
 /**
@@ -86,12 +82,11 @@ export function planCompanionDecoy(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/companions.js#planCompanionAbility
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planCompanionRocket(context, event) {
-  throw new Error('TODO V2: content/handlers/companions.js#planCompanionRocket');
+  return planCompanionAbility(context,'rocket');
 }

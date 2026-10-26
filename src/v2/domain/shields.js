@@ -53,6 +53,6 @@ export function planShieldGrant(context, targetId, sourceId, amount, duration) {
   const shield = { id, sourceId, amount: Math.max(amount, active ? existing.amount : 0), expiresAt: Math.max(state.tick + Math.ceil(duration * 60), active ? existing.expiresAt : 0), seq: active ? existing.seq : state.tick };
   return { changes: [
     { target: 'world', id, operation: 'setShield', payload: shield },
-    { target: 'entity', id: targetId, operation: 'setShieldIds', payload: { ids: [...new Set([...entity.shieldIds, id])] } },
+    { target: 'entity', id: targetId, operation: 'attachShield', payload: { shieldId: id } },
   ], effects: [], events: [], persistence: [], diagnostics: [] };
 }

@@ -13,10 +13,10 @@ import { createHandlerRegistry } from '../content/registry.js';
  * @param {import('../contracts.d.ts').StoragePort} storage
  * @param {(record:import('../contracts.d.ts').StorageRecord) => void} onProfile
  * @param {(message:string) => void} notify
- * @returns {{setProfile:(record:import('../contracts.d.ts').StorageRecord|null)=>void; getLoadout:()=>{weaponIds:string[];skillId:string};dispose:()=>void}}
+ * @returns {{setProfile:(record:import('../contracts.d.ts').StorageRecord|null)=>void; getLoadout:()=>{weaponIds:string[];skillId:string;companionId:string|null};dispose:()=>void}}
  */
 export function mountNestManager(root, catalog, storage, onProfile, notify) {
-  let record = /** @type {import('../contracts.d.ts').StorageRecord|null} */(null), busy = false, disposed = false, tab = 'tree', weaponIds = ['mcp_bubble'], skillId = 'skill_disconnect';
+  let record = /** @type {import('../contracts.d.ts').StorageRecord|null} */(null), busy = false, disposed = false, tab = 'tree', weaponIds = ['mcp_bubble'], skillId = 'skill_disconnect', companionId='companion_rice';
   const available = createHandlerRegistry().implementedIds, title = document.createElement('p'), tabs = document.createElement('nav'), body = document.createElement('div');
   title.className = 'nest-balance'; tabs.className = 'nest-tabs'; tabs.setAttribute('aria-label','小窝设施'); body.className = 'nest-content'; root.append(title,tabs,body);
   /** @param {string} text @returns {HTMLButtonElement} */
@@ -46,7 +46,9 @@ export function mountNestManager(root, catalog, storage, onProfile, notify) {
       select.value=isSkill?skillId:weaponIds[index]??'';select.disabled=busy||!!profile.checkpoint;
       select.onchange=()=>{if(isSkill)skillId=select.value;else {const next=[...weaponIds];next[index]=select.value;weaponIds=next.filter(Boolean);if(new Set(weaponIds).size!==weaponIds.length){weaponIds=weaponIds.slice(0,1);notify('第二把请选择不同的MCP。');render();}}};label.append(select);body.append(label);
     }
-    const note=document.createElement('p');note.className='scope-note';note.textContent='此配装用于下次Pro1出发。当前不带助战；伙伴系统仍在开发。Free练习使用出发页试用设置。';body.append(note);
+    const companionLabel=document.createElement('label'),companionSelect=document.createElement('select');companionLabel.textContent='随行伙伴';companionSelect.dataset.loadout='companion';const empty=document.createElement('option');empty.value='';empty.textContent='独自出门';companionSelect.append(empty);
+    const companionIds=profile.unlockedCompanions.filter(id=>available.includes(id)&&(id==='companion_rice'||profile.facilities.includes('home_guest')));for(const id of companionIds){const option=document.createElement('option');option.value=id;option.textContent=catalog.definitions[id].displayName;companionSelect.append(option);}if(!companionIds.includes(companionId))companionId='';companionSelect.value=companionId;companionSelect.disabled=busy||!!profile.checkpoint;companionSelect.onchange=()=>{companionId=companionSelect.value;};companionLabel.append(companionSelect);body.append(companionLabel);
+    const note=document.createElement('p');note.className='scope-note';note.textContent='此配装用于下次Pro1出发。每局一位随行伙伴；被封禁时能力、跟随与冷却冻结。Free练习使用出发页试用设置。';body.append(note);
   }
   function render() {
     if(disposed)return;body.replaceChildren();
@@ -60,7 +62,7 @@ export function mountNestManager(root, catalog, storage, onProfile, notify) {
         const heading=document.createElement('h3');heading.textContent=name;body.append(heading);
         for(const definition of Object.values(catalog.definitions).filter(item=>item.kind==='tree'&&item.id.startsWith(prefix))){
           const owned=profile.purchasedTree.includes(definition.id),p=definition.parameters,parents=Array.isArray(p.prerequisites)?p.prerequisites.map(id=>catalog.definitions[String(id)]?.displayName??String(id)):[];
-          const pending=['tree_explore_d','tree_explore_e'].includes(definition.id)?'（伙伴相关效果随伙伴系统开放）':'';
+          const pending='';
           const node=card(definition.displayName,`${p.effect}${pending} · ${p.cost}算力卡${parents.length?` · 前置：${parents.join('、')}`:''}${p.baseSpendRequired?` · 基础树消费至少${p.baseSpendRequired}卡`:''}${p.requiresAnyDsh?' · 先发现任一DSH':''}`);
           node.dataset.treeId=definition.id;const buy=button(owned?'已点亮':'点亮节点');buy.disabled=locked||owned||!validateTreePurchase(profile,definition.id,catalog).valid;buy.onclick=()=>{void act({type:'buyTree',id:definition.id});};node.append(buy);
         }
@@ -80,8 +82,10 @@ export function mountNestManager(root, catalog, storage, onProfile, notify) {
       }
     }else{
       card('我去吃饭，测完告诉我就行',`已经发现 ${profile.discovered.length} 件内容，收藏 ${profile.unlockedDsh.length} 件DSH。收获来自实际探索与结算，小窝不自动生产资源。`);
-      for(const id of profile.discovered)card(catalog.definitions[id]?.displayName??id,catalog.definitions[id]?.kind==='companion'?'已入住 · 战斗跟随与互动仍在开发。':'已记录发现。');
+      const tasks={companion_rice:'最初的小伙伴。',companion_patch:'破坏一处Claude封禁装置。',companion_cache:'打开两个不同地点的秘密箱。',companion_router:'同一局发现两种MCP。',companion_decoy:'破解一次ChatGPT重置。',companion_rocket:'击败Grok首领后在这里接回。'};
+      for(const [id,task]of Object.entries(tasks)){const owned=profile.unlockedCompanions.includes(id),node=card(catalog.definitions[id].displayName,`${owned?'已入住':'尚未救助'} · ${task}`),interact=button(owned?'聊聊':'接回伙伴');interact.disabled=locked||!owned&&(id!=='companion_rocket'||!profile.unlockLedger.includes('milestone:grok-defeated'));interact.onclick=()=>{if(owned)notify(`${catalog.definitions[id].displayName}：${id==='companion_rice'?'出门别忘了带饭，饿了就回来。':id==='companion_router'?'两把MCP各有用处，试试切换打法。':'一起出门吧，我会跟紧你的铁盆。'}`);else void act({type:'rescue',id});};node.dataset.residentId=id;node.append(interact);}
+      for(const id of profile.discovered)card(catalog.definitions[id]?.displayName??id,catalog.definitions[id]?.kind==='companion'?'已入住 · 可在出发配装中选择随行。':'已记录发现。');
     }
   }
-  return {setProfile(value){record=value?structuredClone(value):null;render();},getLoadout(){const profile=record?.profile;return {weaponIds:weaponIds.filter(id=>profile?.unlockedWeapons.includes(id)).slice(0,profile?.purchasedTree.includes('tree_mcp_d')?2:1),skillId:profile?.unlockedSkills.includes(skillId)?skillId:'skill_disconnect'};},dispose(){disposed=true;root.replaceChildren();}};
+  return {setProfile(value){record=value?structuredClone(value):null;render();},getLoadout(){const profile=record?.profile;return {weaponIds:weaponIds.filter(id=>profile?.unlockedWeapons.includes(id)).slice(0,profile?.purchasedTree.includes('tree_mcp_d')?2:1),skillId:profile?.unlockedSkills.includes(skillId)?skillId:'skill_disconnect',companionId:companionId&&profile?.unlockedCompanions.includes(companionId)&&(companionId==='companion_rice'||profile.facilities.includes('home_guest'))?companionId:null};},dispose(){disposed=true;root.replaceChildren();}};
 }

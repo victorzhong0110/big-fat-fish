@@ -184,10 +184,12 @@ export function planStatusAdvance(context) {
     else if (active.length !== entries.length) changes.push({ target: 'runtime', id: sourceId, operation: 'setDamageBudget', payload: { entries: active.map(entry => ({ ...entry })) } });
   }
   for(const pickup of Object.values(state.world.pickups))if(pickup.kind==='weapon'&&pickup.weapon&&pickup.weapon.cooldown>0)changes.push(createStateChange('world',pickup.id,'putPickup',{...pickup,weapon:{...pickup.weapon,cooldown:decrease(pickup.weapon.cooldown)}}));
+  for(const pickup of Object.values(state.world.pickups))if(pickup.kind==='skill'&&pickup.skill&&pickup.skill.cooldown>0)changes.push(createStateChange('world',pickup.id,'putPickup',{...pickup,skill:{...pickup.skill,cooldown:decrease(pickup.skill.cooldown,state.lora.overfitRemaining>0?.6:1)}}));
   const player = state.world.entities[state.player.entityId], loadout = state.player.loadout;
   const companionBanned = player.statusIds.some(id => state.world.statuses[id]?.kind === 'companionBan');
   const rootExpired = player.statusIds.some(id => expiredStatuses.has(id) && state.world.statuses[id]?.kind === 'root');
   const recovery = state.lora.overfitRemaining > 0 ? 0.6 : 1;
+  const skillReady=decrease(loadout.skillCooldown,recovery)===0;if(skillReady&&typeof player.runtime.skillReadySince!=='number'||!skillReady&&player.runtime.skillReadySince!==null)changes.push(createStateChange('entity',player.id,'setEntityRuntime',{runtime:{...player.runtime,skillReadySince:skillReady?state.tick:null}}));
   changes.push({ target: 'player', id: player.id, operation: 'setPlayerTimers', payload: {
     invulnerableRemaining: decrease(state.player.invulnerableRemaining), controlImmuneRemaining: rootExpired ? 2 : decrease(state.player.controlImmuneRemaining),
     skillCooldown: decrease(loadout.skillCooldown, recovery), dashCooldown: decrease(loadout.dashCooldown, recovery * (state.start.treeNodeIds.includes('tree_skill_b') && state.tick - Number(player.runtime.lastHpDamageAt ?? 0) >= 480 ? 1.15 : 1)), companionCooldown: companionBanned ? loadout.companionCooldown : decrease(loadout.companionCooldown),

@@ -1,8 +1,49 @@
-// Source-backed definitions. Data presence does not imply its handler is implemented.
+// Source-backed definitions. Runtime capabilities remain explicitly verified.
 export const CATALOG_DATA = {
   "version": "2.0.0-preview.5",
   "definitions": {
-    "world_blast": {"id":"world_blast","kind":"entity","displayName":"爆破涟漪","parameters":{},"version":"2.0.0-preview.5"},
+    "scheduled_action": {
+      "id": "scheduled_action",
+      "kind": "entity",
+      "displayName": "延迟调用",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "plugin_field": {
+      "id": "plugin_field",
+      "kind": "entity",
+      "displayName": "插件效果区",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "claude_ban_projectile": {
+      "id": "claude_ban_projectile",
+      "kind": "entity",
+      "displayName": "伙伴封禁弹",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "ability_field": {
+      "id": "ability_field",
+      "kind": "entity",
+      "displayName": "技能区域",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "ability_decoy": {
+      "id": "ability_decoy",
+      "kind": "entity",
+      "displayName": "鱼形诱饵",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "world_blast": {
+      "id": "world_blast",
+      "kind": "entity",
+      "displayName": "爆破涟漪",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
     "plugin_parallel": {
       "id": "plugin_parallel",
       "kind": "plugin",
@@ -18,8 +59,8 @@ export const CATALOG_DATA = {
         "previewAvailable": true,
         "rarity": "common",
         "rankDescriptions": [
-          "基础射击左右各多一枚偏转12°的泡泡，每枚为0.4倍基础伤害。最多每0.4秒一次。",
-          "额外泡泡各提高至0.6倍基础伤害。最多每0.4秒一次，不重复触发其他基础射击效果。"
+          "基础射击额外分出两枚0.4W泡泡。",
+          "额外泡泡提高至0.6W。"
         ]
       },
       "version": "2.0.0-preview.5"
@@ -36,7 +77,12 @@ export const CATALOG_DATA = {
           "每 8→6 次基础武器命中，在目标处爆炸，半径 85，伤害 18；内置冷却 0.5 秒",
           "命中计数与范围圆环"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "common",
+        "rankDescriptions": [
+          "每8次主弹命中引发范围爆炸。",
+          "每6次命中引发爆炸。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -73,7 +119,12 @@ export const CATALOG_DATA = {
           "连续命中同一目标 3 次后，基础武器对其额外伤害 +20%→+35%，持续 2 秒；切目标即清层，刷新不叠乘",
           "目标上缓存方块"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "common",
+        "rankDescriptions": [
+          "连续命中同一目标3次后，对它伤害提高20%。",
+          "缓存额外伤害提高至35%。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -89,7 +140,12 @@ export const CATALOG_DATA = {
           "主投射物到期且一次未命中时，向 450 范围最近敌人补一发 0.5W→0.8W 追踪泡；内置冷却 1.5 秒",
           "失败泡泡回转；只重试一次"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "common",
+        "rankDescriptions": [
+          "完全落空的主弹到期后补一发半伤追踪泡。",
+          "重试泡泡伤害提高至0.8W。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -105,7 +161,12 @@ export const CATALOG_DATA = {
           "每次基础射击 15%→25% 概率变成大泡，主弹伤害 ×1.6、半径 ×1.3；整组只掷一次",
           "变大、有表情的泡泡"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "common",
+        "rankDescriptions": [
+          "每次射击有15%概率变成更大、更重的泡泡。",
+          "大泡概率提高至25%。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -142,7 +203,12 @@ export const CATALOG_DATA = {
           "连续 3 秒未射击时，装备主动技能剩余冷却每秒额外减少 0.5→0.8 秒；不影响其他计时",
           "技能图标上空闲脉冲"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "common",
+        "rankDescriptions": [
+          "3秒未射击时，技能额外恢复每秒0.5秒。",
+          "额外恢复提高至每秒0.8秒。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -158,7 +224,12 @@ export const CATALOG_DATA = {
           "冲刺结束留下一片半径 75、持续 2 秒尾流，敌人每 0.5 秒受 5→8 伤；同敌每次尾流最多 4 跳",
           "水下尾流"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "common",
+        "rankDescriptions": [
+          "冲刺结束留下伤害尾流，每跳5伤。",
+          "尾流每跳8伤。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -174,7 +245,12 @@ export const CATALOG_DATA = {
           "每 12→9 秒获得 6 护盾，持续 4 秒；同名护盾只刷新，不能囤积",
           "节拍护盾"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "common",
+        "rankDescriptions": [
+          "每12秒自动获得6护盾，持续4秒。",
+          "护盾间隔缩短至9秒。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -190,7 +266,12 @@ export const CATALOG_DATA = {
           "基础主投射物首次命中后可弹向 180→260 内另一敌人，伤害 0.5W，最多一次；原生穿透/回旋不再附加转发",
           "折线连接"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "common",
+        "rankDescriptions": [
+          "主弹首次命中后转发半伤泡泡，跳距180。",
+          "转发跳距提高至260。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -206,7 +287,12 @@ export const CATALOG_DATA = {
           "实际失去生命后移速 +25%→+35%，持续 2 秒；内置冷却 4 秒，不叠层",
           "受击后加速残影"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "common",
+        "rankDescriptions": [
+          "受伤后获得2秒移速+25%。",
+          "受伤移速加成提高至35%。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -264,7 +350,12 @@ export const CATALOG_DATA = {
           "每 18→12 秒第一次被禁锢时立即解除，并在 180 范围造成 20 伤；不解除技能/伙伴封禁",
           "封锁碎裂、插件亮起"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "advanced",
+        "rankDescriptions": [
+          "第一次被禁锢时解除并震击附近敌人，冷却18秒。",
+          "故障转移冷却缩短至12秒。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -280,7 +371,12 @@ export const CATALOG_DATA = {
           "基础武器命中使敌人减速 25%，持续 1.2→2 秒；Boss 效果减半，同名只刷新",
           "明确减速边框"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "advanced",
+        "rankDescriptions": [
+          "主弹命中减速敌人25%，持续1.2秒。",
+          "减速持续2秒，Boss效果减半。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -296,7 +392,12 @@ export const CATALOG_DATA = {
           "使用装备主动技能后生成 3→5 秒鱼形诱饵，吸引 350 内普通敌人；内置冷却 10 秒",
           "半透明笨鱼替身"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "advanced",
+        "rankDescriptions": [
+          "主动技能生成3秒诱饵。",
+          "诱饵持续5秒。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -312,7 +413,12 @@ export const CATALOG_DATA = {
           "每 6→4 次基础武器命中释放一次电链，依次打至多 3 个不同敌人，每次跳距 180，每目标 12 伤；内置冷却 1 秒",
           "三段清晰电链"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "advanced",
+        "rankDescriptions": [
+          "每6次主弹命中引发三目标电链。",
+          "每4次命中引发电链。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -328,7 +434,12 @@ export const CATALOG_DATA = {
           "连续射击时每秒武器伤害 +3%，上限 +18%→+30%；停止射击 1 秒后清空；不是命中叠层",
           "连续输出计量条"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "advanced",
+        "rankDescriptions": [
+          "持续射击逐秒变强，武器伤害最多+18%。",
+          "持续射击上限提高至+30%。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -344,7 +455,12 @@ export const CATALOG_DATA = {
           "切 MCP 时发出半径 160 的冲击，造成 25→40 伤并推开普通敌人；内置冷却 6 秒",
           "武器插拔环形波"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "advanced",
+        "rankDescriptions": [
+          "切换武器时震开附近敌人，造成25伤。",
+          "切换震击提高至40伤。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -381,7 +497,12 @@ export const CATALOG_DATA = {
           "装备主动技能就绪且满 2 秒后，下一次施放效果强化：伤害/护盾/治疗 ×1.4→×1.65；无这些数值的技能持续时间 ×1.25→×1.4",
           "技能就绪蓄满光圈"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "advanced",
+        "rankDescriptions": [
+          "技能就绪2秒后强化下一次效果。",
+          "预填充的强化倍率进一步提高。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -397,7 +518,12 @@ export const CATALOG_DATA = {
           "使用装备主动技能后的下 3→5 次基础射击，各增加一枚 0.75W 的追踪泡；一次施放刷新次数，不累积",
           "技能后跟随射击"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "advanced",
+        "rankDescriptions": [
+          "施放技能后3次射击追加追踪泡。",
+          "追加次数提高至5次。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -413,7 +539,12 @@ export const CATALOG_DATA = {
           "伙伴产生一次攻击/治疗/护盾后复制该效果的 40%→60%，延迟 0.3 秒，内置冷却 5 秒；诱饵伙伴改为延长 1→2 秒",
           "小镜像伙伴闪现"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "advanced",
+        "rankDescriptions": [
+          "伙伴效果延迟0.3秒复制40%。",
+          "伙伴效果复制60%，诱饵延长2秒。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -429,7 +560,12 @@ export const CATALOG_DATA = {
           "施放批量处理/缓存护盾/沙箱时，0.8 秒后在原位置再执行一次 60%→85% 效果；其他技能复制其无控制的伤害/护盾/治疗部分，若都没有则延长持续 40%→60%；内置冷却 12 秒",
           "第二层调用轮廓"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "legendary",
+        "rankDescriptions": [
+          "技能延迟重复60%效果，或延长持续。",
+          "重复效果提高至85%。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -445,7 +581,12 @@ export const CATALOG_DATA = {
           "每 4→3 次基础射击，按瞄准方向额外发射携带的另一把 MCP 的一组攻击，每枚伤害为它基础伤害的 45%；两把武器冷却独立，不消耗非当前武器冷却",
           "两把 MCP 同时现形"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "legendary",
+        "rankDescriptions": [
+          "每4次射击额外调用另一把MCP。",
+          "每3次射击额外调用另一把MCP。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -461,7 +602,12 @@ export const CATALOG_DATA = {
           "冲刺开始后 1 秒内下一次基础射击增加 3 发扇形 0.6W→0.9W 的穿透影泡，每发最多命中 2 个敌人",
           "冲刺后展开巨大扇面"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "legendary",
+        "rankDescriptions": [
+          "冲刺后下一发追加三枚穿透影泡，各0.6W。",
+          "影泡伤害提高至0.9W。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -477,7 +623,12 @@ export const CATALOG_DATA = {
           "每拾取累计 120→90 大白饭，装备主动技能冷却减少 3 秒并向最近敌人发一枚 25 伤追踪泡；每 tick 最多 1 次，其余次数排队",
           "经验条溢出发射"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "legendary",
+        "rankDescriptions": [
+          "每120大白饭减技能CD并发追踪泡。",
+          "每90大白饭触发。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -493,7 +644,12 @@ export const CATALOG_DATA = {
           "伙伴每次非镜像能力结束后，装备主动技能剩余冷却减少 1.5→2.5 秒；施放装备技能使伙伴剩余冷却减少 2 秒；双向各有 4 秒内置冷却",
           "玩家与伙伴连线"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "legendary",
+        "rankDescriptions": [
+          "伙伴协助减技能冷却1.5秒，技能也帮助伙伴恢复。",
+          "伙伴协助减技能冷却2.5秒。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -509,7 +665,12 @@ export const CATALOG_DATA = {
           "每 20→14 秒第一次技能/伙伴封禁命中时立即解除该次封禁；3 秒内所有玩家伤害 +25%；不能破坏 Boss 重置条件",
           "封禁印章反弹"
         ],
-        "previewAvailable": false
+        "previewAvailable": true,
+        "rarity": "legendary",
+        "rankDescriptions": [
+          "拦截技能/伙伴封禁，获得3秒输出强化，冷却20秒。",
+          "封禁拦截冷却缩短至14秒。"
+        ]
       },
       "version": "2.0.0-preview.5"
     },
@@ -541,7 +702,7 @@ export const CATALOG_DATA = {
           "难度1及以上首次击败ChatGPT",
           "本局第一次插件选择由3张变4张；首选仍保证含蒸馏，另外3张正常抽"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -557,7 +718,7 @@ export const CATALOG_DATA = {
           "难度1及以上首次击败Grok",
           "每海域开始获得1枚储备火箭；下一次成功装备技能施放时发射，直击30、爆炸20、半径100；每海域只能消耗1次"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -605,7 +766,7 @@ export const CATALOG_DATA = {
           "难度10及以上首次击败Grok",
           "每12次有正常奖励的真实敌人击杀，装填1枚储备火箭，最多存1枚；下次基础射击后发射，直击20、爆炸15、半径90，触发内置冷却8秒"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -621,7 +782,7 @@ export const CATALOG_DATA = {
           "彩蛋“深度摸鱼”：任一地图隐藏躺椅交互，连续坐满8秒有效时间",
           "连续2秒不移动且不攻击时获得8护盾持续4秒，内置冷却20秒；暂停/面板不累计坐着或不动时间"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -637,7 +798,7 @@ export const CATALOG_DATA = {
           "彩蛋“饭点”：同一局找到3份不同地点的留言，打开隐藏饭盒并交互",
           "实际治疗的溢出量50%转护盾，上限10、持续5秒；同名盾不叠加，护盾不触发治疗"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -653,7 +814,7 @@ export const CATALOG_DATA = {
           "彩蛋“接口拼图”：同一局用3种不同MCP命中训练装置的3个接口，完成交互",
           "第一海域第一个普通武器箱额外提供另一把标准品质MCP供选择；只能拿其中一把，不能把额外选项转零件"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -691,7 +852,7 @@ export const CATALOG_DATA = {
         "projectileSpeed": 600,
         "projectileRadius": 7,
         "pellets": 1,
-        "spreadRadians": 0.0,
+        "spreadRadians": 0,
         "range": 720,
         "maxHits": 1,
         "previewAvailable": true,
@@ -743,7 +904,7 @@ export const CATALOG_DATA = {
         "projectileSpeed": 900,
         "projectileRadius": 5,
         "pellets": 1,
-        "spreadRadians": 0.0,
+        "spreadRadians": 0,
         "range": 900,
         "maxHits": 4,
         "previewAvailable": true,
@@ -769,7 +930,7 @@ export const CATALOG_DATA = {
         "projectileSpeed": 700,
         "projectileRadius": 4,
         "pellets": 1,
-        "spreadRadians": 0.0,
+        "spreadRadians": 0,
         "range": 600,
         "maxHits": 1,
         "previewAvailable": true,
@@ -795,7 +956,7 @@ export const CATALOG_DATA = {
         "projectileSpeed": 420,
         "projectileRadius": 7,
         "pellets": 1,
-        "spreadRadians": 0.0,
+        "spreadRadians": 0,
         "range": 500,
         "maxHits": 100,
         "previewAvailable": true,
@@ -821,7 +982,7 @@ export const CATALOG_DATA = {
         "projectileSpeed": 350,
         "projectileRadius": 10,
         "pellets": 1,
-        "spreadRadians": 0.0,
+        "spreadRadians": 0,
         "range": 600,
         "maxHits": 1,
         "previewAvailable": true,
@@ -881,7 +1042,7 @@ export const CATALOG_DATA = {
           "8 零件"
         ],
         "cooldown": 12,
-        "previewAvailable": false,
+        "previewAvailable": true,
         "partCost": 8
       },
       "version": "2.0.0-preview.5"
@@ -900,7 +1061,7 @@ export const CATALOG_DATA = {
           "10 零件"
         ],
         "cooldown": 15,
-        "previewAvailable": false,
+        "previewAvailable": true,
         "partCost": 10
       },
       "version": "2.0.0-preview.5"
@@ -919,7 +1080,7 @@ export const CATALOG_DATA = {
           "8 零件"
         ],
         "cooldown": 14,
-        "previewAvailable": false,
+        "previewAvailable": true,
         "partCost": 8
       },
       "version": "2.0.0-preview.5"
@@ -938,7 +1099,7 @@ export const CATALOG_DATA = {
           "10 零件"
         ],
         "cooldown": 18,
-        "previewAvailable": false,
+        "previewAvailable": true,
         "partCost": 10
       },
       "version": "2.0.0-preview.5"
@@ -957,7 +1118,7 @@ export const CATALOG_DATA = {
           "12 零件"
         ],
         "cooldown": 20,
-        "previewAvailable": false,
+        "previewAvailable": true,
         "partCost": 12
       },
       "version": "2.0.0-preview.5"
@@ -976,7 +1137,7 @@ export const CATALOG_DATA = {
           "12 零件"
         ],
         "cooldown": 18,
-        "previewAvailable": false,
+        "previewAvailable": true,
         "partCost": 12
       },
       "version": "2.0.0-preview.5"
@@ -993,7 +1154,7 @@ export const CATALOG_DATA = {
           "玩家生命低于 80% 时治疗 4；未满足条件不开始冷却",
           "20 秒；随行"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -1009,7 +1170,7 @@ export const CATALOG_DATA = {
           "清除玩家一次禁锢/减速；无法解技能或自身封禁",
           "24 秒；随行"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -1025,7 +1186,7 @@ export const CATALOG_DATA = {
           "生成可挡 8 伤的护盾，持续 5 秒，取最大值不叠加",
           "18 秒；随行"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -1041,7 +1202,7 @@ export const CATALOG_DATA = {
           "向最近敌人发射 2 个追踪泡，每发 8 伤，600 范围，弹速 380",
           "4 秒"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -1057,7 +1218,7 @@ export const CATALOG_DATA = {
           "放出 3 秒诱饵，吸引 300 内普通敌人；无爆炸",
           "15 秒"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -1073,7 +1234,7 @@ export const CATALOG_DATA = {
           "发射一枚瞄准最近目标的火箭，直击 16，爆炸半径 90、12 伤；不触发玩家基础命中插件",
           "7 秒；700 范围"
         ],
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -2218,6 +2379,41 @@ export const CATALOG_DATA = {
         "moveSpeed": 70,
         "contactDamage": 28
       },
+      "version": "2.0.0-preview.5"
+    },
+    "easter_chair": {
+      "id": "easter_chair",
+      "kind": "entity",
+      "displayName": "深度摸鱼",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "easter_note": {
+      "id": "easter_note",
+      "kind": "entity",
+      "displayName": "留言",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "easter_lunchbox": {
+      "id": "easter_lunchbox",
+      "kind": "entity",
+      "displayName": "饭点",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "easter_console": {
+      "id": "easter_console",
+      "kind": "entity",
+      "displayName": "接口拼图",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "easter_interface": {
+      "id": "easter_interface",
+      "kind": "entity",
+      "displayName": "训练接口",
+      "parameters": {},
       "version": "2.0.0-preview.5"
     }
   },

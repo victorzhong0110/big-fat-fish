@@ -4,6 +4,8 @@
  * Incremental implementation; unavailable functions remain explicit TODOs.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
+import {planLifeChange} from './damage.js';
+import{resolveWeaponTemplate}from'../content/weaponCapabilities.js';
 import { createEmptyPlan, createStateChange } from './plans.js';
 import { createHandlerRegistry } from '../content/registry.js';
 import { advanceDistillTrack } from './distill.js';
@@ -15,6 +17,7 @@ import * as dependency2 from './random.js';
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @implementationScope core-preview
  * @calls content/registry.js#createHandlerRegistry
+ * @calls content/weaponCapabilities.js#resolveWeaponTemplate
  * @calls domain/random.js#chooseWeightedIndex
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').LevelReward} reward
@@ -24,6 +27,7 @@ export function createPluginChoice(context, reward) {
   const state = context.state;
   if (!['core-preview', 'adventure-slice'].includes(String(state.start.runtimeProfile))) throw new Error('Full draft pool is unfinished');
   let pool = createHandlerRegistry().implementedIds.filter(id=>context.catalog.definitions[id]?.kind==='plugin').filter(id => !state.plugins.some(plugin => plugin.id === id && plugin.rank === 2));
+  pool=pool.filter(id=>id!=='plugin_moe'||state.player.loadout.weapons.length>1).filter(id=>!['plugin_agent','plugin_mirror'].includes(id)||state.player.loadout.companionId!==null).filter(id=>id!=='plugin_recursion'||state.player.loadout.skillId!=='skill_disconnect').filter(id=>id!=='plugin_redirect'||state.player.loadout.weapons.some(w=>!['mcp_vector','mcp_return'].includes(String(resolveWeaponTemplate(context.catalog,w.definitionId)))&&Number(context.catalog.definitions[w.definitionId].parameters.maxHits)===1));
   const previous = state.flow.choice;
   const fresh = pool.filter(id => !previous?.candidates.some(candidate => candidate.id === id));
   let random = state.random.reward;
@@ -32,7 +36,7 @@ export function createPluginChoice(context, reward) {
   if (reward.level === 2 && !previous && pool.includes('plugin_distill')) add('plugin_distill');
   const ordinal = [2, 4, 7, 10, 13, 16, 19, 22, 25, 28].filter(level => level <= reward.level).length;
   const weights = ordinal <= 2 ? [75, 23, 2] : ordinal <= 4 ? [50, 40, 10] : [30, 50, 20];
-  while (pool.length && candidates.length < 3) {
+  while (pool.length && candidates.length < (reward.level===2&&state.start.dsh.some(slot=>slot.id==='dsh_gpt_preview')?4:3)) {
     const preferred = previous && fresh.some(id => pool.includes(id)) ? pool.filter(id => fresh.includes(id)) : pool;
     const groups = ['common','advanced','legendary'].map(rarity=>preferred.filter(id=>context.catalog.definitions[id]?.parameters.rarity===rarity));
     const rarity = dependency2.chooseWeightedIndex(groups.map((group, i) => group.length ? weights[i] : 0), random);
@@ -100,6 +104,7 @@ export function planPluginReroll(context, command) {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @implementationScope core-preview
+ * @calls domain/damage.js#planLifeChange
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @param {import('../contracts.d.ts').EvaluationContext} context
@@ -110,7 +115,8 @@ export function planPluginSkip(context, command) {
   const state = context.state, choice = state.flow.choice;
   if (state.flow.phase !== 'pluginChoice' || !choice || choice.resolved || choice.id !== /** @type {{choiceId?:string}} */ (command.payload)?.choiceId) return createEmptyPlan();
   const player = state.world.entities[state.player.entityId], plan = completeChoice(context);
-  return { ...plan, changes: [...plan.changes, createStateChange('entity', player.id, 'setHp', { hp: Math.min(player.maxHp, player.hp + 8) })] };
+  const heal=planLifeChange(context,player.id,8,`skip:${choice.id}`);
+  return {...plan,changes:[...plan.changes,...heal.changes],events:heal.events};
 }
 
 /** @param {import('../contracts.d.ts').EvaluationContext} context @returns {import('../contracts.d.ts').SystemPlan} */

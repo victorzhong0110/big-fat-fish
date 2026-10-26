@@ -4,6 +4,7 @@
  * Incremental V2 implementation; remaining TODO bodies are intentionally unavailable.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
+import{resolveContextWeaponFactor}from'./pluginStats.js';
 import * as dependency1 from '../content/catalog.js';
 
 /**
@@ -39,6 +40,7 @@ export function derivePlayerStats(state, catalog) {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @calls content/catalog.js#findContentDefinition
+ * @calls domain/pluginStats.js#resolveContextWeaponFactor
  * @calls domain/stats.js#derivePlayerStats
  * @calls domain/stats.js#resolveStatModifier
  * @param {import('../contracts.d.ts').StateSnapshot} state
@@ -63,7 +65,7 @@ export function deriveWeaponStats(state, weapon, catalog) {
   const tree = state.start.treeNodeIds, switchBonus = state.world.entities[state.player.entityId].runtime.treeSwitchShot === true ? 1.25 : 1;
   const treeDamage = 1 + (tree.includes('tree_mcp_a') ? 0.05 : 0) + (tree.includes('tree_mcp_e') ? 0.07 : 0);
   const compress=state.plugins.find(plugin=>plugin.id==='plugin_compress');
-  return { damage: (compress?compress.rank===1?1.3:1.45:1)*Number(p.damage) * treeDamage * switchBonus * qualityMultiplier * player.damageMultiplier * topUpdate * underfit,
+  return { damage: (compress?compress.rank===1?1.3:1.45:1)*Number(p.damage) * resolveContextWeaponFactor(state) * treeDamage * switchBonus * qualityMultiplier * player.damageMultiplier * topUpdate * underfit,
     interval: resolveStatModifier(Number(p.interval) * (tree.includes('tree_mcp_c') ? 0.95 : 1), modifiers.filter(modifier => modifier.stat === 'weaponInterval'), 0.05, Number.MAX_SAFE_INTEGER),
     projectileSpeed: Number(p.projectileSpeed), projectileRadius: Number(p.projectileRadius), pellets: Number(p.pellets), spreadRadians: Number(p.spreadRadians), range: Number(p.range)*(compress?0.75:1), maxHits: Number(p.maxHits), damageMultiplierApplied: true,
   };

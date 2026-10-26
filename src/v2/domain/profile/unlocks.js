@@ -44,7 +44,7 @@ export function planBossUnlock(profile, event, catalog) {
   const advanced = { claude: 'dsh_claude_allowlist', gpt: 'dsh_gpt_branch', grok: 'dsh_grok_salvage' }[/** @type {'claude'|'gpt'|'grok'} */ (p.faction)];
   const unlocked = [...profile.unlockedDsh, ...(number >= 1 ? [base] : []), ...(number >= 10 ? [advanced] : [])];
   if (unlocked.some(id => catalog.definitions[id]?.kind !== 'dsh')) return { ok: false, code: 'MISSING_DSH', message: 'Unlock references missing content' };
-  return { ok: true, value: { expectedRevision: profile.revision, next: { ...structuredClone(profile), revision: profile.revision + 1, unlockedDsh: [...new Set(unlocked)], unlockLedger: [...profile.unlockLedger, id] }, events: [] } };
+  return { ok: true, value: { expectedRevision: profile.revision, next: { ...structuredClone(profile), revision: profile.revision + 1, unlockedDsh: [...new Set(unlocked)], unlockLedger: [...new Set([...profile.unlockLedger,id,...(p.faction==='grok'?['milestone:grok-defeated']:[])])] }, events: [] } };
 }
 
 /**
@@ -65,5 +65,5 @@ export function planEasterUnlock(profile, event, catalog) {
   if (event.type !== 'EasterCompleted' || !dshId || !valid) return { ok: false, code: 'INVALID_EASTER', message: 'Easter egg requires its completed evidence' };
   const id = `easter:${dshId}`;
   if (profile.unlockLedger.includes(id)) return { ok: true, value: { expectedRevision: profile.revision, next: structuredClone(profile), events: [] } };
-  return { ok: true, value: { expectedRevision: profile.revision, next: { ...structuredClone(profile), revision: profile.revision + 1, unlockedDsh: [...new Set([...profile.unlockedDsh, dshId])], unlockLedger: [...profile.unlockLedger, id] }, events: [] } };
+  return { ok: true, value: { expectedRevision: profile.revision, next: { ...structuredClone(profile), revision: profile.revision + 1, unlockedDsh: [...new Set([...profile.unlockedDsh, dshId])], unlockLedger: [...profile.unlockLedger,id] }, events: [] } };
 }

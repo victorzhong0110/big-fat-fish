@@ -1,4 +1,5 @@
 // @ts-check
+import {createEntityState} from '../entities.js';
 import { createEmptyPlan, createStateChange } from '../plans.js';
 import { planMeleeEnemy } from '../meleeAi.js';
 import { distanceSquared, normalizeVector } from '../geometry.js';
@@ -45,7 +46,7 @@ export function planClaudeBoss(context, boss) {
         effects.push(bossDamage(context, boss, 26, `${move.index}:claw`));
         if (move.kind === 'clamp') effects.push(controlEffect(context, boss, 'root', 4, 6, `${move.index}:root`));
       } else if (move.kind === 'skillBan' && distanceSquared(player.position, move.point) <= (90 + player.radius) ** 2) effects.push(...planClaudeBan(context, boss, 'skillBan').effects);
-      else if (move.kind === 'companionBan' && distanceSquared(player.position, move.point) <= (90 + player.radius) ** 2) effects.push(...planClaudeBan(context, boss, 'companionBan').effects);
+      else if(move.kind==='companionBan'){const ban=planClaudeBan(context,boss,'companionBan');changes.push(...ban.changes);effects.push(...ban.effects);}
       else if (move.kind === 'sweep' && Math.abs(player.position.x - (move.point.x + (move.strip - 1) * 180)) <= 45 + player.radius && Math.abs(player.position.y - move.point.y) <= 400 + player.radius) effects.push(bossDamage(context, boss, 30, `${move.index}:strip:${move.strip}`));
       if (move.kind === 'sweep' && move.strip < 2) runtime.claudeMove = toJson({ ...move, strip: move.strip + 1, executeAt: state.tick + 60 });
       else { runtime.claudeMove = null; runtime.claudeMoveIndex = move.index + 1; runtime.nextClaudeMoveAt = state.tick + 90; }
@@ -69,6 +70,7 @@ export function planClaudeBoss(context, boss) {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @implementationScope adventure-slice
+ * @calls domain/entities.js#createEntityState
  * @calls domain/geometry.js#normalizeVector
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/serialization.js#toJson
@@ -79,7 +81,8 @@ export function planClaudeBoss(context, boss) {
  */
 export function planClaudeBan(context, boss, kind) {
   if (kind === 'companionBan' && !context.state.player.loadout.companionId) return { ...createEmptyPlan(), effects: [bossDamage(context, boss, 26, 'empty-companion-strike')] };
-  return { ...createEmptyPlan(), effects: [controlEffect(context, boss, kind, kind === 'skillBan' ? 8 : 10, 3, kind)] };
+  if(kind==='companionBan'){const state=context.state,entity=state.world.entities[boss.entityId],partner=state.world.entities['companion:equipped']??state.world.entities[state.player.entityId],direction=normalizeVector({x:partner.position.x-entity.position.x,y:partner.position.y-entity.position.y}),id=`ban-shot:${entity.id}:${state.tick}`,hits=state.start.treeNodeIds.includes('tree_explore_e')?2:3;return {...createEmptyPlan(),changes:[{target:'world',id,operation:'putEntity',payload:toJson(createEntityState(id,'claude_ban_projectile','enemy','enemy',entity.position,{hp:hits,maxHp:hits,radius:14,sourceId:entity.id,velocity:{x:direction.x*240,y:direction.y*240},expiresAt:state.tick+240,rewardPolicy:'none',distillEligible:false,runtime:{noAi:true,sealProjectile:true,noRewardTarget:true}}))}]};}
+  return { ...createEmptyPlan(), effects: [controlEffect(context, boss, kind, 8, 3, kind)] };
 }
 
 /** @param {import('../../contracts.d.ts').EvaluationContext} context @param {import('../../contracts.d.ts').BossState} boss @param {number} damage @param {string} suffix @returns {import('../../contracts.d.ts').EffectRequest} */

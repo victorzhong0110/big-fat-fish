@@ -42,6 +42,7 @@ export function applySystemPlan(working, plan) {
         const data = /** @type {Pick<import('../contracts.d.ts').EntityState, 'position' | 'previousPosition' | 'velocity' | 'facingRadians'>} */ (JSON.parse(serializeCanonical(p)));
         entity.position = data.position; entity.previousPosition = data.previousPosition; entity.velocity = data.velocity; entity.facingRadians = data.facingRadians; break;
       }
+      case 'setEntityExpiry': entity.expiresAt=Number(p.expiresAt);break;
       case 'setProjectileLeg': if(entity.kind!=='projectile')throw new Error('Only projectiles have attack legs');entity.attackId=String(p.attackId);entity.runtime=/** @type {Record<string,import('../contracts.d.ts').Json>} */(p.runtime);break;
       case 'setEntityRuntime': entity.runtime = /** @type {Record<string, import('../contracts.d.ts').Json>} */ (p.runtime); break;
       case 'setObjectives': next.world.objectives=/** @type {import('../contracts.d.ts').ObjectiveState[]} */ (JSON.parse(serializeCanonical(p.objectives)));break;
@@ -139,6 +140,7 @@ export function applySystemPlan(working, plan) {
       case 'setDeath': entity.dead = true; entity.dying = true; break;
       case 'setDamageCredit': entity.runtime = { ...entity.runtime, lastDamageSourceId: p.sourceId, lastDamageCreditOwner: p.creditOwner }; break;
       case 'setShell': entity.shell = { maxHp: Number(p.maxHp), hp: Number(p.hp), broken: p.broken === true, weakArcDegrees: Number(p.weakArcDegrees), stunRemaining: Number(p.stunRemaining), enraged: p.enraged === true }; break;
+      case 'attachShield': entity.shieldIds=[...new Set([...entity.shieldIds,String(p.shieldId)])];break;
       case 'setShieldIds': entity.shieldIds = /** @type {string[]} */ (p.ids); break;
       case 'setShield': next.world.shields = { ...next.world.shields, [change.id]: { id: String(p.id), sourceId: String(p.sourceId), amount: Number(p.amount), expiresAt: Number(p.expiresAt), seq: Number(p.seq) } }; break;
       case 'setControlImmune':
