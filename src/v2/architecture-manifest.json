@@ -983,6 +983,7 @@
       "layer": "application",
       "purpose": "可复现录制/摘要入口，与真实session共用路径。",
       "dependencies": [
+        "domain/serialization.js",
         "engine/session.js",
         "engine/snapshot.js"
       ],
@@ -996,13 +997,17 @@
             }
           ],
           "result": "Recording",
-          "description": "记录版本/seed/出发快照，不记录表现随机。",
-          "calls": [],
+          "description": "复制当前完整状态、版本和初始摘要，建立无入队命令的录制分段。",
+          "calls": [
+            "domain/serialization.js#serializeCanonical",
+            "engine/snapshot.js#createStateDigest"
+          ],
           "rule": "",
-          "ownership": "只读输入，返回计划/值；不得修改调用者状态",
+          "ownership": "独立数据或隔离Session；无Profile和持久化副作用",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "isolated-replay"
         },
         {
           "name": "appendRecordedCommands",
@@ -1017,13 +1022,49 @@
             }
           ],
           "result": "Recording",
-          "description": "记录实际消费tick与seq，不用墙钟回放。",
-          "calls": [],
+          "description": "按实际成功入队顺序追加独立命令副本，拒绝重复ID/序号和超量。",
+          "calls": [
+            "domain/serialization.js#serializeCanonical"
+          ],
           "rule": "",
-          "ownership": "只读输入，返回计划/值；不得修改调用者状态",
+          "ownership": "独立数据或隔离Session；无Profile和持久化副作用",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "isolated-replay"
+        },
+        {
+          "description": "记录世界/UI步、是否推进指针、命令边界和完整状态摘要；按步序区分同世界tick的多次UI操作。",
+          "rule": "",
+          "ownership": "独立数据或隔离Session；无Profile和持久化副作用",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "appendRecordingStep",
+          "args": [
+            {
+              "name": "recording",
+              "type": "untyped"
+            },
+            {
+              "name": "domain",
+              "type": "untyped"
+            },
+            {
+              "name": "advanceClock",
+              "type": "untyped"
+            },
+            {
+              "name": "state",
+              "type": "untyped"
+            }
+          ],
+          "result": "Recording",
+          "implementation": "implemented",
+          "calls": [
+            "domain/serialization.js#serializeCanonical",
+            "engine/snapshot.js#createStateDigest"
+          ],
+          "implementationScope": "isolated-replay"
         },
         {
           "name": "replayRecording",
@@ -1037,21 +1078,24 @@
               "type": "untyped"
             }
           ],
-          "result": "Result<readonly { tick: Tick; digest: string }[]>",
-          "description": "恢复初始条件并走相同Session命令/固定步，逐摘要验证。",
+          "result": "Result<readonly {tick:Tick;digest:string}[]>",
+          "description": "按原命令边界与时钟域执行真实Session，逐步核对摘要；首个分歧停止，始终释放句柄，不执行持久化意图。",
           "calls": [
-            "engine/session.js#createGameSession",
+            "domain/serialization.js#serializeCanonical",
+            "engine/session.js#createReplaySession",
+            "engine/session.js#disposeGameSession",
             "engine/session.js#enqueueSessionCommand",
-            "engine/session.js#stepSessionWorld",
-            "engine/session.js#stepSessionUi",
             "engine/session.js#readSessionState",
+            "engine/session.js#stepSessionUi",
+            "engine/session.js#stepSessionWorld",
             "engine/snapshot.js#createStateDigest"
           ],
           "rule": "",
-          "ownership": "只读输入，返回计划/值；不得修改调用者状态",
+          "ownership": "独立数据或隔离Session；无Profile和持久化副作用",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "isolated-replay"
         }
       ]
     },
@@ -6471,7 +6515,7 @@
       ],
       "functions": [
         {
-          "description": "创建Free或Pro1初态，验证树前置/DSH槽/模组锁并一次应用永久基础属性；full仍拒绝。",
+          "description": "创建Free或1–15短途初态，锁定树/装备/DSH/模型/累计机制；远征/API与full仍拒绝。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -8914,7 +8958,7 @@
       ],
       "functions": [
         {
-          "description": "planObjectiveSignal",
+          "description": "首次实际占领信标时生成可摧毁40生命信号，绑定独立有限无奖励援军预算，不能重建刷收益。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -8940,7 +8984,7 @@
           ]
         },
         {
-          "description": "planChallengeInteraction",
+          "description": "F主动启动三阵营可选精英或15级三段遭遇；距离/阶段复核后一次提交。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -8966,7 +9010,7 @@
           ]
         },
         {
-          "description": "planLateSchedule",
+          "description": "协调精英一次奖励、13级衔接、三段遭遇及15秒间隔、每海域两次安全地图异常。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -9262,7 +9306,7 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "推进预警/持续/结束，释放预算和名额；综合压力不自套第三名额。",
+          "description": "推进预警/真实出生/信号/临时捷径，结束退回未出生预留；精英超时失败，不发挑战奖励。",
           "calls": [
             "domain/navigation.js#canCloseMapPassage",
             "domain/plans.js#createEmptyPlan",
@@ -9285,7 +9329,7 @@
       ],
       "functions": [
         {
-          "description": "validatePressureReservation",
+          "description": "按继承机制、有限预算、预告承诺和两个压力槽校验纯预约，检查点及首领优先。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -9758,40 +9802,11 @@
       "layer": "engine",
       "purpose": "A bounded, explicit combat-only slice. Full adventure tick remains separate and unfinished.",
       "dependencies": [
-        "domain/abilities.js",
-        "domain/ai.js",
-        "domain/attacks.js",
-        "domain/bosses/gpt.js",
-        "domain/bosses/grok.js",
-        "domain/collision.js",
-        "domain/combatPlugins.js",
-        "domain/companions.js",
-        "domain/deaths.js",
-        "domain/distill.js",
-        "domain/dshCycle.js",
-        "domain/dshEffects.js",
-        "domain/easter.js",
-        "domain/gptPets.js",
-        "domain/lora.js",
-        "domain/mechanics.js",
-        "domain/movement.js",
-        "domain/plans.js",
-        "domain/rewards.js",
-        "domain/scheduled.js",
-        "domain/status.js",
-        "domain/world/map.js",
-        "domain/world/objectives.js",
-        "domain/world/pressure.js",
-        "domain/world/spawning.js",
-        "engine/commands.js",
-        "engine/effectLoop.js",
-        "engine/flow.js",
-        "engine/hooks.js",
-        "engine/reducer.js"
+        "engine/tick.js"
       ],
       "functions": [
         {
-          "description": "执行Free/Pro1固定世界步，推进探索/追兵/Claude/效果/掉落与成长后统一提交。",
+          "description": "兼容旧纵切调用者，委托唯一engine/tick世界流水线；没有第二套模拟。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -9814,51 +9829,12 @@
           "result": "TickResult",
           "implementation": "implemented",
           "calls": [
-            "domain/abilities.js#planAbilityBursts",
-            "domain/abilities.js#planAbilityFields",
-            "domain/abilities.js#planAbilityHistory",
-            "domain/ai.js#planBossAi",
-            "domain/ai.js#planCompanionAi",
-            "domain/ai.js#planEnemyAi",
-            "domain/attacks.js#planCollisionEffects",
-            "domain/attacks.js#planWeaponFire",
-            "domain/bosses/gpt.js#planGptReset",
-            "domain/bosses/grok.js#planGrokProjectiles",
-            "domain/collision.js#detectCollisions",
-            "domain/combatPlugins.js#planCombatPluginWorld",
-            "domain/companions.js#planPartnerBanContact",
-            "domain/deaths.js#resolveTerminalOutcome",
-            "domain/distill.js#planDistilledAbilities",
-            "domain/dshCycle.js#planDshCycleEvent",
-            "domain/dshEffects.js#planDshEffects",
-            "domain/easter.js#planEasterAdvance",
-            "domain/gptPets.js#planGptFields",
-            "domain/mechanics.js#planMechanicEvent",
-            "domain/movement.js#planEntityMotion",
-            "domain/movement.js#planPickupMotion",
-            "domain/movement.js#planPlayerMovement",
-            "domain/plans.js#createEmptyPlan",
-            "domain/plans.js#createStateChange",
-            "domain/rewards.js#planDeathRewards",
-            "domain/scheduled.js#planScheduledActions",
-            "domain/status.js#planStatusAdvance",
-            "domain/world/map.js#planMapExploration",
-            "domain/world/objectives.js#planObjectiveAdvance",
-            "domain/world/pressure.js#planPressureEventAdvance",
-            "domain/world/pressure.js#planPressureSchedule",
-            "domain/world/spawning.js#planSpawnSchedule",
-            "engine/commands.js#orderPendingCommands",
-            "engine/commands.js#planGameCommand",
-            "engine/effectLoop.js#drainEffectQueue",
-            "engine/flow.js#planProgressionPanels",
-            "engine/hooks.js#planEventHooks",
-            "engine/reducer.js#applySystemPlan",
-            "engine/reducer.js#commitWorkingState"
+            "engine/tick.js#advanceWorldTick"
           ],
           "implementationScope": "core-preview + adventure-slice"
         },
         {
-          "description": "不推进已暂停时钟，立即处理暂停/恢复命令。",
+          "description": "兼容旧UI入口，委托唯一engine/tick流水线；默认不推进UI时钟。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -9886,15 +9862,9 @@
           "result": "TickResult",
           "implementation": "implemented",
           "calls": [
-            "domain/dshEffects.js#planDshEffects",
-            "domain/lora.js#planLoraUiStep",
-            "engine/commands.js#orderPendingCommands",
-            "engine/commands.js#planGameCommand",
-            "engine/flow.js#planProgressionPanels",
-            "engine/reducer.js#applySystemPlan",
-            "engine/reducer.js#commitWorkingState"
+            "engine/tick.js#advanceUiTick"
           ],
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
         }
       ]
     },
@@ -10003,10 +9973,10 @@
         "domain/serialization.js",
         "domain/world/map.js",
         "engine/commands.js",
-        "engine/previewTick.js",
         "engine/reducer.js",
         "engine/snapshot.js",
-        "engine/tick.js"
+        "engine/tick.js",
+        "versions.js"
       ],
       "functions": [
         {
@@ -10026,7 +9996,7 @@
             }
           ],
           "result": "GameSession",
-          "description": "校验内容与初始世界后发布Free/Pro1私有Session；模组仅允许Free练习。",
+          "description": "校验目录与世界后发布Free或1–15短途私有Session，社区模组仅在Free开放。",
           "calls": [
             "content/catalog.js#validateContentCatalog",
             "content/registry.js#createHandlerRegistry",
@@ -10075,11 +10045,11 @@
             }
           ],
           "result": "TickResult",
-          "description": "消费到期世界命令，执行Free/Pro1固定世界步并原子提交。",
+          "description": "消费到期世界命令，经engine/tick唯一流水线原子提交Free或1–15短途状态。",
           "calls": [
             "engine/commands.js#orderPendingCommands",
-            "engine/previewTick.js#advancePreviewUiCommands",
-            "engine/previewTick.js#advancePreviewWorldTick"
+            "engine/tick.js#advanceUiTick",
+            "engine/tick.js#advanceWorldTick"
           ],
           "rule": "",
           "ownership": "唯一门面允许提交世界状态",
@@ -10102,11 +10072,11 @@
             }
           ],
           "result": "TickResult",
-          "description": "消费预览暂停/继续与插件选择/重抽/跳过，结算后续等级；可选择独立UI步推进LoRA，命令flush不推进指针。",
+          "description": "消费独立UI命令，经engine/tick推进指针或只flush；暂停保持原面板。",
           "calls": [
             "engine/commands.js#orderPendingCommands",
-            "engine/previewTick.js#advancePreviewUiCommands",
-            "engine/previewTick.js#advancePreviewWorldTick"
+            "engine/tick.js#advanceUiTick",
+            "engine/tick.js#advanceWorldTick"
           ],
           "rule": "",
           "ownership": "唯一门面允许提交UI状态",
@@ -10191,6 +10161,33 @@
           "phase": "dispose",
           "callMode": "sequence",
           "implementation": "implemented"
+        },
+        {
+          "description": "验证版本、内容锁、完整状态不变量后克隆隔离重放Session；不暂停、不读取/写入Profile，不替代检查点。",
+          "rule": "",
+          "ownership": "独立数据或隔离Session；无Profile和持久化副作用",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createReplaySession",
+          "args": [
+            {
+              "name": "initial",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            }
+          ],
+          "result": "Result<GameSession>",
+          "implementation": "implemented",
+          "calls": [
+            "content/catalog.js#validateContentCatalog",
+            "content/registry.js#createHandlerRegistry",
+            "domain/serialization.js#serializeCanonical",
+            "engine/reducer.js#validateStateInvariants"
+          ],
+          "implementationScope": "isolated-replay"
         }
       ]
     },
@@ -10252,14 +10249,26 @@
       "layer": "engine",
       "purpose": "世界/UI两种固定步的唯一顺序定义。",
       "dependencies": [
+        "domain/abilities.js",
         "domain/ai.js",
         "domain/attacks.js",
+        "domain/bosses/gpt.js",
+        "domain/bosses/grok.js",
         "domain/collision.js",
+        "domain/combatPlugins.js",
+        "domain/companions.js",
         "domain/deaths.js",
-        "domain/levels.js",
+        "domain/distill.js",
+        "domain/dshCycle.js",
+        "domain/dshEffects.js",
+        "domain/easter.js",
+        "domain/gptPets.js",
         "domain/lora.js",
+        "domain/mechanics.js",
         "domain/movement.js",
+        "domain/plans.js",
         "domain/rewards.js",
+        "domain/scheduled.js",
         "domain/status.js",
         "domain/world/map.js",
         "domain/world/objectives.js",
@@ -10289,40 +10298,55 @@
             }
           ],
           "result": "TickResult",
-          "description": "执行架构11的固定世界顺序；仅exploring/boss允许，其他phase不推进世界。",
+          "description": "唯一正式固定世界流水线：按阶段读取最新工作副本，执行战斗/探索/压力/成长后只提交一次；未实现运行模式仍拒绝。",
           "calls": [
-            "engine/commands.js#orderPendingCommands",
-            "engine/commands.js#planGameCommand",
-            "engine/reducer.js#applySystemPlan",
-            "domain/status.js#planStatusAdvance",
-            "engine/hooks.js#planEventHooks",
-            "domain/world/pressure.js#planPressureSchedule",
-            "domain/world/pressure.js#planPressureEventAdvance",
-            "domain/world/spawning.js#planSpawnSchedule",
-            "domain/ai.js#planEnemyAi",
+            "domain/abilities.js#planAbilityBursts",
+            "domain/abilities.js#planAbilityFields",
+            "domain/abilities.js#planAbilityHistory",
             "domain/ai.js#planBossAi",
             "domain/ai.js#planCompanionAi",
-            "domain/movement.js#planPlayerMovement",
-            "domain/movement.js#planEntityMotion",
-            "domain/attacks.js#planWeaponFire",
-            "domain/movement.js#planPickupMotion",
-            "domain/collision.js#detectCollisions",
+            "domain/ai.js#planEnemyAi",
             "domain/attacks.js#planCollisionEffects",
-            "engine/effectLoop.js#drainEffectQueue",
+            "domain/attacks.js#planWeaponFire",
+            "domain/bosses/gpt.js#planGptReset",
+            "domain/bosses/grok.js#planGrokProjectiles",
+            "domain/collision.js#detectCollisions",
+            "domain/combatPlugins.js#planCombatPluginWorld",
+            "domain/companions.js#planPartnerBanContact",
+            "domain/deaths.js#resolveTerminalOutcome",
+            "domain/distill.js#planDistilledAbilities",
+            "domain/dshCycle.js#planDshCycleEvent",
+            "domain/dshEffects.js#planDshEffects",
+            "domain/easter.js#planEasterAdvance",
+            "domain/gptPets.js#planGptFields",
+            "domain/mechanics.js#planMechanicEvent",
+            "domain/movement.js#planEntityMotion",
+            "domain/movement.js#planPickupMotion",
+            "domain/movement.js#planPlayerMovement",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
             "domain/rewards.js#planDeathRewards",
+            "domain/scheduled.js#planScheduledActions",
+            "domain/status.js#planStatusAdvance",
             "domain/world/map.js#planMapExploration",
             "domain/world/objectives.js#planObjectiveAdvance",
-            "domain/world/objectives.js#planApiProgression",
-            "domain/levels.js#planLevelProgression",
-            "domain/deaths.js#resolveTerminalOutcome",
+            "domain/world/pressure.js#planPressureEventAdvance",
+            "domain/world/pressure.js#planPressureSchedule",
+            "domain/world/spawning.js#planSpawnSchedule",
+            "engine/commands.js#orderPendingCommands",
+            "engine/commands.js#planGameCommand",
+            "engine/effectLoop.js#drainEffectQueue",
             "engine/flow.js#planProgressionPanels",
+            "engine/hooks.js#planEventHooks",
+            "engine/reducer.js#applySystemPlan",
             "engine/reducer.js#commitWorkingState"
           ],
           "rule": "@calls是阶段依赖，不是忽略参数全部无条件执行；每阶段apply后下阶段读新工作副本。胜负优先于升级，API首领不胜利。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "world-tick",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "advanceUiTick",
@@ -10338,15 +10362,20 @@
             {
               "name": "catalog",
               "type": "untyped"
+            },
+            {
+              "name": "advanceClock",
+              "default": "false",
+              "type": "untyped"
             }
           ],
           "result": "TickResult",
-          "description": "处理LoRA固定指针和菜单命令，世界tick及所有战斗倒计时保持。",
+          "description": "唯一UI固定步：按参数推进LoRA或只处理菜单命令，保持世界时间不变。",
           "calls": [
+            "domain/dshEffects.js#planDshEffects",
+            "domain/lora.js#planLoraUiStep",
             "engine/commands.js#orderPendingCommands",
             "engine/commands.js#planGameCommand",
-            "domain/lora.js#planLoraUiStep",
-            "domain/lora.js#planLoraOutcome",
             "engine/flow.js#planProgressionPanels",
             "engine/reducer.js#applySystemPlan",
             "engine/reducer.js#commitWorkingState"
@@ -10355,7 +10384,8 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "ui-tick",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         }
       ]
     },
@@ -11524,8 +11554,8 @@
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
     "modules": 103,
-    "functions": 380,
-    "implemented": 334,
-    "placeholders": 46
+    "functions": 382,
+    "implemented": 341,
+    "placeholders": 41
   }
 }

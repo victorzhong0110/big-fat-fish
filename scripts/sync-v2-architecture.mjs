@@ -97,6 +97,29 @@ for(const module of sourceModel){
   if(fn.name==='createHandlerRegistry')item.description='返回95项设计绑定与显式implementedIds能力集合，不把未实现条目声明为可运行。';
   if(fn.name==='validateContentCatalog')item.description='校验原版目录数量、社区MCP注册与锁、稳定ID/引用、160点树前置DAG及运行能力声明。';
   if(fn.name==='mountCombatPreview')item.ownership='宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState';
+  const finalDescriptions={
+   advanceWorldTick:'唯一正式固定世界流水线：按阶段读取最新工作副本，执行战斗/探索/压力/成长后只提交一次；未实现运行模式仍拒绝。',
+   advanceUiTick:'唯一UI固定步：按参数推进LoRA或只处理菜单命令，保持世界时间不变。',
+   advancePreviewWorldTick:'兼容旧纵切调用者，委托唯一engine/tick世界流水线；没有第二套模拟。',
+   advancePreviewUiCommands:'兼容旧UI入口，委托唯一engine/tick流水线；默认不推进UI时钟。',
+   stepSessionWorld:'消费到期世界命令，经engine/tick唯一流水线原子提交Free或1–15短途状态。',
+   stepSessionUi:'消费独立UI命令，经engine/tick推进指针或只flush；暂停保持原面板。',
+   createReplaySession:'验证版本、内容锁、完整状态不变量后克隆隔离重放Session；不暂停、不读取/写入Profile，不替代检查点。',
+   beginRecording:'复制当前完整状态、版本和初始摘要，建立无入队命令的录制分段。',
+   appendRecordedCommands:'按实际成功入队顺序追加独立命令副本，拒绝重复ID/序号和超量。',
+   appendRecordingStep:'记录世界/UI步、是否推进指针、命令边界和完整状态摘要；按步序区分同世界tick的多次UI操作。',
+   replayRecording:'按原命令边界与时钟域执行真实Session，逐步核对摘要；首个分歧停止，始终释放句柄，不执行持久化意图。',
+   validatePressureReservation:'按继承机制、有限预算、预告承诺和两个压力槽校验纯预约，检查点及首领优先。',
+   planObjectiveSignal:'首次实际占领信标时生成可摧毁40生命信号，绑定独立有限无奖励援军预算，不能重建刷收益。',
+   planChallengeInteraction:'F主动启动三阵营可选精英或15级三段遭遇；距离/阶段复核后一次提交。',
+   planLateSchedule:'协调精英一次奖励、13级衔接、三段遭遇及15秒间隔、每海域两次安全地图异常。',
+   createInitialGameState:'创建Free或1–15短途初态，锁定树/装备/DSH/模型/累计机制；远征/API与full仍拒绝。',
+   createGameSession:'校验目录与世界后发布Free或1–15短途私有Session，社区模组仅在Free开放。',
+   planPressureEventAdvance:'推进预警/真实出生/信号/临时捷径，结束退回未出生预留；精英超时失败，不发挑战奖励。'
+  };
+  if(finalDescriptions[fn.name])item.description=finalDescriptions[fn.name];
+  if(['advanceWorldTick','advanceUiTick','advancePreviewWorldTick','advancePreviewUiCommands'].includes(fn.name))item.implementationScope='core-preview + adventure-slice';
+  if(['beginRecording','appendRecordedCommands','appendRecordingStep','replayRecording','createReplaySession'].includes(fn.name)){item.implementationScope='isolated-replay';item.ownership='独立数据或隔离Session；无Profile和持久化副作用';}
   const index=source.indexOf(`export ${fn.async?'async ':''}function ${fn.name}(`);
   const start=source.lastIndexOf('/**',index);
   if(start>=0){let comment=source.slice(start,index).replace(/^ \* @calls.*\n/gm,'').replace(/^ \* @implementationScope.*\n/gm,'');if(fn.implementation==='implemented')comment=comment.replace(/^ \* @throws \{Error\} TODO placeholder until Grok implements this contract\.\n/gm,'');const scopeText=item.implementationScope?` * @implementationScope ${item.implementationScope}\n`:'';const callText=scopeText+(item.calls.map(call=>` * @calls ${call}\n`).join('')||' * @calls 无内部公开函数。\n');
@@ -114,7 +137,7 @@ manifest.rules=[...new Set(manifest.rules)];
 const fns=manifest.modules.flatMap(module=>module.functions),implemented=fns.filter(fn=>fn.implementation==='implemented').length;
 manifest.counts={modules:manifest.modules.length,functions:fns.length,implemented,placeholders:fns.length-implemented};
 await fs.writeFile(filename,JSON.stringify(manifest,null,2)+'\n');
-const esc=value=>value.replaceAll('|','\\|').replaceAll('\n',' '),rows=['# 12 · 全部函数目录与调用契约','',`当前${manifest.counts.modules}个JS模块、${fns.length}个公开函数：${implemented}个有实现，${fns.length-implemented}个明确TODO。core-preview为Free练习，adventure-slice为Pro1短途；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。`,'','调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。',''];
+const esc=value=>value.replaceAll('|','\\|').replaceAll('\n',' '),rows=['# 12 · 全部函数目录与调用契约','',`当前${manifest.counts.modules}个JS模块、${fns.length}个公开函数：${implemented}个有实现，${fns.length-implemented}个明确TODO。core-preview为Free练习，adventure-slice为1–15级短途；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。`,'','调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。',''];
 for(const module of manifest.modules){rows.push(`## ${module.path}`,'',module.purpose,'',`[源码](../../src/v2/${module.path})；层：\`${module.layer}\`。`,'',`直接依赖：${module.dependencies.map(dep=>'`'+dep+'`').join('、')||'无'}。`,'','| 函数签名 | 返回 | 状态/范围 | 功能与约束 |','|---|---|---|---|');
  for(const fn of module.functions)rows.push(`| \`${esc(fn.name+'('+fn.args.map(arg=>arg.name+': '+arg.type+(arg.default!==undefined?' = '+arg.default:'')).join(', ')+')')}\` | \`${esc(fn.result)}\` | ${fn.implementation==='implemented'?'已实现':'TODO'}${fn.implementationScope?' / '+fn.implementationScope:''} | ${esc(fn.description+'；'+fn.rule+'；状态权限：'+fn.ownership)} |`);
  rows.push('','公开函数下游：','');for(const fn of module.functions)rows.push(`- \`${fn.name}\` → ${fn.calls.map(call=>'`'+call+'`').join('、')||'无内部公开函数'}。`);

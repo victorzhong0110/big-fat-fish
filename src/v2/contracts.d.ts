@@ -141,7 +141,8 @@ export interface ApplicationOptions { ports: RuntimePorts; catalog: ContentCatal
 export interface ApplicationActionResult { kind: 'started' | 'continued' | 'saved' | 'settled' | 'profileUpdated' | 'queued' | 'disposed'; runId: Id | null; revision: number | null; }
 export interface BootstrapOptions { mountElementId: string; assets: readonly AssetRequest[]; }
 export interface BrowserRuntime { app: ApplicationHandle; input: InputHandle; view: ViewHandle; audio: AudioHandle; inputState: InputState; storage: StoragePort; }
-export interface Recording { versions: Versions; initial: GameState; commands: readonly Command[]; digests: readonly { tick: Tick; digest: string }[]; }
+export interface RecordedStep { domain:'world'|'ui'; advanceClock:boolean; commandCount:number; tick:Tick; uiTick:Tick; digest:string; }
+export interface Recording { versions: Versions; initial: GameState; initialDigest:string; commands: readonly Command[]; digests: readonly { tick: Tick; digest: string }[]; steps:readonly RecordedStep[]; }
 export interface TickResult { next: GameState; events: readonly DomainEvent[]; persistence: readonly PersistenceIntent[]; diagnostics: readonly Diagnostic[]; }
 
 /** Community SDK 1.0–1.2: local, declarative packs; never executed JavaScript. */

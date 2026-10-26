@@ -1,6 +1,6 @@
 # 12 · 全部函数目录与调用契约
 
-当前103个JS模块、380个公开函数：334个有实现，46个明确TODO。core-preview为Free练习，adventure-slice为Pro1短途；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
+当前103个JS模块、382个公开函数：341个有实现，41个明确TODO。core-preview为Free练习，adventure-slice为1–15级短途；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
 
 调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。
 
@@ -235,24 +235,27 @@ Execute a nest command against the latest revision; recompute after CAS conflict
 
 [源码](../../src/v2/application/replay.js)；层：`application`。
 
-直接依赖：`engine/session.js`、`engine/snapshot.js`。
+直接依赖：`domain/serialization.js`、`engine/session.js`、`engine/snapshot.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `beginRecording(state: untyped)` | `Recording` | TODO | 记录版本/seed/出发快照，不记录表现随机。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `appendRecordedCommands(recording: untyped, commands: untyped)` | `Recording` | TODO | 记录实际消费tick与seq，不用墙钟回放。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `replayRecording(recording: untyped, catalog: untyped)` | `Result<readonly { tick: Tick; digest: string }[]>` | TODO | 恢复初始条件并走相同Session命令/固定步，逐摘要验证。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `beginRecording(state: untyped)` | `Recording` | 已实现 / isolated-replay | 复制当前完整状态、版本和初始摘要，建立无入队命令的录制分段。；；状态权限：独立数据或隔离Session；无Profile和持久化副作用 |
+| `appendRecordedCommands(recording: untyped, commands: untyped)` | `Recording` | 已实现 / isolated-replay | 按实际成功入队顺序追加独立命令副本，拒绝重复ID/序号和超量。；；状态权限：独立数据或隔离Session；无Profile和持久化副作用 |
+| `appendRecordingStep(recording: untyped, domain: untyped, advanceClock: untyped, state: untyped)` | `Recording` | 已实现 / isolated-replay | 记录世界/UI步、是否推进指针、命令边界和完整状态摘要；按步序区分同世界tick的多次UI操作。；；状态权限：独立数据或隔离Session；无Profile和持久化副作用 |
+| `replayRecording(recording: untyped, catalog: untyped)` | `Result<readonly {tick:Tick;digest:string}[]>` | 已实现 / isolated-replay | 按原命令边界与时钟域执行真实Session，逐步核对摘要；首个分歧停止，始终释放句柄，不执行持久化意图。；；状态权限：独立数据或隔离Session；无Profile和持久化副作用 |
 
 公开函数下游：
 
-- `beginRecording` → 无内部公开函数。
-- `appendRecordedCommands` → 无内部公开函数。
-- `replayRecording` → `engine/session.js#createGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#stepSessionWorld`、`engine/session.js#stepSessionUi`、`engine/session.js#readSessionState`、`engine/snapshot.js#createStateDigest`。
+- `beginRecording` → `domain/serialization.js#serializeCanonical`、`engine/snapshot.js#createStateDigest`。
+- `appendRecordedCommands` → `domain/serialization.js#serializeCanonical`。
+- `appendRecordingStep` → `domain/serialization.js#serializeCanonical`、`engine/snapshot.js#createStateDigest`。
+- `replayRecording` → `domain/serialization.js#serializeCanonical`、`engine/session.js#createReplaySession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`engine/snapshot.js#createStateDigest`。
 
 公开函数上游：
 
 - `beginRecording` ← 宿主/工具入口或待编排。
 - `appendRecordedCommands` ← 宿主/工具入口或待编排。
+- `appendRecordingStep` ← 宿主/工具入口或待编排。
 - `replayRecording` ← 宿主/工具入口或待编排。
 
 ## application/repository.js
@@ -335,7 +338,7 @@ Execute a nest command against the latest revision; recompute after CAS conflict
 公开函数上游：
 
 - `loadContentCatalog` ← `bootstrap.js#bootstrapV2`、`preview/host.js#mountCombatPreview`。
-- `validateContentCatalog` ← `application/game.js#createApplication`、`bootstrap.js#bootstrapV2`、`content/mods.js#composeModCatalog`、`engine/session.js#createGameSession`、`preview/host.js#mountCombatPreview`。
+- `validateContentCatalog` ← `application/game.js#createApplication`、`bootstrap.js#bootstrapV2`、`content/mods.js#composeModCatalog`、`engine/session.js#createGameSession`、`engine/session.js#createReplaySession`、`preview/host.js#mountCombatPreview`。
 - `findContentDefinition` ← `domain/stats.js#deriveWeaponStats`、`domain/world/spawning.js#planEnemySpawn`。
 - `listContentByKind` ← 宿主/工具入口或待编排。
 
@@ -821,7 +824,7 @@ Versioned declarative mod SDK. No dynamic code, global registry mutation or host
 
 公开函数上游：
 
-- `createHandlerRegistry` ← `application/nest.js#executeNestAction`、`application/nest.js#prepareAdventureStart`、`bootstrap.js#bootstrapV2`、`content/mods.js#parseModPackage`、`content/mods.js#composeModCatalog`、`domain/draft.js#createPluginChoice`、`engine/session.js#createGameSession`、`preview/host.js#mountCombatPreview`、`preview/nestManager.js#mountNestManager`。
+- `createHandlerRegistry` ← `application/nest.js#executeNestAction`、`application/nest.js#prepareAdventureStart`、`bootstrap.js#bootstrapV2`、`content/mods.js#parseModPackage`、`content/mods.js#composeModCatalog`、`domain/draft.js#createPluginChoice`、`engine/session.js#createGameSession`、`engine/session.js#createReplaySession`、`preview/host.js#mountCombatPreview`、`preview/nestManager.js#mountNestManager`。
 
 ## content/weaponCapabilities.js
 
@@ -1041,11 +1044,11 @@ A bounded legal teleport placement, without tracing the path from the current po
 - `findAbilityPlacement` ← `domain/abilities.js#planEquippedAbility`。
 - `planEquippedAbility` ← `content/handlers/skills.js#planSkillBatch`、`content/handlers/skills.js#planSkillRedirect`、`content/handlers/skills.js#planSkillSandbox`、`content/handlers/skills.js#planSkillFork`、`content/handlers/skills.js#planSkillRollback`、`content/handlers/skills.js#planSkillOverclock`。
 - `planAbilityDamage` ← `domain/abilities.js#planAbilityBursts`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/scheduled.js#planScheduledActions`。
-- `planAbilityFields` ← `engine/previewTick.js#advancePreviewWorldTick`。
-- `planAbilityBursts` ← `engine/previewTick.js#advancePreviewWorldTick`。
+- `planAbilityFields` ← `engine/tick.js#advanceWorldTick`。
+- `planAbilityBursts` ← `engine/tick.js#advanceWorldTick`。
 - `resolveAbilityMoveScale` ← `domain/meleeAi.js#planMeleeEnemy`。
 - `selectAbilityTarget` ← `domain/gptPets.js#planGptPet`、`domain/meleeAi.js#planMeleeEnemy`。
-- `planAbilityHistory` ← `engine/previewTick.js#advancePreviewWorldTick`。
+- `planAbilityHistory` ← `engine/tick.js#advanceWorldTick`。
 
 ## domain/ai.js
 
@@ -1069,9 +1072,9 @@ AI系统收集意图，模型和难度共同生效。
 
 公开函数上游：
 
-- `planEnemyAi` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
-- `planCompanionAi` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
-- `planBossAi` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planEnemyAi` ← `engine/tick.js#advanceWorldTick`。
+- `planCompanionAi` ← `engine/tick.js#advanceWorldTick`。
+- `planBossAi` ← `engine/tick.js#advanceWorldTick`。
 
 ## domain/attacks.js
 
@@ -1099,11 +1102,11 @@ AI系统收集意图，模型和难度共同生效。
 
 公开函数上游：
 
-- `planWeaponFire` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planWeaponFire` ← `engine/tick.js#advanceWorldTick`。
 - `planSkillCast` ← `engine/commands.js#planGameCommand`。
 - `planDash` ← `engine/commands.js#planGameCommand`。
 - `planLoadoutChange` ← `engine/commands.js#planGameCommand`。
-- `planCollisionEffects` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planCollisionEffects` ← `engine/tick.js#advanceWorldTick`。
 
 ## domain/bosses/claude.js
 
@@ -1153,7 +1156,7 @@ ChatGPT三个节点的局部重置事务。
 公开函数上游：
 
 - `planGptBoss` ← `domain/ai.js#planBossAi`。
-- `planGptReset` ← `engine/previewTick.js#advancePreviewWorldTick`。
+- `planGptReset` ← `engine/tick.js#advanceWorldTick`。
 - `planGptResetInterrupt` ← `domain/bosses/gpt.js#planGptReset`、`domain/bosses/gpt.js#planGptBossEvent`。
 - `planGptBossEvent` ← `engine/hooks.js#planEventHooks`。
 
@@ -1181,7 +1184,7 @@ Grok首领只有简单火箭和召集人海。
 
 - `planGrokBoss` ← `domain/ai.js#planBossAi`。
 - `planGrokBossReinforcements` ← `domain/bosses/grok.js#planGrokBoss`。
-- `planGrokProjectiles` ← `engine/previewTick.js#advancePreviewWorldTick`。
+- `planGrokProjectiles` ← `engine/tick.js#advanceWorldTick`。
 
 ## domain/checkpoint.js
 
@@ -1261,7 +1264,7 @@ Grok首领只有简单火箭和召集人海。
 公开函数上游：
 
 - `canTraverseObstacle` ← `domain/abilities.js#findAbilityPlacement`、`domain/collision.js#detectCollisions`、`domain/collision.js#validateSpawnLocation`、`domain/motionSolver.js#resolveBodyDestination`、`domain/navigation.js#findNavigationPath`、`domain/navigation.js#chooseRetreatPoint`。
-- `detectCollisions` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `detectCollisions` ← `engine/tick.js#advanceWorldTick`。
 - `validateSpawnLocation` ← `domain/world/spawning.js#planSpawnSchedule`、`domain/world/spawning.js#planEnemySpawn`。
 
 ## domain/combatPlugins.js
@@ -1285,7 +1288,7 @@ Grok首领只有简单火箭和召集人海。
 公开函数上游：
 
 - `planCombatPluginEvent` ← `content/handlers/plugins.js#planPluginBatch`、`content/handlers/plugins.js#planPluginCache`、`content/handlers/plugins.js#planPluginRetry`、`content/handlers/plugins.js#planPluginTemperature`、`content/handlers/plugins.js#planPluginCooldown`、`content/handlers/plugins.js#planPluginOffload`、`content/handlers/plugins.js#planPluginKeepalive`、`content/handlers/plugins.js#planPluginRedirect`、`content/handlers/plugins.js#planPluginBackoff`、`content/handlers/plugins.js#planPluginFailover`、`content/handlers/plugins.js#planPluginSandbox`、`content/handlers/plugins.js#planPluginHallucination`、`content/handlers/plugins.js#planPluginChain`、`content/handlers/plugins.js#planPluginContext`、`content/handlers/plugins.js#planPluginHotplug`、`content/handlers/plugins.js#planPluginPrefill`、`content/handlers/plugins.js#planPluginToolchain`、`content/handlers/plugins.js#planPluginMirror`、`content/handlers/plugins.js#planPluginRecursion`、`content/handlers/plugins.js#planPluginMoe`、`content/handlers/plugins.js#planPluginSpeculate`、`content/handlers/plugins.js#planPluginWindow`、`content/handlers/plugins.js#planPluginAgent`、`content/handlers/plugins.js#planPluginBreaker`、`engine/hooks.js#planEventHooks`。
-- `planCombatPluginWorld` ← `engine/previewTick.js#advancePreviewWorldTick`。
+- `planCombatPluginWorld` ← `engine/tick.js#advanceWorldTick`。
 
 ## domain/companions.js
 
@@ -1313,7 +1316,7 @@ One conditionally triggered automatic ability. No cast means no cooldown consump
 
 - `planCompanionAbility` ← `content/handlers/companions.js#planCompanionRice`、`content/handlers/companions.js#planCompanionPatch`、`content/handlers/companions.js#planCompanionCache`、`content/handlers/companions.js#planCompanionRouter`、`content/handlers/companions.js#planCompanionDecoy`、`content/handlers/companions.js#planCompanionRocket`。
 - `planCompanionFollow` ← `domain/ai.js#planCompanionAi`。
-- `planPartnerBanContact` ← `engine/previewTick.js#advancePreviewWorldTick`。
+- `planPartnerBanContact` ← `engine/tick.js#advanceWorldTick`。
 - `planCompanionMilestones` ← `engine/hooks.js#planEventHooks`。
 
 ## domain/currents.js
@@ -1386,7 +1389,7 @@ Current drift uses effective ticks and the normal body solver; native dash/root/
 
 - `collectDeathRecords` ← `engine/effectLoop.js#drainEffectQueue`。
 - `planDeathTransitions` ← `engine/effectLoop.js#drainEffectQueue`。
-- `resolveTerminalOutcome` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `resolveTerminalOutcome` ← `engine/tick.js#advanceWorldTick`。
 
 ## domain/difficulty.js
 
@@ -1438,7 +1441,7 @@ Current drift uses effective ticks and the normal body solver; native dash/root/
 
 - `planDistillEvent` ← `content/handlers/plugins.js#planPluginDistill`、`engine/hooks.js#planEventHooks`。
 - `advanceDistillTrack` ← `domain/distill.js#planDistillEvent`、`domain/draft.js#planPluginSelection`。
-- `planDistilledAbilities` ← `engine/previewTick.js#advancePreviewWorldTick`。
+- `planDistilledAbilities` ← `engine/tick.js#advanceWorldTick`。
 
 ## domain/draft.js
 
@@ -1491,7 +1494,7 @@ Current drift uses effective ticks and the normal body solver; native dash/root/
 
 公开函数上游：
 
-- `planDshCycleEvent` ← `content/handlers/dsh.js#planDshGptBranch`、`engine/previewTick.js#advancePreviewWorldTick`。
+- `planDshCycleEvent` ← `content/handlers/dsh.js#planDshGptBranch`、`engine/tick.js#advanceWorldTick`。
 - `planTemporaryWeaponUpdate` ← `domain/dshCycle.js#planDshCycleEvent`。
 - `planCooldownReset` ← `domain/dshCycle.js#planDshCycleEvent`。
 
@@ -1513,7 +1516,7 @@ Native casts, credited deaths and real healing feed independent DSH counters. Ne
 
 公开函数上游：
 
-- `planDshEffects` ← `content/handlers/dsh.js#planDshGptPreview`、`content/handlers/dsh.js#planDshGrokLicense`、`content/handlers/dsh.js#planDshGrokSalvage`、`content/handlers/dsh.js#planDshSleep`、`content/handlers/dsh.js#planDshRice`、`content/handlers/dsh.js#planDshOpen`、`engine/hooks.js#planEventHooks`、`engine/previewTick.js#advancePreviewWorldTick`、`engine/previewTick.js#advancePreviewUiCommands`。
+- `planDshEffects` ← `content/handlers/dsh.js#planDshGptPreview`、`content/handlers/dsh.js#planDshGrokLicense`、`content/handlers/dsh.js#planDshGrokSalvage`、`content/handlers/dsh.js#planDshSleep`、`content/handlers/dsh.js#planDshRice`、`content/handlers/dsh.js#planDshOpen`、`engine/hooks.js#planEventHooks`、`engine/tick.js#advanceWorldTick`、`engine/tick.js#advanceUiTick`。
 
 ## domain/easter.js
 
@@ -1542,7 +1545,7 @@ Place discoverable, reward-free easter objectives in the continuous map.
 - `createEasterObjectives` ← `domain/world/adventure.js#createAdventureMapPlan`。
 - `planEasterEvent` ← `engine/hooks.js#planEventHooks`。
 - `planEasterInteraction` ← `domain/world/map.js#planWorldInteraction`。
-- `planEasterAdvance` ← `engine/previewTick.js#advancePreviewWorldTick`。
+- `planEasterAdvance` ← `engine/tick.js#advanceWorldTick`。
 
 ## domain/entities.js
 
@@ -1645,7 +1648,7 @@ Canonical entity constructor; callers provide stable identity and source snapsho
 公开函数上游：
 
 - `planGptPet` ← `content/handlers/enemies.js#planEnemyGptCodex`、`content/handlers/enemies.js#planEnemyGptDewey`、`content/handlers/enemies.js#planEnemyGptFireball`、`content/handlers/enemies.js#planEnemyGptHoots`、`content/handlers/enemies.js#planEnemyGptRocky`、`content/handlers/enemies.js#planEnemyGptSeedy`、`content/handlers/enemies.js#planEnemyGptStacky`。
-- `planGptFields` ← `engine/previewTick.js#advancePreviewWorldTick`。
+- `planGptFields` ← `engine/tick.js#advanceWorldTick`。
 - `planPetModelEvent` ← `engine/hooks.js#planEventHooks`。
 
 ## domain/initial.js
@@ -1658,7 +1661,7 @@ Create an unpublished initial state. Map plans are applied before Session publis
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `createInitialGameState(start: untyped, seed: untyped, catalog: untyped)` | `GameState` | 已实现 / core-preview + adventure-slice | 创建Free或Pro1初态，验证树前置/DSH槽/模组锁并一次应用永久基础属性；full仍拒绝。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `createInitialGameState(start: untyped, seed: untyped, catalog: untyped)` | `GameState` | 已实现 / core-preview + adventure-slice | 创建Free或1–15短途初态，锁定树/装备/DSH/模型/累计机制；远征/API与full仍拒绝。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
@@ -1690,7 +1693,7 @@ Create an unpublished initial state. Map plans are applied before Session publis
 
 公开函数上游：
 
-- `planLevelProgression` ← `engine/flow.js#planProgressionPanels`、`engine/tick.js#advanceWorldTick`。
+- `planLevelProgression` ← `engine/flow.js#planProgressionPanels`。
 - `planNextLevelReward` ← `engine/flow.js#planProgressionPanels`。
 - `isPluginMilestone` ← `domain/levels.js#planLevelProgression`。
 
@@ -1724,10 +1727,10 @@ Create an unpublished initial state. Map plans are applied before Session publis
 
 - `planLoraLevel` ← `content/handlers/dsh.js#planDshLora`。
 - `createLoraTrial` ← `engine/flow.js#planProgressionPanels`。
-- `planLoraUiStep` ← `engine/previewTick.js#advancePreviewUiCommands`、`engine/tick.js#advanceUiTick`。
+- `planLoraUiStep` ← `engine/tick.js#advanceUiTick`。
 - `planLoraInput` ← `engine/commands.js#planGameCommand`。
 - `resolveLoraOutcome` ← `domain/lora.js#planLoraInput`、`domain/lora.js#planLoraOutcome`。
-- `planLoraOutcome` ← `domain/lora.js#planLoraUiStep`、`domain/lora.js#planLoraInput`、`engine/tick.js#advanceUiTick`。
+- `planLoraOutcome` ← `domain/lora.js#planLoraUiStep`、`domain/lora.js#planLoraInput`。
 
 ## domain/mechanics.js
 
@@ -1750,7 +1753,7 @@ Immutable cumulative mechanic lookup.
 公开函数上游：
 
 - `hasMechanic` ← `domain/mechanics.js#planMechanicEvent`。
-- `planMechanicEvent` ← `content/handlers/mechanics.js#planMechanic01Exploration`、`content/handlers/mechanics.js#planMechanic02Reinforcements`、`content/handlers/mechanics.js#planMechanic03GptSupport`、`content/handlers/mechanics.js#planMechanic04ClaudeBreak`、`content/handlers/mechanics.js#planMechanic05BossCombo`、`content/handlers/mechanics.js#planMechanic06AlarmCache`、`content/handlers/mechanics.js#planMechanic07Tide`、`content/handlers/mechanics.js#planMechanic08GrokFlanks`、`content/handlers/mechanics.js#planMechanic09GptReposition`、`content/handlers/mechanics.js#planMechanic10BossArena`、`content/handlers/mechanics.js#planMechanic11ObjectiveSignal`、`content/handlers/mechanics.js#planMechanic11Glasswing`、`content/handlers/mechanics.js#planMechanic12GptFourRoles`、`content/handlers/mechanics.js#planMechanic13Handoff`、`content/handlers/mechanics.js#planMechanic14Anomaly`、`content/handlers/mechanics.js#planMechanic15Integration`、`engine/hooks.js#planEventHooks`、`engine/previewTick.js#advancePreviewWorldTick`。
+- `planMechanicEvent` ← `content/handlers/mechanics.js#planMechanic01Exploration`、`content/handlers/mechanics.js#planMechanic02Reinforcements`、`content/handlers/mechanics.js#planMechanic03GptSupport`、`content/handlers/mechanics.js#planMechanic04ClaudeBreak`、`content/handlers/mechanics.js#planMechanic05BossCombo`、`content/handlers/mechanics.js#planMechanic06AlarmCache`、`content/handlers/mechanics.js#planMechanic07Tide`、`content/handlers/mechanics.js#planMechanic08GrokFlanks`、`content/handlers/mechanics.js#planMechanic09GptReposition`、`content/handlers/mechanics.js#planMechanic10BossArena`、`content/handlers/mechanics.js#planMechanic11ObjectiveSignal`、`content/handlers/mechanics.js#planMechanic11Glasswing`、`content/handlers/mechanics.js#planMechanic12GptFourRoles`、`content/handlers/mechanics.js#planMechanic13Handoff`、`content/handlers/mechanics.js#planMechanic14Anomaly`、`content/handlers/mechanics.js#planMechanic15Integration`、`engine/hooks.js#planEventHooks`、`engine/tick.js#advanceWorldTick`。
 
 ## domain/meleeAi.js
 
@@ -1846,9 +1849,9 @@ Sweep and slide a circular body along blocking circular terrain, then clamp map 
 
 公开函数上游：
 
-- `planPlayerMovement` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
-- `planEntityMotion` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
-- `planPickupMotion` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planPlayerMovement` ← `engine/tick.js#advanceWorldTick`。
+- `planEntityMotion` ← `engine/tick.js#advanceWorldTick`。
+- `planPickupMotion` ← `engine/tick.js#advanceWorldTick`。
 
 ## domain/navigation.js
 
@@ -1900,10 +1903,10 @@ Sweep and slide a circular body along blocking circular terrain, then clamp map 
 
 公开函数上游：
 
-- `createEmptyPlan` ← `content/handlers/dsh.js#planDshClaudeAppeal`、`content/handlers/dsh.js#planDshClaudeAllowlist`、`content/handlers/plugins.js#planPluginParallel`、`content/handlers/plugins.js#planPluginCompress`、`content/handlers/plugins.js#planPluginCollect`、`content/handlers/plugins.js#planPlugin5h`、`content/handlers/plugins.js#planPluginGuard`、`content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#planEquippedAbility`、`domain/abilities.js#planAbilityDamage`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityHistory`、`domain/attacks.js#planWeaponFire`、`domain/attacks.js#planSkillCast`、`domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planCollisionEffects`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/claude.js#planClaudeBan`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/gpt.js#planGptReset`、`domain/bosses/gpt.js#planGptResetInterrupt`、`domain/bosses/gpt.js#planGptBossEvent`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokBossReinforcements`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/companions.js#planPartnerBanContact`、`domain/companions.js#planCompanionMilestones`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSkip`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#createEasterObjectives`、`domain/easter.js#planEasterEvent`、`domain/easter.js#planEasterInteraction`、`domain/easter.js#planEasterAdvance`、`domain/equipment.js#planEquipmentInteraction`、`domain/equipment.js#planWeaponPickup`、`domain/equipment.js#planSkillPickup`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/gptPets.js#planPetModelEvent`、`domain/levels.js#planLevelProgression`、`domain/levels.js#planNextLevelReward`、`domain/mechanics.js#planMechanicEvent`、`domain/meleeAi.js#planMeleeEnemy`、`domain/modelProfiles.js#planModelProfile`、`domain/modelProfiles.js#resolvePetGuard`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/plans.js#mergeSystemPlans`、`domain/projectiles.js#planNativeProjectiles`、`domain/projectiles.js#planProjectileBurst`、`domain/rewards.js#planDeathRewards`、`domain/rewards.js#planWorldReward`、`domain/rewards.js#planTokenCollection`、`domain/scheduled.js#scheduleAbilityActions`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#resolveControlRequest`、`domain/status.js#planEscapeInput`、`domain/status.js#planSealRelease`、`domain/treeRuntime.js#planTreeWeaponSwitch`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/adventure.js#planBossEncounter`、`domain/world/alarms.js#planAlarmCache`、`domain/world/lateMechanics.js#planObjectiveSignal`、`domain/world/lateMechanics.js#planChallengeInteraction`、`domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#planMapExploration`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/objectives.js#planObjectiveCompletion`、`domain/world/pressure.js#planPressureEventAdvance`、`domain/world/spawning.js#planSpawnSchedule`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/spawning.js#planReinforcementGroup`、`engine/commands.js#planGameCommand`、`engine/flow.js#planFlowTransition`、`engine/flow.js#planProgressionPanels`、`engine/flow.js#planPause`、`engine/flow.js#planResume`、`engine/previewTick.js#advancePreviewWorldTick`。
+- `createEmptyPlan` ← `content/handlers/dsh.js#planDshClaudeAppeal`、`content/handlers/dsh.js#planDshClaudeAllowlist`、`content/handlers/plugins.js#planPluginParallel`、`content/handlers/plugins.js#planPluginCompress`、`content/handlers/plugins.js#planPluginCollect`、`content/handlers/plugins.js#planPlugin5h`、`content/handlers/plugins.js#planPluginGuard`、`content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#planEquippedAbility`、`domain/abilities.js#planAbilityDamage`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityHistory`、`domain/attacks.js#planWeaponFire`、`domain/attacks.js#planSkillCast`、`domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planCollisionEffects`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/claude.js#planClaudeBan`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/gpt.js#planGptReset`、`domain/bosses/gpt.js#planGptResetInterrupt`、`domain/bosses/gpt.js#planGptBossEvent`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokBossReinforcements`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/companions.js#planPartnerBanContact`、`domain/companions.js#planCompanionMilestones`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSkip`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#createEasterObjectives`、`domain/easter.js#planEasterEvent`、`domain/easter.js#planEasterInteraction`、`domain/easter.js#planEasterAdvance`、`domain/equipment.js#planEquipmentInteraction`、`domain/equipment.js#planWeaponPickup`、`domain/equipment.js#planSkillPickup`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/gptPets.js#planPetModelEvent`、`domain/levels.js#planLevelProgression`、`domain/levels.js#planNextLevelReward`、`domain/mechanics.js#planMechanicEvent`、`domain/meleeAi.js#planMeleeEnemy`、`domain/modelProfiles.js#planModelProfile`、`domain/modelProfiles.js#resolvePetGuard`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/plans.js#mergeSystemPlans`、`domain/projectiles.js#planNativeProjectiles`、`domain/projectiles.js#planProjectileBurst`、`domain/rewards.js#planDeathRewards`、`domain/rewards.js#planWorldReward`、`domain/rewards.js#planTokenCollection`、`domain/scheduled.js#scheduleAbilityActions`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#resolveControlRequest`、`domain/status.js#planEscapeInput`、`domain/status.js#planSealRelease`、`domain/treeRuntime.js#planTreeWeaponSwitch`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/adventure.js#planBossEncounter`、`domain/world/alarms.js#planAlarmCache`、`domain/world/lateMechanics.js#planObjectiveSignal`、`domain/world/lateMechanics.js#planChallengeInteraction`、`domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#planMapExploration`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/objectives.js#planObjectiveCompletion`、`domain/world/pressure.js#planPressureEventAdvance`、`domain/world/spawning.js#planSpawnSchedule`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/spawning.js#planReinforcementGroup`、`engine/commands.js#planGameCommand`、`engine/flow.js#planFlowTransition`、`engine/flow.js#planProgressionPanels`、`engine/flow.js#planPause`、`engine/flow.js#planResume`、`engine/tick.js#advanceWorldTick`。
 - `mergeSystemPlans` ← `domain/abilities.js#planAbilityBursts`、`domain/ai.js#planEnemyAi`、`domain/ai.js#planCompanionAi`、`domain/ai.js#planBossAi`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/dshEffects.js#planDshEffects`、`domain/scheduled.js#planScheduledActions`、`engine/hooks.js#planEventHooks`。
 - `validateSystemPlan` ← `engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
-- `createStateChange` ← `content/handlers/plugins.js#planPluginParallel`、`content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#planEquippedAbility`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityBursts`、`domain/abilities.js#planAbilityHistory`、`domain/attacks.js#planWeaponFire`、`domain/attacks.js#planSkillCast`、`domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planCollisionEffects`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/gpt.js#planGptReset`、`domain/bosses/gpt.js#planGptResetInterrupt`、`domain/bosses/gpt.js#planGptBossEvent`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokBossReinforcements`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/companions.js#planPartnerBanContact`、`domain/companions.js#planCompanionMilestones`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSkip`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#createEasterObjectives`、`domain/easter.js#planEasterEvent`、`domain/easter.js#planEasterInteraction`、`domain/easter.js#planEasterAdvance`、`domain/equipment.js#planWeaponPickup`、`domain/equipment.js#planSkillPickup`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/gptPets.js#planPetModelEvent`、`domain/levels.js#planLevelProgression`、`domain/levels.js#planNextLevelReward`、`domain/mechanics.js#planMechanicEvent`、`domain/meleeAi.js#planMeleeEnemy`、`domain/modelProfiles.js#planModelProfile`、`domain/modelProfiles.js#resolvePetGuard`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/projectiles.js#planNativeProjectiles`、`domain/projectiles.js#planProjectileBurst`、`domain/rewards.js#planDeathRewards`、`domain/rewards.js#planWorldReward`、`domain/rewards.js#planTokenCollection`、`domain/scheduled.js#scheduleAbilityActions`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#resolveControlRequest`、`domain/status.js#planEscapeInput`、`domain/status.js#planStatusAdvance`、`domain/status.js#planSealRelease`、`domain/treeRuntime.js#planTreeWeaponSwitch`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/adventure.js#planBossEncounter`、`domain/world/alarms.js#planAlarmCache`、`domain/world/lateMechanics.js#planObjectiveSignal`、`domain/world/lateMechanics.js#planChallengeInteraction`、`domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#createMapPlan`、`domain/world/map.js#planMapExploration`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/objectives.js#planObjectiveCompletion`、`domain/world/pressure.js#planPressureEventAdvance`、`domain/world/spawning.js#planSpawnSchedule`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/spawning.js#planReinforcementGroup`、`engine/commands.js#planGameCommand`、`engine/flow.js#planFlowTransition`、`engine/flow.js#planProgressionPanels`、`engine/flow.js#planPause`、`engine/previewTick.js#advancePreviewWorldTick`。
+- `createStateChange` ← `content/handlers/plugins.js#planPluginParallel`、`content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#planEquippedAbility`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityBursts`、`domain/abilities.js#planAbilityHistory`、`domain/attacks.js#planWeaponFire`、`domain/attacks.js#planSkillCast`、`domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planCollisionEffects`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/gpt.js#planGptReset`、`domain/bosses/gpt.js#planGptResetInterrupt`、`domain/bosses/gpt.js#planGptBossEvent`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokBossReinforcements`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/companions.js#planPartnerBanContact`、`domain/companions.js#planCompanionMilestones`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSkip`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#createEasterObjectives`、`domain/easter.js#planEasterEvent`、`domain/easter.js#planEasterInteraction`、`domain/easter.js#planEasterAdvance`、`domain/equipment.js#planWeaponPickup`、`domain/equipment.js#planSkillPickup`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/gptPets.js#planPetModelEvent`、`domain/levels.js#planLevelProgression`、`domain/levels.js#planNextLevelReward`、`domain/mechanics.js#planMechanicEvent`、`domain/meleeAi.js#planMeleeEnemy`、`domain/modelProfiles.js#planModelProfile`、`domain/modelProfiles.js#resolvePetGuard`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/projectiles.js#planNativeProjectiles`、`domain/projectiles.js#planProjectileBurst`、`domain/rewards.js#planDeathRewards`、`domain/rewards.js#planWorldReward`、`domain/rewards.js#planTokenCollection`、`domain/scheduled.js#scheduleAbilityActions`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#resolveControlRequest`、`domain/status.js#planEscapeInput`、`domain/status.js#planStatusAdvance`、`domain/status.js#planSealRelease`、`domain/treeRuntime.js#planTreeWeaponSwitch`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/adventure.js#planBossEncounter`、`domain/world/alarms.js#planAlarmCache`、`domain/world/lateMechanics.js#planObjectiveSignal`、`domain/world/lateMechanics.js#planChallengeInteraction`、`domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#createMapPlan`、`domain/world/map.js#planMapExploration`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/objectives.js#planObjectiveCompletion`、`domain/world/pressure.js#planPressureEventAdvance`、`domain/world/spawning.js#planSpawnSchedule`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/spawning.js#planReinforcementGroup`、`engine/commands.js#planGameCommand`、`engine/flow.js#planFlowTransition`、`engine/flow.js#planProgressionPanels`、`engine/flow.js#planPause`、`engine/tick.js#advanceWorldTick`。
 
 ## domain/pluginStats.js
 
@@ -2124,7 +2127,7 @@ Active rank, never an archived or difficulty-independent duplicate.
 
 公开函数上游：
 
-- `planDeathRewards` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planDeathRewards` ← `engine/tick.js#advanceWorldTick`。
 - `planWorldReward` ← `domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveCompletion`。
 - `planTokenCollection` ← `engine/effectLoop.js#evaluateEffectRequest`。
 
@@ -2149,7 +2152,7 @@ Store typed declarative delayed actions, never a stale mutable-state replacement
 公开函数上游：
 
 - `scheduleAbilityActions` ← `domain/combatPlugins.js#planCombatPluginEvent`。
-- `planScheduledActions` ← `engine/previewTick.js#advancePreviewWorldTick`。
+- `planScheduledActions` ← `engine/tick.js#advanceWorldTick`。
 
 ## domain/serialization.js
 
@@ -2173,7 +2176,7 @@ Store typed declarative delayed actions, never a stale mutable-state replacement
 
 公开函数上游：
 
-- `serializeCanonical` ← `adapters/storage.js#compareAndSwapStorageRecord`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`content/catalog.js#validateContentCatalog`、`content/mods.js#parseModPackage`、`content/mods.js#composeModCatalog`、`domain/checkpoint.js#createCheckpoint`、`domain/checkpoint.js#validateCheckpoint`、`domain/checkpoint.js#restoreCheckpointState`、`domain/initial.js#createInitialGameState`、`domain/plans.js#validateSystemPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#createDataDigest`、`domain/serialization.js#toJson`、`domain/settlement.js#validateProfileRecord`、`domain/stateValidation.js#inspectGameState`、`engine/commands.js#validateGameCommand`、`engine/effectLoop.js#evaluateEffectRequest`、`engine/reducer.js#applySystemPlan`。
+- `serializeCanonical` ← `adapters/storage.js#compareAndSwapStorageRecord`、`application/replay.js#beginRecording`、`application/replay.js#appendRecordedCommands`、`application/replay.js#appendRecordingStep`、`application/replay.js#replayRecording`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`content/catalog.js#validateContentCatalog`、`content/mods.js#parseModPackage`、`content/mods.js#composeModCatalog`、`domain/checkpoint.js#createCheckpoint`、`domain/checkpoint.js#validateCheckpoint`、`domain/checkpoint.js#restoreCheckpointState`、`domain/initial.js#createInitialGameState`、`domain/plans.js#validateSystemPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#createDataDigest`、`domain/serialization.js#toJson`、`domain/settlement.js#validateProfileRecord`、`domain/stateValidation.js#inspectGameState`、`engine/commands.js#validateGameCommand`、`engine/effectLoop.js#evaluateEffectRequest`、`engine/reducer.js#applySystemPlan`、`engine/session.js#createReplaySession`。
 - `createDataDigest` ← `content/mods.js#composeModCatalog`、`domain/checkpoint.js#createCheckpoint`、`domain/checkpoint.js#validateCheckpoint`、`engine/snapshot.js#createStateDigest`。
 - `toJson` ← `domain/abilities.js#planAbilityDamage`、`domain/attacks.js#planSkillCast`、`domain/attacks.js#planCollisionEffects`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/claude.js#planClaudeBan`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionMilestones`、`domain/easter.js#planEasterInteraction`、`domain/easter.js#planEasterAdvance`、`domain/equipment.js#planWeaponPickup`、`domain/equipment.js#planSkillPickup`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/mechanics.js#planMechanicEvent`、`domain/meleeAi.js#planMeleeEnemy`、`domain/projectiles.js#planProjectileBurst`、`domain/rewards.js#planDeathRewards`、`domain/scheduled.js#scheduleAbilityActions`、`domain/status.js#resolveControlRequest`、`engine/snapshot.js#createRenderSnapshot`。
 
@@ -2330,7 +2333,7 @@ Store typed declarative delayed actions, never a stale mutable-state replacement
 - `applyGlasswingModifier` ← `domain/status.js#resolveControlRequest`。
 - `selectControlInterceptor` ← `domain/status.js#resolveControlRequest`。
 - `planEscapeInput` ← `engine/commands.js#planGameCommand`。
-- `planStatusAdvance` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planStatusAdvance` ← `engine/tick.js#advanceWorldTick`。
 - `planSealRelease` ← `engine/hooks.js#planEventHooks`。
 
 ## domain/treeRuntime.js
@@ -2418,9 +2421,9 @@ Review risk with F, then confirm within five seconds; one enhanced exclusive cho
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planObjectiveSignal(c: untyped, objectiveId: untyped)` | `SystemPlan` | 已实现 | planObjectiveSignal；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
-| `planChallengeInteraction(c: untyped, entityId: untyped)` | `SystemPlan` | 已实现 | planChallengeInteraction；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
-| `planLateSchedule(c: untyped)` | `SystemPlan` | 已实现 | planLateSchedule；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `planObjectiveSignal(c: untyped, objectiveId: untyped)` | `SystemPlan` | 已实现 | 首次实际占领信标时生成可摧毁40生命信号，绑定独立有限无奖励援军预算，不能重建刷收益。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `planChallengeInteraction(c: untyped, entityId: untyped)` | `SystemPlan` | 已实现 | F主动启动三阵营可选精英或15级三段遭遇；距离/阶段复核后一次提交。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `planLateSchedule(c: untyped)` | `SystemPlan` | 已实现 | 协调精英一次奖励、13级衔接、三段遭遇及15秒间隔、每海域两次安全地图异常。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
@@ -2459,7 +2462,7 @@ Review risk with F, then confirm within five seconds; one enhanced exclusive cho
 公开函数上游：
 
 - `createMapPlan` ← `engine/session.js#createGameSession`。
-- `planMapExploration` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planMapExploration` ← `engine/tick.js#advanceWorldTick`。
 - `planWorldInteraction` ← `engine/commands.js#planGameCommand`。
 - `isSafeForInteraction` ← `application/game.js#settleAdventure`、`domain/checkpoint.js#canCreateCheckpoint`。
 
@@ -2485,9 +2488,9 @@ Review risk with F, then confirm within five seconds; one enhanced exclusive cho
 
 公开函数上游：
 
-- `planObjectiveAdvance` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planObjectiveAdvance` ← `engine/tick.js#advanceWorldTick`。
 - `planObjectiveCompletion` ← `domain/world/objectives.js#planObjectiveAdvance`。
-- `planApiProgression` ← `engine/tick.js#advanceWorldTick`。
+- `planApiProgression` ← 宿主/工具入口或待编排。
 
 ## domain/world/pressure.js
 
@@ -2501,7 +2504,7 @@ Review risk with F, then confirm within five seconds; one enhanced exclusive cho
 |---|---|---|---|
 | `planPressureSchedule(context: untyped)` | `SystemPlan` | 已实现 | 从完整已解锁机制池安排适用事件，常驻AI不被轮换移除。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `reservePressureEvent(context: untyped, event: untyped)` | `Result<PressureEvent>` | 已实现 | 先判安全/优先级/预算/双事件容量，失败给原因，不静默新建其他惩罚。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planPressureEventAdvance(context: untyped)` | `SystemPlan` | 已实现 | 推进预警/持续/结束，释放预算和名额；综合压力不自套第三名额。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planPressureEventAdvance(context: untyped)` | `SystemPlan` | 已实现 | 推进预警/真实出生/信号/临时捷径，结束退回未出生预留；精英超时失败，不发挑战奖励。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
@@ -2511,9 +2514,9 @@ Review risk with F, then confirm within five seconds; one enhanced exclusive cho
 
 公开函数上游：
 
-- `planPressureSchedule` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planPressureSchedule` ← `engine/tick.js#advanceWorldTick`。
 - `reservePressureEvent` ← `domain/world/alarms.js#planAlarmCache`。
-- `planPressureEventAdvance` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planPressureEventAdvance` ← `engine/tick.js#advanceWorldTick`。
 
 ## domain/world/pressureRules.js
 
@@ -2525,7 +2528,7 @@ Budget and safety reservation shared by direct interactions and autonomous sched
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `validatePressureReservation(context: untyped, event: untyped)` | `Result<PressureEvent>` | 已实现 | validatePressureReservation；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `validatePressureReservation(context: untyped, event: untyped)` | `Result<PressureEvent>` | 已实现 | 按继承机制、有限预算、预告承诺和两个压力槽校验纯预约，检查点及首领优先。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
@@ -2557,7 +2560,7 @@ Budget and safety reservation shared by direct interactions and autonomous sched
 
 公开函数上游：
 
-- `planSpawnSchedule` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planSpawnSchedule` ← `engine/tick.js#advanceWorldTick`。
 - `planEnemySpawn` ← `domain/world/spawning.js#planSpawnSchedule`。
 - `planReinforcementGroup` ← `domain/world/spawning.js#planSpawnSchedule`。
 
@@ -2584,8 +2587,8 @@ Budget and safety reservation shared by direct interactions and autonomous sched
 公开函数上游：
 
 - `validateGameCommand` ← `engine/commands.js#planGameCommand`、`engine/session.js#enqueueSessionCommand`。
-- `planGameCommand` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/previewTick.js#advancePreviewUiCommands`、`engine/tick.js#advanceWorldTick`、`engine/tick.js#advanceUiTick`。
-- `orderPendingCommands` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/previewTick.js#advancePreviewUiCommands`、`engine/session.js#stepSessionWorld`、`engine/session.js#stepSessionUi`、`engine/tick.js#advanceWorldTick`、`engine/tick.js#advanceUiTick`。
+- `planGameCommand` ← `engine/tick.js#advanceWorldTick`、`engine/tick.js#advanceUiTick`。
+- `orderPendingCommands` ← `engine/session.js#stepSessionWorld`、`engine/session.js#stepSessionUi`、`engine/tick.js#advanceWorldTick`、`engine/tick.js#advanceUiTick`。
 
 ## engine/effectLoop.js
 
@@ -2608,7 +2611,7 @@ Budget and safety reservation shared by direct interactions and autonomous sched
 公开函数上游：
 
 - `evaluateEffectRequest` ← `engine/effectLoop.js#drainEffectQueue`。
-- `drainEffectQueue` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `drainEffectQueue` ← `engine/tick.js#advanceWorldTick`。
 
 ## engine/flow.js
 
@@ -2635,7 +2638,7 @@ Budget and safety reservation shared by direct interactions and autonomous sched
 公开函数上游：
 
 - `planFlowTransition` ← `engine/flow.js#planPause`、`engine/flow.js#planResume`。
-- `planProgressionPanels` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/previewTick.js#advancePreviewUiCommands`、`engine/tick.js#advanceWorldTick`、`engine/tick.js#advanceUiTick`。
+- `planProgressionPanels` ← `engine/tick.js#advanceWorldTick`、`engine/tick.js#advanceUiTick`。
 - `planPause` ← `engine/commands.js#planGameCommand`。
 - `planResume` ← `engine/commands.js#planGameCommand`。
 
@@ -2657,7 +2660,7 @@ Budget and safety reservation shared by direct interactions and autonomous sched
 
 公开函数上游：
 
-- `planEventHooks` ← `engine/effectLoop.js#drainEffectQueue`、`engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+- `planEventHooks` ← `engine/effectLoop.js#drainEffectQueue`、`engine/tick.js#advanceWorldTick`。
 
 ## engine/previewTick.js
 
@@ -2665,22 +2668,22 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 [源码](../../src/v2/engine/previewTick.js)；层：`engine`。
 
-直接依赖：`domain/abilities.js`、`domain/ai.js`、`domain/attacks.js`、`domain/bosses/gpt.js`、`domain/bosses/grok.js`、`domain/collision.js`、`domain/combatPlugins.js`、`domain/companions.js`、`domain/deaths.js`、`domain/distill.js`、`domain/dshCycle.js`、`domain/dshEffects.js`、`domain/easter.js`、`domain/gptPets.js`、`domain/lora.js`、`domain/mechanics.js`、`domain/movement.js`、`domain/plans.js`、`domain/rewards.js`、`domain/scheduled.js`、`domain/status.js`、`domain/world/map.js`、`domain/world/objectives.js`、`domain/world/pressure.js`、`domain/world/spawning.js`、`engine/commands.js`、`engine/effectLoop.js`、`engine/flow.js`、`engine/hooks.js`、`engine/reducer.js`。
+直接依赖：`engine/tick.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `advancePreviewWorldTick(state: untyped, commands: untyped, catalog: untyped)` | `TickResult` | 已实现 / core-preview + adventure-slice | 执行Free/Pro1固定世界步，推进探索/追兵/Claude/效果/掉落与成长后统一提交。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
-| `advancePreviewUiCommands(state: untyped, commands: untyped, catalog: untyped, advanceClock: untyped = false)` | `TickResult` | 已实现 / core-preview | 不推进已暂停时钟，立即处理暂停/恢复命令。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `advancePreviewWorldTick(state: untyped, commands: untyped, catalog: untyped)` | `TickResult` | 已实现 / core-preview + adventure-slice | 兼容旧纵切调用者，委托唯一engine/tick世界流水线；没有第二套模拟。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `advancePreviewUiCommands(state: untyped, commands: untyped, catalog: untyped, advanceClock: untyped = false)` | `TickResult` | 已实现 / core-preview + adventure-slice | 兼容旧UI入口，委托唯一engine/tick流水线；默认不推进UI时钟。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
-- `advancePreviewWorldTick` → `domain/abilities.js#planAbilityBursts`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityHistory`、`domain/ai.js#planBossAi`、`domain/ai.js#planCompanionAi`、`domain/ai.js#planEnemyAi`、`domain/attacks.js#planCollisionEffects`、`domain/attacks.js#planWeaponFire`、`domain/bosses/gpt.js#planGptReset`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/collision.js#detectCollisions`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planPartnerBanContact`、`domain/deaths.js#resolveTerminalOutcome`、`domain/distill.js#planDistilledAbilities`、`domain/dshCycle.js#planDshCycleEvent`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#planEasterAdvance`、`domain/gptPets.js#planGptFields`、`domain/mechanics.js#planMechanicEvent`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/movement.js#planPlayerMovement`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#planDeathRewards`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#planStatusAdvance`、`domain/world/map.js#planMapExploration`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/pressure.js#planPressureEventAdvance`、`domain/world/pressure.js#planPressureSchedule`、`domain/world/spawning.js#planSpawnSchedule`、`engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/effectLoop.js#drainEffectQueue`、`engine/flow.js#planProgressionPanels`、`engine/hooks.js#planEventHooks`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
-- `advancePreviewUiCommands` → `domain/dshEffects.js#planDshEffects`、`domain/lora.js#planLoraUiStep`、`engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/flow.js#planProgressionPanels`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
+- `advancePreviewWorldTick` → `engine/tick.js#advanceWorldTick`。
+- `advancePreviewUiCommands` → `engine/tick.js#advanceUiTick`。
 
 公开函数上游：
 
-- `advancePreviewWorldTick` ← `engine/session.js#stepSessionWorld`、`engine/session.js#stepSessionUi`。
-- `advancePreviewUiCommands` ← `engine/session.js#stepSessionWorld`、`engine/session.js#stepSessionUi`。
+- `advancePreviewWorldTick` ← 宿主/工具入口或待编排。
+- `advancePreviewUiCommands` ← 宿主/工具入口或待编排。
 
 ## engine/reducer.js
 
@@ -2704,9 +2707,9 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 公开函数上游：
 
-- `applySystemPlan` ← `engine/effectLoop.js#drainEffectQueue`、`engine/previewTick.js#advancePreviewWorldTick`、`engine/previewTick.js#advancePreviewUiCommands`、`engine/session.js#createGameSession`、`engine/tick.js#advanceWorldTick`、`engine/tick.js#advanceUiTick`。
-- `validateStateInvariants` ← `engine/reducer.js#commitWorkingState`、`engine/session.js#createGameSession`。
-- `commitWorkingState` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/previewTick.js#advancePreviewUiCommands`、`engine/tick.js#advanceWorldTick`、`engine/tick.js#advanceUiTick`。
+- `applySystemPlan` ← `engine/effectLoop.js#drainEffectQueue`、`engine/session.js#createGameSession`、`engine/tick.js#advanceWorldTick`、`engine/tick.js#advanceUiTick`。
+- `validateStateInvariants` ← `engine/reducer.js#commitWorkingState`、`engine/session.js#createGameSession`、`engine/session.js#createReplaySession`。
+- `commitWorkingState` ← `engine/tick.js#advanceWorldTick`、`engine/tick.js#advanceUiTick`。
 
 ## engine/session.js
 
@@ -2714,40 +2717,43 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 [源码](../../src/v2/engine/session.js)；层：`engine`。
 
-直接依赖：`content/catalog.js`、`content/registry.js`、`domain/checkpoint.js`、`domain/initial.js`、`domain/random.js`、`domain/serialization.js`、`domain/world/map.js`、`engine/commands.js`、`engine/previewTick.js`、`engine/reducer.js`、`engine/snapshot.js`、`engine/tick.js`。
+直接依赖：`content/catalog.js`、`content/registry.js`、`domain/checkpoint.js`、`domain/initial.js`、`domain/random.js`、`domain/serialization.js`、`domain/world/map.js`、`engine/commands.js`、`engine/reducer.js`、`engine/snapshot.js`、`engine/tick.js`、`versions.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `createGameSession(start: untyped, seed: untyped, catalog: untyped)` | `GameSession` | 已实现 / core-preview + adventure-slice | 校验内容与初始世界后发布Free/Pro1私有Session；模组仅允许Free练习。；；状态权限：创建Session私有状态；不接触Profile和宿主对象 |
+| `createGameSession(start: untyped, seed: untyped, catalog: untyped)` | `GameSession` | 已实现 / core-preview + adventure-slice | 校验目录与世界后发布Free或1–15短途私有Session，社区模组仅在Free开放。；；状态权限：创建Session私有状态；不接触Profile和宿主对象 |
 | `enqueueSessionCommand(session: untyped, command: untyped)` | `Result<Command>` | 已实现 / core-preview | 只排队不重入tick，拒绝终态/重复命令。；；状态权限：只写Session待处理命令队列 |
-| `stepSessionWorld(session: untyped)` | `TickResult` | 已实现 / core-preview + adventure-slice | 消费到期世界命令，执行Free/Pro1固定世界步并原子提交。；；状态权限：唯一门面允许提交世界状态 |
-| `stepSessionUi(session: untyped, advanceClock: untyped = true)` | `TickResult` | 已实现 / core-preview + adventure-slice | 消费预览暂停/继续与插件选择/重抽/跳过，结算后续等级；可选择独立UI步推进LoRA，命令flush不推进指针。；；状态权限：唯一门面允许提交UI状态 |
+| `stepSessionWorld(session: untyped)` | `TickResult` | 已实现 / core-preview + adventure-slice | 消费到期世界命令，经engine/tick唯一流水线原子提交Free或1–15短途状态。；；状态权限：唯一门面允许提交世界状态 |
+| `stepSessionUi(session: untyped, advanceClock: untyped = true)` | `TickResult` | 已实现 / core-preview + adventure-slice | 消费独立UI命令，经engine/tick推进指针或只flush；暂停保持原面板。；；状态权限：唯一门面允许提交UI状态 |
 | `readSessionState(session: untyped)` | `StateSnapshot` | 已实现 | 返回防修改快照或结构化复制，不能泄露私有可变引用。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `readSessionView(session: untyped)` | `RenderSnapshot` | 已实现 | 供表现读取投影，不把整个Session交给Phaser。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `restoreGameSession(checkpoint: untyped, catalog: untyped)` | `Result<GameSession>` | 已实现 / core-preview + adventure-slice | 校验版本、模组锁及状态后构建暂停Session；失败保留原检查点。；；状态权限：构建替代Session，调用者先dispose旧表现订阅 |
 | `disposeGameSession(session: untyped)` | `void` | 已实现 | 标记废弃、清队列，后续命令拒绝，不能再结算一次。；；状态权限：释放Session私有资源引用 |
+| `createReplaySession(initial: untyped, catalog: untyped)` | `Result<GameSession>` | 已实现 / isolated-replay | 验证版本、内容锁、完整状态不变量后克隆隔离重放Session；不暂停、不读取/写入Profile，不替代检查点。；；状态权限：独立数据或隔离Session；无Profile和持久化副作用 |
 
 公开函数下游：
 
 - `createGameSession` → `content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`domain/initial.js#createInitialGameState`、`domain/world/map.js#createMapPlan`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#validateStateInvariants`。
 - `enqueueSessionCommand` → `engine/commands.js#validateGameCommand`。
-- `stepSessionWorld` → `engine/commands.js#orderPendingCommands`、`engine/previewTick.js#advancePreviewUiCommands`、`engine/previewTick.js#advancePreviewWorldTick`。
-- `stepSessionUi` → `engine/commands.js#orderPendingCommands`、`engine/previewTick.js#advancePreviewUiCommands`、`engine/previewTick.js#advancePreviewWorldTick`。
+- `stepSessionWorld` → `engine/commands.js#orderPendingCommands`、`engine/tick.js#advanceUiTick`、`engine/tick.js#advanceWorldTick`。
+- `stepSessionUi` → `engine/commands.js#orderPendingCommands`、`engine/tick.js#advanceUiTick`、`engine/tick.js#advanceWorldTick`。
 - `readSessionState` → 无内部公开函数。
 - `readSessionView` → `engine/snapshot.js#createRenderSnapshot`。
 - `restoreGameSession` → `domain/checkpoint.js#restoreCheckpointState`。
 - `disposeGameSession` → 无内部公开函数。
+- `createReplaySession` → `content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`domain/serialization.js#serializeCanonical`、`engine/reducer.js#validateStateInvariants`。
 
 公开函数上游：
 
-- `createGameSession` ← `application/game.js#startAdventure`、`application/replay.js#replayRecording`、`preview/host.js#mountCombatPreview`。
+- `createGameSession` ← `application/game.js#startAdventure`、`preview/host.js#mountCombatPreview`。
 - `enqueueSessionCommand` ← `application/game.js#submitApplicationCommand`、`application/replay.js#replayRecording`、`preview/host.js#mountCombatPreview`。
 - `stepSessionWorld` ← `application/game.js#advanceApplicationFrame`、`application/replay.js#replayRecording`、`preview/host.js#mountCombatPreview`。
 - `stepSessionUi` ← `application/game.js#advanceApplicationFrame`、`application/replay.js#replayRecording`、`preview/host.js#mountCombatPreview`。
 - `readSessionState` ← `application/game.js#saveAdventureCheckpoint`、`application/game.js#settleAdventure`、`application/replay.js#replayRecording`、`preview/host.js#mountCombatPreview`。
 - `readSessionView` ← `application/game.js#advanceApplicationFrame`、`application/game.js#readApplicationView`、`preview/host.js#mountCombatPreview`。
 - `restoreGameSession` ← `application/game.js#continueAdventure`、`preview/host.js#mountCombatPreview`。
-- `disposeGameSession` ← `application/game.js#continueAdventure`、`application/game.js#disposeApplication`、`preview/host.js#mountCombatPreview`。
+- `disposeGameSession` ← `application/game.js#continueAdventure`、`application/game.js#disposeApplication`、`application/replay.js#replayRecording`、`preview/host.js#mountCombatPreview`。
+- `createReplaySession` ← `application/replay.js#replayRecording`。
 
 ## engine/snapshot.js
 
@@ -2770,7 +2776,7 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 公开函数上游：
 
 - `createRenderSnapshot` ← `engine/session.js#readSessionView`。
-- `createStateDigest` ← `application/replay.js#replayRecording`。
+- `createStateDigest` ← `application/replay.js#beginRecording`、`application/replay.js#appendRecordingStep`、`application/replay.js#replayRecording`。
 
 ## engine/tick.js
 
@@ -2778,22 +2784,22 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 [源码](../../src/v2/engine/tick.js)；层：`engine`。
 
-直接依赖：`domain/ai.js`、`domain/attacks.js`、`domain/collision.js`、`domain/deaths.js`、`domain/levels.js`、`domain/lora.js`、`domain/movement.js`、`domain/rewards.js`、`domain/status.js`、`domain/world/map.js`、`domain/world/objectives.js`、`domain/world/pressure.js`、`domain/world/spawning.js`、`engine/commands.js`、`engine/effectLoop.js`、`engine/flow.js`、`engine/hooks.js`、`engine/reducer.js`。
+直接依赖：`domain/abilities.js`、`domain/ai.js`、`domain/attacks.js`、`domain/bosses/gpt.js`、`domain/bosses/grok.js`、`domain/collision.js`、`domain/combatPlugins.js`、`domain/companions.js`、`domain/deaths.js`、`domain/distill.js`、`domain/dshCycle.js`、`domain/dshEffects.js`、`domain/easter.js`、`domain/gptPets.js`、`domain/lora.js`、`domain/mechanics.js`、`domain/movement.js`、`domain/plans.js`、`domain/rewards.js`、`domain/scheduled.js`、`domain/status.js`、`domain/world/map.js`、`domain/world/objectives.js`、`domain/world/pressure.js`、`domain/world/spawning.js`、`engine/commands.js`、`engine/effectLoop.js`、`engine/flow.js`、`engine/hooks.js`、`engine/reducer.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `advanceWorldTick(state: untyped, commands: untyped, catalog: untyped)` | `TickResult` | TODO | 执行架构11的固定世界顺序；仅exploring/boss允许，其他phase不推进世界。；@calls是阶段依赖，不是忽略参数全部无条件执行；每阶段apply后下阶段读新工作副本。胜负优先于升级，API首领不胜利。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `advanceUiTick(state: untyped, commands: untyped, catalog: untyped)` | `TickResult` | TODO | 处理LoRA固定指针和菜单命令，世界tick及所有战斗倒计时保持。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `advanceWorldTick(state: untyped, commands: untyped, catalog: untyped)` | `TickResult` | 已实现 / core-preview + adventure-slice | 唯一正式固定世界流水线：按阶段读取最新工作副本，执行战斗/探索/压力/成长后只提交一次；未实现运行模式仍拒绝。；@calls是阶段依赖，不是忽略参数全部无条件执行；每阶段apply后下阶段读新工作副本。胜负优先于升级，API首领不胜利。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `advanceUiTick(state: untyped, commands: untyped, catalog: untyped, advanceClock: untyped = false)` | `TickResult` | 已实现 / core-preview + adventure-slice | 唯一UI固定步：按参数推进LoRA或只处理菜单命令，保持世界时间不变。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
-- `advanceWorldTick` → `engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/reducer.js#applySystemPlan`、`domain/status.js#planStatusAdvance`、`engine/hooks.js#planEventHooks`、`domain/world/pressure.js#planPressureSchedule`、`domain/world/pressure.js#planPressureEventAdvance`、`domain/world/spawning.js#planSpawnSchedule`、`domain/ai.js#planEnemyAi`、`domain/ai.js#planBossAi`、`domain/ai.js#planCompanionAi`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/attacks.js#planWeaponFire`、`domain/movement.js#planPickupMotion`、`domain/collision.js#detectCollisions`、`domain/attacks.js#planCollisionEffects`、`engine/effectLoop.js#drainEffectQueue`、`domain/rewards.js#planDeathRewards`、`domain/world/map.js#planMapExploration`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/objectives.js#planApiProgression`、`domain/levels.js#planLevelProgression`、`domain/deaths.js#resolveTerminalOutcome`、`engine/flow.js#planProgressionPanels`、`engine/reducer.js#commitWorkingState`。
-- `advanceUiTick` → `engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`domain/lora.js#planLoraUiStep`、`domain/lora.js#planLoraOutcome`、`engine/flow.js#planProgressionPanels`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
+- `advanceWorldTick` → `domain/abilities.js#planAbilityBursts`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityHistory`、`domain/ai.js#planBossAi`、`domain/ai.js#planCompanionAi`、`domain/ai.js#planEnemyAi`、`domain/attacks.js#planCollisionEffects`、`domain/attacks.js#planWeaponFire`、`domain/bosses/gpt.js#planGptReset`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/collision.js#detectCollisions`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planPartnerBanContact`、`domain/deaths.js#resolveTerminalOutcome`、`domain/distill.js#planDistilledAbilities`、`domain/dshCycle.js#planDshCycleEvent`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#planEasterAdvance`、`domain/gptPets.js#planGptFields`、`domain/mechanics.js#planMechanicEvent`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/movement.js#planPlayerMovement`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#planDeathRewards`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#planStatusAdvance`、`domain/world/map.js#planMapExploration`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/pressure.js#planPressureEventAdvance`、`domain/world/pressure.js#planPressureSchedule`、`domain/world/spawning.js#planSpawnSchedule`、`engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/effectLoop.js#drainEffectQueue`、`engine/flow.js#planProgressionPanels`、`engine/hooks.js#planEventHooks`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
+- `advanceUiTick` → `domain/dshEffects.js#planDshEffects`、`domain/lora.js#planLoraUiStep`、`engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/flow.js#planProgressionPanels`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
 
 公开函数上游：
 
-- `advanceWorldTick` ← 宿主/工具入口或待编排。
-- `advanceUiTick` ← 宿主/工具入口或待编排。
+- `advanceWorldTick` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/session.js#stepSessionWorld`、`engine/session.js#stepSessionUi`。
+- `advanceUiTick` ← `engine/previewTick.js#advancePreviewUiCommands`、`engine/session.js#stepSessionWorld`、`engine/session.js#stepSessionUi`。
 
 ## preview/host.js
 

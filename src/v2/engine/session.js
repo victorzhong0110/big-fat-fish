@@ -2,7 +2,8 @@
 import { validateContentCatalog } from '../content/catalog.js';
 import { createHandlerRegistry } from '../content/registry.js';
 import { createInitialGameState } from '../domain/initial.js';
-import { advancePreviewWorldTick, advancePreviewUiCommands } from './previewTick.js';
+import { advanceWorldTick, advanceUiTick } from './tick.js';
+import {SCHEMA_VERSION,CORE_VERSION} from '../versions.js';
 import { serializeCanonical } from '../domain/serialization.js';
 import { validateGameCommand, orderPendingCommands } from './commands.js';
 /**
@@ -33,7 +34,7 @@ function step(session, domain, advanceClock = false) {
   try {
     const tick = domain === 'world' ? record.state.tick + 1 : record.state.uiTick;
     const due = orderPendingCommands(record.commands, tick, domain);
-    const next = domain === 'world' ? advancePreviewWorldTick(record.state, due, record.catalog) : advancePreviewUiCommands(record.state, due, record.catalog, advanceClock);
+    const next = domain === 'world' ? advanceWorldTick(record.state, due, record.catalog) : advanceUiTick(record.state, due, record.catalog, advanceClock);
     record.state = next.next;
     if (domain === 'ui' || next.next.tick === tick) {
       const consumed = new Set(due.map(command => command.id)); record.commands = record.commands.filter(command => !consumed.has(command.id));
@@ -94,8 +95,8 @@ export function enqueueSessionCommand(session, command) {
  * 状态权限：唯一门面允许提交世界状态。
  * @implementationScope core-preview + adventure-slice
  * @calls engine/commands.js#orderPendingCommands
- * @calls engine/previewTick.js#advancePreviewUiCommands
- * @calls engine/previewTick.js#advancePreviewWorldTick
+ * @calls engine/tick.js#advanceUiTick
+ * @calls engine/tick.js#advanceWorldTick
  * @param {import('../contracts.d.ts').GameSession} session
  * @returns {import('../contracts.d.ts').TickResult}
  */
@@ -109,8 +110,8 @@ export function stepSessionWorld(session) {
  * 状态权限：唯一门面允许提交UI状态。
  * @implementationScope core-preview + adventure-slice
  * @calls engine/commands.js#orderPendingCommands
- * @calls engine/previewTick.js#advancePreviewUiCommands
- * @calls engine/previewTick.js#advancePreviewWorldTick
+ * @calls engine/tick.js#advanceUiTick
+ * @calls engine/tick.js#advanceWorldTick
  * @param {import('../contracts.d.ts').GameSession} session
  * @param {boolean} advanceClock
  * @returns {import('../contracts.d.ts').TickResult}
@@ -157,7 +158,7 @@ export function readSessionView(session) {
 export function restoreGameSession(checkpoint, catalog) {
   const result = dependency1.restoreCheckpointState(checkpoint, catalog);
   if (!result.ok) return result;
-  if (!['core-preview', 'adventure-slice'].includes(String(result.value.start.runtimeProfile))) return { ok: false, code: 'UNSUPPORTED_RUNTIME', message: 'Only Free practice and the Pro1 adventure slice can currently be restored' };
+  if (!['core-preview', 'adventure-slice'].includes(String(result.value.start.runtimeProfile))) return { ok: false, code: 'UNSUPPORTED_RUNTIME', message: 'Only Free practice and short difficulties 1–15 can currently be restored' };
   const record = { state: result.value, catalog: structuredClone(catalog), commands: [], disposed: false, running: false };
   const handle = Object.freeze({ get runId() { return record.state.runId; }, get revision() { return record.state.revision; } });
   sessions.set(handle, record); return { ok: true, value: handle };
@@ -175,4 +176,26 @@ export function disposeGameSession(session) {
   const record = sessions.get(session);
   if (!record || record.disposed) return;
   record.disposed = true; record.commands.length = 0; sessions.delete(session);
+}
+
+/** Create an isolated simulation from a recorded boundary, including Boss/UI states. This is not a checkpoint restore and produces no persistence or Profile writes.
+ * @implementationScope isolated-replay
+ * @calls content/catalog.js#validateContentCatalog
+ * @calls content/registry.js#createHandlerRegistry
+ * @calls domain/serialization.js#serializeCanonical
+ * @calls engine/reducer.js#validateStateInvariants
+ * @param {import('../contracts.d.ts').StateSnapshot} initial
+ * @param {Readonly<import('../contracts.d.ts').ContentCatalog>} catalog
+ * @returns {import('../contracts.d.ts').Result<import('../contracts.d.ts').GameSession>}
+ */
+export function createReplaySession(initial,catalog){
+ try{
+  serializeCanonical(initial);
+  if(initial.versions.schema!==SCHEMA_VERSION||initial.versions.core!==CORE_VERSION||initial.versions.content!==catalog.version)return {ok:false,code:'REPLAY_VERSION',message:'Incompatible recording versions'};
+  if(!['core-preview','adventure-slice'].includes(String(initial.start.runtimeProfile))||serializeCanonical(initial.start.modLock??[])!==serializeCanonical(catalog.modLock??[]))return {ok:false,code:'REPLAY_CONTENT',message:'Recording runtime/content lock differs'};
+  const report=validateContentCatalog(catalog,createHandlerRegistry()),invariants=dependency4.validateStateInvariants(initial,catalog);
+  if(!report.valid||!invariants.valid)return {ok:false,code:'REPLAY_STATE',message:[...report.diagnostics,...invariants.diagnostics].map(d=>d.message).join('; ')};
+  const record={state:structuredClone(initial),catalog:structuredClone(catalog),commands:[],disposed:false,running:false};
+  const handle=Object.freeze({get runId(){return record.state.runId;},get revision(){return record.state.revision;}});sessions.set(handle,record);return {ok:true,value:handle};
+ }catch{return {ok:false,code:'REPLAY_STATE',message:'Malformed recording state'};}
 }

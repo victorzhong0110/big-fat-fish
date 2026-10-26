@@ -111,3 +111,32 @@ apiVersion=1.2支持全部六种templateId：mcp_bubble/mcp_fan/mcp_vector/mcp_s
 [盆来！示例](../../public/mods/community-callback.json)添加独立回旋MCP：14伤、弹速500、射程380、每程最多4目标。回旋的转折距离随射程按340/500同比变化；回追当前玩家，2秒硬寿命，保留原生墙体和每程命中规则。原生回旋默认每程上限100；显式maxHits覆盖仍遵循SDK当前1–12边界。爆破首次碰撞必须爆炸，所以maxHits必须为1；不能声明穿透后连续爆炸。
 
 射击、并行次级弹、品质/临时品质、检查点都走相同的行为快照。爆破溅射伤害为该发伤害的12/20，继承该发已经应用一次的输出，不再重乘；仅主弹直击可暴击，爆炸属于次级伤害。配方不能添加任意事件处理脚本或新的原生行为代码。
+
+## 确定性重放接口（开发工具）
+
+`application/replay.js`现在提供真实实现，可供社区战斗分析器/复现工具导入。它不是可执行模组脚本入口，不改变正式冒险的模组限制。世界与UI统一经过`engine/tick.js`，旧`previewTick`只保留兼容委托。
+
+| 函数 | 功能与调用规则 |
+|---|---|
+| `beginRecording(state)` | 在没有待入队命令的边界调用，复制完整状态、随机流、内容锁、版本与初始摘要；可从Boss/LoRA状态开始，不能把它当正式检查点 |
+| `appendRecordedCommands(recording, commands)` | Session成功接受命令后，按实际入队顺序调用；拒绝的输入不记为成功输入；返回新记录 |
+| `appendRecordingStep(recording, domain, advanceClock, nextState)` | 每次真实Session步完成后调用；包括世界冻结调用、UI命令flush与UI指针步；记录该步之前已入队命令数和完整状态摘要 |
+| `replayRecording(recording, catalog)` | 独立创建重放Session，按原边界入队并执行；逐步比对世界/UI时钟及摘要；首个分歧返回具体步序，始终释放Session |
+| `createReplaySession(initial, catalog)` | 引擎开发入口：验证版本、内容锁、目录和状态不变量后复制状态；不暂停、不读写Profile、不执行持久化意图 |
+
+使用示例（调用者保有原Session及相同目录）：
+
+```js
+let recording = beginRecording(readSessionState(session));
+const accepted = enqueueSessionCommand(session, command);
+if (accepted.ok) recording = appendRecordedCommands(recording, [command]);
+const result = stepSessionWorld(session);
+recording = appendRecordingStep(recording, 'world', false, result.next);
+// LoRA固定指针步使用 stepSessionUi(session, true)，并记录 'ui', true；
+// 仅处理菜单/暂停命令使用 stepSessionUi(session, false)，记录 'ui', false。
+const verified = replayRecording(recording, catalog);
+```
+
+`npm run replay:v2 -- recording.json`可校验原版JSON录像，成功输出已验证步数及最终摘要，失败返回非零退出码。社区内容录像需由调用者传入**相同组装目录**，CLI目前仅加载原版，不会自动安装录像要求的包。摘要检测数据破损与模拟分歧，不是反作弊签名。
+
+单段上限500,000固定步、100,000条命令、64 MiB序列化数据；达到上限时应导出并从无待处理命令的边界另起分段。当前是逐步完整摘要的开发工具，尚未接入生产录像按钮，也未完成40分钟实时录制的性能验收。不能依据此接口宣称已提供录像播放器或创意工坊。
