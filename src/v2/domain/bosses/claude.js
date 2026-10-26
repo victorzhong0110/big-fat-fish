@@ -33,7 +33,7 @@ export function planClaudeBoss(context, boss) {
   const base = planMeleeEnemy({ ...context, entityId: entity.id }, false);
   const runtimeChange = base.changes.find(change => change.operation === 'setEntityRuntime');
   const runtime = { ...entity.runtime, .../** @type {{runtime?:Record<string,import('../../contracts.d.ts').Json>}} */ (runtimeChange?.payload ?? {}).runtime };
-  const changes = [...base.changes.filter(change => change.operation !== 'setEntityRuntime')], effects = [...base.effects];
+  const changes = [...base.changes.filter(change => change.operation !== 'setEntityRuntime')], effects = [...base.effects],events=[...base.events];
   const move = /** @type {ClaudeMove|null} */ (runtime.claudeMove ?? null);
   const index = Number(runtime.claudeMoveIndex ?? 0), phase = entity.hp <= entity.maxHp * 0.5 ? 2 : 1;
   if (move) {
@@ -48,7 +48,9 @@ export function planClaudeBoss(context, boss) {
       } else if (move.kind === 'skillBan' && distanceSquared(player.position, move.point) <= (90 + player.radius) ** 2) effects.push(...planClaudeBan(context, boss, 'skillBan').effects);
       else if(move.kind==='companionBan'){const ban=planClaudeBan(context,boss,'companionBan');changes.push(...ban.changes);effects.push(...ban.effects);}
       else if (move.kind === 'sweep' && Math.abs(player.position.x - (move.point.x + (move.strip - 1) * 180)) <= 45 + player.radius && Math.abs(player.position.y - move.point.y) <= 400 + player.radius) effects.push(bossDamage(context, boss, 30, `${move.index}:strip:${move.strip}`));
-      if (move.kind === 'sweep' && move.strip < 2) runtime.claudeMove = toJson({ ...move, strip: move.strip + 1, executeAt: state.tick + 60 });
+      if(['clamp','strike'].includes(move.kind))events.push({id:`claw:${entity.id}:${state.tick}`,runId:state.runId,tick:state.tick,seq:0,type:'HeavyClawResolved',sourceId:entity.id,targetId:null,payload:{point:entity.position,facing:move.facing,range:160,cosine:Math.SQRT1_2,amount:26*state.start.difficulty.damageMultiplier}});
+      if(move.kind==='clamp'&&state.start.difficulty.mechanicIds.includes('mech_05_boss_combo'))runtime.claudeMove=toJson({kind:'strike',executeAt:state.tick+42,index:move.index,point:{...player.position},facing:Math.atan2(player.position.y-entity.position.y,player.position.x-entity.position.x),strip:0});
+      else if (move.kind === 'sweep' && move.strip < 2) runtime.claudeMove = toJson({ ...move, strip: move.strip + 1, executeAt: state.tick + 60 });
       else { runtime.claudeMove = null; runtime.claudeMoveIndex = move.index + 1; runtime.nextClaudeMoveAt = state.tick + 90; }
     }
   } else if (state.tick >= Number(runtime.nextClaudeMoveAt ?? 120)) {
@@ -62,7 +64,7 @@ export function planClaudeBoss(context, boss) {
     }
   }
   changes.push(createStateChange('entity', entity.id, 'setEntityRuntime', { runtime }));
-  return { ...createEmptyPlan(), changes, effects };
+  return { ...createEmptyPlan(), changes, effects,events };
 }
 
 /**

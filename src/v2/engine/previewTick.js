@@ -7,6 +7,8 @@ import { createEmptyPlan, createStateChange } from '../domain/plans.js';
 import { planDistilledAbilities, planDistillEvent } from '../domain/distill.js';
 import { planEventHooks } from './hooks.js';
 import { planLoraUiStep } from '../domain/lora.js';
+import {planPressureSchedule,planPressureEventAdvance} from '../domain/world/pressure.js';
+import {planMechanicEvent} from '../domain/mechanics.js';
 import {planGrokProjectiles} from '../domain/bosses/grok.js';
 import {planGptReset} from '../domain/bosses/gpt.js';
 import {planGptFields} from '../domain/gptPets.js';
@@ -48,6 +50,7 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls domain/dshEffects.js#planDshEffects
  * @calls domain/easter.js#planEasterAdvance
  * @calls domain/gptPets.js#planGptFields
+ * @calls domain/mechanics.js#planMechanicEvent
  * @calls domain/movement.js#planEntityMotion
  * @calls domain/movement.js#planPickupMotion
  * @calls domain/movement.js#planPlayerMovement
@@ -58,6 +61,8 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls domain/status.js#planStatusAdvance
  * @calls domain/world/map.js#planMapExploration
  * @calls domain/world/objectives.js#planObjectiveAdvance
+ * @calls domain/world/pressure.js#planPressureEventAdvance
+ * @calls domain/world/pressure.js#planPressureSchedule
  * @calls domain/world/spawning.js#planSpawnSchedule
  * @calls engine/commands.js#orderPendingCommands
  * @calls engine/commands.js#planGameCommand
@@ -83,6 +88,9 @@ export function advancePreviewWorldTick(state, commands, catalog) {
   for (const command of orderPendingCommands(commands, working.tick, 'world')) apply(planGameCommand(context(), command).plan);
   apply(planStatusAdvance(context()));
   apply(planDshCycleEvent(context(), { id: `world:${working.tick}`, runId: working.runId, tick: working.tick, seq: 0, type: 'WorldTick', sourceId: null, targetId: null, payload: {} }));
+  apply(planMechanicEvent(context(),{id:`mechanics:${working.tick}`,runId:working.runId,tick:working.tick,seq:0,type:'WorldTick',sourceId:null,targetId:null,payload:{}}));
+  apply(planPressureSchedule(context()));
+  apply(planPressureEventAdvance(context()));
   apply(planSpawnSchedule(context()));
   apply(planGptFields(context()));
   apply(planEnemyAi(context()));

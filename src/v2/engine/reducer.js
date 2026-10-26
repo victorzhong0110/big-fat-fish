@@ -49,6 +49,7 @@ export function applySystemPlan(working, plan) {
       case 'setEntityRuntime': entity.runtime = /** @type {Record<string, import('../contracts.d.ts').Json>} */ (p.runtime); break;
       case 'setObjectives': next.world.objectives=/** @type {import('../contracts.d.ts').ObjectiveState[]} */ (JSON.parse(serializeCanonical(p.objectives)));break;
       case 'setBosses': next.bosses=/** @type {import('../contracts.d.ts').BossState[]} */ (JSON.parse(serializeCanonical(p.bosses)));break;
+      case 'setPressureEvents': next.world.pressureEvents=/** @type {import('../contracts.d.ts').PressureEvent[]} */(JSON.parse(serializeCanonical(p.events)));break;
       case 'setSpawnDirector': next.world.spawnQueue=/** @type {import('../contracts.d.ts').SpawnRequest[]} */ (JSON.parse(serializeCanonical(p.queue)));next.world.budgets=/** @type {import('../contracts.d.ts').EncounterBudget[]} */ (JSON.parse(serializeCanonical(p.budgets)));next.spawnDirectorNextAt=Number(p.nextAt);break;
       case 'setMap': next.world.map = /** @type {import('../contracts.d.ts').MapState} */ (JSON.parse(serializeCanonical(p))); break;
       case 'setInput': next.input = /** @type {import('../contracts.d.ts').InputState} */ (JSON.parse(serializeCanonical(p))); break;

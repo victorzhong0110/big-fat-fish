@@ -66,6 +66,7 @@ export function validateSystemPlan(plan) {
       case 'setEntityRuntime': valid = change.target === 'entity' && !!p.runtime && typeof p.runtime === 'object' && !Array.isArray(p.runtime); break;
       case 'setObjectives': valid=change.target==='world'&&Array.isArray(p.objectives);break;
       case 'setBosses': valid=change.target==='world'&&Array.isArray(p.bosses);break;
+      case 'setPressureEvents': valid=change.target==='world'&&Array.isArray(p.events);break;
       case 'setSpawnDirector': valid=change.target==='world'&&Array.isArray(p.queue)&&Array.isArray(p.budgets)&&Number.isSafeInteger(p.nextAt)&&Number(p.nextAt)>=0;break;
       case 'setMap': valid = change.target === 'world' && p.id === change.id && nonnegative('width') && nonnegative('height') && Array.isArray(p.obstacleIds) && Array.isArray(p.checkpointIds) && Array.isArray(p.exitIds); break;
       case 'setInput': valid = change.target === 'runtime' && change.id === 'input' && typeof p.firing === 'boolean' && !!p.move && typeof p.move === 'object' && !!p.aim && typeof p.aim === 'object' && Array.isArray(p.heldKeys) && Array.isArray(p.pointerIds); break;

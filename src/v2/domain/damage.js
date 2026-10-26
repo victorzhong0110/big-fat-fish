@@ -101,7 +101,8 @@ export function isDamageRequestValid(context, request) {
   if (!target || !source || target.dead || target.dying || target.hp <= 0 || !request.id || !request.attackId || !request.chainId) return false;
   if (![request.baseDamage, request.contact.x, request.contact.y, request.incomingDirection.x, request.incomingDirection.y].every(Number.isFinite) || request.baseDamage <= 0) return false;
   if (!Number.isSafeInteger(request.generation) || request.generation < 0 || request.generation > 4 || !Number.isSafeInteger(request.expiresAt) || request.expiresAt < state.tick) return false;
-  if (source.team === target.team || target.team === 'neutral' || !['exploring', 'boss'].includes(state.flow.phase)) return false;
+  const breakable=target.kind==='obstacle'&&target.runtime.breakable===true&&source.faction==='claude'&&request.sourceKind==='enemy';
+  if (source.team === target.team || target.team === 'neutral'&&!breakable || !['exploring', 'boss'].includes(state.flow.phase)) return false;
   if (request.projectileId !== null) {
     const projectile = state.world.entities[request.projectileId];
     if (!projectile || projectile.dead || projectile.dying || projectile.attackId !== request.attackId || projectile.sourceId !== request.sourceId) return false;

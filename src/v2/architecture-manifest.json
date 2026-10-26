@@ -2001,6 +2001,7 @@
       "layer": "content-handler",
       "purpose": "16个累计难度机制的逐项处理器。",
       "dependencies": [
+        "domain/mechanics.js",
         "domain/plans.js"
       ],
       "functions": [
@@ -2019,13 +2020,13 @@
           "result": "EffectPlan",
           "description": "mech_01_exploration（解锁1）/ 正式探索与追兵：在正式连续地图启用驻守、区域目标和01的90秒追兵周期；与Free逐项教学分开",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic02Reinforcements",
@@ -2042,13 +2043,13 @@
           "result": "EffectPlan",
           "description": "mech_02_reinforcements（解锁2）/ 增援队列：标记遭遇的驻守预算分2–3批，批间隔4秒，入口至少提前1.5秒提示；只分配既有预算，不凭空增加奖励",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic03GptSupport",
@@ -2065,13 +2066,13 @@
           "result": "EffectPlan",
           "description": "mech_03_gpt_support（解锁3）/ GPT支援协同：Dewey优先治疗Hoots/Seedy等脆弱后排，Rocky在350内可移动到支援单位与玩家之间；各自原技能/冷却不变",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic04ClaudeBreak",
@@ -2088,13 +2089,13 @@
           "result": "EffectPlan",
           "description": "mech_04_claude_break（解锁4）/ Claude重钳破阵：普通/精英蟹重钳和Boss钳击可击破标记为可破坏的掩体；单次32伤重钳按等额耐久扣除，掩体初值30；其他不可破坏地形不受影响",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic05BossCombo",
@@ -2111,13 +2112,13 @@
           "result": "EffectPlan",
           "description": "mech_05_boss_combo（解锁5）/ 首领组合技：Boss可以用固定两招顺序衔接，第二招仍有完整预警；Claude钳制后普通挥击，GPT慢泡后区域标记，Grok招兵后单枚火箭",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic06AlarmCache",
@@ -2134,13 +2135,13 @@
           "result": "EffectPlan",
           "description": "mech_06_alarm_cache（解锁6）/ 警报资源箱：每海域放1个可选警报箱，交互前告知风险；打开后从合法入口产生一场增援，箱内提供2把MCP择1，品质至少增强；该箱与增援各仅结算一次",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic07Tide",
@@ -2157,13 +2158,13 @@
           "result": "EffectPlan",
           "description": "mech_07_tide（解锁7）/ 周期潮汐：标记水道每30秒切换水流方向，提前3秒箭头预警，水流额外速度60；同样影响可移动敌人，不叠加至超过基础移速的1.8倍",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic08GrokFlanks",
@@ -2180,13 +2181,13 @@
           "result": "EffectPlan",
           "description": "mech_08_grok_flanks（解锁8）/ Grok两翼合围：群体遭遇预算从两个视野外入口错时入场，间隔2秒；入口布局必须留出至少120宽的可突破通路",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic09GptReposition",
@@ -2203,13 +2204,13 @@
           "result": "EffectPlan",
           "description": "mech_09_gpt_reposition（解锁9）/ GPT换位保护：支援/远射Pet在玩家120内时向已验证可通行的后撤点移动，最多移动180；Rocky随后保护它，重新站定后再按原预警攻击",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic10BossArena",
@@ -2226,13 +2227,13 @@
           "result": "EffectPlan",
           "description": "mech_10_boss_arena（解锁10）/ 首领利用场地：Claude场内部署可破掩体；GPT重置节点从5个可见可达候选位置按seed选3个且不重复；Grok招兵在3个合法入口中轮换选2个",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic11ObjectiveSignal",
@@ -3967,19 +3968,13 @@
             "content/handlers/mechanics.js#planMechanic07Tide",
             "content/handlers/mechanics.js#planMechanic08GrokFlanks",
             "content/handlers/mechanics.js#planMechanic09GptReposition",
-            "content/handlers/mechanics.js#planMechanic10BossArena",
-            "content/handlers/mechanics.js#planMechanic11ObjectiveSignal",
-            "content/handlers/mechanics.js#planMechanic11Glasswing",
-            "content/handlers/mechanics.js#planMechanic12GptFourRoles",
-            "content/handlers/mechanics.js#planMechanic13Handoff",
-            "content/handlers/mechanics.js#planMechanic14Anomaly",
-            "content/handlers/mechanics.js#planMechanic15Integration"
+            "content/handlers/mechanics.js#planMechanic10BossArena"
           ],
           "rule": "@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "dispatch",
           "callMode": "dispatch",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -5372,6 +5367,49 @@
       ]
     },
     {
+      "path": "domain/currents.js",
+      "layer": "domain",
+      "purpose": "Current drift uses effective ticks and the normal body solver; native dash/root/shell stun keep their movement rules.",
+      "dependencies": [
+        "domain/geometry.js",
+        "domain/stats.js"
+      ],
+      "functions": [
+        {
+          "description": "resolveTideVelocity",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolveTideVelocity",
+          "args": [
+            {
+              "name": "s",
+              "type": "untyped"
+            },
+            {
+              "name": "e",
+              "type": "untyped"
+            },
+            {
+              "name": "velocity",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            }
+          ],
+          "result": "Vec2",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared",
+            "domain/stats.js#derivePlayerStats"
+          ]
+        }
+      ]
+    },
+    {
       "path": "domain/damage.js",
       "layer": "domain",
       "purpose": "伤害的唯一规划入口；不递归调用击杀或效果钩子。",
@@ -6350,6 +6388,8 @@
             "domain/meleeAi.js#planMeleeEnemy",
             "domain/modelProfiles.js#resolvePetStage",
             "domain/motionSolver.js#resolveBodyDestination",
+            "domain/navigation.js#chooseRetreatPoint",
+            "domain/navigation.js#findNavigationPath",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
             "domain/serialization.js#toJson"
@@ -6673,6 +6713,71 @@
       ]
     },
     {
+      "path": "domain/mechanics.js",
+      "layer": "domain",
+      "purpose": "Immutable cumulative mechanic lookup.",
+      "dependencies": [
+        "domain/geometry.js",
+        "domain/plans.js",
+        "domain/serialization.js"
+      ],
+      "functions": [
+        {
+          "description": "hasMechanic",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "hasMechanic",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            },
+            {
+              "name": "id",
+              "type": "untyped"
+            }
+          ],
+          "result": "boolean",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "planMechanicEvent",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planMechanicEvent",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            },
+            {
+              "name": "onlyId",
+              "default": "null",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared",
+            "domain/mechanics.js#hasMechanic",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson"
+          ]
+        }
+      ]
+    },
+    {
       "path": "domain/meleeAi.js",
       "layer": "domain",
       "purpose": "Shared navigation/contact logic; only the brown crab has a telegraphed heavy claw.",
@@ -6889,6 +6994,7 @@
       "purpose": "玩家/敌人移动与高速扫掠起终点。",
       "dependencies": [
         "domain/collision.js",
+        "domain/currents.js",
         "domain/geometry.js",
         "domain/motionSolver.js",
         "domain/plans.js",
@@ -6934,6 +7040,7 @@
           "result": "SystemPlan",
           "description": "统一移动并推进回旋分段/回追/接回、到期爆破及可视效果清理；不跨墙或离线补跑。",
           "calls": [
+            "domain/currents.js#resolveTideVelocity",
             "domain/geometry.js#intersectSweptCircles",
             "domain/geometry.js#normalizeVector",
             "domain/motionSolver.js#resolveBodyDestination",
@@ -8752,6 +8859,42 @@
       ]
     },
     {
+      "path": "domain/world/alarms.js",
+      "layer": "domain",
+      "purpose": "Review risk with F, then confirm within five seconds; one enhanced exclusive choice and one finite wave.",
+      "dependencies": [
+        "domain/plans.js",
+        "domain/world/pressure.js"
+      ],
+      "functions": [
+        {
+          "description": "planAlarmCache",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planAlarmCache",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "entityId",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/world/pressure.js#reservePressureEvent"
+          ]
+        }
+      ]
+    },
+    {
       "path": "domain/world/map.js",
       "layer": "domain",
       "purpose": "连续地图生成、探索与安全交互。",
@@ -8763,7 +8906,8 @@
         "domain/plans.js",
         "domain/random.js",
         "domain/rewards.js",
-        "domain/world/adventure.js"
+        "domain/world/adventure.js",
+        "domain/world/alarms.js"
       ],
       "functions": [
         {
@@ -8840,7 +8984,8 @@
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
             "domain/rewards.js#planWorldReward",
-            "domain/world/adventure.js#planBossEncounter"
+            "domain/world/adventure.js#planBossEncounter",
+            "domain/world/alarms.js#planAlarmCache"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -8957,7 +9102,8 @@
       "layer": "domain",
       "purpose": "累计机制下的压力事件仲裁。",
       "dependencies": [
-        "domain/navigation.js"
+        "domain/geometry.js",
+        "domain/plans.js"
       ],
       "functions": [
         {
@@ -8971,14 +9117,13 @@
           "result": "SystemPlan",
           "description": "从完整已解锁机制池安排适用事件，常驻AI不被轮换移除。",
           "calls": [
-            "domain/navigation.js#canCloseMapPassage",
-            "domain/world/pressure.js#reservePressureEvent"
+            "domain/plans.js#createEmptyPlan"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "reservePressureEvent",
@@ -8994,12 +9139,14 @@
           ],
           "result": "Result<PressureEvent>",
           "description": "先判安全/优先级/预算/双事件容量，失败给原因，不静默新建其他惩罚。",
-          "calls": [],
+          "calls": [
+            "domain/geometry.js#distanceSquared"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planPressureEventAdvance",
@@ -9011,12 +9158,15 @@
           ],
           "result": "SystemPlan",
           "description": "推进预警/持续/结束，释放预算和名额；综合压力不自套第三名额。",
-          "calls": [],
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -9423,6 +9573,7 @@
         "domain/dshEffects.js",
         "domain/easter.js",
         "domain/gptPets.js",
+        "domain/mechanics.js",
         "domain/plans.js",
         "domain/status.js"
       ],
@@ -9450,6 +9601,7 @@
             "domain/dshEffects.js#planDshEffects",
             "domain/easter.js#planEasterEvent",
             "domain/gptPets.js#planPetModelEvent",
+            "domain/mechanics.js#planMechanicEvent",
             "domain/plans.js#mergeSystemPlans",
             "domain/status.js#planSealRelease"
           ],
@@ -9482,6 +9634,7 @@
         "domain/easter.js",
         "domain/gptPets.js",
         "domain/lora.js",
+        "domain/mechanics.js",
         "domain/movement.js",
         "domain/plans.js",
         "domain/rewards.js",
@@ -9489,6 +9642,7 @@
         "domain/status.js",
         "domain/world/map.js",
         "domain/world/objectives.js",
+        "domain/world/pressure.js",
         "domain/world/spawning.js",
         "engine/commands.js",
         "engine/effectLoop.js",
@@ -9540,6 +9694,7 @@
             "domain/dshEffects.js#planDshEffects",
             "domain/easter.js#planEasterAdvance",
             "domain/gptPets.js#planGptFields",
+            "domain/mechanics.js#planMechanicEvent",
             "domain/movement.js#planEntityMotion",
             "domain/movement.js#planPickupMotion",
             "domain/movement.js#planPlayerMovement",
@@ -9550,6 +9705,8 @@
             "domain/status.js#planStatusAdvance",
             "domain/world/map.js#planMapExploration",
             "domain/world/objectives.js#planObjectiveAdvance",
+            "domain/world/pressure.js#planPressureEventAdvance",
+            "domain/world/pressure.js#planPressureSchedule",
             "domain/world/spawning.js#planSpawnSchedule",
             "engine/commands.js#orderPendingCommands",
             "engine/commands.js#planGameCommand",
@@ -11227,9 +11384,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 98,
-    "functions": 372,
-    "implemented": 306,
-    "placeholders": 66
+    "modules": 101,
+    "functions": 376,
+    "implemented": 324,
+    "placeholders": 52
   }
 }

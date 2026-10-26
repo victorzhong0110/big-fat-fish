@@ -1564,7 +1564,7 @@ export const CATALOG_DATA = {
         "description": "mech_01_exploration（解锁1）/ 正式探索与追兵：在正式连续地图启用驻守、区域目标和01的90秒追兵周期；与Free逐项教学分开",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic01Exploration",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 1,
@@ -1581,7 +1581,7 @@ export const CATALOG_DATA = {
         "description": "mech_02_reinforcements（解锁2）/ 增援队列：标记遭遇的驻守预算分2–3批，批间隔4秒，入口至少提前1.5秒提示；只分配既有预算，不凭空增加奖励",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic02Reinforcements",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 2,
@@ -1598,7 +1598,7 @@ export const CATALOG_DATA = {
         "description": "mech_03_gpt_support（解锁3）/ GPT支援协同：Dewey优先治疗Hoots/Seedy等脆弱后排，Rocky在350内可移动到支援单位与玩家之间；各自原技能/冷却不变",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic03GptSupport",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 3,
@@ -1615,7 +1615,7 @@ export const CATALOG_DATA = {
         "description": "mech_04_claude_break（解锁4）/ Claude重钳破阵：普通/精英蟹重钳和Boss钳击可击破标记为可破坏的掩体；单次32伤重钳按等额耐久扣除，掩体初值30；其他不可破坏地形不受影响",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic04ClaudeBreak",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 4,
@@ -1632,7 +1632,7 @@ export const CATALOG_DATA = {
         "description": "mech_05_boss_combo（解锁5）/ 首领组合技：Boss可以用固定两招顺序衔接，第二招仍有完整预警；Claude钳制后普通挥击，GPT慢泡后区域标记，Grok招兵后单枚火箭",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic05BossCombo",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 5,
@@ -1649,7 +1649,7 @@ export const CATALOG_DATA = {
         "description": "mech_06_alarm_cache（解锁6）/ 警报资源箱：每海域放1个可选警报箱，交互前告知风险；打开后从合法入口产生一场增援，箱内提供2把MCP择1，品质至少增强；该箱与增援各仅结算一次",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic06AlarmCache",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 6,
@@ -1666,7 +1666,7 @@ export const CATALOG_DATA = {
         "description": "mech_07_tide（解锁7）/ 周期潮汐：标记水道每30秒切换水流方向，提前3秒箭头预警，水流额外速度60；同样影响可移动敌人，不叠加至超过基础移速的1.8倍",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic07Tide",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 7,
@@ -1683,7 +1683,7 @@ export const CATALOG_DATA = {
         "description": "mech_08_grok_flanks（解锁8）/ Grok两翼合围：群体遭遇预算从两个视野外入口错时入场，间隔2秒；入口布局必须留出至少120宽的可突破通路",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic08GrokFlanks",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 8,
@@ -1700,7 +1700,7 @@ export const CATALOG_DATA = {
         "description": "mech_09_gpt_reposition（解锁9）/ GPT换位保护：支援/远射Pet在玩家120内时向已验证可通行的后撤点移动，最多移动180；Rocky随后保护它，重新站定后再按原预警攻击",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic09GptReposition",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 9,
@@ -1717,7 +1717,7 @@ export const CATALOG_DATA = {
         "description": "mech_10_boss_arena（解锁10）/ 首领利用场地：Claude场内部署可破掩体；GPT重置节点从5个可见可达候选位置按seed选3个且不重复；Grok招兵在3个合法入口中轮换选2个",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic10BossArena",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 10,
@@ -2484,6 +2484,27 @@ export const CATALOG_DATA = {
       "id": "grok_rocket",
       "kind": "entity",
       "displayName": "可击毁火箭",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "terrain_breakable": {
+      "id": "terrain_breakable",
+      "kind": "entity",
+      "displayName": "可破掩体",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "world_alarm": {
+      "id": "world_alarm",
+      "kind": "entity",
+      "displayName": "警报资源箱",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "world_current": {
+      "id": "world_current",
+      "kind": "entity",
+      "displayName": "周期潮汐",
       "parameters": {},
       "version": "2.0.0-preview.5"
     }

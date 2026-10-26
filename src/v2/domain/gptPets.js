@@ -1,5 +1,5 @@
 // @ts-check
-import {canCloseMapPassage} from './navigation.js';
+import {canCloseMapPassage,chooseRetreatPoint,findNavigationPath} from './navigation.js';
 import {createEmptyPlan,createStateChange,mergeSystemPlans} from './plans.js';
 import {createEntityState} from './entities.js';
 import {resolvePetStage} from './modelProfiles.js';
@@ -25,6 +25,8 @@ function auxiliary(c,e,id,duration){return createStateChange('world',id,'putEnti
  * @calls domain/meleeAi.js#planMeleeEnemy
  * @calls domain/modelProfiles.js#resolvePetStage
  * @calls domain/motionSolver.js#resolveBodyDestination
+ * @calls domain/navigation.js#chooseRetreatPoint
+ * @calls domain/navigation.js#findNavigationPath
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @calls domain/serialization.js#toJson
@@ -33,7 +35,8 @@ function auxiliary(c,e,id,duration){return createStateChange('world',id,'putEnti
  * @returns {import('../contracts.d.ts').SystemPlan}
  */
 export function planGptPet(context,kind){
- const state=context.state,entity=context.entityId?state.world.entities[context.entityId]:null;if(!entity||entity.dead||entity.dying)return createEmptyPlan();const player=selectAbilityTarget(state,entity),distance=Math.sqrt(distanceSquared(entity.position,player.position)),stage=resolvePetStage(entity),base=planMeleeEnemy(context,false),changes=/** @type {import('../contracts.d.ts').StateChange[]} */([]),effects=/** @type {import('../contracts.d.ts').EffectRequest[]} */([]),runtime={...entity.runtime,.../** @type {{runtime:Record<string,import('../contracts.d.ts').Json>}|undefined} */(base.changes.find(c=>c.operation==='setEntityRuntime')?.payload)?.runtime},id=`pet:${entity.id}:${state.tick}`;
+ const state=context.state,entity=context.entityId?state.world.entities[context.entityId]:null;if(!entity||entity.dead||entity.dying)return createEmptyPlan();const player=selectAbilityTarget(state,entity),distance=Math.sqrt(distanceSquared(entity.position,player.position)),stage=resolvePetStage(entity),support=kind==='rocky'&&state.start.difficulty.mechanicIds.includes('mech_03_gpt_support')&&Number(entity.runtime.guardHp)>0?Object.values(state.world.entities).filter(e=>['enemy_gpt_dewey','enemy_gpt_hoots','enemy_gpt_seedy'].includes(e.definitionId)&&!e.dead&&distanceSquared(entity.position,e.position)<=350**2).sort((a,b)=>distanceSquared(entity.position,a.position)-distanceSquared(entity.position,b.position)||(a.id<b.id?-1:1))[0]:null,guardDirection=support?normalizeVector({x:player.position.x-support.position.x,y:player.position.y-support.position.y}):null,base=planMeleeEnemy(support&&guardDirection?{...context,movementGoal:{x:support.position.x+guardDirection.x*70,y:support.position.y+guardDirection.y*70}}:context,false),changes=/** @type {import('../contracts.d.ts').StateChange[]} */([]),effects=/** @type {import('../contracts.d.ts').EffectRequest[]} */([]),runtime={...entity.runtime,.../** @type {{runtime:Record<string,import('../contracts.d.ts').Json>}|undefined} */(base.changes.find(c=>c.operation==='setEntityRuntime')?.payload)?.runtime},id=`pet:${entity.id}:${state.tick}`;
+ if(state.start.difficulty.mechanicIds.includes('mech_09_gpt_reposition')&&['dewey','hoots','seedy'].includes(kind)&&distance<120&&!runtime.petCast&&!runtime.retreatPoint&&state.tick>=Number(runtime.repositionReadyAt??0)){const point=chooseRetreatPoint(context,entity.id,180);if(point){runtime.retreatPoint=point;runtime.retreatRoute=findNavigationPath(context,{entityId:entity.id,origin:entity.position,destination:point,collisionProfileId:entity.collisionProfileId}).path.map(p=>({...p}));runtime.petReadyAt=Math.max(Number(runtime.petReadyAt??0),state.tick+90);runtime.repositionReadyAt=state.tick+360;}}
  if(distance>700&&runtime.engaged!==true&&entity.hp===entity.maxHp)return base;
  runtime.engaged=true;
  const cast=/** @type {{executeAt:number;point:import('../contracts.d.ts').Vec2;targets?:string[];index:number;total:number}|null} */(runtime.petCast??null),cooldown={codex:180,dewey:300,fireball:300,hoots:240,rocky:0,seedy:360,stacky:240}[kind];let stopped=kind!=='rocky'&&(distance<=500||!!cast);
@@ -53,7 +56,7 @@ export function planGptPet(context,kind){
    for(const targetId of cast.targets??[]){const target=state.world.entities[targetId];if(!target||target.dead||target.dying||distanceSquared(entity.position,target.position)>220**2)continue;effects.push({id:`${id}:heal:${targetId}`,sourceId:entity.id,chainId:id,generation:0,kind:'heal',payload:{targetId,amount:8}});if(stage>=2){const overflow=Math.max(0,8-(target.maxHp-target.hp));if(overflow)effects.push({id:`${id}:shield:${targetId}`,sourceId:entity.id,chainId:id,generation:0,kind:'shield',payload:{targetId,amount:Math.min(6,overflow*.5),duration:3}});}}
    runtime.petCast=null;runtime.petReadyAt=state.tick+cooldown;
   }
- }else if(!cast&&kind!=='rocky'&&state.tick>=Number(runtime.petReadyAt??0)&&(kind==='dewey'||distance<=650)&&(kind!=='hoots'||distance>=350)){
+ }else if(!cast&&(!runtime.retreatPoint||kind==='dewey'&&stage>=3)&&kind!=='rocky'&&state.tick>=Number(runtime.petReadyAt??0)&&(kind==='dewey'||distance<=650)&&(kind!=='hoots'||distance>=350)){
   if(kind==='fireball'||kind==='seedy'){
    const existing=Object.values(state.world.entities).filter(e=>e.sourceId===entity.id&&e.runtime.petZone==='vine'&&!e.dead).length;
    if(kind==='fireball'||distance<=500&&existing<(stage>=1?2:1)){
@@ -61,16 +64,16 @@ export function planGptPet(context,kind){
     for(let n=0;n<count;n++)if(kind==='fireball'||existing+n<2)changes.push(zone(context,entity,kind==='fireball'?'fire':'vine',points[n],`${id}:zone:${n}`,kind==='fireball'&&stage>=3&&n===0));runtime.petReadyAt=state.tick+cooldown;
    }
   }else{
-   const targets=Object.values(state.world.entities).filter(e=>e.id!==entity.id&&e.kind==='enemy'&&e.faction==='gpt'&&!e.dead&&!e.dying&&e.runtime.noRewardTarget!==true&&(e.hp<e.maxHp||stage>=2)&&distanceSquared(entity.position,e.position)<=220**2).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp||(a.id<b.id?-1:1)).slice(0,stage>=1?2:1);
+   const targets=Object.values(state.world.entities).filter(e=>e.id!==entity.id&&e.kind==='enemy'&&e.faction==='gpt'&&!e.dead&&!e.dying&&e.runtime.noRewardTarget!==true&&(e.hp<e.maxHp||stage>=2)&&distanceSquared(entity.position,e.position)<=220**2).sort((a,b)=>(state.start.difficulty.mechanicIds.includes('mech_03_gpt_support')?Number(['enemy_gpt_hoots','enemy_gpt_seedy'].includes(b.definitionId))-Number(['enemy_gpt_hoots','enemy_gpt_seedy'].includes(a.definitionId)):0)||a.hp/a.maxHp-b.hp/b.maxHp||(a.id<b.id?-1:1)).slice(0,stage>=1?2:1);
    if(kind!=='dewey'||targets.length){runtime.petCast={executeAt:state.tick+{codex:42,dewey:60,hoots:66,stacky:48}[kind],point:{...player.position},index:0,total:kind==='codex'&&stage>=1?2:kind==='hoots'&&stage>=1?stage>=3?3:2:1,targets:targets.map(e=>e.id)};stopped=true;
     if(kind==='dewey'&&stage>=3){const guard=Object.values(state.world.entities).filter(e=>e.definitionId==='enemy_gpt_rocky'&&!e.dead&&Number(e.runtime.guardHp)>0&&distanceSquared(entity.position,e.position)<=340**2).sort((a,b)=>distanceSquared(entity.position,a.position)-distanceSquared(entity.position,b.position)||(a.id<b.id?-1:1))[0];if(guard){const d=normalizeVector({x:guard.position.x-entity.position.x,y:guard.position.y-entity.position.y}),step=Math.min(120,Math.sqrt(distanceSquared(entity.position,guard.position))),position=resolveBodyDestination(context,entity,{x:entity.position.x+d.x*step,y:entity.position.y+d.y*step});runtime.retreatPoint=position;}}
    }
   }
  }
  if(kind==='hoots'&&distance<350&&!cast)stopped=false;
- const retreat=/** @type {import('../contracts.d.ts').Vec2|null} */(runtime.retreatPoint??null);if(retreat&&distanceSquared(retreat,entity.position)<4**2)runtime.retreatPoint=null;
+ const route=/** @type {readonly import('../contracts.d.ts').Vec2[]} */(runtime.retreatRoute??[]);if(route[0]&&distanceSquared(route[0],entity.position)<4**2)runtime.retreatRoute=route.slice(1).map(p=>({...p}));const retreat=/** @type {import('../contracts.d.ts').Vec2|null} */(/** @type {readonly import('../contracts.d.ts').Vec2[]} */(runtime.retreatRoute??[])[0]??runtime.retreatPoint??null);if(retreat&&distanceSquared(/** @type {import('../contracts.d.ts').Vec2} */(runtime.retreatPoint),entity.position)<4**2){runtime.retreatPoint=null;runtime.retreatRoute=[];}
  const movement=base.changes.filter(c=>c.operation!=='setEntityRuntime').map(c=>{if(retreat&&runtime.retreatPoint&&(kind==='dewey'||!runtime.petCast)&&c.operation==='setEntityKinematics'){const d=normalizeVector({x:retreat.x-entity.position.x,y:retreat.y-entity.position.y}),speed=Math.min(150,Math.sqrt(distanceSquared(retreat,entity.position))*60);return {...c,payload:toJson({.../** @type {object} */(c.payload),velocity:{x:d.x*speed,y:d.y*speed}})};}if(kind==='hoots'&&distance<350&&!cast&&c.operation==='setEntityKinematics'){const d=normalizeVector({x:entity.position.x-player.position.x,y:entity.position.y-player.position.y});return {...c,payload:toJson({.../** @type {object} */(c.payload),velocity:{x:d.x*Number(entity.runtime.moveSpeed??75),y:d.y*Number(entity.runtime.moveSpeed??75)}})};}if(!stopped||c.operation!=='setEntityKinematics')return c;return {...c,payload:toJson({.../** @type {object} */(c.payload),velocity:{x:0,y:0}})};});
- return {...createEmptyPlan(),changes:[...movement,...changes,createStateChange('entity',entity.id,'setEntityRuntime',{runtime:{.../** @type {{runtime:object}|undefined} */(base.changes.find(c=>c.operation==='setEntityRuntime')?.payload)?.runtime,...runtime}})],effects:[...base.effects,...effects]};
+ return {...createEmptyPlan(),changes:[...movement,...changes,createStateChange('entity',entity.id,'setEntityRuntime',{runtime:{.../** @type {{runtime:object}|undefined} */(base.changes.find(c=>c.operation==='setEntityRuntime')?.payload)?.runtime,...runtime}})],effects:[...base.effects,...effects],events:base.events};
 }
 
 /** Advance telegraphed fire/vines, one-shot seeds and bounded, rewardless auxiliary lifetimes.

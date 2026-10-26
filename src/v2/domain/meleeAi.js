@@ -20,6 +20,8 @@ import { toJson } from './serialization.js';
 export function planMeleeEnemy(context, heavyClaw) {
   const state = context.state, entity = context.entityId ? state.world.entities[context.entityId] : null, player = entity?selectAbilityTarget(state,entity):state.world.entities[state.player.entityId];
   if (!entity || entity.dead || entity.dying || entity.hp <= 0 || player.hp <= 0) return createEmptyPlan();
+  const goal=context.movementGoal??player.position,goalId=context.movementGoal?`goal:${Math.round(goal.x)}:${Math.round(goal.y)}`:player.id;
+  let clawResolved=false;
   const distance = Math.sqrt(distanceSquared(entity.position, player.position));
   const runtime = { ...entity.runtime };
   if (distance > 650 && runtime.engaged !== true && entity.hp === entity.maxHp) return createEmptyPlan();
@@ -31,14 +33,15 @@ export function planMeleeEnemy(context, heavyClaw) {
   if (!stunned && heavyClaw && winding && state.tick >= Number(runtime.windupEnd)) {
     const direction = normalizeVector({ x: player.position.x - entity.position.x, y: player.position.y - entity.position.y });
     if (distance <= 70 + player.radius && direction.x * Math.cos(facing) + direction.y * Math.sin(facing) >= 0) attackDamage = 32 * Number(runtime.damageMultiplier ?? 1);
+    clawResolved=true;
     runtime.windupEnd = 0; runtime.recoilUntil = state.tick + 48; runtime.nextHeavyAt = state.tick + 240;
   } else if (!stunned && heavyClaw && !winding && distance <= 130 && state.tick >= clawCooldown && state.tick >= Number(runtime.recoilUntil ?? 0)) {
     runtime.windupEnd = state.tick + 54;
   } else if (!stunned && !winding && state.tick >= Number(runtime.recoilUntil ?? 0)) {
     let waypoint = /** @type {import('../contracts.d.ts').Vec2 | null} */ (runtime.waypoint ?? null);
-    if (runtime.pathTargetId!==player.id || !waypoint || state.tick >= Number(runtime.nextPathAt ?? 0) || distanceSquared(entity.position, waypoint) < 20 ** 2) {
-      const result = findNavigationPath(context, { entityId: entity.id, origin: entity.position, destination: player.position, collisionProfileId: entity.collisionProfileId });
-      waypoint = result.path[0] ?? null; runtime.waypoint = waypoint ? { ...waypoint } : null; runtime.nextPathAt = state.tick + 15; runtime.pathTargetId=player.id;
+    if (runtime.pathTargetId!==goalId || !waypoint || state.tick >= Number(runtime.nextPathAt ?? 0) || distanceSquared(entity.position, waypoint) < 20 ** 2) {
+      const result = findNavigationPath(context, { entityId: entity.id, origin: entity.position, destination: goal, collisionProfileId: entity.collisionProfileId });
+      waypoint = result.path[0] ?? null; runtime.waypoint = waypoint ? { ...waypoint } : null; runtime.nextPathAt = state.tick + 15; runtime.pathTargetId=goalId;
     }
     if (waypoint) {
       const direction = normalizeVector({ x: waypoint.x - entity.position.x, y: waypoint.y - entity.position.y });
@@ -55,5 +58,5 @@ export function planMeleeEnemy(context, heavyClaw) {
     const id = `melee:${entity.id}:${state.tick}`;
     effects.push({ id, chainId: id, generation: 0, sourceId: entity.id, kind: 'damage', payload: toJson({ id, sourceId: entity.id, creditOwner: 'enemy', sourceKind: 'enemy', attackId: id, projectileId: null, targetId: player.id, baseDamage: attackDamage, contact: entity.position, incomingDirection: normalizeVector({ x: player.position.x - entity.position.x, y: player.position.y - entity.position.y }), generation: 0, chainId: id, critEligible: false, expiresAt: state.tick }) });
   }
-  return { ...createEmptyPlan(), changes: [createStateChange('entity', entity.id, 'setEntityRuntime', { runtime }), createStateChange('entity', entity.id, 'setEntityKinematics', { position: entity.position, previousPosition: entity.previousPosition, velocity, facingRadians: facing })], effects };
+  return { ...createEmptyPlan(), changes: [createStateChange('entity', entity.id, 'setEntityRuntime', { runtime }), createStateChange('entity', entity.id, 'setEntityKinematics', { position: entity.position, previousPosition: entity.previousPosition, velocity, facingRadians: facing })], effects,events:clawResolved?[{id:`claw:${entity.id}:${state.tick}`,runId:state.runId,tick:state.tick,seq:0,type:'HeavyClawResolved',sourceId:entity.id,targetId:null,payload:{point:entity.position,facing,range:70,cosine:0,amount:32*Number(runtime.damageMultiplier??1)}}]:[] };
 }

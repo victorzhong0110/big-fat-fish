@@ -1,5 +1,6 @@
 // @ts-check
 import { planProjectileBurst } from './projectiles.js';
+import {resolveTideVelocity} from './currents.js';
 import { createEmptyPlan, createStateChange } from './plans.js';
 import { resolveBodyDestination } from './motionSolver.js';
 /**
@@ -41,6 +42,7 @@ export function planPlayerMovement(context, input) {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @implementationScope core-preview
+ * @calls domain/currents.js#resolveTideVelocity
  * @calls domain/geometry.js#intersectSweptCircles
  * @calls domain/geometry.js#normalizeVector
  * @calls domain/motionSolver.js#resolveBodyDestination
@@ -68,6 +70,7 @@ export function planEntityMotion(context) {
     if(returning&&owner&&!owner.dead){const d=dependency2.normalizeVector({x:owner.position.x-entity.position.x,y:owner.position.y-entity.position.y});velocity={x:d.x*Number(runtime.speed),y:d.y*Number(runtime.speed)};}
     else if(typeof runtime.homingTargetId==='string'){const target=context.state.world.entities[runtime.homingTargetId];if(target&&!target.dead){const d=dependency2.normalizeVector({x:target.position.x-entity.position.x,y:target.position.y-entity.position.y});velocity={x:d.x*Number(runtime.speed),y:d.y*Number(runtime.speed)};}}
     if(!velocity.x&&!velocity.y&&entity.previousPosition.x===entity.position.x&&entity.previousPosition.y===entity.position.y)continue;
+    velocity=resolveTideVelocity(context.state,entity,velocity,context.catalog);
     let desired={x:entity.position.x+velocity.x/60,y:entity.position.y+velocity.y/60};
     if(origin&&!returning){const distance=Math.hypot(desired.x-origin.x,desired.y-origin.y),limit=Number(runtime.returnDistance);if(distance>limit){const d=dependency2.normalizeVector({x:desired.x-origin.x,y:desired.y-origin.y});desired={x:origin.x+d.x*limit,y:origin.y+d.y*limit};}}
     if(origin&&returning&&owner){const time=dependency2.intersectSweptCircles(entity.position,desired,entity.radius,owner.position,owner.radius);if(time!==null){desired={x:entity.position.x+(desired.x-entity.position.x)*time,y:entity.position.y+(desired.y-entity.position.y)*time};runtime={...runtime,returnCaught:true};changes.push(createStateChange('entity',entity.id,'setEntityRuntime',{runtime}));}}

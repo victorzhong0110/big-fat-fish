@@ -21,18 +21,21 @@ import * as dependency1 from '../content/handlers/mechanics.js';
  * @calls content/handlers/mechanics.js#planMechanic08GrokFlanks
  * @calls content/handlers/mechanics.js#planMechanic09GptReposition
  * @calls content/handlers/mechanics.js#planMechanic10BossArena
- * @calls content/handlers/mechanics.js#planMechanic11ObjectiveSignal
- * @calls content/handlers/mechanics.js#planMechanic11Glasswing
- * @calls content/handlers/mechanics.js#planMechanic12GptFourRoles
- * @calls content/handlers/mechanics.js#planMechanic13Handoff
- * @calls content/handlers/mechanics.js#planMechanic14Anomaly
- * @calls content/handlers/mechanics.js#planMechanic15Integration
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').Id} definitionId
  * @param {import('../contracts.d.ts').DomainEvent} event
  * @returns {import('../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function dispatchMechanicsHandler(context, definitionId, event) {
-  throw new Error('TODO V2: dispatch/mechanics.js#dispatchMechanicsHandler');
+  if(definitionId==='mech_01_exploration')return dependency1.planMechanic01Exploration(context,event);
+  if(definitionId==='mech_02_reinforcements')return dependency1.planMechanic02Reinforcements(context,event);
+  if(definitionId==='mech_03_gpt_support')return dependency1.planMechanic03GptSupport(context,event);
+  if(definitionId==='mech_04_claude_break')return dependency1.planMechanic04ClaudeBreak(context,event);
+  if(definitionId==='mech_05_boss_combo')return dependency1.planMechanic05BossCombo(context,event);
+  if(definitionId==='mech_06_alarm_cache')return dependency1.planMechanic06AlarmCache(context,event);
+  if(definitionId==='mech_07_tide')return dependency1.planMechanic07Tide(context,event);
+  if(definitionId==='mech_08_grok_flanks')return dependency1.planMechanic08GrokFlanks(context,event);
+  if(definitionId==='mech_09_gpt_reposition')return dependency1.planMechanic09GptReposition(context,event);
+  if(definitionId==='mech_10_boss_arena')return dependency1.planMechanic10BossArena(context,event);
+  throw new Error(`Unimplemented mechanic: ${definitionId}`);
 }

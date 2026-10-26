@@ -30,7 +30,7 @@ export function planSpawnSchedule(context) {
   if(due){
     const player=state.world.entities[state.player.entityId];
     const candidates=[due.position,...Array.from({length:16},(_,i)=>({x:player.position.x+Math.cos((i+Number(due.id.split(':').at(-1)||0))*Math.PI/8)*800,y:player.position.y+Math.sin((i+Number(due.id.split(':').at(-1)||0))*Math.PI/8)*800}))];
-    for(const position of candidates){const request={...due,position};if(dependency2.validateSpawnLocation(context,request).ok)return planEnemySpawn(context,request);}
+    for(const position of candidates){if(state.start.difficulty.mechanicIds.includes('mech_08_grok_flanks')&&due.enemyId==='enemy_grok_bot'&&(due.position.x<player.position.x?position.x>player.position.x-420:position.x<player.position.x+420))continue;const request={...due,position};if(dependency2.validateSpawnLocation(context,request).ok)return planEnemySpawn(context,request);}
     return createEmptyPlan();
   }
   if(state.flow.phase==='boss')return createEmptyPlan();
@@ -84,6 +84,6 @@ export function planReinforcementGroup(context, groupId, budgetId) {
   const concentrated=state.tick/60%90>=50,count=Math.min(concentrated?8:6,budget.total-budget.spawned-budget.reserved);
   if(count<=0)return createEmptyPlan();
   const player=state.world.entities[state.player.entityId],queue=[...state.world.spawnQueue];
-  for(let i=0;i<count;i++){const angle=(i+state.seed%16)*Math.PI/8;queue.push({id:`${groupId}:${i}`,groupId,budgetId,enemyId:'enemy_grok_bot',position:{x:player.position.x+Math.cos(angle)*800,y:player.position.y+Math.sin(angle)*800},at:state.tick+90+i*5,modelProfileId:'grok_bot',rewardPolicy:'normal',distillEligible:true});}
+  for(let i=0;i<count;i++){const angle=(i+state.seed%16)*Math.PI/8,flanks=state.start.difficulty.mechanicIds.includes('mech_08_grok_flanks'),right=i>=Math.ceil(count/2);queue.push({id:`${groupId}:${i}`,groupId,budgetId,enemyId:'enemy_grok_bot',position:flanks?{x:player.position.x+(right?800:-800),y:player.position.y+(right?200:-200)}:{x:player.position.x+Math.cos(angle)*800,y:player.position.y+Math.sin(angle)*800},at:state.tick+90+(flanks?(right?120:0)+(i%Math.ceil(count/2))*5:i*5),modelProfileId:'grok_bot',rewardPolicy:'normal',distillEligible:true});}
   return {...createEmptyPlan(),changes:[createStateChange('world',budgetId,'setSpawnDirector',{queue,budgets:state.world.budgets.map(item=>item.id===budgetId?{...item,reserved:item.reserved+count}:item),nextAt:state.tick+(concentrated?480:720)})]};
 }
