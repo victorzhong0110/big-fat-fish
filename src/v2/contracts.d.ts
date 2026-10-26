@@ -58,7 +58,7 @@ export interface Loadout { skillInstanceId?:Id; weapons: readonly WeaponState[];
 export interface PlayerState { entityId: Id; baseStats: BaseStats; modifiers: readonly StatModifier[]; loadout: Loadout; invulnerableRemaining: number; controlImmuneRemaining: number; }
 export interface PickupState { exclusiveGroup?: Id; skill?:{instanceId:Id;definitionId:Id;cooldown:number}; weapon?: WeaponState; id: Id; kind: 'riceXp' | 'gpuFragment' | 'part' | 'weapon' | 'skill'; amount: number; position: Vec2; instanceId: Id | null; collected: boolean; }
 export interface ObjectiveState { id: Id; kind: string; active: boolean; completed: boolean; progress: number; requiredEntityIds: readonly Id[]; rewardId: Id; }
-export interface SpawnRequest { id: Id; groupId: Id; enemyId: Id; position: Vec2; at: Tick; modelProfileId: Id; budgetId: Id; rewardPolicy: EntityState['rewardPolicy']; distillEligible: boolean; }
+export interface SpawnRequest { bossOwner?:Id; bossGrokSample?:boolean; id: Id; groupId: Id; enemyId: Id; position: Vec2; at: Tick; modelProfileId: Id; budgetId: Id; rewardPolicy: EntityState['rewardPolicy']; distillEligible: boolean; }
 export interface EncounterBudget { id: Id; total: number; reserved: number; spawned: number; maxAlive: number; }
 export interface PressureEvent { id: Id; mechanicId: Id; phase: 'queued' | 'telegraph' | 'active' | 'completed' | 'cancelled'; startedAt: Tick | null; remaining: number; budgetId: Id; runtime: Readonly<Record<string, Json>>; }
 export interface MapState { id: Id; biomeIndex: number; width: number; height: number; exploredCells: readonly Id[]; obstacleIds: readonly Id[]; checkpointIds: readonly Id[]; exitIds: readonly Id[]; navigationRevision: number; }
@@ -77,7 +77,7 @@ export interface DshCycleState { remaining: number; pendingOutcome: 'update' | '
 export interface BossState { entityId: Id; faction: Faction; phase: number; telegraph: Json; resetNodes: readonly { id: Id; hp: number; consumed: boolean; position: Vec2 }[]; resetRemaining: number; resetCooldown: number; spawnGroupSeq: number; }
 export interface ApiState { elapsedTicks: Tick; bossIndex: number; materialMinute: number; fragmentsThisMinute: number; partsThisMinute: number; }
 export interface DifficultySnapshot { level: number | 'api'; mode: Mode; mechanicIds: readonly Id[]; difficultyPerkIds: readonly Id[]; modelProfileIds: Readonly<Record<Faction, Id>>; hpMultiplier: number; damageMultiplier: number; spawnBudgetMultiplier: number; }
-export interface StartSnapshot { modLock?: readonly ModLockEntry[]; runtimeProfile?: 'core-preview' | 'adventure-slice' | 'full'; runId?: Id; treeNodeIds: readonly Id[]; dsh: readonly DshSlot[]; loadout: Loadout; difficulty: DifficultySnapshot; }
+export interface StartSnapshot { bossFaction?:Faction; modLock?: readonly ModLockEntry[]; runtimeProfile?: 'core-preview' | 'adventure-slice' | 'full'; runId?: Id; treeNodeIds: readonly Id[]; dsh: readonly DshSlot[]; loadout: Loadout; difficulty: DifficultySnapshot; }
 export interface FlowState { suspendedResumePhase?: Phase | null; phase: Phase; resumePhase: Phase | null; queuedLevelRewards: readonly LevelReward[]; choice: PluginChoice | null; settlementPending: boolean; pluginRerollsUsed?: number; }
 export interface GameState {
   spawnDirectorNextAt?: Tick; versions: Versions; runId: Id; seed: number; tick: Tick; uiTick: Tick; revision: number; lastWorldAdvanceTick: Tick | null; input: InputState; lastCommandSeq: number;
@@ -119,7 +119,7 @@ export interface Profile {
   checkpoint: Checkpoint | null;
 }
 export interface ProfilePlan { expectedRevision: number; next: Profile; events: readonly DomainEvent[]; }
-export interface StartRequest { mode: Mode; difficulty: number | 'api'; seed: number; weaponIds: readonly Id[]; skillId: Id; companionId: Id | null; }
+export interface StartRequest { bossFaction?:Faction; mode: Mode; difficulty: number | 'api'; seed: number; weaponIds: readonly Id[]; skillId: Id; companionId: Id | null; }
 export interface Checkpoint { id: Id; versions: Versions; revision: number; digest: string; state: GameState; }
 export interface Settlement { difficulty?: number | 'api'; mode?: Mode; id: Id; runId: Id; outcome: 'victory' | 'defeat' | 'withdrawal'; gpuFragments: number; parts: number; survivedTicks: number; bossKills: number; discoveries: readonly Id[]; }
 export interface StorageRecord { revision: number; profile: Profile; }
@@ -130,7 +130,7 @@ export interface PresentationPort { render(snapshot: RenderSnapshot): void; pres
 export interface InputPort { poll(): readonly InputSample[]; suspend(): void; dispose(): void; }
 export interface AudioPort { unlock(): Promise<void>; play(events: readonly DomainEvent[]): void; suspend(): void; dispose(): void; }
 export interface RuntimePorts { storage: StoragePort; presentation: PresentationPort; input: InputPort; audio: AudioPort; }
-export interface RenderEntity { abilityKind?:string; reflected?:number; projectileStyle?:string; quality?:number; effectRadius?:number; bossTelegraph?: Json; objectiveProgress?: number; unlocked?: boolean; opened?: boolean; radius: number; team: EntityState['team']; hp: number; maxHp: number; telegraphRemaining: number; shieldAmount: number; id: Id; kind: string; position: Vec2; facingRadians: number; spriteId: Id; modelLabel: string | null; hpFraction: number; weakArcDegrees: number | null; statusLabels: readonly string[]; }
+export interface RenderEntity { petCast?:Json; petZone?:string; guardHp?:number; linkEnd?:Vec2|null; abilityKind?:string; reflected?:number; projectileStyle?:string; quality?:number; effectRadius?:number; bossTelegraph?: Json; objectiveProgress?: number; unlocked?: boolean; opened?: boolean; radius: number; team: EntityState['team']; hp: number; maxHp: number; telegraphRemaining: number; shieldAmount: number; id: Id; kind: string; position: Vec2; facingRadians: number; spriteId: Id; modelLabel: string | null; hpFraction: number; weakArcDegrees: number | null; statusLabels: readonly string[]; }
 export interface RenderSnapshot { revision: number; tick: Tick; uiTick: Tick; phase: Phase; entities: readonly RenderEntity[]; hud: Json; panel: Json; }
 export interface UiAction { id: Id; type: string; payload: Json; }
 export interface ViewHandle { id: Id; }

@@ -29,7 +29,7 @@ export function planDistillEvent(context, event) {
     const record = /** @type {import('../contracts.d.ts').DeathRecord} */ (JSON.parse(JSON.stringify(event.payload)));
     const entity = state.world.entities[record.entityId], faction = record.faction;
     const rewardId = `distill:${event.id}`;
-    if (!entity || entity.kind !== 'enemy' || !entity.dead || !faction || !record.distillEligible || record.creditOwner !== 'player' || record.rewardPolicy === 'none' || state.processedRewardIds.includes(rewardId)) return createEmptyPlan();
+    if (!entity || entity.kind !== 'enemy' || !entity.dead || !faction || !record.distillEligible || record.creditOwner !== 'player' || record.rewardPolicy === 'none'&&entity.runtime.bossGrokSample!==true || state.processedRewardIds.includes(rewardId)) return createEmptyPlan();
     const boss = state.bosses.some(item => item.entityId === entity.id);
     const samples = boss ? 6 : faction === 'claude' ? record.rewardPolicy === 'elite' ? 6 : 3 : faction === 'gpt' && record.rewardPolicy === 'elite' ? 3 : 1;
     const track = advanceDistillTrack(state.distill[faction], samples, faction === 'grok' ? plugin.rank === 1 ? 10 : 7 : plugin.rank === 1 ? 6 : 4);

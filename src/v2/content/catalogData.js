@@ -1251,7 +1251,7 @@ export const CATALOG_DATA = {
         "contactDamage": 0,
         "radius": 16,
         "faction": "gpt",
-        "previewAvailable": false,
+        "previewAvailable": true,
         "sourceRow": [
           "40 / 105 / 弹体8",
           "停下举工具0.7秒后朝锁定方向发单枚工作泡，弹速200、冷却3秒；射击时不能移动，可趁停顿接近",
@@ -1273,7 +1273,7 @@ export const CATALOG_DATA = {
         "contactDamage": 6,
         "radius": 15,
         "faction": "gpt",
-        "previewAvailable": false,
+        "previewAvailable": true,
         "sourceRow": [
           "32 / 90 / 接触6",
           "每5秒为220内一个受伤友军恢复8生命，预先连线1秒；不治疗自己、不跨阵营治疗，打断/击败即可中止",
@@ -1295,7 +1295,7 @@ export const CATALOG_DATA = {
         "contactDamage": 7,
         "radius": 17,
         "faction": "gpt",
-        "previewAvailable": false,
+        "previewAvailable": true,
         "sourceRow": [
           "36 / 100 / 接触7",
           "朝玩家当前位置投一团火，落点半径70预警1秒后形成3秒火区，每秒6伤；冷却5秒，可走出区域，不贴身自爆",
@@ -1317,7 +1317,7 @@ export const CATALOG_DATA = {
         "contactDamage": 0,
         "radius": 15,
         "faction": "gpt",
-        "previewAvailable": false,
+        "previewAvailable": true,
         "sourceRow": [
           "30 / 75 / 弹体14",
           "350–650距离瞄准线预警1.1秒，锁定后直线发弹、弹速400，冷却4秒；横移或利用礁石遮挡",
@@ -1339,7 +1339,7 @@ export const CATALOG_DATA = {
         "contactDamage": 10,
         "radius": 20,
         "faction": "gpt",
-        "previewAvailable": false,
+        "previewAvailable": true,
         "sourceRow": [
           "65 / 65 / 接触10",
           "正面120°有可击破20耐久护盾，破盾后不再生；转身慢，背部可直接命中本体；数值显著低于Claude蟹",
@@ -1361,7 +1361,7 @@ export const CATALOG_DATA = {
         "contactDamage": 6,
         "radius": 16,
         "faction": "gpt",
-        "previewAvailable": false,
+        "previewAvailable": true,
         "sourceRow": [
           "34 / 70 / 接触6",
           "500内放半径65的藤圈，预警1秒、存在4秒，圈内减速25%而非禁锢；每6秒一次，最多2圈，可打掉中心嫩芽（10生命，无奖励）",
@@ -1383,7 +1383,7 @@ export const CATALOG_DATA = {
         "contactDamage": 8,
         "radius": 19,
         "faction": "gpt",
-        "previewAvailable": false,
+        "previewAvailable": true,
         "sourceRow": [
           "48 / 85 / 弹体7",
           "初始三层，每损失16生命掉一层；每4秒发当前层数枚扇形弹，预警0.8秒；越受伤输出越少，掉层不变成新敌人、不重复结算",
@@ -1444,7 +1444,7 @@ export const CATALOG_DATA = {
         "description": "Haiku无外壳，无额外基础能力。",
         "source": "08-model-variants.md",
         "handler": "content/handlers/models.js#planModelClaudeHaiku",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -1456,7 +1456,7 @@ export const CATALOG_DATA = {
         "description": "Sonnet全向可伤外壳，破壳一次眩晕后加速。",
         "source": "08-model-variants.md",
         "handler": "content/handlers/models.js#planModelClaudeSonnet",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -1468,7 +1468,7 @@ export const CATALOG_DATA = {
         "description": "Opus壳仅侧后270度可伤，破后继承眩晕/加速。",
         "source": "08-model-variants.md",
         "handler": "content/handlers/models.js#planModelClaudeOpus",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -1480,7 +1480,7 @@ export const CATALOG_DATA = {
         "description": "API Fable更大、背部120度弱点、破壳不晕并加速。",
         "source": "08-model-variants.md",
         "handler": "content/handlers/models.js#planModelClaudeFable",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -1492,7 +1492,7 @@ export const CATALOG_DATA = {
         "description": "API Mythos与Fable初值相同但显示名不同，不擅加新强弱。",
         "source": "08-model-variants.md",
         "handler": "content/handlers/models.js#planModelClaudeMythos",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -1504,7 +1504,7 @@ export const CATALOG_DATA = {
         "description": "Pro七种Pet基础技能；种类和模型profile分离。",
         "source": "08-model-variants.md",
         "handler": "content/handlers/models.js#planModelGptAstra",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -1516,7 +1516,7 @@ export const CATALOG_DATA = {
         "description": "Max5x按08逐Pet添加招式扩展，不提前开四种编组。",
         "source": "08-model-variants.md",
         "handler": "content/handlers/models.js#planModelGptSol",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -1528,7 +1528,7 @@ export const CATALOG_DATA = {
         "description": "Max20x继承Sol，逐Pet强化支援/区域/掉层等行为。",
         "source": "08-model-variants.md",
         "handler": "content/handlers/models.js#planModelGptTerra",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -1540,7 +1540,7 @@ export const CATALOG_DATA = {
         "description": "API继承Terra并开启08指定额外行为，假身/种子不发奖励。",
         "source": "08-model-variants.md",
         "handler": "content/handlers/models.js#planModelGptLuna",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -1552,7 +1552,7 @@ export const CATALOG_DATA = {
         "description": "Grok各档保持同一种Bot基础行为和指定低矮穿障profile，不获得高级技能。",
         "source": "08-model-variants.md",
         "handler": "content/handlers/models.js#planModelGrokBot",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5"
     },
@@ -2413,6 +2413,77 @@ export const CATALOG_DATA = {
       "id": "easter_interface",
       "kind": "entity",
       "displayName": "训练接口",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "gpt_core": {
+      "id": "gpt_core",
+      "kind": "entity",
+      "displayName": "可击破核心",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "gpt_zone": {
+      "id": "gpt_zone",
+      "kind": "entity",
+      "displayName": "危险区域",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "gpt_decoy": {
+      "id": "gpt_decoy",
+      "kind": "entity",
+      "displayName": "工具假身",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "boss_gpt": {
+      "id": "boss_gpt",
+      "kind": "entity",
+      "displayName": "ChatGPT · 重新生成",
+      "parameters": {
+        "hp": 3000,
+        "armor": 0,
+        "moveSpeed": 95
+      },
+      "version": "2.0.0-preview.5"
+    },
+    "boss_grok": {
+      "id": "boss_grok",
+      "kind": "entity",
+      "displayName": "Grok · 发射窗口",
+      "parameters": {
+        "hp": 2800,
+        "armor": 0,
+        "moveSpeed": 65
+      },
+      "version": "2.0.0-preview.5"
+    },
+    "gpt_reset_node": {
+      "id": "gpt_reset_node",
+      "kind": "entity",
+      "displayName": "重置节点",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "gpt_node_marker": {
+      "id": "gpt_node_marker",
+      "kind": "entity",
+      "displayName": "待激活节点",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "gpt_answer_area": {
+      "id": "gpt_answer_area",
+      "kind": "entity",
+      "displayName": "修改答案",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "grok_rocket": {
+      "id": "grok_rocket",
+      "kind": "entity",
+      "displayName": "可击毁火箭",
       "parameters": {},
       "version": "2.0.0-preview.5"
     }

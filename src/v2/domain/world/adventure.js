@@ -25,8 +25,8 @@ export function createAdventureMapPlan(start, catalog) {
   const id=`beacon:${i}`,position=beacons[i];put(createEntityState(id,'world_beacon','objective','neutral',position,{radius:120,runtime:{interaction:'beacon'}}));
   objectives.push({id,kind:'beacon',active:true,completed:false,progress:0,requiredEntityIds:[],rewardId:`objective:${id}`});
   for(let member=0;member<10;member++){
-   const crab=member<2,definitionId=crab?'enemy_claude_guard':'enemy_grok_bot',p=catalog.definitions[definitionId].parameters,theta=member*Math.PI*2/10;
-   const enemyId=`resident:${i}:${member}`;put(createEntityState(enemyId,definitionId,'enemy','enemy',{x:position.x+Math.cos(theta)*230,y:position.y+Math.sin(theta)*230},{faction:crab?'claude':'grok',radius:Number(p.radius),hp:Number(p.hp)*start.difficulty.hpMultiplier,maxHp:Number(p.hp)*start.difficulty.hpMultiplier,modelProfileId:crab?'claude_haiku':'grok_bot',rewardPolicy:'normal',distillEligible:true,runtime:{moveSpeed:Number(p.moveSpeed),contactDamage:Number(p.contactDamage)*start.difficulty.damageMultiplier,damageMultiplier:start.difficulty.damageMultiplier,spawnGroup:`beacon:${i}`}}));
+   const crab=member<2,pet=member>=2&&member<5,petGroups=[['codex','dewey','rocky'],['fireball','hoots','seedy'],['stacky','codex','dewey']],definitionId=crab?'enemy_claude_guard':pet?`enemy_gpt_${petGroups[i][member-2]}`:'enemy_grok_bot',p=catalog.definitions[definitionId].parameters,theta=member*Math.PI*2/10;
+   const enemyId=`resident:${i}:${member}`;put(createEntityState(enemyId,definitionId,'enemy','enemy',{x:position.x+Math.cos(theta)*230,y:position.y+Math.sin(theta)*230},{faction:crab?'claude':pet?'gpt':'grok',radius:Number(p.radius),hp:Number(p.hp)*start.difficulty.hpMultiplier,maxHp:Number(p.hp)*start.difficulty.hpMultiplier,modelProfileId:crab?start.difficulty.modelProfileIds.claude:pet?start.difficulty.modelProfileIds.gpt:'grok_bot',rewardPolicy:'normal',distillEligible:true,runtime:{moveSpeed:Number(p.moveSpeed),contactDamage:Number(p.contactDamage)*start.difficulty.damageMultiplier,damageMultiplier:start.difficulty.damageMultiplier,spawnGroup:`beacon:${i}`}}));
   }
  }
  put(createEntityState('boss:gate','world_gate','objective','neutral',{x:2500,y:1700},{radius:70,runtime:{interaction:'bossGate',unlocked:false}}));
@@ -56,4 +56,25 @@ export function planClaudeEncounter(context) {
  const p=context.catalog.definitions.boss_claude.parameters,entity=createEntityState('boss:claude','boss_claude','enemy','enemy',{x:2550,y:1750},{faction:'claude',radius:45,hp:Number(p.hp)*state.start.difficulty.hpMultiplier,maxHp:Number(p.hp)*state.start.difficulty.hpMultiplier,armor:Number(p.armor),rewardPolicy:'elite',distillEligible:true,runtime:{finalBoss:true,engaged:true,moveSpeed:Number(p.moveSpeed),contactDamage:Number(p.contactDamage)*state.start.difficulty.damageMultiplier,nextClaudeMoveAt:state.tick+120}});
  const boss={entityId:entity.id,faction:'claude',phase:1,telegraph:null,resetNodes:[],resetRemaining:0,resetCooldown:0,spawnGroupSeq:0};
  return {...createEmptyPlan(),changes:[createStateChange('world',entity.id,'putEntity',entity),createStateChange('world','bosses','setBosses',{bosses:[boss]}),createStateChange('flow','phase','setFlowPhase',{phase:'boss',resumePhase:null})]};
+}
+
+/** Start the selected real faction encounter after two beacons; old snapshots default to Claude.
+ * @implementationScope adventure-slice
+ * @calls domain/entities.js#createEntityState
+ * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/plans.js#createStateChange
+ * @calls domain/world/adventure.js#planClaudeEncounter
+ * @param {import('../../contracts.d.ts').EvaluationContext} context
+ * @returns {import('../../contracts.d.ts').SystemPlan}
+ */
+export function planBossEncounter(context){
+ const state=context.state,faction=state.start.bossFaction??'claude';if(faction==='claude')return planClaudeEncounter(context);
+ if(state.bosses.length||state.world.objectives.filter(o=>o.kind==='beacon'&&o.completed).length<2)return createEmptyPlan();
+ const definitionId=`boss_${faction}`,p=context.catalog.definitions[definitionId].parameters,id=`boss:${faction}`,entity=createEntityState(id,definitionId,'enemy','enemy',{x:2550,y:1750},{faction,radius:42,hp:Number(p.hp)*state.start.difficulty.hpMultiplier,maxHp:Number(p.hp)*state.start.difficulty.hpMultiplier,armor:0,rewardPolicy:'elite',distillEligible:true,runtime:{finalBoss:true,engaged:true,damageMultiplier:state.start.difficulty.damageMultiplier,gptReadyAt:state.tick+120,echoReadyAt:state.tick+720,rocketReadyAt:state.tick+180,nextWaveAt:state.tick+120}}),boss=/** @type {import('../../contracts.d.ts').BossState} */({entityId:id,faction,phase:1,telegraph:null,resetNodes:[],resetRemaining:0,resetCooldown:0,spawnGroupSeq:0}),changes=[createStateChange('world',id,'putEntity',entity)];
+ if(faction==='gpt'){
+  const points=[{x:2350,y:1500},{x:2750,y:1600},{x:2500,y:2000},{x:2250,y:1850},{x:2800,y:1900}],high=state.start.difficulty.mechanicIds.includes('mech_10_boss_arena'),start=state.seed%(high?5:3);
+  boss.resetNodes=Array.from({length:3},(_,n)=>({id:`node:${id}:${n}`,hp:45,consumed:false,position:points[(start+n)%(high?5:3)]}));
+  for(const node of boss.resetNodes)changes.push(createStateChange('world',`marker:${node.id}`,'putEntity',createEntityState(`marker:${node.id}`,'gpt_node_marker','objective','neutral',node.position,{radius:22,sourceId:id})));
+ }
+ changes.push(createStateChange('world','bosses','setBosses',{bosses:[boss]}),createStateChange('flow','phase','setFlowPhase',{phase:'boss',resumePhase:null}));return {...createEmptyPlan(),changes};
 }

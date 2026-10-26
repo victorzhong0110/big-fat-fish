@@ -1773,6 +1773,7 @@
       "layer": "content-handler",
       "purpose": "enemies逐项占位处理器；实际参数仍以玩法规格为准。",
       "dependencies": [
+        "domain/gptPets.js",
         "domain/meleeAi.js",
         "domain/plans.js"
       ],
@@ -1792,13 +1793,14 @@
           "result": "EffectPlan",
           "description": "enemy_gpt_codex / Codex · 调度小工人：40 / 105 / 弹体8；停下举工具0.7秒后朝锁定方向发单枚工作泡，弹速200、冷却3秒；射击时不能移动，可趁停顿接近；8",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/gptPets.js#planGptPet"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planEnemyGptDewey",
@@ -1815,13 +1817,14 @@
           "result": "EffectPlan",
           "description": "enemy_gpt_dewey / Dewey · 支援水滴：32 / 90 / 接触6；每5秒为220内一个受伤友军恢复8生命，预先连线1秒；不治疗自己、不跨阵营治疗，打断/击败即可中止；8",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/gptPets.js#planGptPet"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planEnemyGptFireball",
@@ -1838,13 +1841,14 @@
           "result": "EffectPlan",
           "description": "enemy_gpt_fireball / Fireball · 区域封路：36 / 100 / 接触7；朝玩家当前位置投一团火，落点半径70预警1秒后形成3秒火区，每秒6伤；冷却5秒，可走出区域，不贴身自爆；8",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/gptPets.js#planGptPet"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planEnemyGptHoots",
@@ -1861,13 +1865,14 @@
           "result": "EffectPlan",
           "description": "enemy_gpt_hoots / Hoots · 精准瞄准：30 / 75 / 弹体14；350–650距离瞄准线预警1.1秒，锁定后直线发弹、弹速400，冷却4秒；横移或利用礁石遮挡；8",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/gptPets.js#planGptPet"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planEnemyGptRocky",
@@ -1884,13 +1889,14 @@
           "result": "EffectPlan",
           "description": "enemy_gpt_rocky / Rocky · 护队小石头：65 / 65 / 接触10；正面120°有可击破20耐久护盾，破盾后不再生；转身慢，背部可直接命中本体；数值显著低于Claude蟹；8",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/gptPets.js#planGptPet"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planEnemyGptSeedy",
@@ -1907,13 +1913,14 @@
           "result": "EffectPlan",
           "description": "enemy_gpt_seedy / Seedy · 地形干扰：34 / 70 / 接触6；500内放半径65的藤圈，预警1秒、存在4秒，圈内减速25%而非禁锢；每6秒一次，最多2圈，可打掉中心嫩芽（10生命，无奖励）；8",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/gptPets.js#planGptPet"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planEnemyGptStacky",
@@ -1930,13 +1937,14 @@
           "result": "EffectPlan",
           "description": "enemy_gpt_stacky / Stacky · 叠层输出：48 / 85 / 弹体7；初始三层，每损失16生命掉一层；每4秒发当前层数枚扇形弹，预警0.8秒；越受伤输出越少，掉层不变成新敌人、不重复结算；8",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/gptPets.js#planGptPet"
           ],
           "rule": "仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planEnemyClaudeGuard",
@@ -2371,6 +2379,7 @@
       "layer": "content-handler",
       "purpose": "四档模型逐项接口，Fable/Mythos分别可追溯。",
       "dependencies": [
+        "domain/modelProfiles.js",
         "domain/plans.js"
       ],
       "functions": [
@@ -2389,13 +2398,14 @@
           "result": "EffectPlan",
           "description": "Haiku无外壳，无额外基础能力。",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/modelProfiles.js#planModelProfile"
           ],
           "rule": "同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planModelClaudeSonnet",
@@ -2412,13 +2422,14 @@
           "result": "EffectPlan",
           "description": "Sonnet全向可伤外壳，破壳一次眩晕后加速。",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/modelProfiles.js#planModelProfile"
           ],
           "rule": "同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planModelClaudeOpus",
@@ -2435,13 +2446,14 @@
           "result": "EffectPlan",
           "description": "Opus壳仅侧后270度可伤，破后继承眩晕/加速。",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/modelProfiles.js#planModelProfile"
           ],
           "rule": "同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planModelClaudeFable",
@@ -2458,13 +2470,14 @@
           "result": "EffectPlan",
           "description": "API Fable更大、背部120度弱点、破壳不晕并加速。",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/modelProfiles.js#planModelProfile"
           ],
           "rule": "同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planModelClaudeMythos",
@@ -2481,13 +2494,14 @@
           "result": "EffectPlan",
           "description": "API Mythos与Fable初值相同但显示名不同，不擅加新强弱。",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/modelProfiles.js#planModelProfile"
           ],
           "rule": "同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planModelGptAstra",
@@ -2504,13 +2518,14 @@
           "result": "EffectPlan",
           "description": "Pro七种Pet基础技能；种类和模型profile分离。",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/modelProfiles.js#planModelProfile"
           ],
           "rule": "同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planModelGptSol",
@@ -2527,13 +2542,14 @@
           "result": "EffectPlan",
           "description": "Max5x按08逐Pet添加招式扩展，不提前开四种编组。",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/modelProfiles.js#planModelProfile"
           ],
           "rule": "同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planModelGptTerra",
@@ -2550,13 +2566,14 @@
           "result": "EffectPlan",
           "description": "Max20x继承Sol，逐Pet强化支援/区域/掉层等行为。",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/modelProfiles.js#planModelProfile"
           ],
           "rule": "同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planModelGptLuna",
@@ -2573,13 +2590,14 @@
           "result": "EffectPlan",
           "description": "API继承Terra并开启08指定额外行为，假身/种子不发奖励。",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/modelProfiles.js#planModelProfile"
           ],
           "rule": "同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planModelGrokBot",
@@ -2596,13 +2614,14 @@
           "result": "EffectPlan",
           "description": "Grok各档保持同一种Bot基础行为和指定低矮穿障profile，不获得高级技能。",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/modelProfiles.js#planModelProfile"
           ],
           "rule": "同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         }
       ]
     },
@@ -3894,6 +3913,13 @@
           "description": "按合法稳定id和已实现绑定只调用一个对应处理器。",
           "calls": [
             "content/handlers/enemies.js#planEnemyClaudeGuard",
+            "content/handlers/enemies.js#planEnemyGptCodex",
+            "content/handlers/enemies.js#planEnemyGptDewey",
+            "content/handlers/enemies.js#planEnemyGptFireball",
+            "content/handlers/enemies.js#planEnemyGptHoots",
+            "content/handlers/enemies.js#planEnemyGptRocky",
+            "content/handlers/enemies.js#planEnemyGptSeedy",
+            "content/handlers/enemies.js#planEnemyGptStacky",
             "content/handlers/enemies.js#planEnemyGrokBot"
           ],
           "rule": "@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。",
@@ -3901,7 +3927,7 @@
           "phase": "dispatch",
           "callMode": "dispatch",
           "implementation": "implemented",
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
         }
       ]
     },
@@ -3984,22 +4010,23 @@
           "result": "EffectPlan",
           "description": "按合法稳定id和已实现绑定只调用一个对应处理器。",
           "calls": [
-            "content/handlers/models.js#planModelClaudeHaiku",
-            "content/handlers/models.js#planModelClaudeSonnet",
-            "content/handlers/models.js#planModelClaudeOpus",
             "content/handlers/models.js#planModelClaudeFable",
+            "content/handlers/models.js#planModelClaudeHaiku",
             "content/handlers/models.js#planModelClaudeMythos",
+            "content/handlers/models.js#planModelClaudeOpus",
+            "content/handlers/models.js#planModelClaudeSonnet",
             "content/handlers/models.js#planModelGptAstra",
+            "content/handlers/models.js#planModelGptLuna",
             "content/handlers/models.js#planModelGptSol",
             "content/handlers/models.js#planModelGptTerra",
-            "content/handlers/models.js#planModelGptLuna",
             "content/handlers/models.js#planModelGrokBot"
           ],
           "rule": "@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "dispatch",
           "callMode": "dispatch",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "core-preview + adventure-slice"
         }
       ]
     },
@@ -4406,7 +4433,7 @@
           "phase": "query",
           "callMode": "sequence",
           "implementation": "implemented",
-          "implementationScope": "core-preview"
+          "implementationScope": "core-preview + adventure-slice"
         },
         {
           "name": "planCompanionAi",
@@ -4441,6 +4468,8 @@
           "description": "仅分派当前Claude首领，GPT/Grok首领明确拒绝。",
           "calls": [
             "domain/bosses/claude.js#planClaudeBoss",
+            "domain/bosses/gpt.js#planGptBoss",
+            "domain/bosses/grok.js#planGrokBoss",
             "domain/plans.js#mergeSystemPlans"
           ],
           "rule": "",
@@ -4679,7 +4708,13 @@
       "path": "domain/bosses/gpt.js",
       "layer": "domain",
       "purpose": "ChatGPT三个节点的局部重置事务。",
-      "dependencies": [],
+      "dependencies": [
+        "domain/entities.js",
+        "domain/geometry.js",
+        "domain/motionSolver.js",
+        "domain/plans.js",
+        "domain/serialization.js"
+      ],
       "functions": [
         {
           "name": "planGptBoss",
@@ -4693,17 +4728,23 @@
               "type": "untyped"
             }
           ],
-          "result": "EffectPlan",
+          "result": "SystemPlan",
           "description": "按血量/节点/冷却决定读条，保持可被打死；低级基础位置、高级5选3。",
           "calls": [
-            "domain/bosses/gpt.js#planGptReset",
-            "domain/bosses/gpt.js#planGptResetInterrupt"
+            "domain/entities.js#createEntityState",
+            "domain/geometry.js#distanceSquared",
+            "domain/geometry.js#normalizeVector",
+            "domain/motionSolver.js#resolveBodyDestination",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         },
         {
           "name": "planGptReset",
@@ -4717,14 +4758,19 @@
               "type": "untyped"
             }
           ],
-          "result": "EffectPlan",
+          "result": "SystemPlan",
           "description": "消耗当前节点，回血、清旧敌弹/回响、预告新波次；不改玩家或sourceId/5h账本。",
-          "calls": [],
+          "calls": [
+            "domain/bosses/gpt.js#planGptResetInterrupt",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
           "rule": "绝不调用checkpoint.restore或重建整局；当tick已致死则不再重置。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         },
         {
           "name": "planGptResetInterrupt",
@@ -4742,14 +4788,44 @@
               "type": "untyped"
             }
           ],
-          "result": "EffectPlan",
+          "result": "SystemPlan",
           "description": "击碎节点消费一次尝试并进入10秒保护；不恢复Boss血量。",
-          "calls": [],
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
+        },
+        {
+          "description": "planGptBossEvent",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planGptBossEvent",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/bosses/gpt.js#planGptResetInterrupt",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
+          "implementationScope": "adventure-slice"
         }
       ]
     },
@@ -4758,7 +4834,10 @@
       "layer": "domain",
       "purpose": "Grok首领只有简单火箭和召集人海。",
       "dependencies": [
-        "domain/world/spawning.js"
+        "domain/entities.js",
+        "domain/geometry.js",
+        "domain/plans.js",
+        "domain/serialization.js"
       ],
       "functions": [
         {
@@ -4773,16 +4852,22 @@
               "type": "untyped"
             }
           ],
-          "result": "EffectPlan",
+          "result": "SystemPlan",
           "description": "预告单枚可击毁火箭和召兵；50%后仅缩短召兵间隔，不加高级技能。",
           "calls": [
-            "domain/bosses/grok.js#planGrokBossReinforcements"
+            "domain/bosses/grok.js#planGrokBossReinforcements",
+            "domain/entities.js#createEntityState",
+            "domain/geometry.js#distanceSquared",
+            "domain/geometry.js#normalizeVector",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
         },
         {
           "name": "planGrokBossReinforcements",
@@ -4796,16 +4881,44 @@
               "type": "untyped"
             }
           ],
-          "result": "EffectPlan",
+          "result": "SystemPlan",
           "description": "按局部上限/入口预留召兵，召兵无经验资源、每轮最多3个样本。",
           "calls": [
-            "domain/world/spawning.js#planReinforcementGroup"
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice"
+        },
+        {
+          "description": "planGrokProjectiles",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planGrokProjectiles",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/geometry.js#distanceSquared",
+            "domain/geometry.js#intersectSweptCircles",
+            "domain/geometry.js#normalizeVector",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson"
+          ],
+          "implementationScope": "adventure-slice"
         }
       ]
     },
@@ -5263,6 +5376,7 @@
       "layer": "domain",
       "purpose": "伤害的唯一规划入口；不递归调用击杀或效果钩子。",
       "dependencies": [
+        "domain/modelProfiles.js",
         "domain/pluginStats.js",
         "domain/quotas.js",
         "domain/random.js",
@@ -5288,6 +5402,8 @@
           "description": "检查命中/无敌，分流外壳，计算额度/护甲/减伤/暴击/盾/生命，产生伤害和死亡候选。",
           "calls": [
             "domain/damage.js#isDamageRequestValid",
+            "domain/modelProfiles.js#resolvePetGuard",
+            "domain/modelProfiles.js#resolvePetLinkFactor",
             "domain/pluginStats.js#resolveCacheHitFactor",
             "domain/quotas.js#planQuotaAllowance",
             "domain/random.js#drawRandom",
@@ -5921,7 +6037,9 @@
       "path": "domain/entities.js",
       "layer": "domain",
       "purpose": "Canonical entity constructor; callers provide stable identity and source snapshots.",
-      "dependencies": [],
+      "dependencies": [
+        "domain/modelProfiles.js"
+      ],
       "functions": [
         {
           "description": "按稳定ID和来源建立完整实体默认值；调用者提供出生参数快照。",
@@ -5959,7 +6077,9 @@
           ],
           "result": "EntityState",
           "implementation": "implemented",
-          "calls": []
+          "calls": [
+            "domain/modelProfiles.js#initializeModelProfile"
+          ]
         }
       ]
     },
@@ -6184,6 +6304,110 @@
           "result": "{x:number;y:number;width:number;height:number}",
           "implementation": "implemented",
           "calls": []
+        }
+      ]
+    },
+    {
+      "path": "domain/gptPets.js",
+      "layer": "domain",
+      "purpose": "@param {import('../contracts.d.ts').EvaluationContext} c @param {import('../contracts.d.ts').DeepReadonly<import('../contracts.d.ts').EntityState>} owner @param {import('../contracts.d.ts').Vec2} point @param {string} id @param {number} amount @param {number} speed @param {number} offset",
+      "dependencies": [
+        "domain/abilities.js",
+        "domain/entities.js",
+        "domain/geometry.js",
+        "domain/meleeAi.js",
+        "domain/modelProfiles.js",
+        "domain/motionSolver.js",
+        "domain/navigation.js",
+        "domain/plans.js",
+        "domain/serialization.js"
+      ],
+      "functions": [
+        {
+          "description": "planGptPet",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planGptPet",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "kind",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/abilities.js#selectAbilityTarget",
+            "domain/entities.js#createEntityState",
+            "domain/geometry.js#distanceSquared",
+            "domain/geometry.js#normalizeVector",
+            "domain/meleeAi.js#planMeleeEnemy",
+            "domain/modelProfiles.js#resolvePetStage",
+            "domain/motionSolver.js#resolveBodyDestination",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
+        },
+        {
+          "description": "planGptFields",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planGptFields",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/geometry.js#distanceSquared",
+            "domain/modelProfiles.js#resolvePetStage",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
+        },
+        {
+          "description": "planPetModelEvent",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planPetModelEvent",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/modelProfiles.js#resolvePetStage",
+            "domain/navigation.js#canCloseMapPassage",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
         }
       ]
     },
@@ -6493,6 +6717,133 @@
       ]
     },
     {
+      "path": "domain/modelProfiles.js",
+      "layer": "domain",
+      "purpose": "Resolve a Pet stage once, independent of its species and cumulative difficulty mechanics.",
+      "dependencies": [
+        "domain/plans.js"
+      ],
+      "functions": [
+        {
+          "description": "resolvePetStage",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolvePetStage",
+          "args": [
+            {
+              "name": "entity",
+              "type": "untyped"
+            }
+          ],
+          "result": "number",
+          "implementation": "implemented",
+          "calls": [],
+          "implementationScope": "core-preview + adventure-slice"
+        },
+        {
+          "description": "initializeModelProfile",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "initializeModelProfile",
+          "args": [
+            {
+              "name": "entity",
+              "type": "untyped"
+            }
+          ],
+          "result": "EntityState",
+          "implementation": "implemented",
+          "calls": [
+            "domain/modelProfiles.js#resolvePetStage"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
+        },
+        {
+          "description": "planModelProfile",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planModelProfile",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            },
+            {
+              "name": "profileId",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/modelProfiles.js#initializeModelProfile",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
+        },
+        {
+          "description": "resolvePetGuard",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolvePetGuard",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "request",
+              "type": "untyped"
+            }
+          ],
+          "result": "{blocked:boolean;damage:number;plan:SystemPlan}",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
+        },
+        {
+          "description": "resolvePetLinkFactor",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolvePetLinkFactor",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            },
+            {
+              "name": "targetId",
+              "type": "untyped"
+            }
+          ],
+          "result": "number",
+          "implementation": "implemented",
+          "calls": [
+            "domain/modelProfiles.js#resolvePetStage"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
+        }
+      ]
+    },
+    {
       "path": "domain/motionSolver.js",
       "layer": "domain",
       "purpose": "Sweep and slide a circular body along blocking circular terrain, then clamp map bounds.",
@@ -6671,13 +7022,14 @@
           "result": "boolean",
           "description": "关闭捷径前验证主线、检查点和出口仍可达。",
           "calls": [
+            "domain/geometry.js#distanceSquared",
             "domain/navigation.js#findNavigationPath"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "chooseRetreatPoint",
@@ -6698,14 +7050,15 @@
           "result": "Vec2 | null",
           "description": "选择GPT后撤/保护位置，无遮挡合法点才移动。",
           "calls": [
-            "domain/navigation.js#findNavigationPath",
-            "domain/geometry.js#distanceSquared"
+            "domain/collision.js#canTraverseObstacle",
+            "domain/geometry.js#distanceSquared",
+            "domain/navigation.js#findNavigationPath"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -8372,6 +8725,29 @@
             "domain/plans.js#createStateChange"
           ],
           "implementationScope": "adventure-slice"
+        },
+        {
+          "description": "planBossEncounter",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planBossEncounter",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/world/adventure.js#planClaudeEncounter"
+          ],
+          "implementationScope": "adventure-slice"
         }
       ]
     },
@@ -8464,7 +8840,7 @@
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
             "domain/rewards.js#planWorldReward",
-            "domain/world/adventure.js#planClaudeEncounter"
+            "domain/world/adventure.js#planBossEncounter"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -9040,11 +9416,13 @@
         "dispatch/mechanics.js",
         "dispatch/models.js",
         "dispatch/plugins.js",
+        "domain/bosses/gpt.js",
         "domain/combatPlugins.js",
         "domain/companions.js",
         "domain/distill.js",
         "domain/dshEffects.js",
         "domain/easter.js",
+        "domain/gptPets.js",
         "domain/plans.js",
         "domain/status.js"
       ],
@@ -9065,11 +9443,13 @@
           "description": "分派蒸馏、封印破坏和并行调用事件；其余首批插件由明确数据消费者处理。",
           "calls": [
             "content/handlers/plugins.js#planPluginParallel",
+            "domain/bosses/gpt.js#planGptBossEvent",
             "domain/combatPlugins.js#planCombatPluginEvent",
             "domain/companions.js#planCompanionMilestones",
             "domain/distill.js#planDistillEvent",
             "domain/dshEffects.js#planDshEffects",
             "domain/easter.js#planEasterEvent",
+            "domain/gptPets.js#planPetModelEvent",
             "domain/plans.js#mergeSystemPlans",
             "domain/status.js#planSealRelease"
           ],
@@ -9090,6 +9470,8 @@
         "domain/abilities.js",
         "domain/ai.js",
         "domain/attacks.js",
+        "domain/bosses/gpt.js",
+        "domain/bosses/grok.js",
         "domain/collision.js",
         "domain/combatPlugins.js",
         "domain/companions.js",
@@ -9098,6 +9480,7 @@
         "domain/dshCycle.js",
         "domain/dshEffects.js",
         "domain/easter.js",
+        "domain/gptPets.js",
         "domain/lora.js",
         "domain/movement.js",
         "domain/plans.js",
@@ -9146,6 +9529,8 @@
             "domain/ai.js#planEnemyAi",
             "domain/attacks.js#planCollisionEffects",
             "domain/attacks.js#planWeaponFire",
+            "domain/bosses/gpt.js#planGptReset",
+            "domain/bosses/grok.js#planGrokProjectiles",
             "domain/collision.js#detectCollisions",
             "domain/combatPlugins.js#planCombatPluginWorld",
             "domain/companions.js#planPartnerBanContact",
@@ -9154,6 +9539,7 @@
             "domain/dshCycle.js#planDshCycleEvent",
             "domain/dshEffects.js#planDshEffects",
             "domain/easter.js#planEasterAdvance",
+            "domain/gptPets.js#planGptFields",
             "domain/movement.js#planEntityMotion",
             "domain/movement.js#planPickupMotion",
             "domain/movement.js#planPlayerMovement",
@@ -10841,9 +11227,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 96,
-    "functions": 361,
-    "implemented": 270,
-    "placeholders": 91
+    "modules": 98,
+    "functions": 372,
+    "implemented": 306,
+    "placeholders": 66
   }
 }

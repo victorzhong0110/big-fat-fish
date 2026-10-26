@@ -49,7 +49,7 @@ export function planShellBreak(context, entityId) {
   if (!entity?.shell || entity.shell.broken) return { changes: [], effects: [], events: [], persistence: [], diagnostics: [] };
   const apiModel = entity.modelProfileId === 'claude_fable' || entity.modelProfileId === 'claude_mythos';
   return {
-    changes: [{ target: 'entity', id: entityId, operation: 'setShell', payload: { ...entity.shell, hp: 0, broken: true, stunRemaining: apiModel ? 0 : 0.8, enraged: apiModel } }],
+    changes: [{target:'entity',id:entityId,operation:'setEntityRadius',payload:{radius:apiModel?30:22}},{ target: 'entity', id: entityId, operation: 'setShell', payload: { ...entity.shell, hp: 0, broken: true, stunRemaining: apiModel ? 0 : 0.8, enraged: apiModel } }],
     effects: [], persistence: [], diagnostics: [],
     events: [{ id: `shellBroken:${entityId}`, runId: context.state.runId, tick: context.state.tick, seq: 0, type: 'ShellBroken', sourceId: entityId, targetId: entityId, payload: { apiModel } }],
   };

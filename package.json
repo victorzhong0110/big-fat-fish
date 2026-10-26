@@ -17,7 +17,8 @@
     "test:v2:mods": "node scripts/test-v2-mods-browser.mjs",
     "test:v2:nest": "node scripts/test-v2-nest-browser.mjs",
     "test:v2:equipment": "node scripts/test-v2-equipment-browser.mjs",
-    "test:v2:builds": "node scripts/test-v2-builds-browser.mjs"
+    "test:v2:builds": "node scripts/test-v2-builds-browser.mjs",
+    "test:v2:factions": "node scripts/test-v2-factions-browser.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"

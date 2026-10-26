@@ -7,6 +7,9 @@ import { createEmptyPlan, createStateChange } from '../domain/plans.js';
 import { planDistilledAbilities, planDistillEvent } from '../domain/distill.js';
 import { planEventHooks } from './hooks.js';
 import { planLoraUiStep } from '../domain/lora.js';
+import {planGrokProjectiles} from '../domain/bosses/grok.js';
+import {planGptReset} from '../domain/bosses/gpt.js';
+import {planGptFields} from '../domain/gptPets.js';
 import {planEasterAdvance} from '../domain/easter.js';
 import {planDshEffects} from '../domain/dshEffects.js';
 import { planDshCycleEvent } from '../domain/dshCycle.js';
@@ -34,6 +37,8 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls domain/ai.js#planEnemyAi
  * @calls domain/attacks.js#planCollisionEffects
  * @calls domain/attacks.js#planWeaponFire
+ * @calls domain/bosses/gpt.js#planGptReset
+ * @calls domain/bosses/grok.js#planGrokProjectiles
  * @calls domain/collision.js#detectCollisions
  * @calls domain/combatPlugins.js#planCombatPluginWorld
  * @calls domain/companions.js#planPartnerBanContact
@@ -42,6 +47,7 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls domain/dshCycle.js#planDshCycleEvent
  * @calls domain/dshEffects.js#planDshEffects
  * @calls domain/easter.js#planEasterAdvance
+ * @calls domain/gptPets.js#planGptFields
  * @calls domain/movement.js#planEntityMotion
  * @calls domain/movement.js#planPickupMotion
  * @calls domain/movement.js#planPlayerMovement
@@ -78,12 +84,14 @@ export function advancePreviewWorldTick(state, commands, catalog) {
   apply(planStatusAdvance(context()));
   apply(planDshCycleEvent(context(), { id: `world:${working.tick}`, runId: working.runId, tick: working.tick, seq: 0, type: 'WorldTick', sourceId: null, targetId: null, payload: {} }));
   apply(planSpawnSchedule(context()));
+  apply(planGptFields(context()));
   apply(planEnemyAi(context()));
   apply(planBossAi(context()));
   apply(planCompanionAi(context()));
   apply(planAbilityFields(context()));
   apply(planPlayerMovement(context(), working.input));
   apply(planEntityMotion(context()));
+  apply(planGrokProjectiles(context()));
   apply(planPartnerBanContact(context()));
   apply(planAbilityBursts(context()));
   apply(planCombatPluginWorld(context()));
@@ -98,6 +106,7 @@ export function advancePreviewWorldTick(state, commands, catalog) {
   const drained = effects.length ? drainEffectQueue(context(), { pending: effects, processedIds: [], spawnedThisTick: 0 }) : { nextWorking: working, deaths: [], events: [], persistence: [], diagnostics: [], exhausted: false };
   working = drained.nextWorking; outbox.events.push(...drained.events); outbox.persistence.push(...drained.persistence); outbox.diagnostics.push(...drained.diagnostics);
   if (drained.exhausted) throw new Error('Combat preview effect queue exhausted; no partial frame was committed');
+  for(const boss of working.bosses)if(boss.faction==='gpt')apply(planGptReset(context(),boss));
   apply(planDeathRewards(context(), drained.deaths).plan);
   apply(planAbilityHistory(context()));
   const outcome = resolveTerminalOutcome(context(), drained.deaths);

@@ -72,7 +72,7 @@ export function planEntityMotion(context) {
     if(origin&&!returning){const distance=Math.hypot(desired.x-origin.x,desired.y-origin.y),limit=Number(runtime.returnDistance);if(distance>limit){const d=dependency2.normalizeVector({x:desired.x-origin.x,y:desired.y-origin.y});desired={x:origin.x+d.x*limit,y:origin.y+d.y*limit};}}
     if(origin&&returning&&owner){const time=dependency2.intersectSweptCircles(entity.position,desired,entity.radius,owner.position,owner.radius);if(time!==null){desired={x:entity.position.x+(desired.x-entity.position.x)*time,y:entity.position.y+(desired.y-entity.position.y)*time};runtime={...runtime,returnCaught:true};changes.push(createStateChange('entity',entity.id,'setEntityRuntime',{runtime}));}}
     if(origin&&Math.hypot(desired.x-origin.x,desired.y-origin.y)>Number(runtime.returnMaxDistance)+1e-8){changes.push(createStateChange('world',entity.id,'removeEntity',{}));continue;}
-    const position=entity.kind==='projectile'?desired:resolveBodyDestination(context,entity,desired);
+    const position=entity.kind==='projectile'||entity.runtime.enemyRocket===true?desired:resolveBodyDestination(context,entity,desired);
     changes.push(createStateChange('entity',entity.id,'setEntityKinematics',{position,previousPosition:entity.position,velocity,facingRadians:entity.kind==='projectile'?Math.atan2(velocity.y,velocity.x):entity.facingRadians}));
   }
   return {...createEmptyPlan(),changes,effects,events};

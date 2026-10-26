@@ -41,6 +41,7 @@ export function detectCollisions(context) {
   const hits = /** @type {import('../contracts.d.ts').Collision[]} */ ([]);
   for (const projectile of entities.filter(entity => entity.kind === 'projectile' && (entity.expiresAt === null || entity.expiresAt >= state.tick))) {
     for (const target of entities) {
+      if(target.runtime.untargetable===true)continue;
       if (target.id === projectile.id || target.id === projectile.sourceId || target.kind === 'projectile' || target.kind === 'pickup' || target.kind === 'companion') continue;
       if (target.kind === 'obstacle') {
         if (canTraverseObstacle(projectile, target, context.catalog)) continue;

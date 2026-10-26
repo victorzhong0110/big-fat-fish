@@ -20,7 +20,7 @@ import * as dependency8 from './navigation.js';
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：分派为每个合法entity/handler一次，不能把声明的所有分支直接全跑。
- * @implementationScope core-preview
+ * @implementationScope core-preview + adventure-slice
  * @calls dispatch/enemies.js#dispatchEnemiesHandler
  * @calls domain/plans.js#mergeSystemPlans
  * @param {import('../contracts.d.ts').EvaluationContext} context
@@ -53,13 +53,16 @@ export function planCompanionAi(context) {
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @implementationScope adventure-slice
  * @calls domain/bosses/claude.js#planClaudeBoss
+ * @calls domain/bosses/gpt.js#planGptBoss
+ * @calls domain/bosses/grok.js#planGrokBoss
  * @calls domain/plans.js#mergeSystemPlans
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @returns {import('../contracts.d.ts').SystemPlan}
  */
 export function planBossAi(context) {
   const plans = context.state.bosses.filter(boss => !context.state.world.entities[boss.entityId]?.dead).map(boss => {
-    if (boss.faction !== 'claude') throw new Error('GPT/Grok boss runtime is not connected yet');
+    if(boss.faction==='gpt')return dependency6.planGptBoss(context,boss);
+    if(boss.faction==='grok')return dependency7.planGrokBoss(context,boss);
     return dependency5.planClaudeBoss(context, boss);
   });
   return mergeSystemPlans(plans);

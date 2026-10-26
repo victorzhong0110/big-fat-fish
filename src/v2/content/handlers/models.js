@@ -1,9 +1,10 @@
 // @ts-check
 /**
  * 四档模型逐项接口，Fable/Mythos分别可追溯。
- * ARCHITECTURE SCAFFOLD ONLY — all bodies are placeholders.
+ * Model rules are initialized once; runtime abilities consume the saved profile.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
+import {planModelProfile} from '../../domain/modelProfiles.js';
 import * as dependency1 from '../../domain/plans.js';
 
 /**
@@ -11,14 +12,14 @@ import * as dependency1 from '../../domain/plans.js';
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/modelProfiles.js#planModelProfile
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planModelClaudeHaiku(context, event) {
-  throw new Error('TODO V2: content/handlers/models.js#planModelClaudeHaiku');
+  return planModelProfile(context,event,'claude_haiku');
 }
 
 /**
@@ -26,14 +27,14 @@ export function planModelClaudeHaiku(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/modelProfiles.js#planModelProfile
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planModelClaudeSonnet(context, event) {
-  throw new Error('TODO V2: content/handlers/models.js#planModelClaudeSonnet');
+  return planModelProfile(context,event,'claude_sonnet');
 }
 
 /**
@@ -41,14 +42,14 @@ export function planModelClaudeSonnet(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/modelProfiles.js#planModelProfile
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planModelClaudeOpus(context, event) {
-  throw new Error('TODO V2: content/handlers/models.js#planModelClaudeOpus');
+  return planModelProfile(context,event,'claude_opus');
 }
 
 /**
@@ -56,14 +57,14 @@ export function planModelClaudeOpus(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/modelProfiles.js#planModelProfile
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planModelClaudeFable(context, event) {
-  throw new Error('TODO V2: content/handlers/models.js#planModelClaudeFable');
+  return planModelProfile(context,event,'claude_fable');
 }
 
 /**
@@ -71,14 +72,14 @@ export function planModelClaudeFable(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/modelProfiles.js#planModelProfile
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planModelClaudeMythos(context, event) {
-  throw new Error('TODO V2: content/handlers/models.js#planModelClaudeMythos');
+  return planModelProfile(context,event,'claude_mythos');
 }
 
 /**
@@ -86,14 +87,14 @@ export function planModelClaudeMythos(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/modelProfiles.js#planModelProfile
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planModelGptAstra(context, event) {
-  throw new Error('TODO V2: content/handlers/models.js#planModelGptAstra');
+  return planModelProfile(context,event,'gpt_astra');
 }
 
 /**
@@ -101,14 +102,14 @@ export function planModelGptAstra(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/modelProfiles.js#planModelProfile
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planModelGptSol(context, event) {
-  throw new Error('TODO V2: content/handlers/models.js#planModelGptSol');
+  return planModelProfile(context,event,'gpt_sol');
 }
 
 /**
@@ -116,14 +117,14 @@ export function planModelGptSol(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/modelProfiles.js#planModelProfile
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planModelGptTerra(context, event) {
-  throw new Error('TODO V2: content/handlers/models.js#planModelGptTerra');
+  return planModelProfile(context,event,'gpt_terra');
 }
 
 /**
@@ -131,14 +132,14 @@ export function planModelGptTerra(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/modelProfiles.js#planModelProfile
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planModelGptLuna(context, event) {
-  throw new Error('TODO V2: content/handlers/models.js#planModelGptLuna');
+  return planModelProfile(context,event,'gpt_luna');
 }
 
 /**
@@ -146,12 +147,12 @@ export function planModelGptLuna(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：同名参数按profile覆盖一次，禁止把低档/高档两套招式同时复制执行；不清除累计难度机制。
- * @calls domain/plans.js#createEmptyPlan
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/modelProfiles.js#planModelProfile
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planModelGrokBot(context, event) {
-  throw new Error('TODO V2: content/handlers/models.js#planModelGrokBot');
+  return planModelProfile(context,event,'grok_bot');
 }

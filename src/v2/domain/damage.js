@@ -4,6 +4,7 @@
  * Incremental V2 implementation; remaining TODO bodies are intentionally unavailable.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
+import {resolvePetGuard,resolvePetLinkFactor} from './modelProfiles.js';
 import{resolveCacheHitFactor}from'./pluginStats.js';
 import { resolveTreeSurvival } from './treeRuntime.js';
 import * as dependency1 from './quotas.js';
@@ -18,6 +19,8 @@ import * as dependency5 from './random.js';
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：有壳目标先外壳分支；对敌暴击只在原生武器允许处一次计算；额度只用于敌→玩家。
  * @calls domain/damage.js#isDamageRequestValid
+ * @calls domain/modelProfiles.js#resolvePetGuard
+ * @calls domain/modelProfiles.js#resolvePetLinkFactor
  * @calls domain/pluginStats.js#resolveCacheHitFactor
  * @calls domain/quotas.js#planQuotaAllowance
  * @calls domain/random.js#drawRandom
@@ -37,12 +40,15 @@ export function resolveDamageRequest(context, request) {
   const changes = /** @type {import('../contracts.d.ts').StateChange[]} */ ([{ target: 'runtime', id: request.id, operation: 'registerHit', payload: { attackId: request.attackId, targetId: request.targetId, expiresAt: request.expiresAt } }]);
   if(target.runtime.trainingInterface===true){const weaponId=String(request.projectileId?state.world.entities[request.projectileId]?.runtime.weaponDefinitionId??'':'');return {accepted:true,allowedBeforeDefense:0,hpDamage:0,shieldDamage:0,shellDamage:0,plan:{...empty,changes,events:[{id:`training:${request.id}`,runId:state.runId,tick:state.tick,seq:0,type:'TrainingInterfaceHit',sourceId:request.sourceId,targetId:target.id,payload:{weaponId}}]}};}
   const seal = typeof target.runtime.sealStatusId === 'string'||target.runtime.sealProjectile===true;
-  let incoming = seal ? 1 : request.baseDamage*resolveCacheHitFactor(state,request);
+  let incoming = seal ? 1 : (target.runtime.toolOwner?Math.max(target.hp,request.baseDamage):request.baseDamage)*resolveCacheHitFactor(state,request);
   if (target.id === state.player.entityId && state.world.entities[request.sourceId].team === 'enemy') {
     const quota = dependency1.planQuotaAllowance(context, request);
     incoming = quota.allowedDamage; plans.push(quota.plan);
   }
-  const shell = dependency2.resolveShellContact(context, { ...request, baseDamage: incoming });
+  if(target.runtime.gptReset)incoming*=.7;
+  incoming*=resolvePetLinkFactor(state,target.id);
+  const guard=resolvePetGuard(context,{...request,baseDamage:incoming});
+  const shell=guard.blocked?{blocked:true,damage:guard.damage,plan:guard.plan}:dependency2.resolveShellContact(context,{...request,baseDamage:incoming});
   plans.push(shell.plan);
   let hpDamage = 0, shieldDamage = 0;
   const treeEvents = /** @type {import('../contracts.d.ts').DomainEvent[]} */([]);

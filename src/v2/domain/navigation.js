@@ -58,28 +58,38 @@ export function findNavigationPath(context, query) {
  * 关闭捷径前验证主线、检查点和出口仍可达。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
+ * @calls domain/geometry.js#distanceSquared
  * @calls domain/navigation.js#findNavigationPath
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').Id} obstacleId
  * @returns {boolean}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function canCloseMapPassage(context, obstacleId) {
-  throw new Error('TODO V2: domain/navigation.js#canCloseMapPassage');
+  const state=context.state,obstacle=state.world.entities[obstacleId],player=state.world.entities[state.player.entityId];if(!obstacle||obstacle.kind!=='obstacle'||!player||dependency2.distanceSquared(player.position,obstacle.position)<=(player.radius+obstacle.radius)**2)return false;
+  const prospective=/** @type {import('../contracts.d.ts').GameState} */(structuredClone(state));prospective.world.entities[obstacleId].runtime={...obstacle.runtime,solid:true};const next={...context,state:prospective};
+  const ids=[...state.world.map.checkpointIds,...state.world.map.exitIds,...state.world.objectives.filter(o=>o.active&&!o.completed).map(o=>o.id)];
+  return ids.every(id=>{const target=state.world.entities[id];return !!target&&findNavigationPath(next,{entityId:player.id,origin:player.position,destination:target.position,collisionProfileId:player.collisionProfileId}).reachable;});
 }
 
 /**
  * 选择GPT后撤/保护位置，无遮挡合法点才移动。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls domain/navigation.js#findNavigationPath
+ * @calls domain/collision.js#canTraverseObstacle
  * @calls domain/geometry.js#distanceSquared
+ * @calls domain/navigation.js#findNavigationPath
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').Id} entityId
  * @param {number} maxDistance
  * @returns {import('../contracts.d.ts').Vec2 | null}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function chooseRetreatPoint(context, entityId, maxDistance) {
-  throw new Error('TODO V2: domain/navigation.js#chooseRetreatPoint');
+  const state=context.state,entity=state.world.entities[entityId],player=state.world.entities[state.player.entityId];if(!entity||!player||!Number.isFinite(maxDistance)||maxDistance<=0)return null;
+  const angle=Math.atan2(entity.position.y-player.position.y,entity.position.x-player.position.x),map=state.world.map,candidates=[];
+  for(const fraction of [1,.5])for(let n=0;n<16;n++){const a=angle+(n%2?1:-1)*Math.ceil(n/2)*Math.PI/8,point={x:entity.position.x+Math.cos(a)*maxDistance*fraction,y:entity.position.y+Math.sin(a)*maxDistance*fraction};
+   if(point.x<entity.radius||point.y<entity.radius||point.x>map.width-entity.radius||point.y>map.height-entity.radius||dependency2.distanceSquared(point,player.position)<=dependency2.distanceSquared(entity.position,player.position))continue;
+   if(Object.values(state.world.entities).some(o=>o.kind==='obstacle'&&!dependency1.canTraverseObstacle(entity,o,context.catalog)&&dependency2.distanceSquared(point,o.position)<=(o.radius+entity.radius)**2))continue;
+   const path=findNavigationPath(context,{entityId,origin:entity.position,destination:point,collisionProfileId:entity.collisionProfileId});let previous=entity.position,length=0;for(const step of path.path){length+=Math.sqrt(dependency2.distanceSquared(previous,step));previous=step;}if(path.reachable&&length<=maxDistance+1e-6)candidates.push(point);
+  }
+  return candidates.sort((a,b)=>dependency2.distanceSquared(b,player.position)-dependency2.distanceSquared(a,player.position)||a.x-b.x||a.y-b.y)[0]??null;
 }

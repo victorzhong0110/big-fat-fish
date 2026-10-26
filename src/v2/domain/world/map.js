@@ -1,7 +1,7 @@
 // @ts-check
 import {planEasterInteraction} from '../easter.js';
 import { planEquipmentInteraction } from '../equipment.js';
-import { createAdventureMapPlan, planClaudeEncounter } from './adventure.js';
+import { createAdventureMapPlan, planBossEncounter } from './adventure.js';
 import { createEmptyPlan } from '../plans.js';
 import { createStateChange } from '../plans.js';
 import { createEntityState } from '../entities.js';
@@ -96,7 +96,7 @@ export function planMapExploration(context) {
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @calls domain/rewards.js#planWorldReward
- * @calls domain/world/adventure.js#planClaudeEncounter
+ * @calls domain/world/adventure.js#planBossEncounter
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').Command} command
  * @returns {import('../../contracts.d.ts').SystemPlan}
@@ -108,7 +108,7 @@ export function planWorldInteraction(context, command) {
   const candidates = Object.values(state.world.entities).filter(entity => entity.kind === 'objective' && ['cache','bossGate','chair','note','lunchbox','console'].includes(String(entity.runtime.interaction)) && dependency1.distanceSquared(entity.position, player.position) <= 96 ** 2).sort((a,b)=>dependency1.distanceSquared(a.position,player.position)-dependency1.distanceSquared(b.position,player.position)||(a.id<b.id?-1:1));
   const entity = candidates[0]; if (!entity) return createEmptyPlan();
   if(['chair','note','lunchbox','console'].includes(String(entity.runtime.interaction)))return planEasterInteraction(context,entity.id);
-  if (entity.runtime.interaction === 'bossGate') return planClaudeEncounter(context);
+  if (entity.runtime.interaction === 'bossGate') return planBossEncounter(context);
   if (entity.runtime.opened === true) return createEmptyPlan();
   const reward = dependency3.planWorldReward(context, `cache:${entity.id}`);
   const changes=[...reward.plan.changes,createStateChange('entity',entity.id,'setEntityRuntime',{runtime:{...entity.runtime,opened:true}})],events=[...reward.plan.events,{id:`cacheOpened:${state.runId}:${entity.id}`,runId:state.runId,tick:state.tick,seq:0,type:'CacheOpened',sourceId:player.id,targetId:entity.id,payload:{cacheId:entity.id,secret:entity.runtime.secret===true}}],persistence=[...reward.plan.persistence];
