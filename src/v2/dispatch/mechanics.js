@@ -21,6 +21,12 @@ import * as dependency1 from '../content/handlers/mechanics.js';
  * @calls content/handlers/mechanics.js#planMechanic08GrokFlanks
  * @calls content/handlers/mechanics.js#planMechanic09GptReposition
  * @calls content/handlers/mechanics.js#planMechanic10BossArena
+ * @calls content/handlers/mechanics.js#planMechanic11Glasswing
+ * @calls content/handlers/mechanics.js#planMechanic11ObjectiveSignal
+ * @calls content/handlers/mechanics.js#planMechanic12GptFourRoles
+ * @calls content/handlers/mechanics.js#planMechanic13Handoff
+ * @calls content/handlers/mechanics.js#planMechanic14Anomaly
+ * @calls content/handlers/mechanics.js#planMechanic15Integration
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').Id} definitionId
  * @param {import('../contracts.d.ts').DomainEvent} event
@@ -37,5 +43,11 @@ export function dispatchMechanicsHandler(context, definitionId, event) {
   if(definitionId==='mech_08_grok_flanks')return dependency1.planMechanic08GrokFlanks(context,event);
   if(definitionId==='mech_09_gpt_reposition')return dependency1.planMechanic09GptReposition(context,event);
   if(definitionId==='mech_10_boss_arena')return dependency1.planMechanic10BossArena(context,event);
+  if(definitionId==='mech_11_objective_signal')return dependency1.planMechanic11ObjectiveSignal(context,event);
+  if(definitionId==='mech_11_glasswing')return dependency1.planMechanic11Glasswing(context,event);
+  if(definitionId==='mech_12_gpt_four_roles')return dependency1.planMechanic12GptFourRoles(context,event);
+  if(definitionId==='mech_13_handoff')return dependency1.planMechanic13Handoff(context,event);
+  if(definitionId==='mech_14_anomaly')return dependency1.planMechanic14Anomaly(context,event);
+  if(definitionId==='mech_15_integration')return dependency1.planMechanic15Integration(context,event);
   throw new Error(`Unimplemented mechanic: ${definitionId}`);
 }

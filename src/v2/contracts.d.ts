@@ -58,7 +58,7 @@ export interface Loadout { skillInstanceId?:Id; weapons: readonly WeaponState[];
 export interface PlayerState { entityId: Id; baseStats: BaseStats; modifiers: readonly StatModifier[]; loadout: Loadout; invulnerableRemaining: number; controlImmuneRemaining: number; }
 export interface PickupState { exclusiveGroup?: Id; skill?:{instanceId:Id;definitionId:Id;cooldown:number}; weapon?: WeaponState; id: Id; kind: 'riceXp' | 'gpuFragment' | 'part' | 'weapon' | 'skill'; amount: number; position: Vec2; instanceId: Id | null; collected: boolean; }
 export interface ObjectiveState { id: Id; kind: string; active: boolean; completed: boolean; progress: number; requiredEntityIds: readonly Id[]; rewardId: Id; }
-export interface SpawnRequest { bossOwner?:Id; bossGrokSample?:boolean; id: Id; groupId: Id; enemyId: Id; position: Vec2; at: Tick; modelProfileId: Id; budgetId: Id; rewardPolicy: EntityState['rewardPolicy']; distillEligible: boolean; }
+export interface SpawnRequest { elite?:boolean; bossOwner?:Id; bossGrokSample?:boolean; id: Id; groupId: Id; enemyId: Id; position: Vec2; at: Tick; modelProfileId: Id; budgetId: Id; rewardPolicy: EntityState['rewardPolicy']; distillEligible: boolean; }
 export interface EncounterBudget { id: Id; total: number; reserved: number; spawned: number; maxAlive: number; }
 export interface PressureEvent { id: Id; mechanicId: Id; phase: 'queued' | 'telegraph' | 'active' | 'completed' | 'cancelled'; startedAt: Tick | null; remaining: number; budgetId: Id; runtime: Readonly<Record<string, Json>>; }
 export interface MapState { id: Id; biomeIndex: number; width: number; height: number; exploredCells: readonly Id[]; obstacleIds: readonly Id[]; checkpointIds: readonly Id[]; exitIds: readonly Id[]; navigationRevision: number; }

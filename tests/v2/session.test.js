@@ -20,7 +20,7 @@ function ctx(state) {return {state,catalog,random:state.random.combat,entityId:n
 
 describe('source-backed V2 catalog',()=>{
  it('has all declared categories, exact 160-GPU tree cost, explicit runtime capabilities and detached loads',()=>{
-  const registry=createHandlerRegistry();expect(validateContentCatalog(catalog,registry)).toEqual({valid:true,diagnostics:[]});expect(registry.implementedIds).toHaveLength(89);expect(Object.keys(registry.bindings)).toHaveLength(95);
+  const registry=createHandlerRegistry();expect(validateContentCatalog(catalog,registry)).toEqual({valid:true,diagnostics:[]});expect(registry.implementedIds).toHaveLength(95);expect(Object.keys(registry.bindings)).toHaveLength(95);
   const copy=loadContentCatalog();copy.definitions.mcp_bubble.parameters.damage=99;expect(loadContentCatalog().definitions.mcp_bubble.parameters.damage).toBe(12);
  });
  it('rejects missing data, wrong tree totals, cyclic prerequisites and false capabilities',()=>{

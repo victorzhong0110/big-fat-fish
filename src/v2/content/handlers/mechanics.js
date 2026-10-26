@@ -152,14 +152,13 @@ export function planMechanic10BossArena(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/mechanics.js#planMechanicEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planMechanic11ObjectiveSignal(context, event) {
-  throw new Error('TODO V2: content/handlers/mechanics.js#planMechanic11ObjectiveSignal');
+  return planMechanicEvent(context,event,'mech_11_objective_signal');
 }
 
 /**
@@ -167,14 +166,13 @@ export function planMechanic11ObjectiveSignal(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：只声明Glasswing适用/标记；真正控制翻倍唯一在status.resolveControlRequest处理，不抢先再乘一次。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/mechanics.js#planMechanicEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planMechanic11Glasswing(context, event) {
-  throw new Error('TODO V2: content/handlers/mechanics.js#planMechanic11Glasswing');
+  return planMechanicEvent(context,event,'mech_11_glasswing');
 }
 
 /**
@@ -182,14 +180,13 @@ export function planMechanic11Glasswing(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/mechanics.js#planMechanicEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planMechanic12GptFourRoles(context, event) {
-  throw new Error('TODO V2: content/handlers/mechanics.js#planMechanic12GptFourRoles');
+  return planMechanicEvent(context,event,'mech_12_gpt_four_roles');
 }
 
 /**
@@ -197,14 +194,13 @@ export function planMechanic12GptFourRoles(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/mechanics.js#planMechanicEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planMechanic13Handoff(context, event) {
-  throw new Error('TODO V2: content/handlers/mechanics.js#planMechanic13Handoff');
+  return planMechanicEvent(context,event,'mech_13_handoff');
 }
 
 /**
@@ -212,14 +208,13 @@ export function planMechanic13Handoff(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/mechanics.js#planMechanicEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planMechanic14Anomaly(context, event) {
-  throw new Error('TODO V2: content/handlers/mechanics.js#planMechanic14Anomaly');
+  return planMechanicEvent(context,event,'mech_14_anomaly');
 }
 
 /**
@@ -227,12 +222,11 @@ export function planMechanic14Anomaly(context, event) {
  * 调用阶段：content-handler；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。
- * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/mechanics.js#planMechanicEvent
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').DomainEvent} event
  * @returns {import('../../contracts.d.ts').EffectPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
  */
 export function planMechanic15Integration(context, event) {
-  throw new Error('TODO V2: content/handlers/mechanics.js#planMechanic15Integration');
+  return planMechanicEvent(context,event,'mech_15_integration');
 }

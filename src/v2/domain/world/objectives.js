@@ -1,4 +1,5 @@
 // @ts-check
+import {planObjectiveSignal} from './lateMechanics.js';
 import { createEmptyPlan, createStateChange } from '../plans.js';
 import { distanceSquared } from '../geometry.js';
 /**
@@ -16,6 +17,7 @@ import * as dependency1 from '../rewards.js';
  * @calls domain/geometry.js#distanceSquared
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
+ * @calls domain/world/lateMechanics.js#planObjectiveSignal
  * @calls domain/world/objectives.js#planObjectiveCompletion
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @returns {import('../../contracts.d.ts').SystemPlan}
@@ -23,8 +25,9 @@ import * as dependency1 from '../rewards.js';
 export function planObjectiveAdvance(context) {
   const state=context.state;if(state.start.runtimeProfile!=='adventure-slice'||state.flow.phase!=='exploring')return createEmptyPlan();
   const player=state.world.entities[state.player.entityId],next=state.world.objectives.map(objective=>({...objective}));
-  const completing=next.find(objective=>objective.active&&!objective.completed&&state.world.entities[objective.id]&&distanceSquared(player.position,state.world.entities[objective.id].position)<=120**2);
+  const completing=next.find(objective=>objective.kind==='beacon'&&objective.active&&!objective.completed&&state.world.entities[objective.id]&&distanceSquared(player.position,state.world.entities[objective.id].position)<=120**2);
   if(!completing)return createEmptyPlan();
+  const signal=planObjectiveSignal(context,completing.id);if(signal.changes.length)return signal;
   if(completing.progress>=2099)return planObjectiveCompletion(context,completing.id);
   completing.progress++;
   return {...createEmptyPlan(),changes:[createStateChange('world','objectives','setObjectives',{objectives:next})]};

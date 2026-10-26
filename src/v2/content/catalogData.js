@@ -1734,7 +1734,7 @@ export const CATALOG_DATA = {
         "description": "mech_11_objective_signal（解锁11）/ 目标增援信号：信标/封锁目标启动后产生1个可见信号装置，生命40；每6秒请求一小批预算内援军，摧毁后停止本次装置增援；增援仍受活敌与入口规则约束",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic11ObjectiveSignal",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 11,
@@ -1751,7 +1751,7 @@ export const CATALOG_DATA = {
         "description": "mech_11_glasswing（解锁11）/ Claude · Project Glasswing：Claude Boss的控制请求按08进行双倍处理：禁锢时长和挣脱次数×2，技能/伙伴封禁时长×2；不复制伤害/实体/封印物",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic11Glasswing",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 11,
@@ -1768,7 +1768,7 @@ export const CATALOG_DATA = {
         "description": "mech_12_gpt_four_roles（解锁12）/ GPT四职能混编：GPT特色遭遇允许同时4种Pets，普通遭遇仍最多3种；应组合前排/支援/远程/干扰，不允许同屏放满7种",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic12GptFourRoles",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 12,
@@ -1785,7 +1785,7 @@ export const CATALOG_DATA = {
         "description": "mech_13_handoff（解锁13）/ 遭遇衔接：玩家激活过的精英事件剩余生命/成员总量降至20%时，可提前预告下一批正常追兵，至少3秒后从合法入口进入；只提前原日程，不复制队伍或奖励",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic13Handoff",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 13,
@@ -1802,7 +1802,7 @@ export const CATALOG_DATA = {
         "description": "mech_14_anomaly（解锁14）/ 局部地图异常：每海域最多2次，间隔至少120秒；提前4秒预告，局部潮流反向或标记捷径临时关闭12秒；两种择1，发生在有替代路线的区域",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic14Anomaly",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 14,
@@ -1819,7 +1819,7 @@ export const CATALOG_DATA = {
         "description": "mech_15_integration（解锁15）/ 分段综合压力：每海域设计1个三段遭遇：各段调用两项已经解锁、适用此处的机制，每段最长30秒后停止补兵，清掉必要敌人后进入15秒低压衔接；第三段后正常完成目标",
         "source": "07-dsh.md",
         "handler": "content/handlers/mechanics.js#planMechanic15Integration",
-        "previewAvailable": false
+        "previewAvailable": true
       },
       "version": "2.0.0-preview.5",
       "unlockAt": 15,
@@ -2505,6 +2505,27 @@ export const CATALOG_DATA = {
       "id": "world_current",
       "kind": "entity",
       "displayName": "周期潮汐",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "world_signal": {
+      "id": "world_signal",
+      "kind": "entity",
+      "displayName": "援军信号装置",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "terrain_shortcut": {
+      "id": "terrain_shortcut",
+      "kind": "entity",
+      "displayName": "可关闭捷径",
+      "parameters": {},
+      "version": "2.0.0-preview.5"
+    },
+    "world_challenge": {
+      "id": "world_challenge",
+      "kind": "entity",
+      "displayName": "可选挑战",
       "parameters": {},
       "version": "2.0.0-preview.5"
     }

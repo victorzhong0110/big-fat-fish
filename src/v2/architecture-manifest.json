@@ -2250,13 +2250,13 @@
           "result": "EffectPlan",
           "description": "mech_11_objective_signal（解锁11）/ 目标增援信号：信标/封锁目标启动后产生1个可见信号装置，生命40；每6秒请求一小批预算内援军，摧毁后停止本次装置增援；增援仍受活敌与入口规则约束",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic11Glasswing",
@@ -2273,13 +2273,13 @@
           "result": "EffectPlan",
           "description": "mech_11_glasswing（解锁11）/ Claude · Project Glasswing：Claude Boss的控制请求按08进行双倍处理：禁锢时长和挣脱次数×2，技能/伙伴封禁时长×2；不复制伤害/实体/封印物",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "只声明Glasswing适用/标记；真正控制翻倍唯一在status.resolveControlRequest处理，不抢先再乘一次。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic12GptFourRoles",
@@ -2296,13 +2296,13 @@
           "result": "EffectPlan",
           "description": "mech_12_gpt_four_roles（解锁12）/ GPT四职能混编：GPT特色遭遇允许同时4种Pets，普通遭遇仍最多3种；应组合前排/支援/远程/干扰，不允许同屏放满7种",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic13Handoff",
@@ -2319,13 +2319,13 @@
           "result": "EffectPlan",
           "description": "mech_13_handoff（解锁13）/ 遭遇衔接：玩家激活过的精英事件剩余生命/成员总量降至20%时，可提前预告下一批正常追兵，至少3秒后从合法入口进入；只提前原日程，不复制队伍或奖励",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic14Anomaly",
@@ -2342,13 +2342,13 @@
           "result": "EffectPlan",
           "description": "mech_14_anomaly（解锁14）/ 局部地图异常：每海域最多2次，间隔至少120秒；提前4秒预告，局部潮流反向或标记捷径临时关闭12秒；两种择1，发生在有替代路线的区域",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         },
         {
           "name": "planMechanic15Integration",
@@ -2365,13 +2365,13 @@
           "result": "EffectPlan",
           "description": "mech_15_integration（解锁15）/ 分段综合压力：每海域设计1个三段遭遇：各段调用两项已经解锁、适用此处的机制，每段最长30秒后停止补兵，清掉必要敌人后进入15秒低压衔接；第三段后正常完成目标",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/mechanics.js#planMechanicEvent"
           ],
           "rule": "必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "content-handler",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented"
         }
       ]
     },
@@ -3968,7 +3968,13 @@
             "content/handlers/mechanics.js#planMechanic07Tide",
             "content/handlers/mechanics.js#planMechanic08GrokFlanks",
             "content/handlers/mechanics.js#planMechanic09GptReposition",
-            "content/handlers/mechanics.js#planMechanic10BossArena"
+            "content/handlers/mechanics.js#planMechanic10BossArena",
+            "content/handlers/mechanics.js#planMechanic11Glasswing",
+            "content/handlers/mechanics.js#planMechanic11ObjectiveSignal",
+            "content/handlers/mechanics.js#planMechanic12GptFourRoles",
+            "content/handlers/mechanics.js#planMechanic13Handoff",
+            "content/handlers/mechanics.js#planMechanic14Anomaly",
+            "content/handlers/mechanics.js#planMechanic15Integration"
           ],
           "rule": "@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -8895,6 +8901,98 @@
       ]
     },
     {
+      "path": "domain/world/lateMechanics.js",
+      "layer": "domain",
+      "purpose": "@param {import('../../contracts.d.ts').EvaluationContext} c @param {string} id @param {string} mechanicId @param {string} budgetId @param {Record<string,import('../../contracts.d.ts').Json>} runtime @param {number} warning",
+      "dependencies": [
+        "domain/entities.js",
+        "domain/geometry.js",
+        "domain/navigation.js",
+        "domain/plans.js",
+        "domain/rewards.js",
+        "domain/world/pressureRules.js"
+      ],
+      "functions": [
+        {
+          "description": "planObjectiveSignal",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planObjectiveSignal",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            },
+            {
+              "name": "objectiveId",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/world/pressureRules.js#validatePressureReservation"
+          ]
+        },
+        {
+          "description": "planChallengeInteraction",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planChallengeInteraction",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            },
+            {
+              "name": "entityId",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/world/pressureRules.js#validatePressureReservation"
+          ]
+        },
+        {
+          "description": "planLateSchedule",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planLateSchedule",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/geometry.js#distanceSquared",
+            "domain/navigation.js#canCloseMapPassage",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/rewards.js#planWorldReward",
+            "domain/world/pressureRules.js#validatePressureReservation"
+          ]
+        }
+      ]
+    },
+    {
       "path": "domain/world/map.js",
       "layer": "domain",
       "purpose": "连续地图生成、探索与安全交互。",
@@ -8907,7 +9005,8 @@
         "domain/random.js",
         "domain/rewards.js",
         "domain/world/adventure.js",
-        "domain/world/alarms.js"
+        "domain/world/alarms.js",
+        "domain/world/lateMechanics.js"
       ],
       "functions": [
         {
@@ -8985,7 +9084,8 @@
             "domain/plans.js#createStateChange",
             "domain/rewards.js#planWorldReward",
             "domain/world/adventure.js#planBossEncounter",
-            "domain/world/alarms.js#planAlarmCache"
+            "domain/world/alarms.js#planAlarmCache",
+            "domain/world/lateMechanics.js#planChallengeInteraction"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -9026,7 +9126,8 @@
       "dependencies": [
         "domain/geometry.js",
         "domain/plans.js",
-        "domain/rewards.js"
+        "domain/rewards.js",
+        "domain/world/lateMechanics.js"
       ],
       "functions": [
         {
@@ -9043,6 +9144,7 @@
             "domain/geometry.js#distanceSquared",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
+            "domain/world/lateMechanics.js#planObjectiveSignal",
             "domain/world/objectives.js#planObjectiveCompletion"
           ],
           "rule": "",
@@ -9103,7 +9205,10 @@
       "purpose": "累计机制下的压力事件仲裁。",
       "dependencies": [
         "domain/geometry.js",
-        "domain/plans.js"
+        "domain/navigation.js",
+        "domain/plans.js",
+        "domain/world/lateMechanics.js",
+        "domain/world/pressureRules.js"
       ],
       "functions": [
         {
@@ -9117,7 +9222,7 @@
           "result": "SystemPlan",
           "description": "从完整已解锁机制池安排适用事件，常驻AI不被轮换移除。",
           "calls": [
-            "domain/plans.js#createEmptyPlan"
+            "domain/world/lateMechanics.js#planLateSchedule"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -9140,7 +9245,7 @@
           "result": "Result<PressureEvent>",
           "description": "先判安全/优先级/预算/双事件容量，失败给原因，不静默新建其他惩罚。",
           "calls": [
-            "domain/geometry.js#distanceSquared"
+            "domain/world/pressureRules.js#validatePressureReservation"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -9159,6 +9264,7 @@
           "result": "SystemPlan",
           "description": "推进预警/持续/结束，释放预算和名额；综合压力不自套第三名额。",
           "calls": [
+            "domain/navigation.js#canCloseMapPassage",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange"
           ],
@@ -9167,6 +9273,39 @@
           "phase": "query",
           "callMode": "sequence",
           "implementation": "implemented"
+        }
+      ]
+    },
+    {
+      "path": "domain/world/pressureRules.js",
+      "layer": "domain",
+      "purpose": "Budget and safety reservation shared by direct interactions and autonomous scheduling.",
+      "dependencies": [
+        "domain/geometry.js"
+      ],
+      "functions": [
+        {
+          "description": "validatePressureReservation",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "validatePressureReservation",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            }
+          ],
+          "result": "Result<PressureEvent>",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared"
+          ]
         }
       ]
     },
@@ -11384,9 +11523,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 101,
-    "functions": 376,
-    "implemented": 324,
-    "placeholders": 52
+    "modules": 103,
+    "functions": 380,
+    "implemented": 334,
+    "placeholders": 46
   }
 }

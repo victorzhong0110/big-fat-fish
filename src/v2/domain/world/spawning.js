@@ -26,6 +26,7 @@ import * as dependency3 from '../difficulty.js';
 export function planSpawnSchedule(context) {
   const state=context.state;
   if(state.start.runtimeProfile!=='adventure-slice'||!['exploring','boss'].includes(state.flow.phase))return createEmptyPlan();
+  if(state.world.pressureEvents.some(e=>e.phase==='queued'&&e.runtime.kind==='coordinator'&&Number(e.runtime.gapUntil)>state.tick))return createEmptyPlan();
   const due=[...state.world.spawnQueue].filter(request=>request.at<=state.tick&&(state.flow.phase!=='boss'||!!request.bossOwner&&state.bosses.some(b=>b.entityId===request.bossOwner&&!state.world.entities[b.entityId]?.dead))).sort((a,b)=>a.at-b.at||(a.id<b.id?-1:1))[0];
   if(due){
     const player=state.world.entities[state.player.entityId];
@@ -62,7 +63,7 @@ export function planEnemySpawn(context, request) {
   const definition=dependency1.findContentDefinition(context.catalog,request.enemyId);if(!definition.ok)throw new Error(definition.message);
   const p=definition.value.parameters,grok=request.enemyId==='enemy_grok_bot';
   const budget=state.world.budgets.find(item=>item.id===request.budgetId);if(!budget||budget.reserved<1||budget.spawned>=budget.total)return createEmptyPlan();
-  const entity=createEntityState(request.id,request.enemyId,'enemy','enemy',validation.value,{faction:/** @type {import('../../contracts.d.ts').Faction} */(p.faction),radius:Number(p.radius),hp:Number(p.hp)*state.start.difficulty.hpMultiplier,maxHp:Number(p.hp)*state.start.difficulty.hpMultiplier,modelProfileId:request.modelProfileId,rewardPolicy:request.rewardPolicy,distillEligible:request.distillEligible,runtime:{...(request.bossOwner?{bossOwner:request.bossOwner,bossGrokSample:request.bossGrokSample===true}:{}),engaged:true,moveSpeed:Number(p.moveSpeed),contactDamage:Number(p.contactDamage)*state.start.difficulty.damageMultiplier,damageMultiplier:state.start.difficulty.damageMultiplier,groupId:request.groupId,spawnGroup:request.groupId}});
+  const entity=createEntityState(request.id,request.enemyId,'enemy','enemy',validation.value,{faction:/** @type {import('../../contracts.d.ts').Faction} */(p.faction),radius:Number(p.radius)*(request.elite?1.25:1),hp:Number(p.hp)*state.start.difficulty.hpMultiplier*(request.elite?2:1),maxHp:Number(p.hp)*state.start.difficulty.hpMultiplier*(request.elite?2:1),modelProfileId:request.modelProfileId,rewardPolicy:request.rewardPolicy,distillEligible:request.distillEligible,runtime:{elite:request.elite===true,...(request.bossOwner?{bossOwner:request.bossOwner,bossGrokSample:request.bossGrokSample===true}:{}),engaged:true,moveSpeed:Number(p.moveSpeed),contactDamage:Number(p.contactDamage)*state.start.difficulty.damageMultiplier*(request.elite?1.2:1),damageMultiplier:state.start.difficulty.damageMultiplier*(request.elite?1.2:1),groupId:request.groupId,spawnGroup:request.groupId}});
   return {...createEmptyPlan(),changes:[createStateChange('world',entity.id,'putEntity',entity),createStateChange('world',request.budgetId,'setSpawnDirector',{queue:state.world.spawnQueue.filter(item=>item.id!==request.id),budgets:state.world.budgets.map(item=>item.id===budget.id?{...item,reserved:item.reserved-1,spawned:item.spawned+1}:item),nextAt:state.spawnDirectorNextAt??720})]};
 }
 

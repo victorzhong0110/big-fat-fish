@@ -1,6 +1,6 @@
 # 12 · 全部函数目录与调用契约
 
-当前101个JS模块、376个公开函数：324个有实现，52个明确TODO。core-preview为Free练习，adventure-slice为Pro1短途；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
+当前103个JS模块、380个公开函数：334个有实现，46个明确TODO。core-preview为Free练习，adventure-slice为Pro1短途；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
 
 调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。
 
@@ -502,12 +502,12 @@ enemies逐项占位处理器；实际参数仍以玩法规格为准。
 | `planMechanic08GrokFlanks(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | mech_08_grok_flanks（解锁8）/ Grok两翼合围：群体遭遇预算从两个视野外入口错时入场，间隔2秒；入口布局必须留出至少120宽的可突破通路；必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planMechanic09GptReposition(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | mech_09_gpt_reposition（解锁9）/ GPT换位保护：支援/远射Pet在玩家120内时向已验证可通行的后撤点移动，最多移动180；Rocky随后保护它，重新站定后再按原预警攻击；必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planMechanic10BossArena(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | mech_10_boss_arena（解锁10）/ 首领利用场地：Claude场内部署可破掩体；GPT重置节点从5个可见可达候选位置按seed选3个且不重复；Grok招兵在3个合法入口中轮换选2个；必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planMechanic11ObjectiveSignal(context: untyped, event: untyped)` | `EffectPlan` | TODO | mech_11_objective_signal（解锁11）/ 目标增援信号：信标/封锁目标启动后产生1个可见信号装置，生命40；每6秒请求一小批预算内援军，摧毁后停止本次装置增援；增援仍受活敌与入口规则约束；必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planMechanic11Glasswing(context: untyped, event: untyped)` | `EffectPlan` | TODO | mech_11_glasswing（解锁11）/ Claude · Project Glasswing：Claude Boss的控制请求按08进行双倍处理：禁锢时长和挣脱次数×2，技能/伙伴封禁时长×2；不复制伤害/实体/封印物；只声明Glasswing适用/标记；真正控制翻倍唯一在status.resolveControlRequest处理，不抢先再乘一次。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planMechanic12GptFourRoles(context: untyped, event: untyped)` | `EffectPlan` | TODO | mech_12_gpt_four_roles（解锁12）/ GPT四职能混编：GPT特色遭遇允许同时4种Pets，普通遭遇仍最多3种；应组合前排/支援/远程/干扰，不允许同屏放满7种；必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planMechanic13Handoff(context: untyped, event: untyped)` | `EffectPlan` | TODO | mech_13_handoff（解锁13）/ 遭遇衔接：玩家激活过的精英事件剩余生命/成员总量降至20%时，可提前预告下一批正常追兵，至少3秒后从合法入口进入；只提前原日程，不复制队伍或奖励；必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planMechanic14Anomaly(context: untyped, event: untyped)` | `EffectPlan` | TODO | mech_14_anomaly（解锁14）/ 局部地图异常：每海域最多2次，间隔至少120秒；提前4秒预告，局部潮流反向或标记捷径临时关闭12秒；两种择1，发生在有替代路线的区域；必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planMechanic15Integration(context: untyped, event: untyped)` | `EffectPlan` | TODO | mech_15_integration（解锁15）/ 分段综合压力：每海域设计1个三段遭遇：各段调用两项已经解锁、适用此处的机制，每段最长30秒后停止补兵，清掉必要敌人后进入15秒低压衔接；第三段后正常完成目标；必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planMechanic11ObjectiveSignal(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | mech_11_objective_signal（解锁11）/ 目标增援信号：信标/封锁目标启动后产生1个可见信号装置，生命40；每6秒请求一小批预算内援军，摧毁后停止本次装置增援；增援仍受活敌与入口规则约束；必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planMechanic11Glasswing(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | mech_11_glasswing（解锁11）/ Claude · Project Glasswing：Claude Boss的控制请求按08进行双倍处理：禁锢时长和挣脱次数×2，技能/伙伴封禁时长×2；不复制伤害/实体/封印物；只声明Glasswing适用/标记；真正控制翻倍唯一在status.resolveControlRequest处理，不抢先再乘一次。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planMechanic12GptFourRoles(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | mech_12_gpt_four_roles（解锁12）/ GPT四职能混编：GPT特色遭遇允许同时4种Pets，普通遭遇仍最多3种；应组合前排/支援/远程/干扰，不允许同屏放满7种；必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planMechanic13Handoff(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | mech_13_handoff（解锁13）/ 遭遇衔接：玩家激活过的精英事件剩余生命/成员总量降至20%时，可提前预告下一批正常追兵，至少3秒后从合法入口进入；只提前原日程，不复制队伍或奖励；必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planMechanic14Anomaly(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | mech_14_anomaly（解锁14）/ 局部地图异常：每海域最多2次，间隔至少120秒；提前4秒预告，局部潮流反向或标记捷径临时关闭12秒；两种择1，发生在有替代路线的区域；必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planMechanic15Integration(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | mech_15_integration（解锁15）/ 分段综合压力：每海域设计1个三段遭遇：各段调用两项已经解锁、适用此处的机制，每段最长30秒后停止补兵，清掉必要敌人后进入15秒低压衔接；第三段后正常完成目标；必须已在start.mechanicIds且适用当前场景；返回计划，不直接增兵或递归调度。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
@@ -521,12 +521,12 @@ enemies逐项占位处理器；实际参数仍以玩法规格为准。
 - `planMechanic08GrokFlanks` → `domain/mechanics.js#planMechanicEvent`。
 - `planMechanic09GptReposition` → `domain/mechanics.js#planMechanicEvent`。
 - `planMechanic10BossArena` → `domain/mechanics.js#planMechanicEvent`。
-- `planMechanic11ObjectiveSignal` → `domain/plans.js#createEmptyPlan`。
-- `planMechanic11Glasswing` → `domain/plans.js#createEmptyPlan`。
-- `planMechanic12GptFourRoles` → `domain/plans.js#createEmptyPlan`。
-- `planMechanic13Handoff` → `domain/plans.js#createEmptyPlan`。
-- `planMechanic14Anomaly` → `domain/plans.js#createEmptyPlan`。
-- `planMechanic15Integration` → `domain/plans.js#createEmptyPlan`。
+- `planMechanic11ObjectiveSignal` → `domain/mechanics.js#planMechanicEvent`。
+- `planMechanic11Glasswing` → `domain/mechanics.js#planMechanicEvent`。
+- `planMechanic12GptFourRoles` → `domain/mechanics.js#planMechanicEvent`。
+- `planMechanic13Handoff` → `domain/mechanics.js#planMechanicEvent`。
+- `planMechanic14Anomaly` → `domain/mechanics.js#planMechanicEvent`。
+- `planMechanic15Integration` → `domain/mechanics.js#planMechanicEvent`。
 
 公开函数上游：
 
@@ -540,12 +540,12 @@ enemies逐项占位处理器；实际参数仍以玩法规格为准。
 - `planMechanic08GrokFlanks` ← `dispatch/mechanics.js#dispatchMechanicsHandler`。
 - `planMechanic09GptReposition` ← `dispatch/mechanics.js#dispatchMechanicsHandler`。
 - `planMechanic10BossArena` ← `dispatch/mechanics.js#dispatchMechanicsHandler`。
-- `planMechanic11ObjectiveSignal` ← 宿主/工具入口或待编排。
-- `planMechanic11Glasswing` ← 宿主/工具入口或待编排。
-- `planMechanic12GptFourRoles` ← 宿主/工具入口或待编排。
-- `planMechanic13Handoff` ← 宿主/工具入口或待编排。
-- `planMechanic14Anomaly` ← 宿主/工具入口或待编排。
-- `planMechanic15Integration` ← 宿主/工具入口或待编排。
+- `planMechanic11ObjectiveSignal` ← `dispatch/mechanics.js#dispatchMechanicsHandler`。
+- `planMechanic11Glasswing` ← `dispatch/mechanics.js#dispatchMechanicsHandler`。
+- `planMechanic12GptFourRoles` ← `dispatch/mechanics.js#dispatchMechanicsHandler`。
+- `planMechanic13Handoff` ← `dispatch/mechanics.js#dispatchMechanicsHandler`。
+- `planMechanic14Anomaly` ← `dispatch/mechanics.js#dispatchMechanicsHandler`。
+- `planMechanic15Integration` ← `dispatch/mechanics.js#dispatchMechanicsHandler`。
 
 ## content/handlers/models.js
 
@@ -920,7 +920,7 @@ DSH稳定ID分派，不得把所有候选处理器依次执行。
 
 公开函数下游：
 
-- `dispatchMechanicsHandler` → `content/handlers/mechanics.js#planMechanic01Exploration`、`content/handlers/mechanics.js#planMechanic02Reinforcements`、`content/handlers/mechanics.js#planMechanic03GptSupport`、`content/handlers/mechanics.js#planMechanic04ClaudeBreak`、`content/handlers/mechanics.js#planMechanic05BossCombo`、`content/handlers/mechanics.js#planMechanic06AlarmCache`、`content/handlers/mechanics.js#planMechanic07Tide`、`content/handlers/mechanics.js#planMechanic08GrokFlanks`、`content/handlers/mechanics.js#planMechanic09GptReposition`、`content/handlers/mechanics.js#planMechanic10BossArena`。
+- `dispatchMechanicsHandler` → `content/handlers/mechanics.js#planMechanic01Exploration`、`content/handlers/mechanics.js#planMechanic02Reinforcements`、`content/handlers/mechanics.js#planMechanic03GptSupport`、`content/handlers/mechanics.js#planMechanic04ClaudeBreak`、`content/handlers/mechanics.js#planMechanic05BossCombo`、`content/handlers/mechanics.js#planMechanic06AlarmCache`、`content/handlers/mechanics.js#planMechanic07Tide`、`content/handlers/mechanics.js#planMechanic08GrokFlanks`、`content/handlers/mechanics.js#planMechanic09GptReposition`、`content/handlers/mechanics.js#planMechanic10BossArena`、`content/handlers/mechanics.js#planMechanic11Glasswing`、`content/handlers/mechanics.js#planMechanic11ObjectiveSignal`、`content/handlers/mechanics.js#planMechanic12GptFourRoles`、`content/handlers/mechanics.js#planMechanic13Handoff`、`content/handlers/mechanics.js#planMechanic14Anomaly`、`content/handlers/mechanics.js#planMechanic15Integration`。
 
 公开函数上游：
 
@@ -1562,7 +1562,7 @@ Canonical entity constructor; callers provide stable identity and source snapsho
 
 公开函数上游：
 
-- `createEntityState` ← `domain/abilities.js#planEquippedAbility`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityBursts`、`domain/bosses/claude.js#planClaudeBan`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#createEasterObjectives`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/gptPets.js#planPetModelEvent`、`domain/initial.js#createInitialGameState`、`domain/projectiles.js#createWeaponProjectile`、`domain/projectiles.js#planProjectileBurst`、`domain/scheduled.js#scheduleAbilityActions`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#resolveControlRequest`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/adventure.js#planBossEncounter`、`domain/world/map.js#createMapPlan`、`domain/world/spawning.js#planEnemySpawn`。
+- `createEntityState` ← `domain/abilities.js#planEquippedAbility`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityBursts`、`domain/bosses/claude.js#planClaudeBan`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#createEasterObjectives`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/gptPets.js#planPetModelEvent`、`domain/initial.js#createInitialGameState`、`domain/projectiles.js#createWeaponProjectile`、`domain/projectiles.js#planProjectileBurst`、`domain/scheduled.js#scheduleAbilityActions`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#resolveControlRequest`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/adventure.js#planBossEncounter`、`domain/world/lateMechanics.js#planObjectiveSignal`、`domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#createMapPlan`、`domain/world/spawning.js#planEnemySpawn`。
 
 ## domain/equipment.js
 
@@ -1619,7 +1619,7 @@ Canonical entity constructor; callers provide stable identity and source snapsho
 - `normalizeVector` ← `adapters/input.js#normalizeInputSamples`、`content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#planAbilityDamage`、`domain/abilities.js#planAbilityFields`、`domain/attacks.js#planDash`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/claude.js#planClaudeBan`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/collision.js#detectCollisions`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/companions.js#planCompanionFollow`、`domain/gptPets.js#planGptPet`、`domain/meleeAi.js#planMeleeEnemy`、`domain/motionSolver.js#resolveBodyDestination`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`engine/commands.js#planGameCommand`。
 - `intersectSweptCircles` ← `domain/abilities.js#planAbilityFields`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/collision.js#detectCollisions`、`domain/companions.js#planPartnerBanContact`、`domain/motionSolver.js#resolveBodyDestination`、`domain/movement.js#planEntityMotion`、`domain/navigation.js#findNavigationPath`。
 - `isContactWithinArc` ← `domain/shells.js#resolveShellContact`。
-- `distanceSquared` ← `content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#findAbilityPlacement`、`domain/abilities.js#planAbilityDamage`、`domain/abilities.js#resolveAbilityMoveScale`、`domain/abilities.js#selectAbilityTarget`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/collision.js#validateSpawnLocation`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/currents.js#resolveTideVelocity`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/mechanics.js#planMechanicEvent`、`domain/meleeAi.js#planMeleeEnemy`、`domain/movement.js#planPickupMotion`、`domain/navigation.js#findNavigationPath`、`domain/navigation.js#canCloseMapPassage`、`domain/navigation.js#chooseRetreatPoint`、`domain/status.js#resolveControlRequest`、`domain/world/map.js#planMapExploration`、`domain/world/map.js#planWorldInteraction`、`domain/world/map.js#isSafeForInteraction`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/pressure.js#reservePressureEvent`。
+- `distanceSquared` ← `content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#findAbilityPlacement`、`domain/abilities.js#planAbilityDamage`、`domain/abilities.js#resolveAbilityMoveScale`、`domain/abilities.js#selectAbilityTarget`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/collision.js#validateSpawnLocation`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/currents.js#resolveTideVelocity`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/mechanics.js#planMechanicEvent`、`domain/meleeAi.js#planMeleeEnemy`、`domain/movement.js#planPickupMotion`、`domain/navigation.js#findNavigationPath`、`domain/navigation.js#canCloseMapPassage`、`domain/navigation.js#chooseRetreatPoint`、`domain/status.js#resolveControlRequest`、`domain/world/lateMechanics.js#planChallengeInteraction`、`domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#planMapExploration`、`domain/world/map.js#planWorldInteraction`、`domain/world/map.js#isSafeForInteraction`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/pressureRules.js#validatePressureReservation`。
 - `computeCameraBounds` ← `domain/collision.js#validateSpawnLocation`、`preview/view.js#getPreviewCamera`。
 
 ## domain/gptPets.js
@@ -1750,7 +1750,7 @@ Immutable cumulative mechanic lookup.
 公开函数上游：
 
 - `hasMechanic` ← `domain/mechanics.js#planMechanicEvent`。
-- `planMechanicEvent` ← `content/handlers/mechanics.js#planMechanic01Exploration`、`content/handlers/mechanics.js#planMechanic02Reinforcements`、`content/handlers/mechanics.js#planMechanic03GptSupport`、`content/handlers/mechanics.js#planMechanic04ClaudeBreak`、`content/handlers/mechanics.js#planMechanic05BossCombo`、`content/handlers/mechanics.js#planMechanic06AlarmCache`、`content/handlers/mechanics.js#planMechanic07Tide`、`content/handlers/mechanics.js#planMechanic08GrokFlanks`、`content/handlers/mechanics.js#planMechanic09GptReposition`、`content/handlers/mechanics.js#planMechanic10BossArena`、`engine/hooks.js#planEventHooks`、`engine/previewTick.js#advancePreviewWorldTick`。
+- `planMechanicEvent` ← `content/handlers/mechanics.js#planMechanic01Exploration`、`content/handlers/mechanics.js#planMechanic02Reinforcements`、`content/handlers/mechanics.js#planMechanic03GptSupport`、`content/handlers/mechanics.js#planMechanic04ClaudeBreak`、`content/handlers/mechanics.js#planMechanic05BossCombo`、`content/handlers/mechanics.js#planMechanic06AlarmCache`、`content/handlers/mechanics.js#planMechanic07Tide`、`content/handlers/mechanics.js#planMechanic08GrokFlanks`、`content/handlers/mechanics.js#planMechanic09GptReposition`、`content/handlers/mechanics.js#planMechanic10BossArena`、`content/handlers/mechanics.js#planMechanic11ObjectiveSignal`、`content/handlers/mechanics.js#planMechanic11Glasswing`、`content/handlers/mechanics.js#planMechanic12GptFourRoles`、`content/handlers/mechanics.js#planMechanic13Handoff`、`content/handlers/mechanics.js#planMechanic14Anomaly`、`content/handlers/mechanics.js#planMechanic15Integration`、`engine/hooks.js#planEventHooks`、`engine/previewTick.js#advancePreviewWorldTick`。
 
 ## domain/meleeAi.js
 
@@ -1873,7 +1873,7 @@ Sweep and slide a circular body along blocking circular terrain, then clamp map 
 公开函数上游：
 
 - `findNavigationPath` ← `domain/gptPets.js#planGptPet`、`domain/meleeAi.js#planMeleeEnemy`、`domain/navigation.js#canCloseMapPassage`、`domain/navigation.js#chooseRetreatPoint`。
-- `canCloseMapPassage` ← `domain/gptPets.js#planPetModelEvent`。
+- `canCloseMapPassage` ← `domain/gptPets.js#planPetModelEvent`、`domain/world/lateMechanics.js#planLateSchedule`、`domain/world/pressure.js#planPressureEventAdvance`。
 - `chooseRetreatPoint` ← `domain/gptPets.js#planGptPet`。
 
 ## domain/plans.js
@@ -1900,10 +1900,10 @@ Sweep and slide a circular body along blocking circular terrain, then clamp map 
 
 公开函数上游：
 
-- `createEmptyPlan` ← `content/handlers/dsh.js#planDshClaudeAppeal`、`content/handlers/dsh.js#planDshClaudeAllowlist`、`content/handlers/mechanics.js#planMechanic11ObjectiveSignal`、`content/handlers/mechanics.js#planMechanic11Glasswing`、`content/handlers/mechanics.js#planMechanic12GptFourRoles`、`content/handlers/mechanics.js#planMechanic13Handoff`、`content/handlers/mechanics.js#planMechanic14Anomaly`、`content/handlers/mechanics.js#planMechanic15Integration`、`content/handlers/plugins.js#planPluginParallel`、`content/handlers/plugins.js#planPluginCompress`、`content/handlers/plugins.js#planPluginCollect`、`content/handlers/plugins.js#planPlugin5h`、`content/handlers/plugins.js#planPluginGuard`、`content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#planEquippedAbility`、`domain/abilities.js#planAbilityDamage`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityHistory`、`domain/attacks.js#planWeaponFire`、`domain/attacks.js#planSkillCast`、`domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planCollisionEffects`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/claude.js#planClaudeBan`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/gpt.js#planGptReset`、`domain/bosses/gpt.js#planGptResetInterrupt`、`domain/bosses/gpt.js#planGptBossEvent`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokBossReinforcements`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/companions.js#planPartnerBanContact`、`domain/companions.js#planCompanionMilestones`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSkip`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#createEasterObjectives`、`domain/easter.js#planEasterEvent`、`domain/easter.js#planEasterInteraction`、`domain/easter.js#planEasterAdvance`、`domain/equipment.js#planEquipmentInteraction`、`domain/equipment.js#planWeaponPickup`、`domain/equipment.js#planSkillPickup`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/gptPets.js#planPetModelEvent`、`domain/levels.js#planLevelProgression`、`domain/levels.js#planNextLevelReward`、`domain/mechanics.js#planMechanicEvent`、`domain/meleeAi.js#planMeleeEnemy`、`domain/modelProfiles.js#planModelProfile`、`domain/modelProfiles.js#resolvePetGuard`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/plans.js#mergeSystemPlans`、`domain/projectiles.js#planNativeProjectiles`、`domain/projectiles.js#planProjectileBurst`、`domain/rewards.js#planDeathRewards`、`domain/rewards.js#planWorldReward`、`domain/rewards.js#planTokenCollection`、`domain/scheduled.js#scheduleAbilityActions`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#resolveControlRequest`、`domain/status.js#planEscapeInput`、`domain/status.js#planSealRelease`、`domain/treeRuntime.js#planTreeWeaponSwitch`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/adventure.js#planBossEncounter`、`domain/world/alarms.js#planAlarmCache`、`domain/world/map.js#planMapExploration`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/objectives.js#planObjectiveCompletion`、`domain/world/pressure.js#planPressureSchedule`、`domain/world/pressure.js#planPressureEventAdvance`、`domain/world/spawning.js#planSpawnSchedule`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/spawning.js#planReinforcementGroup`、`engine/commands.js#planGameCommand`、`engine/flow.js#planFlowTransition`、`engine/flow.js#planProgressionPanels`、`engine/flow.js#planPause`、`engine/flow.js#planResume`、`engine/previewTick.js#advancePreviewWorldTick`。
+- `createEmptyPlan` ← `content/handlers/dsh.js#planDshClaudeAppeal`、`content/handlers/dsh.js#planDshClaudeAllowlist`、`content/handlers/plugins.js#planPluginParallel`、`content/handlers/plugins.js#planPluginCompress`、`content/handlers/plugins.js#planPluginCollect`、`content/handlers/plugins.js#planPlugin5h`、`content/handlers/plugins.js#planPluginGuard`、`content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#planEquippedAbility`、`domain/abilities.js#planAbilityDamage`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityHistory`、`domain/attacks.js#planWeaponFire`、`domain/attacks.js#planSkillCast`、`domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planCollisionEffects`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/claude.js#planClaudeBan`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/gpt.js#planGptReset`、`domain/bosses/gpt.js#planGptResetInterrupt`、`domain/bosses/gpt.js#planGptBossEvent`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokBossReinforcements`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/companions.js#planPartnerBanContact`、`domain/companions.js#planCompanionMilestones`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSkip`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#createEasterObjectives`、`domain/easter.js#planEasterEvent`、`domain/easter.js#planEasterInteraction`、`domain/easter.js#planEasterAdvance`、`domain/equipment.js#planEquipmentInteraction`、`domain/equipment.js#planWeaponPickup`、`domain/equipment.js#planSkillPickup`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/gptPets.js#planPetModelEvent`、`domain/levels.js#planLevelProgression`、`domain/levels.js#planNextLevelReward`、`domain/mechanics.js#planMechanicEvent`、`domain/meleeAi.js#planMeleeEnemy`、`domain/modelProfiles.js#planModelProfile`、`domain/modelProfiles.js#resolvePetGuard`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/plans.js#mergeSystemPlans`、`domain/projectiles.js#planNativeProjectiles`、`domain/projectiles.js#planProjectileBurst`、`domain/rewards.js#planDeathRewards`、`domain/rewards.js#planWorldReward`、`domain/rewards.js#planTokenCollection`、`domain/scheduled.js#scheduleAbilityActions`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#resolveControlRequest`、`domain/status.js#planEscapeInput`、`domain/status.js#planSealRelease`、`domain/treeRuntime.js#planTreeWeaponSwitch`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/adventure.js#planBossEncounter`、`domain/world/alarms.js#planAlarmCache`、`domain/world/lateMechanics.js#planObjectiveSignal`、`domain/world/lateMechanics.js#planChallengeInteraction`、`domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#planMapExploration`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/objectives.js#planObjectiveCompletion`、`domain/world/pressure.js#planPressureEventAdvance`、`domain/world/spawning.js#planSpawnSchedule`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/spawning.js#planReinforcementGroup`、`engine/commands.js#planGameCommand`、`engine/flow.js#planFlowTransition`、`engine/flow.js#planProgressionPanels`、`engine/flow.js#planPause`、`engine/flow.js#planResume`、`engine/previewTick.js#advancePreviewWorldTick`。
 - `mergeSystemPlans` ← `domain/abilities.js#planAbilityBursts`、`domain/ai.js#planEnemyAi`、`domain/ai.js#planCompanionAi`、`domain/ai.js#planBossAi`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/dshEffects.js#planDshEffects`、`domain/scheduled.js#planScheduledActions`、`engine/hooks.js#planEventHooks`。
 - `validateSystemPlan` ← `engine/reducer.js#applySystemPlan`、`engine/reducer.js#commitWorkingState`。
-- `createStateChange` ← `content/handlers/plugins.js#planPluginParallel`、`content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#planEquippedAbility`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityBursts`、`domain/abilities.js#planAbilityHistory`、`domain/attacks.js#planWeaponFire`、`domain/attacks.js#planSkillCast`、`domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planCollisionEffects`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/gpt.js#planGptReset`、`domain/bosses/gpt.js#planGptResetInterrupt`、`domain/bosses/gpt.js#planGptBossEvent`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokBossReinforcements`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/companions.js#planPartnerBanContact`、`domain/companions.js#planCompanionMilestones`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSkip`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#createEasterObjectives`、`domain/easter.js#planEasterEvent`、`domain/easter.js#planEasterInteraction`、`domain/easter.js#planEasterAdvance`、`domain/equipment.js#planWeaponPickup`、`domain/equipment.js#planSkillPickup`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/gptPets.js#planPetModelEvent`、`domain/levels.js#planLevelProgression`、`domain/levels.js#planNextLevelReward`、`domain/mechanics.js#planMechanicEvent`、`domain/meleeAi.js#planMeleeEnemy`、`domain/modelProfiles.js#planModelProfile`、`domain/modelProfiles.js#resolvePetGuard`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/projectiles.js#planNativeProjectiles`、`domain/projectiles.js#planProjectileBurst`、`domain/rewards.js#planDeathRewards`、`domain/rewards.js#planWorldReward`、`domain/rewards.js#planTokenCollection`、`domain/scheduled.js#scheduleAbilityActions`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#resolveControlRequest`、`domain/status.js#planEscapeInput`、`domain/status.js#planStatusAdvance`、`domain/status.js#planSealRelease`、`domain/treeRuntime.js#planTreeWeaponSwitch`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/adventure.js#planBossEncounter`、`domain/world/alarms.js#planAlarmCache`、`domain/world/map.js#createMapPlan`、`domain/world/map.js#planMapExploration`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/objectives.js#planObjectiveCompletion`、`domain/world/pressure.js#planPressureEventAdvance`、`domain/world/spawning.js#planSpawnSchedule`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/spawning.js#planReinforcementGroup`、`engine/commands.js#planGameCommand`、`engine/flow.js#planFlowTransition`、`engine/flow.js#planProgressionPanels`、`engine/flow.js#planPause`、`engine/previewTick.js#advancePreviewWorldTick`。
+- `createStateChange` ← `content/handlers/plugins.js#planPluginParallel`、`content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#planEquippedAbility`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityBursts`、`domain/abilities.js#planAbilityHistory`、`domain/attacks.js#planWeaponFire`、`domain/attacks.js#planSkillCast`、`domain/attacks.js#planDash`、`domain/attacks.js#planLoadoutChange`、`domain/attacks.js#planCollisionEffects`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/gpt.js#planGptReset`、`domain/bosses/gpt.js#planGptResetInterrupt`、`domain/bosses/gpt.js#planGptBossEvent`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokBossReinforcements`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/companions.js#planPartnerBanContact`、`domain/companions.js#planCompanionMilestones`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/draft.js#planPluginSelection`、`domain/draft.js#planPluginReroll`、`domain/draft.js#planPluginSkip`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#createEasterObjectives`、`domain/easter.js#planEasterEvent`、`domain/easter.js#planEasterInteraction`、`domain/easter.js#planEasterAdvance`、`domain/equipment.js#planWeaponPickup`、`domain/equipment.js#planSkillPickup`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/gptPets.js#planPetModelEvent`、`domain/levels.js#planLevelProgression`、`domain/levels.js#planNextLevelReward`、`domain/mechanics.js#planMechanicEvent`、`domain/meleeAi.js#planMeleeEnemy`、`domain/modelProfiles.js#planModelProfile`、`domain/modelProfiles.js#resolvePetGuard`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/projectiles.js#planNativeProjectiles`、`domain/projectiles.js#planProjectileBurst`、`domain/rewards.js#planDeathRewards`、`domain/rewards.js#planWorldReward`、`domain/rewards.js#planTokenCollection`、`domain/scheduled.js#scheduleAbilityActions`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#resolveControlRequest`、`domain/status.js#planEscapeInput`、`domain/status.js#planStatusAdvance`、`domain/status.js#planSealRelease`、`domain/treeRuntime.js#planTreeWeaponSwitch`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/adventure.js#planBossEncounter`、`domain/world/alarms.js#planAlarmCache`、`domain/world/lateMechanics.js#planObjectiveSignal`、`domain/world/lateMechanics.js#planChallengeInteraction`、`domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#createMapPlan`、`domain/world/map.js#planMapExploration`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/objectives.js#planObjectiveCompletion`、`domain/world/pressure.js#planPressureEventAdvance`、`domain/world/spawning.js#planSpawnSchedule`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/spawning.js#planReinforcementGroup`、`engine/commands.js#planGameCommand`、`engine/flow.js#planFlowTransition`、`engine/flow.js#planProgressionPanels`、`engine/flow.js#planPause`、`engine/previewTick.js#advancePreviewWorldTick`。
 
 ## domain/pluginStats.js
 
@@ -2125,7 +2125,7 @@ Active rank, never an archived or difficulty-independent duplicate.
 公开函数上游：
 
 - `planDeathRewards` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
-- `planWorldReward` ← `domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveCompletion`。
+- `planWorldReward` ← `domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveCompletion`。
 - `planTokenCollection` ← `engine/effectLoop.js#evaluateEffectRequest`。
 
 ## domain/scheduled.js
@@ -2408,13 +2408,39 @@ Review risk with F, then confirm within five seconds; one enhanced exclusive cho
 
 - `planAlarmCache` ← `domain/world/map.js#planWorldInteraction`。
 
+## domain/world/lateMechanics.js
+
+@param {import('../../contracts.d.ts').EvaluationContext} c @param {string} id @param {string} mechanicId @param {string} budgetId @param {Record<string,import('../../contracts.d.ts').Json>} runtime @param {number} warning
+
+[源码](../../src/v2/domain/world/lateMechanics.js)；层：`domain`。
+
+直接依赖：`domain/entities.js`、`domain/geometry.js`、`domain/navigation.js`、`domain/plans.js`、`domain/rewards.js`、`domain/world/pressureRules.js`。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `planObjectiveSignal(c: untyped, objectiveId: untyped)` | `SystemPlan` | 已实现 | planObjectiveSignal；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `planChallengeInteraction(c: untyped, entityId: untyped)` | `SystemPlan` | 已实现 | planChallengeInteraction；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `planLateSchedule(c: untyped)` | `SystemPlan` | 已实现 | planLateSchedule；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `planObjectiveSignal` → `domain/entities.js#createEntityState`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/world/pressureRules.js#validatePressureReservation`。
+- `planChallengeInteraction` → `domain/geometry.js#distanceSquared`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/world/pressureRules.js#validatePressureReservation`。
+- `planLateSchedule` → `domain/entities.js#createEntityState`、`domain/geometry.js#distanceSquared`、`domain/navigation.js#canCloseMapPassage`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#planWorldReward`、`domain/world/pressureRules.js#validatePressureReservation`。
+
+公开函数上游：
+
+- `planObjectiveSignal` ← `domain/world/objectives.js#planObjectiveAdvance`。
+- `planChallengeInteraction` ← `domain/world/map.js#planWorldInteraction`。
+- `planLateSchedule` ← `domain/world/pressure.js#planPressureSchedule`。
+
 ## domain/world/map.js
 
 连续地图生成、探索与安全交互。
 
 [源码](../../src/v2/domain/world/map.js)；层：`domain`。
 
-直接依赖：`domain/easter.js`、`domain/entities.js`、`domain/equipment.js`、`domain/geometry.js`、`domain/plans.js`、`domain/random.js`、`domain/rewards.js`、`domain/world/adventure.js`、`domain/world/alarms.js`。
+直接依赖：`domain/easter.js`、`domain/entities.js`、`domain/equipment.js`、`domain/geometry.js`、`domain/plans.js`、`domain/random.js`、`domain/rewards.js`、`domain/world/adventure.js`、`domain/world/alarms.js`、`domain/world/lateMechanics.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -2427,7 +2453,7 @@ Review risk with F, then confirm within five seconds; one enhanced exclusive cho
 
 - `createMapPlan` → `domain/entities.js#createEntityState`、`domain/plans.js#createStateChange`、`domain/random.js#drawRandom`、`domain/world/adventure.js#createAdventureMapPlan`。
 - `planMapExploration` → `domain/geometry.js#distanceSquared`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
-- `planWorldInteraction` → `domain/easter.js#planEasterInteraction`、`domain/equipment.js#planEquipmentInteraction`、`domain/geometry.js#distanceSquared`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#planWorldReward`、`domain/world/adventure.js#planBossEncounter`、`domain/world/alarms.js#planAlarmCache`。
+- `planWorldInteraction` → `domain/easter.js#planEasterInteraction`、`domain/equipment.js#planEquipmentInteraction`、`domain/geometry.js#distanceSquared`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#planWorldReward`、`domain/world/adventure.js#planBossEncounter`、`domain/world/alarms.js#planAlarmCache`、`domain/world/lateMechanics.js#planChallengeInteraction`。
 - `isSafeForInteraction` → `domain/geometry.js#distanceSquared`。
 
 公开函数上游：
@@ -2443,7 +2469,7 @@ Review risk with F, then confirm within five seconds; one enhanced exclusive cho
 
 [源码](../../src/v2/domain/world/objectives.js)；层：`domain`。
 
-直接依赖：`domain/geometry.js`、`domain/plans.js`、`domain/rewards.js`。
+直接依赖：`domain/geometry.js`、`domain/plans.js`、`domain/rewards.js`、`domain/world/lateMechanics.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -2453,7 +2479,7 @@ Review risk with F, then confirm within five seconds; one enhanced exclusive cho
 
 公开函数下游：
 
-- `planObjectiveAdvance` → `domain/geometry.js#distanceSquared`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/world/objectives.js#planObjectiveCompletion`。
+- `planObjectiveAdvance` → `domain/geometry.js#distanceSquared`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/world/lateMechanics.js#planObjectiveSignal`、`domain/world/objectives.js#planObjectiveCompletion`。
 - `planObjectiveCompletion` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#planWorldReward`。
 - `planApiProgression` → 无内部公开函数。
 
@@ -2469,7 +2495,7 @@ Review risk with F, then confirm within five seconds; one enhanced exclusive cho
 
 [源码](../../src/v2/domain/world/pressure.js)；层：`domain`。
 
-直接依赖：`domain/geometry.js`、`domain/plans.js`。
+直接依赖：`domain/geometry.js`、`domain/navigation.js`、`domain/plans.js`、`domain/world/lateMechanics.js`、`domain/world/pressureRules.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -2479,15 +2505,35 @@ Review risk with F, then confirm within five seconds; one enhanced exclusive cho
 
 公开函数下游：
 
-- `planPressureSchedule` → `domain/plans.js#createEmptyPlan`。
-- `reservePressureEvent` → `domain/geometry.js#distanceSquared`。
-- `planPressureEventAdvance` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
+- `planPressureSchedule` → `domain/world/lateMechanics.js#planLateSchedule`。
+- `reservePressureEvent` → `domain/world/pressureRules.js#validatePressureReservation`。
+- `planPressureEventAdvance` → `domain/navigation.js#canCloseMapPassage`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
 
 公开函数上游：
 
 - `planPressureSchedule` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
 - `reservePressureEvent` ← `domain/world/alarms.js#planAlarmCache`。
 - `planPressureEventAdvance` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/tick.js#advanceWorldTick`。
+
+## domain/world/pressureRules.js
+
+Budget and safety reservation shared by direct interactions and autonomous scheduling.
+
+[源码](../../src/v2/domain/world/pressureRules.js)；层：`domain`。
+
+直接依赖：`domain/geometry.js`。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `validatePressureReservation(context: untyped, event: untyped)` | `Result<PressureEvent>` | 已实现 | validatePressureReservation；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `validatePressureReservation` → `domain/geometry.js#distanceSquared`。
+
+公开函数上游：
+
+- `validatePressureReservation` ← `domain/world/lateMechanics.js#planObjectiveSignal`、`domain/world/lateMechanics.js#planChallengeInteraction`、`domain/world/lateMechanics.js#planLateSchedule`、`domain/world/pressure.js#reservePressureEvent`。
 
 ## domain/world/spawning.js
 

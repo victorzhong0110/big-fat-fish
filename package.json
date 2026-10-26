@@ -19,7 +19,8 @@
     "test:v2:equipment": "node scripts/test-v2-equipment-browser.mjs",
     "test:v2:builds": "node scripts/test-v2-builds-browser.mjs",
     "test:v2:factions": "node scripts/test-v2-factions-browser.mjs",
-    "test:v2:difficulty": "node scripts/test-v2-difficulty-browser.mjs"
+    "test:v2:difficulty": "node scripts/test-v2-difficulty-browser.mjs",
+    "test:v2:max20": "node scripts/test-v2-max20-browser.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"
