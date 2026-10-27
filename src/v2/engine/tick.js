@@ -1,3 +1,4 @@
+import {planTutorialAdvance,planTutorialRetry} from '../domain/world/tutorial.js';
 import {planEscortAdvance} from '../domain/world/escort.js';
 import {planExpeditionMaintenance} from '../domain/world/expeditionMaintenance.js';
 import {planExpeditionProgression} from '../domain/world/expedition.js';
@@ -73,6 +74,8 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls domain/world/pressure.js#planPressureEventAdvance
  * @calls domain/world/pressure.js#planPressureSchedule
  * @calls domain/world/spawning.js#planSpawnSchedule
+ * @calls domain/world/tutorial.js#planTutorialAdvance
+ * @calls domain/world/tutorial.js#planTutorialRetry
  * @calls engine/commands.js#orderPendingCommands
  * @calls engine/commands.js#planGameCommand
  * @calls engine/effectLoop.js#drainEffectQueue
@@ -128,9 +131,11 @@ export function advanceWorldTick(state, commands, catalog) {
   apply(planDeathRewards(context(), drained.deaths).plan);
   apply(planAbilityHistory(context()));
   apply(planExpeditionProgression(context()));
-  const outcome = resolveTerminalOutcome(context(), drained.deaths);
+  const retry=planTutorialRetry(context(),drained.deaths);if(retry.changes.length)apply(retry);
+  const outcome = retry.changes.length?null:resolveTerminalOutcome(context(), drained.deaths);
   if (outcome) apply({ ...createEmptyPlan(), changes: [createStateChange('flow', 'phase', 'setFlowPhase', { phase: outcome, resumePhase: null }), createStateChange('runtime', 'input', 'setInput', { ...working.input, move: { x: 0, y: 0 }, firing: false }),...(working.api?[createStateChange('runtime','api','setApiState',{...working.api,withdrawal:null})]:[])] });
   if (!outcome) apply(planApiProgression(context(),true));
+  if (!outcome) apply(planTutorialAdvance(context()));
   if (!outcome) apply(planEscortAdvance(context()));
   if (!outcome) apply(planObjectiveAdvance(context()));
   if (!outcome) for (let i = 0; i < 128; i++) { const plan = planProgressionPanels(context()); if (!plan.changes.length) break; apply(plan); if (i === 127) throw new Error('Growth queue did not settle'); }

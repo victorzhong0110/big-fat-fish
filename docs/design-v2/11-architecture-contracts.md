@@ -129,13 +129,13 @@ ChatGPT重置只走`planGptReset`，绝不能调用checkpoint恢复或创建新S
 5. `commitWorkingState(previous, working, catalog, outbox)`增加显式目录与outbox参数。Reducer只应用changes，不自动把plan.effects/events/persistence写回状态；tick编排器负责效果队列与outbox，最终只提交一次。提交器重新编号事件seq，拒绝重复事件、跨局或错误时钟域提交。
 6. domain/stateValidation复用状态校验，避免检查点反向import engine；序列化/版本常量同样是实际依赖。
 
-恢复低层检查点只构造新状态，设为paused并记录resumePhase；没有推进时间或授予生命/资源。`createCheckpoint`是编码器，应用入口必须先通过canCreateCheckpoint；Free使用独立localStorage调试槽；正式冒险的Profile/StoragePort通过CAS原子保存、结算和删档。
+恢复低层检查点只构造新状态，设为paused并记录resumePhase；没有推进时间或授予生命/资源。`createCheckpoint`是编码器，应用入口必须先通过canCreateCheckpoint；Free练习使用独立localStorage调试槽；正式Free引导及冒险的Profile/StoragePort通过CAS原子保存、结算和删档。
 
 ## 11. 当前战斗试作的调用入口
 
-`v2.html → src/v2-preview.js → preview/host.mountCombatPreview`组装试作宿主；host只持Session句柄、输入与表现，不修改旧main。`createGameSession`接受显式core-preview/Free及adventure-slice的短途/远征1–15、API，通用full bootstrap仍拒绝。世界/UI统一进入正式`engine/tick`，previewTick仅作兼容委托；当前Canvas2D表现和preview/host不冒充未实现的Phaser/通用宿主适配器。
+`v2.html → src/v2-preview.js → preview/host.mountCombatPreview`组装试作宿主；host只持Session句柄、输入与表现，不修改旧main。`createGameSession`接受显式core-preview/Free练习及adventure-slice的Free引导、短途/远征1–15、API，通用full bootstrap仍拒绝。世界/UI统一进入正式`engine/tick`，previewTick仅作兼容委托；当前Canvas2D表现和preview/host不冒充未实现的Phaser/通用宿主适配器。
 
-世界：enqueue命令→Session筛出到期命令→tick推进→计时/出生/AI/移动/开火/扫掠/拾取→有界效果队列逐次伤害与死亡→唯一奖励→远征首领推进→玩家优先的终局判定→API继续/撤回与目标→成长/LoRA/插件面板→维护→校验与commit一次。UI暂停/继续只消费UI命令，不推进冻结的世界钟；恢复清空墙钟积压。插件候选与随机、LoRA试验与随机必须同一计划提交。
+世界：enqueue命令→Session筛出到期命令→tick推进→计时/出生/AI/移动/开火/扫掠/拾取→有界效果队列逐次伤害与死亡→唯一奖励→远征首领推进→Free引导死亡重试或玩家优先的终局判定→API继续/撤回与引导目标→成长/LoRA/插件面板→维护→校验与commit一次。UI暂停/继续只消费UI命令，不推进冻结的世界钟；恢复清空墙钟积压。插件候选与随机、LoRA试验与随机必须同一计划提交。
 
 Session私有step/getRecord不导出；AST工具展开它们转达的真实公开依赖。snapshot和公开读取返回副本，Renderer不运行物理。当前范围、原版170定义/95绑定、测试和未完成事项统一见13；逐函数实现范围及调用上下游见12/manifest。
 

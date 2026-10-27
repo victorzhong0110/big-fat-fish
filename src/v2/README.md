@@ -1,6 +1,6 @@
 # V2 开发源码
 
-当前114个JS模块、409个公开函数：369个真实实现、40个明确TODO。Free练习、正式短途1–15、三海域远征与通关15后开放的API调用可操作，完整游戏仍未完成。
+当前115个JS模块、413个公开函数：373个真实实现、40个明确TODO。正式Free引导、Free练习、正式短途1–15、三海域远征与通关15后开放的API调用可操作，完整游戏仍未完成。
 
 运行`npm run dev`后打开`/v2.html`。构建同时生成旧index与新v2，旧玩法入口独立保留。世界/UI共用`engine/tick`，Session唯一持有状态；previewTick仅兼容委托，宿主仍是preview/host。通用application/bootstrap及剩余适配器不伪装为已完成。
 
@@ -19,7 +19,7 @@ V2_CHROMIUM_EXECUTABLE=/path/to/chromium npm run test:v2:expedition
 V2_CHROMIUM_EXECUTABLE=/path/to/chromium npm run test:v2:escort
 ```
 
-六MCP、八技能、六伙伴、三十局内插件、十DSH与三阵营首领已有真实消费者；小窝支持27树节点/6设施/3DSH槽。正式Profile通过CAS事务保存发现、里程碑、检查点和一次结算；Free使用隔离调试槽。社区SDK1.0–1.2声明式MCP仅开放Free，示例见public/mods。
+六MCP、八技能、六伙伴、三十局内插件、十DSH与三阵营首领已有真实消费者；小窝支持27树节点/6设施/3DSH槽。正式Profile通过CAS事务保存发现、里程碑、检查点和一次结算；Free练习使用隔离调试槽。正式Free引导固定基础配装，首次胜利发一张算力卡；重复通关不再发卡。社区SDK1.0–1.2声明式MCP仅开放Free练习，示例见public/mods。
 
 API持续刷怪、按出生分钟增强，每5分钟一位阶段首领；首领死亡继续，安全检查点长按F或交互3秒返回。更新/重置每10秒开奖、整个窗口5分钟，极小概率续期提示“Reset！”并在正式冒险解锁“这是哪个‘重置’？”。最终音源、远征长局平衡和更多社区接口仍待完成。
 

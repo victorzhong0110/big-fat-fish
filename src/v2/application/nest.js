@@ -55,6 +55,11 @@ export async function executeNestAction(storage, catalog, action) {
 export function prepareAdventureStart(profile, request, catalog, runId) {
   const validation = validateStartRequest(profile, request, catalog);
   if (!validation.valid) return { ok: false, code: 'START_REJECTED', message: validation.diagnostics.map(item => item.message).join('; ') };
+  if(request.mode==='tutorial'){
+    if(request.difficulty!==0||request.weaponIds.length!==1||request.weaponIds[0]!=='mcp_bubble'||request.skillId!=='skill_disconnect'||request.companionId!=='companion_rice'||!runId)return {ok:false,code:'UNSUPPORTED_TUTORIAL',message:'教学使用基础MCP、断开连接和饭团。'};
+    const difficulty=resolveDifficultySnapshot(request,catalog);if(!difficulty.ok)return difficulty;
+    return {ok:true,value:{runtimeProfile:'adventure-slice',guidedTutorial:true,runId,treeNodeIds:[],dsh:[],difficulty:difficulty.value,loadout:{weapons:[{instanceId:`${runId}:weapon:0`,definitionId:'mcp_bubble',originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null}],activeWeaponIndex:0,skillId:'skill_disconnect',skillCooldown:0,companionId:'companion_rice',companionCooldown:0,dashCooldown:0}}};
+  }
   const available = createHandlerRegistry().implementedIds;
   if (request.bossFaction!==undefined&&!['claude','gpt','grok'].includes(request.bossFaction)||!['short','api','expedition'].includes(request.mode) || (request.mode!=='api'&&(typeof request.difficulty!=='number'||request.difficulty<1||request.difficulty>15)) || request.companionId !== null && !available.includes(request.companionId) || request.weaponIds.some(id => !available.includes(id)) || !available.includes(request.skillId) || profile.equippedDsh.some(slot => !available.includes(slot.id)) || !runId) return { ok: false, code: 'UNSUPPORTED_RUNTIME', message: '当前开放Pro1–Max20x15短途、三海域远征与已解锁的API调用。' };
   const difficulty = resolveDifficultySnapshot(request, catalog); if (!difficulty.ok) return difficulty;

@@ -25,7 +25,8 @@
     "test:v2:api": "node scripts/test-v2-api-browser.mjs",
     "test:v2:expedition": "node scripts/test-v2-expedition-browser.mjs",
     "test:v2:escort": "node scripts/test-v2-escort-browser.mjs",
-    "bench:v2:expedition": "node scripts/bench-v2-expedition.mjs"
+    "bench:v2:expedition": "node scripts/bench-v2-expedition.mjs",
+    "test:v2:tutorial": "node scripts/test-v2-tutorial-browser.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"

@@ -25,12 +25,12 @@ const output=process.env.V2_BROWSER_OUTPUT||path.join(root,'dist','v2-browser-ch
 await fs.mkdir(output,{recursive:true});
 const server=await createServer({root,server:{host:'127.0.0.1',port:0,watch:null,hmr:false}});await server.listen();
 const address=server.httpServer.address();const base=`http://127.0.0.1:${address.port}`;
-const browser=await chromium.launch({executablePath,headless:true,args:['--no-sandbox','--single-process','--no-zygote','--disable-gpu','--disable-gpu-compositing','--disable-webgl']});
+const browser=await chromium.launch({executablePath,headless:true,args:['--no-sandbox','--single-process','--no-zygote','--disable-gpu','--disable-gpu-compositing','--disable-webgl','--use-gl=angle','--use-angle=swiftshader']});
 const checks=[];const errors=[];
 function check(condition,label){assert(condition,label);checks.push(label);}
 try{
  const desktop=await browser.newContext({viewport:{width:1280,height:800}});const page=await desktop.newPage();page.on('pageerror',error=>errors.push(error.message));
- await page.goto(base+'/v2.html');await page.evaluate(()=>document.fonts.ready);await page.screenshot({path:path.join(output,'desktop-menu.png')});
+ await page.goto(base+'/v2.html');await page.locator('#mode-select').selectOption('tutorial');await page.evaluate(()=>document.fonts.ready);await page.screenshot({path:path.join(output,'desktop-menu.png')});
  await page.locator('#start').click();await page.waitForTimeout(350);
  check(await page.locator('#menu').isHidden(),'Desktop start opens combat');
  check((await page.locator('#enemies').textContent())==='15','Preview contains three strong crabs and twelve simple Bots');
@@ -67,7 +67,7 @@ try{
  await page.locator('#resume').click();await page.waitForFunction(()=>Number(document.querySelector('.training-meter')?.getAttribute('aria-valuenow'))>=56);await page.keyboard.press('Space');await page.locator('#plugin-menu').waitFor({state:'visible'});check((await page.locator('#toast').textContent()).includes('完美训练'),'Releasing and pressing Space inside the window resolves perfect training');await page.locator('#plugin-skip').click();await page.locator('#plugin-menu').waitFor({state:'hidden'});
  // Synthetic pointer cancellation is exercised with trusted multi-touch input via CDP.
  const mobile=await browser.newContext({viewport:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});const phone=await mobile.newPage();phone.on('pageerror',error=>errors.push(error.message));
- await phone.goto(base+'/v2.html');await phone.evaluate(()=>document.fonts.ready);await phone.screenshot({path:path.join(output,'mobile-menu.png')});await phone.locator('#start').tap();await phone.waitForTimeout(150);
+ await phone.goto(base+'/v2.html');await phone.locator('#mode-select').selectOption('tutorial');await phone.evaluate(()=>document.fonts.ready);await phone.screenshot({path:path.join(output,'mobile-menu.png')});await phone.locator('#start').tap();await phone.waitForTimeout(150);
  const left=await phone.locator('#left-stick').boundingBox(),right=await phone.locator('#right-stick').boundingBox();check(!!left&&!!right,'Both mobile sticks are visible');
  const cdp=await mobile.newCDPSession(phone);
  const points=[{id:1,x:left.x+left.width/2,y:left.y+left.height/2},{id:2,x:right.x+right.width/2,y:right.y+right.height/2}];

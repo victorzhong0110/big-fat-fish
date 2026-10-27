@@ -9,11 +9,11 @@ if(!executablePath)throw new Error('Set V2_CHROMIUM_EXECUTABLE; browser verifica
 const output=path.join(root,'dist','v2-mods-browser-check');await fs.mkdir(output,{recursive:true});
 const example=JSON.parse(await fs.readFile(path.join(root,'public/mods/community-bubbles.json'),'utf8'));
 const server=await createServer({root,server:{host:'127.0.0.1',port:0,watch:null,hmr:false}});await server.listen();
-const browser=await chromium.launch({executablePath,headless:true,args:['--no-sandbox','--single-process','--no-zygote','--disable-gpu','--disable-gpu-compositing','--disable-webgl']});
+const browser=await chromium.launch({executablePath,headless:true,args:['--no-sandbox','--single-process','--no-zygote','--disable-gpu','--disable-gpu-compositing','--disable-webgl','--use-gl=angle','--use-angle=swiftshader']});
 const checks=[],errors=[];function check(value,label){assert(value,label);checks.push(label);}
 try{
  const context=await browser.newContext({viewport:{width:1280,height:800}}),page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
- await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/v2.html`);
+ await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/v2.html`);await page.locator('#mode-select').selectOption('tutorial');
  await page.locator('#start').click();await page.locator('#checkpoint').click();await page.waitForFunction(()=>localStorage.getItem('big-fat-fish:v2-combat-preview:checkpoint'));
  const vanilla=await page.evaluate(()=>localStorage.getItem('big-fat-fish:v2-combat-preview:checkpoint'));
  await page.locator('#pause').click();await page.locator('#restart').click();await page.locator('#mods-panel summary').click();

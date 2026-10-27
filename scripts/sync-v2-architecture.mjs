@@ -147,6 +147,22 @@ for(const module of sourceModel){
   };
   if(apiDescriptions[fn.name])item.description=apiDescriptions[fn.name];
   if(['canApiWithdraw','planApiWithdrawal','planApiBossEncounter','planApiWorldAdvance','planApiPressure','planApiMaintenance','planApiProgression'].includes(fn.name))item.implementationScope='adventure-slice API';
+  const tutorialDescriptions={
+   createTutorialMapPlan:'创建正式Free引导海域、固定练习敌人、检查点和隐藏教学控制器；不生成普通材料。',
+   planTutorialAdvance:'按真实移动射击、经验升级、插件选择、冲刺和挣脱依次推进教学；世界暂停时不推进。',
+   planTutorialBoss:'教学完成且玩家靠近入口时创建300生命、仅使用钳击的Claude教学首领。',
+   planTutorialRetry:'教学中玩家死亡时回到安全位置重试并保留教学与成长进度；同帧首领死亡亦优先重试。',
+   createMapPlan:'按模式生成Free引导/练习、短途/API海域或远征区域；远征包含信标、封锁与护送。',
+   createInitialGameState:'创建Free引导/练习、1–15短途/远征或API初态，锁定配装和累计机制；full仍拒绝。',
+   createGameSession:'校验目录及状态不变量后发布Free引导/练习、短途、远征和API私有Session；正式模组仍拒绝。',
+   prepareAdventureStart:'验证拥有与难度并锁定出发快照；Free引导强制固定装备且不带技能树/DSH，通关15才允许API。',
+   createSettlement:'按真实终态生成一次结算；Free引导只在胜利时标记教学完成，不给普通资源；API不能胜利。',
+   planSettlementCommit:'校验结算与活动检查点并幂等入账；正式Free首次完成通过全局账本发一张算力卡。',
+   stepSessionWorld:'消费世界命令，经唯一引擎流水线原子提交Free引导/练习、短途、远征或API；无I/O。',
+   mountCombatPreview:'组装Free引导/练习、短途、远征/API、配装/小窝/成长、检查点与结算；保留原练习模组入口。'
+  };
+  if(tutorialDescriptions[fn.name])item.description=tutorialDescriptions[fn.name];
+  if(['createTutorialMapPlan','planTutorialAdvance','planTutorialBoss','planTutorialRetry'].includes(fn.name))item.implementationScope='adventure-slice Free引导';
   const index=source.indexOf(`export ${fn.async?'async ':''}function ${fn.name}(`);
   const start=source.lastIndexOf('/**',index);
   if(start>=0){let comment=source.slice(start,index).replace(/^ \* @calls.*\n/gm,'').replace(/^ \* @implementationScope.*\n/gm,'');if(fn.implementation==='implemented')comment=comment.replace(/^ \* @throws \{Error\} TODO placeholder until Grok implements this contract\.\n/gm,'');const scopeText=item.implementationScope?` * @implementationScope ${item.implementationScope}\n`:'';const callText=scopeText+(item.calls.map(call=>` * @calls ${call}\n`).join('')||' * @calls 无内部公开函数。\n');
@@ -164,7 +180,7 @@ manifest.rules=[...new Set(manifest.rules)];
 const fns=manifest.modules.flatMap(module=>module.functions),implemented=fns.filter(fn=>fn.implementation==='implemented').length;
 manifest.counts={modules:manifest.modules.length,functions:fns.length,implemented,placeholders:fns.length-implemented};
 await fs.writeFile(filename,JSON.stringify(manifest,null,2)+'\n');
-const esc=value=>value.replaceAll('|','\\|').replaceAll('\n',' '),rows=['# 12 · 全部函数目录与调用契约','',`当前${manifest.counts.modules}个JS模块、${fns.length}个公开函数：${implemented}个有实现，${fns.length-implemented}个明确TODO。core-preview为Free练习，adventure-slice为1–15短途/远征及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。`,'','调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。',''];
+const esc=value=>value.replaceAll('|','\\|').replaceAll('\n',' '),rows=['# 12 · 全部函数目录与调用契约','',`当前${manifest.counts.modules}个JS模块、${fns.length}个公开函数：${implemented}个有实现，${fns.length-implemented}个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、1–15短途/远征及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。`,'','调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。',''];
 for(const module of manifest.modules){rows.push(`## ${module.path}`,'',module.purpose,'',`[源码](../../src/v2/${module.path})；层：\`${module.layer}\`。`,'',`直接依赖：${module.dependencies.map(dep=>'`'+dep+'`').join('、')||'无'}。`,'','| 函数签名 | 返回 | 状态/范围 | 功能与约束 |','|---|---|---|---|');
  for(const fn of module.functions)rows.push(`| \`${esc(fn.name+'('+fn.args.map(arg=>arg.name+': '+arg.type+(arg.default!==undefined?' = '+arg.default:'')).join(', ')+')')}\` | \`${esc(fn.result)}\` | ${fn.implementation==='implemented'?'已实现':'TODO'}${fn.implementationScope?' / '+fn.implementationScope:''} | ${esc(fn.description+'；'+fn.rule+'；状态权限：'+fn.ownership)} |`);
  rows.push('','公开函数下游：','');for(const fn of module.functions)rows.push(`- \`${fn.name}\` → ${fn.calls.map(call=>'`'+call+'`').join('、')||'无内部公开函数'}。`);

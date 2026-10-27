@@ -77,7 +77,7 @@ export interface DshCycleState { activeRemaining?: number; durationResets?: numb
 export interface BossState { entityId: Id; faction: Faction; phase: number; telegraph: Json; resetNodes: readonly { id: Id; hp: number; consumed: boolean; position: Vec2 }[]; resetRemaining: number; resetCooldown: number; spawnGroupSeq: number; }
 export interface ApiState { lastAdvancedTick:Tick|null; nextBossAt:Tick; bossWarningAt:Tick|null; calmUntil:Tick; nextPressureAt:Tick; pressureSeq:number; kills:number; bossKills:number; withdrawal:{startedAt:Tick;position:Vec2;hpDamageTotal:number}|null; elapsedTicks: Tick; bossIndex: number; materialMinute: number; fragmentsThisMinute: number; partsThisMinute: number; }
 export interface DifficultySnapshot { level: number | 'api'; mode: Mode; mechanicIds: readonly Id[]; difficultyPerkIds: readonly Id[]; modelProfileIds: Readonly<Record<Faction, Id>>; hpMultiplier: number; damageMultiplier: number; spawnBudgetMultiplier: number; }
-export interface StartSnapshot { bossFaction?:Faction; modLock?: readonly ModLockEntry[]; runtimeProfile?: 'core-preview' | 'adventure-slice' | 'full'; runId?: Id; treeNodeIds: readonly Id[]; dsh: readonly DshSlot[]; loadout: Loadout; difficulty: DifficultySnapshot; }
+export interface StartSnapshot { guidedTutorial?:boolean; bossFaction?:Faction; modLock?: readonly ModLockEntry[]; runtimeProfile?: 'core-preview' | 'adventure-slice' | 'full'; runId?: Id; treeNodeIds: readonly Id[]; dsh: readonly DshSlot[]; loadout: Loadout; difficulty: DifficultySnapshot; }
 export interface FlowState { suspendedResumePhase?: Phase | null; phase: Phase; resumePhase: Phase | null; queuedLevelRewards: readonly LevelReward[]; choice: PluginChoice | null; settlementPending: boolean; pluginRerollsUsed?: number; }
 export interface RegionArchive { world:WorldState; bosses:readonly BossState[]; attackHits:readonly AttackHitRecord[]; nextAt:Tick; suspendedAt:Tick; }
 export interface ExpeditionState { route:readonly Faction[]; clearedBiomes:readonly number[]; furthestBiome:number; regions:readonly (RegionArchive|null)[]; }
@@ -124,7 +124,7 @@ export interface Profile { bestApi?:ApiRecord;
 export interface ProfilePlan { expectedRevision: number; next: Profile; events: readonly DomainEvent[]; }
 export interface StartRequest { bossFaction?:Faction; mode: Mode; difficulty: number | 'api'; seed: number; weaponIds: readonly Id[]; skillId: Id; companionId: Id | null; }
 export interface Checkpoint { id: Id; versions: Versions; revision: number; digest: string; state: GameState; }
-export interface Settlement { apiResult?:ApiRecord; difficulty?: number | 'api'; mode?: Mode; id: Id; runId: Id; outcome: 'victory' | 'defeat' | 'withdrawal'; gpuFragments: number; parts: number; survivedTicks: number; bossKills: number; discoveries: readonly Id[]; }
+export interface Settlement { tutorialCompleted?:boolean; apiResult?:ApiRecord; difficulty?: number | 'api'; mode?: Mode; id: Id; runId: Id; outcome: 'victory' | 'defeat' | 'withdrawal'; gpuFragments: number; parts: number; survivedTicks: number; bossKills: number; discoveries: readonly Id[]; }
 export interface StorageRecord { revision: number; profile: Profile; }
 export interface StoragePort { read(): Promise<Result<StorageRecord>>; compareAndSwap(expectedRevision: number, next: StorageRecord): Promise<Result<StorageRecord>>; }
 export interface AssetRequest { id: Id; source: string; kind: 'sprite' | 'music' | 'sfx'; }

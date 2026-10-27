@@ -1,3 +1,4 @@
+import {createTutorialMapPlan,planTutorialBoss} from './tutorial.js';
 import {planEscortStart} from './escort.js';
 import {createExpeditionRegionPlan} from './expeditionMap.js';
 import {planExpeditionBossEncounter,planExpeditionTravel,planExpeditionRest} from './expedition.js';
@@ -31,12 +32,14 @@ import * as dependency3 from '../rewards.js';
  * @calls domain/random.js#drawRandom
  * @calls domain/world/adventure.js#createAdventureMapPlan
  * @calls domain/world/expeditionMap.js#createExpeditionRegionPlan
+ * @calls domain/world/tutorial.js#createTutorialMapPlan
  * @param {import('../../contracts.d.ts').StartSnapshot} start
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
  * @param {import('../../contracts.d.ts').RandomState} random
  * @returns {import('../../contracts.d.ts').SystemPlan}
  */
 export function createMapPlan(start, catalog, random) {
+  if(start.guidedTutorial)return createTutorialMapPlan(start,catalog);
   if(start.difficulty.mode==='expedition')return createExpeditionRegionPlan(start,catalog,0);
   if (start.runtimeProfile === 'adventure-slice') return createAdventureMapPlan(start, catalog);
   if (start.runtimeProfile !== 'core-preview') throw new Error('Full adventure map generation is not implemented');
@@ -113,6 +116,7 @@ export function planMapExploration(context) {
  * @calls domain/world/expedition.js#planExpeditionTravel
  * @calls domain/world/lateMechanics.js#planChallengeInteraction
  * @calls domain/world/regionRules.js#localWorldId
+ * @calls domain/world/tutorial.js#planTutorialBoss
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').Command} command
  * @returns {import('../../contracts.d.ts').SystemPlan}
@@ -121,9 +125,10 @@ export function planWorldInteraction(context, command) {
   const state = context.state, player = state.world.entities[state.player.entityId];
   if (state.flow.phase !== 'exploring') return createEmptyPlan();
   const equipment=planEquipmentInteraction(context);if(equipment)return equipment;
-  const candidates = Object.values(state.world.entities).filter(entity => entity.kind === 'objective' && (entity.runtime.interaction!=='escort'||entity.runtime.escortState==='ready') && !(typeof entity.runtime.hiddenBy==='string'&&state.world.entities[entity.runtime.hiddenBy]?.hp>0)&& ['expeditionExit','expeditionBack','expeditionRest','escort','challenge','cache','alarmCache','bossGate','chair','note','lunchbox','console'].includes(String(entity.runtime.interaction)) && dependency1.distanceSquared(entity.position, player.position) <= 96 ** 2).sort((a,b)=>dependency1.distanceSquared(a.position,player.position)-dependency1.distanceSquared(b.position,player.position)||(a.id<b.id?-1:1));
+  const candidates = Object.values(state.world.entities).filter(entity => entity.kind === 'objective' && (entity.runtime.interaction!=='escort'||entity.runtime.escortState==='ready') && !(typeof entity.runtime.hiddenBy==='string'&&state.world.entities[entity.runtime.hiddenBy]?.hp>0)&& ['expeditionExit','expeditionBack','expeditionRest','escort','tutorialGate','challenge','cache','alarmCache','bossGate','chair','note','lunchbox','console'].includes(String(entity.runtime.interaction)) && dependency1.distanceSquared(entity.position, player.position) <= 96 ** 2).sort((a,b)=>dependency1.distanceSquared(a.position,player.position)-dependency1.distanceSquared(b.position,player.position)||(a.id<b.id?-1:1));
   const entity = candidates[0]; if (!entity) return createEmptyPlan();
   if(['expeditionExit','expeditionBack'].includes(String(entity.runtime.interaction)))return planExpeditionTravel(context,Number(entity.runtime.targetBiome));
+  if(entity.runtime.interaction==='tutorialGate')return planTutorialBoss(context);
   if(entity.runtime.interaction==='escort')return planEscortStart(context,entity.id);
   if(entity.runtime.interaction==='expeditionRest')return planExpeditionRest(context,entity.id);
   if(entity.runtime.interaction==='challenge')return planChallengeInteraction(context,entity.id);

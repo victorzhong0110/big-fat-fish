@@ -944,7 +944,7 @@
           ]
         },
         {
-          "description": "验证拥有与真实最高难度，复制树/DSH/标准装备；支持数字短途/远征，通关15才允许API。",
+          "description": "验证拥有与难度并锁定出发快照；Free引导强制固定装备且不带技能树/DSH，通关15才允许API。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -6553,7 +6553,7 @@
       ],
       "functions": [
         {
-          "description": "创建Free、1–15短途/远征或API初态，锁定配装和累计机制；full仍拒绝。",
+          "description": "创建Free引导/练习、1–15短途/远征或API初态，锁定配装和累计机制；full仍拒绝。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -8324,7 +8324,7 @@
             }
           ],
           "result": "Settlement",
-          "description": "按真实终态生成一次结算，API返回全留、失败按树比例；用持续计数保存生存记录，API不允许胜利。",
+          "description": "按真实终态生成一次结算；Free引导只在胜利时标记教学完成，不给普通资源；API不能胜利。",
           "calls": [],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -8349,7 +8349,7 @@
             }
           ],
           "result": "Result<ProfilePlan>",
-          "description": "去重、入账、碎片换卡、解锁并清当前检查点，单个revision计划。",
+          "description": "校验结算与活动检查点并幂等入账；正式Free首次完成通过全局账本发一张算力卡。",
           "calls": [
             "domain/settlement.js#validateProfileRecord"
           ],
@@ -9632,7 +9632,8 @@
         "domain/world/expeditionMap.js",
         "domain/world/lateMechanics.js",
         "domain/world/regionRules.js",
-        "domain/world/safety.js"
+        "domain/world/safety.js",
+        "domain/world/tutorial.js"
       ],
       "functions": [
         {
@@ -9652,13 +9653,14 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "按模式生成Free演练、短途/API海域或远征区域；远征包含信标、封锁与护送。",
+          "description": "按模式生成Free引导/练习、短途/API海域或远征区域；远征包含信标、封锁与护送。",
           "calls": [
             "domain/entities.js#createEntityState",
             "domain/plans.js#createStateChange",
             "domain/random.js#drawRandom",
             "domain/world/adventure.js#createAdventureMapPlan",
-            "domain/world/expeditionMap.js#createExpeditionRegionPlan"
+            "domain/world/expeditionMap.js#createExpeditionRegionPlan",
+            "domain/world/tutorial.js#createTutorialMapPlan"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -9717,7 +9719,8 @@
             "domain/world/expedition.js#planExpeditionRest",
             "domain/world/expedition.js#planExpeditionTravel",
             "domain/world/lateMechanics.js#planChallengeInteraction",
-            "domain/world/regionRules.js#localWorldId"
+            "domain/world/regionRules.js#localWorldId",
+            "domain/world/tutorial.js#planTutorialBoss"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -10217,6 +10220,114 @@
           "callMode": "sequence",
           "implementation": "implemented",
           "implementationScope": "adventure-slice"
+        }
+      ]
+    },
+    {
+      "path": "domain/world/tutorial.js",
+      "layer": "domain",
+      "purpose": "Construct the formal Free lesson as an isolated small sea. It has no permanent loot or adventure easter eggs.",
+      "dependencies": [
+        "domain/entities.js",
+        "domain/geometry.js",
+        "domain/plans.js"
+      ],
+      "functions": [
+        {
+          "description": "创建正式Free引导海域、固定练习敌人、检查点和隐藏教学控制器；不生成普通材料。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createTutorialMapPlan",
+          "args": [
+            {
+              "name": "start",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
+          "implementationScope": "adventure-slice Free引导"
+        },
+        {
+          "description": "按真实移动射击、经验升级、插件选择、冲刺和挣脱依次推进教学；世界暂停时不推进。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planTutorialAdvance",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
+          "implementationScope": "adventure-slice Free引导"
+        },
+        {
+          "description": "教学完成且玩家靠近入口时创建300生命、仅使用钳击的Claude教学首领。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planTutorialBoss",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/geometry.js#distanceSquared",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
+          "implementationScope": "adventure-slice Free引导"
+        },
+        {
+          "description": "教学中玩家死亡时回到安全位置重试并保留教学与成长进度；同帧首领死亡亦优先重试。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planTutorialRetry",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            },
+            {
+              "name": "deaths",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
+          "implementationScope": "adventure-slice Free引导"
         }
       ]
     },
@@ -10796,7 +10907,7 @@
             }
           ],
           "result": "GameSession",
-          "description": "校验目录及状态不变量后发布Free、短途、远征和API私有Session；正式模组仍拒绝。",
+          "description": "校验目录及状态不变量后发布Free引导/练习、短途、远征和API私有Session；正式模组仍拒绝。",
           "calls": [
             "content/catalog.js#validateContentCatalog",
             "content/registry.js#createHandlerRegistry",
@@ -10845,7 +10956,7 @@
             }
           ],
           "result": "TickResult",
-          "description": "消费世界命令，经唯一引擎流水线原子提交Free、短途、远征或API；无I/O。",
+          "description": "消费世界命令，经唯一引擎流水线原子提交Free引导/练习、短途、远征或API；无I/O。",
           "calls": [
             "engine/commands.js#orderPendingCommands",
             "engine/tick.js#advanceUiTick",
@@ -11080,6 +11191,7 @@
         "domain/world/objectives.js",
         "domain/world/pressure.js",
         "domain/world/spawning.js",
+        "domain/world/tutorial.js",
         "engine/commands.js",
         "engine/effectLoop.js",
         "engine/flow.js",
@@ -11144,6 +11256,8 @@
             "domain/world/pressure.js#planPressureEventAdvance",
             "domain/world/pressure.js#planPressureSchedule",
             "domain/world/spawning.js#planSpawnSchedule",
+            "domain/world/tutorial.js#planTutorialAdvance",
+            "domain/world/tutorial.js#planTutorialRetry",
             "engine/commands.js#orderPendingCommands",
             "engine/commands.js#planGameCommand",
             "engine/effectLoop.js#drainEffectQueue",
@@ -11225,7 +11339,7 @@
       ],
       "functions": [
         {
-          "description": "组装Free、短途、远征/API、配装/小窝/成长、检查点与结算；API支持安全检查点长按返回。",
+          "description": "组装Free引导/练习、短途、远征/API、配装/小窝/成长、检查点与结算；保留原练习模组入口。",
           "rule": "",
           "ownership": "宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState",
           "phase": "query",
@@ -12372,9 +12486,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 114,
-    "functions": 409,
-    "implemented": 369,
+    "modules": 115,
+    "functions": 413,
+    "implemented": 373,
     "placeholders": 40
   }
 }

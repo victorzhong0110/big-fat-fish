@@ -54,7 +54,7 @@ export function planClaudeBoss(context, boss) {
       else { runtime.claudeMove = null; runtime.claudeMoveIndex = move.index + 1; runtime.nextClaudeMoveAt = state.tick + 90; }
     }
   } else if (state.tick >= Number(runtime.nextClaudeMoveAt ?? 120)) {
-    const kinds = phase === 2 ? ['clamp', 'skillBan', 'companionBan', 'sweep'] : ['clamp', 'skillBan', 'companionBan'];
+    const kinds = entity.runtime.guidedBoss===true?['clamp']:phase === 2 ? ['clamp', 'skillBan', 'companionBan', 'sweep'] : ['clamp', 'skillBan', 'companionBan'];
     let kind = kinds[index % kinds.length]; if (kind === 'companionBan' && !state.player.loadout.companionId) kind = 'strike';
     // Do not start a melee move from the far side of the map; walk into readable range first.
     if (!['clamp', 'strike'].includes(kind) || distanceSquared(entity.position, player.position) <= 260 ** 2) {

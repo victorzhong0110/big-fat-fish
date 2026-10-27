@@ -59,6 +59,7 @@ function applyPlan(working,plan,tickOwned) {
         const entities = { ...next.world.entities }; delete entities[change.id]; next.world.entities = entities;
         next.attackHits = next.attackHits.filter(hit => hit.targetId !== change.id); break;
       }
+      case 'reviveTutorialEntity': if(!next.start.guidedTutorial||![next.player.entityId,'tutorial:boss'].includes(change.id)||Number(p.hp)>entity.maxHp)throw new Error('Invalid tutorial retry');entity.hp=Number(p.hp);entity.dead=false;entity.dying=false;break;
       case 'setEntityKinematics': {
         const data = /** @type {Pick<import('../contracts.d.ts').EntityState, 'position' | 'previousPosition' | 'velocity' | 'facingRadians'>} */ (JSON.parse(serializeCanonical(p)));
         entity.position = data.position; entity.previousPosition = data.previousPosition; entity.velocity = data.velocity; entity.facingRadians = data.facingRadians; break;
