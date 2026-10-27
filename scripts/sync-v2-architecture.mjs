@@ -99,6 +99,7 @@ for(const module of sourceModel){
   if(fn.name==='validateContentCatalog')item.description='校验原版目录数量、社区MCP注册与锁、稳定ID/引用、160点树前置DAG及运行能力声明。';
   if(fn.name==='mountCombatPreview')item.ownership='宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState';
   const finalDescriptions={
+   planAchievementUnlock:'校验正式冒险的真实有效期重置事件，永久幂等解锁“这是哪个‘重置’？”，不发资源，练习事件拒绝。',
    planDshGptBranch:'更新还是重置的DSH入口：仅装配生效；10秒开奖、300秒触发期，独立0.1%概率将剩余有效期重置为300秒。',
    readDshCycleTimers:'读取10秒开奖与300秒有效期；缺失新增字段的旧存档按已过世界时间推导，读档不续期。',
    planDshCycleEvent:'仅有效世界步推进10秒开奖/300秒有效期；50%更新或重置，独立0.1%重置有效期为300秒，原子保存随机游标和续期次数。',
@@ -124,6 +125,28 @@ for(const module of sourceModel){
   if(finalDescriptions[fn.name])item.description=finalDescriptions[fn.name];
   if(['advanceWorldTick','advanceUiTick','advancePreviewWorldTick','advancePreviewUiCommands'].includes(fn.name))item.implementationScope='core-preview + adventure-slice';
   if(['beginRecording','appendRecordedCommands','appendRecordingStep','replayRecording','createReplaySession'].includes(fn.name)){item.implementationScope='isolated-replay';item.ownership='独立数据或隔离Session；无Profile和持久化副作用';}
+  const apiDescriptions={
+   canApiWithdraw:'API安全检查点近距离、静止且无射击/在途威胁/首领预警时允许开始返回，不通过暂停制造安全。',
+   planApiWithdrawal:'开始或取消连续180世界步返回，开始快照位置和实际生命损伤总量，松开不保留旧进度。',
+   planApiBossEncounter:'复用三阵营真实首领工厂，按阶段重写实体/节点/掩体ID，锁定出生强度，不覆盖已有首领记录。',
+   planApiWorldAdvance:'每世界步一次推进API时间/分钟限额/五分钟首领预警；伤害后处理阶段结束和返回，死亡优先。',
+   planApiPressure:'按90秒轮换继承池中的有限额外压力，4秒预警，安全/首领优先；延期不堆积补刷债务。',
+   planApiMaintenance:'每600步回收过期死体和已结算临时账本，保留在途攻击来源；按类型/网格等值合并拾取，保留必要遭遇记录。',
+   planApiProgression:'API世界调度入口，分别在战斗前推进时间、战斗后处理首领与撤回，其他模式返回空计划。',
+   isWorldSafe:'共享实际敌人、敌弹、待出生、额外压力与API首领预警的安全判定，检查点和撤回使用同一规则。',
+   createInitialGameState:'创建Free、1–15短途或API初态，锁定配装和累计机制；远征/full仍拒绝。',
+   createGameSession:'校验目录及状态不变量后发布Free/短途/API私有Session，正式模组仍拒绝。',
+   prepareAdventureStart:'验证拥有与真实最高难度，复制树/DSH/标准装备；通关15才允许API，远征仍拒绝。',
+   planSpawnSchedule:'有限短途追兵或持续API混编；API首领期间继续普通生成、优先首领队列，容量不足延期。',
+   planEnemySpawn:'合法位置实际出生时锁定API分钟数值与Fable/Mythos模型，推进一次世界随机流，活体不随时间补血。',
+   planDeathRewards:'幂等死亡经验/材料；API首领8碎片4零件，普通材料每分钟2碎片1零件，回响/召兵无额外收益。',
+   planBossUnlock:'数字难度首领触发DSH里程碑；API不发数字成就或为每阶段堆永久账本，仅保留Grok居民事实。',
+   createSettlement:'按真实终态生成一次结算，API返回全留、失败按树比例；用持续计数保存生存记录，API不允许胜利。',
+   stepSessionWorld:'消费世界命令，经唯一引擎流水线原子提交Free、1–15短途或API；无I/O。',
+   mountCombatPreview:'组装Free、短途/API、配装/小窝/成长、真实检查点与结算，API支持安全检查点长按返回。'
+  };
+  if(apiDescriptions[fn.name])item.description=apiDescriptions[fn.name];
+  if(['canApiWithdraw','planApiWithdrawal','planApiBossEncounter','planApiWorldAdvance','planApiPressure','planApiMaintenance','planApiProgression'].includes(fn.name))item.implementationScope='adventure-slice API';
   const index=source.indexOf(`export ${fn.async?'async ':''}function ${fn.name}(`);
   const start=source.lastIndexOf('/**',index);
   if(start>=0){let comment=source.slice(start,index).replace(/^ \* @calls.*\n/gm,'').replace(/^ \* @implementationScope.*\n/gm,'');if(fn.implementation==='implemented')comment=comment.replace(/^ \* @throws \{Error\} TODO placeholder until Grok implements this contract\.\n/gm,'');const scopeText=item.implementationScope?` * @implementationScope ${item.implementationScope}\n`:'';const callText=scopeText+(item.calls.map(call=>` * @calls ${call}\n`).join('')||' * @calls 无内部公开函数。\n');

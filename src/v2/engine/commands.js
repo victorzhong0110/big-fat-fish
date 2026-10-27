@@ -1,3 +1,4 @@
+import {planApiWithdrawal} from '../domain/world/api.js';
 // @ts-check
 import { serializeCanonical } from '../domain/serialization.js';
 import { createEmptyPlan, createStateChange } from '../domain/plans.js';
@@ -31,7 +32,7 @@ export function validateGameCommand(state, command) {
   if (typeof command.id !== 'string' || !command.id || typeof command.type !== 'string' || !Number.isSafeInteger(command.seq) || command.seq < 0 || command.seq <= state.lastCommandSeq || !Number.isSafeInteger(command.targetTick) || command.targetTick < 0 || !['world', 'ui'].includes(command.clock) || state.processedCommandIds.includes(command.id) || terminal) diagnostics.push({ code: 'INVALID_COMMAND', message: 'Invalid, stale or terminal command', relatedIds: [command.id] });
   const ui = ['Pause', 'Resume', 'SelectPlugin', 'RerollPlugin', 'SkipPlugin', 'StartTraining', 'ConfirmTraining', 'ReleaseTraining', 'Abandon'].includes(command.type);
   if (ui && command.clock !== 'ui' || !ui && command.clock !== 'world') diagnostics.push({ code: 'WRONG_CLOCK', message: 'Command is in the wrong clock domain', relatedIds: [command.id] });
-  if (!['SetInput', 'Pause', 'Resume', 'Dash', 'Skill', 'SwitchWeapon', 'EquipPickup', 'EquipSkillPickup', 'SelectPlugin', 'RerollPlugin', 'SkipPlugin', 'StartTraining', 'ConfirmTraining', 'ReleaseTraining', 'Abandon', 'Interact', 'EscapePress', 'ReleaseEscape', 'EscapeHeld'].includes(command.type)) diagnostics.push({ code: 'UNSUPPORTED_COMMAND', message: 'Command is not available in the combat preview', relatedIds: [command.id] });
+  if (!['SetInput', 'Pause', 'Resume', 'Dash', 'Skill', 'SwitchWeapon', 'EquipPickup', 'EquipSkillPickup', 'SelectPlugin', 'RerollPlugin', 'SkipPlugin', 'StartTraining', 'ConfirmTraining', 'ReleaseTraining', 'Abandon', 'StartWithdrawal','CancelWithdrawal','Interact', 'EscapePress', 'ReleaseEscape', 'EscapeHeld'].includes(command.type)) diagnostics.push({ code: 'UNSUPPORTED_COMMAND', message: 'Command is not available in the combat preview', relatedIds: [command.id] });
   if (!ui && !['exploring', 'boss'].includes(state.flow.phase)) diagnostics.push({ code: 'WRONG_PHASE', message: 'World input is suspended', relatedIds: [command.id] });
   if (['SelectPlugin', 'RerollPlugin', 'SkipPlugin'].includes(command.type)) {
     const payload = /** @type {{choiceId?:string;optionId?:string;replaceId?:string}|null} */ (command.payload), choice = state.flow.choice;
@@ -55,6 +56,7 @@ export function validateGameCommand(state, command) {
     const move = /** @type {Record<string, import('../contracts.d.ts').Json> | null} */ (p?.move), aim = /** @type {Record<string, import('../contracts.d.ts').Json> | null} */ (p?.aim);
     if (!move || !aim || ![move.x, move.y, aim.x, aim.y].every(value => typeof value === 'number' && Number.isFinite(value)) || typeof p?.firing !== 'boolean') diagnostics.push({ code: 'INVALID_INPUT', message: 'Invalid movement/aim sample', relatedIds: [] });
   }
+  if(['StartWithdrawal','CancelWithdrawal'].includes(command.type)&&!state.api)diagnostics.push({code:'WRONG_MODE',message:'Withdrawal is available only in API mode',relatedIds:[]});
   return { valid: diagnostics.length === 0, diagnostics };
 }
 
@@ -74,6 +76,7 @@ export function validateGameCommand(state, command) {
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @calls domain/status.js#planEscapeInput
+ * @calls domain/world/api.js#planApiWithdrawal
  * @calls domain/world/map.js#planWorldInteraction
  * @calls engine/commands.js#validateGameCommand
  * @calls engine/flow.js#planPause
@@ -86,7 +89,8 @@ export function planGameCommand(context, command) {
   const report = validateGameCommand(context.state, command);
   if (!report.valid) return { accepted: false, reason: report.diagnostics[0].message, plan: { ...createEmptyPlan(), diagnostics: report.diagnostics } };
   let plan = createEmptyPlan();
-  if(command.type==='Abandon')plan={...plan,changes:[createStateChange('flow','phase','setFlowPhase',{phase:'defeat',resumePhase:null}),createStateChange('runtime','input','setInput',{...context.state.input,move:{x:0,y:0},firing:false,heldKeys:[],pointerIds:[]})]};
+  if(['StartWithdrawal','CancelWithdrawal'].includes(command.type))plan=planApiWithdrawal(context,command.type);
+  else if(command.type==='Abandon')plan={...plan,changes:[createStateChange('flow','phase','setFlowPhase',{phase:'defeat',resumePhase:null}),createStateChange('runtime','input','setInput',{...context.state.input,move:{x:0,y:0},firing:false,heldKeys:[],pointerIds:[]})]};
   else if(command.type==='Interact')plan=dependency5.planWorldInteraction(context,command);
   else if(['EscapePress','ReleaseEscape','EscapeHeld'].includes(command.type))plan=dependency4.planEscapeInput(context,command);
   else if (['StartTraining', 'ConfirmTraining', 'ReleaseTraining'].includes(command.type)) { const inputPlan = dependency3.planLoraInput(context, command); plan = { ...inputPlan, changes: inputPlan.changes.filter(change => change.operation !== 'registerCommand') }; }
@@ -103,6 +107,7 @@ export function planGameCommand(context, command) {
     const move = normalizeVector(p.move), aim = normalizeVector(p.aim);
     plan = { ...plan, changes: [createStateChange('runtime', 'input', 'setInput', { move, aim: aim.x || aim.y ? aim : context.state.input.aim, firing: p.firing, ...(p.aimDistance!==undefined?{aimDistance:p.aimDistance}:{}), ...(p.viewport ? {viewport:p.viewport} : {}), heldKeys: [], pointerIds: [] })] };
   }
+  if(command.type==='Pause'&&context.state.api?.withdrawal)plan={...plan,changes:[...plan.changes,createStateChange('runtime','api','setApiState',{...context.state.api,withdrawal:null})]};
   return { accepted: true, reason: null, plan: { ...plan, changes: [...plan.changes, createStateChange('runtime', command.id, 'ackCommand', { seq: command.seq })] } };
 }
 

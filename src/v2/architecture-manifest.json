@@ -944,7 +944,7 @@
           ]
         },
         {
-          "description": "验证永久拥有与已实现能力，复制树/DSH/基础品质装备为Pro1出发快照。",
+          "description": "验证拥有与真实最高难度，复制树/DSH/标准装备；通关15才允许API，远征仍拒绝。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -1183,6 +1183,7 @@
           "description": "稳定顺序合并发现/解锁/结算/存档，读取账本去重，输出单次revision计划。",
           "calls": [
             "domain/checkpoint.js#validateCheckpoint",
+            "domain/profile/unlocks.js#planAchievementUnlock",
             "domain/profile/unlocks.js#planBossUnlock",
             "domain/profile/unlocks.js#planDiscoveryUnlock",
             "domain/profile/unlocks.js#planEasterUnlock",
@@ -1324,6 +1325,13 @@
           "implementation": "placeholder"
         }
       ]
+    },
+    {
+      "path": "content/achievements.js",
+      "layer": "content",
+      "purpose": "Stable achievement metadata shared by simulation evidence, Profile persistence and the nest collection.",
+      "dependencies": [],
+      "functions": []
     },
     {
       "path": "content/catalog.js",
@@ -4754,6 +4762,7 @@
       "layer": "domain",
       "purpose": "ChatGPT三个节点的局部重置事务。",
       "dependencies": [
+        "domain/difficulty.js",
         "domain/entities.js",
         "domain/geometry.js",
         "domain/motionSolver.js",
@@ -4776,6 +4785,7 @@
           "result": "SystemPlan",
           "description": "按血量/节点/冷却决定读条，保持可被打死；低级基础位置、高级5选3。",
           "calls": [
+            "domain/difficulty.js#resolveApiSpawnMultipliers",
             "domain/entities.js#createEntityState",
             "domain/geometry.js#distanceSquared",
             "domain/geometry.js#normalizeVector",
@@ -5913,7 +5923,9 @@
       "layer": "domain",
       "purpose": "10秒开奖、5分钟有效期与极低概率续期彩蛋。",
       "dependencies": [
-        "domain/random.js"
+        "content/achievements.js",
+        "domain/random.js",
+        "domain/serialization.js"
       ],
       "functions": [
         {
@@ -5951,7 +5963,8 @@
             "domain/dshCycle.js#planCooldownReset",
             "domain/dshCycle.js#planTemporaryWeaponUpdate",
             "domain/dshCycle.js#readDshCycleTimers",
-            "domain/random.js#drawRandom"
+            "domain/random.js#drawRandom",
+            "domain/serialization.js#toJson"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -6533,7 +6546,7 @@
       ],
       "functions": [
         {
-          "description": "创建Free或1–15短途初态，锁定树/装备/DSH/模型/累计机制；远征/API与full仍拒绝。",
+          "description": "创建Free、1–15短途或API初态，锁定配装和累计机制；远征/full仍拒绝。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -7682,7 +7695,9 @@
       "path": "domain/profile/unlocks.js",
       "layer": "domain",
       "purpose": "发现/彩蛋/Boss里程碑，独立幂等id。",
-      "dependencies": [],
+      "dependencies": [
+        "content/achievements.js"
+      ],
       "functions": [
         {
           "name": "planDiscoveryUnlock",
@@ -7726,7 +7741,7 @@
             }
           ],
           "result": "Result<ProfilePlan>",
-          "description": "真实Boss击败满足数字难度DSH，API不冒充数字关；完整通关才开下一难度。",
+          "description": "数字难度首领触发DSH里程碑；API不发数字成就或为每阶段堆永久账本，仅保留Grok居民事实。",
           "calls": [],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -7758,6 +7773,31 @@
           "phase": "query",
           "callMode": "sequence",
           "implementation": "implemented"
+        },
+        {
+          "description": "校验正式冒险的真实有效期重置事件，永久幂等解锁“这是哪个‘重置’？”，不发资源，练习事件拒绝。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planAchievementUnlock",
+          "args": [
+            {
+              "name": "profile",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            }
+          ],
+          "result": "Result<ProfilePlan>",
+          "implementation": "implemented",
+          "calls": []
         }
       ]
     },
@@ -8025,6 +8065,7 @@
       "purpose": "实体/群组/箱子/目标奖励计划，无存储I/O。",
       "dependencies": [
         "domain/plans.js",
+        "domain/random.js",
         "domain/serialization.js"
       ],
       "functions": [
@@ -8041,10 +8082,11 @@
             }
           ],
           "result": "RewardPlan",
-          "description": "按死亡来源稳定去重生成经验；Claude首领提供材料与永久击败事实，普通封印无奖励。",
+          "description": "幂等死亡经验/材料；API首领8碎片4零件，普通材料每分钟2碎片1零件，回响/召兵无额外收益。",
           "calls": [
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
+            "domain/random.js#drawRandom",
             "domain/serialization.js#toJson"
           ],
           "rule": "",
@@ -8274,7 +8316,7 @@
             }
           ],
           "result": "Settlement",
-          "description": "计算成功/失败40或50%/API主动撤回，资源向下取整；本局id固定。",
+          "description": "按真实终态生成一次结算，API返回全留、失败按树比例；用持续计数保存生存记录，API不允许胜利。",
           "calls": [],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -8963,6 +9005,175 @@
       ]
     },
     {
+      "path": "domain/world/api.js",
+      "layer": "domain",
+      "purpose": "Safe withdrawal uses the same live threat boundary as saving, plus checkpoint proximity and released movement/fire. No pause can manufacture safety.",
+      "dependencies": [
+        "domain/difficulty.js",
+        "domain/entities.js",
+        "domain/geometry.js",
+        "domain/plans.js",
+        "domain/world/adventure.js",
+        "domain/world/pressureRules.js",
+        "domain/world/safety.js"
+      ],
+      "functions": [
+        {
+          "description": "API安全检查点近距离、静止且无射击/在途威胁/首领预警时允许开始返回，不通过暂停制造安全。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "canApiWithdraw",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            }
+          ],
+          "result": "boolean",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared",
+            "domain/world/safety.js#isWorldSafe"
+          ],
+          "implementationScope": "adventure-slice API"
+        },
+        {
+          "description": "开始或取消连续180世界步返回，开始快照位置和实际生命损伤总量，松开不保留旧进度。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planApiWithdrawal",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            },
+            {
+              "name": "type",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/world/api.js#canApiWithdraw"
+          ],
+          "implementationScope": "adventure-slice API"
+        },
+        {
+          "description": "复用三阵营真实首领工厂，按阶段重写实体/节点/掩体ID，锁定出生强度，不覆盖已有首领记录。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planApiBossEncounter",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/difficulty.js#resolveApiSpawnMultipliers",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/world/adventure.js#planBossEncounter"
+          ],
+          "implementationScope": "adventure-slice API"
+        },
+        {
+          "description": "每世界步一次推进API时间/分钟限额/五分钟首领预警；伤害后处理阶段结束和返回，死亡优先。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planApiWorldAdvance",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            },
+            {
+              "name": "afterCombat",
+              "default": "false",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/geometry.js#distanceSquared",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/world/api.js#canApiWithdraw",
+            "domain/world/api.js#planApiBossEncounter"
+          ],
+          "implementationScope": "adventure-slice API"
+        },
+        {
+          "description": "按90秒轮换继承池中的有限额外压力，4秒预警，安全/首领优先；延期不堆积补刷债务。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planApiPressure",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/world/pressureRules.js#validatePressureReservation"
+          ],
+          "implementationScope": "adventure-slice API"
+        }
+      ]
+    },
+    {
+      "path": "domain/world/apiMaintenance.js",
+      "layer": "domain",
+      "purpose": "Compact only expired API identities. Attack owners stay until their live projectiles/statuses/shields are gone. Removed source IDs are never reused; old reward events can no longer resolve an entity. Rice/material pickups merge by kind and grid with exact totals.",
+      "dependencies": [
+        "domain/plans.js"
+      ],
+      "functions": [
+        {
+          "description": "每600步回收过期死体和已结算临时账本，保留在途攻击来源；按类型/网格等值合并拾取，保留必要遭遇记录。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planApiMaintenance",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ],
+          "implementationScope": "adventure-slice API"
+        }
+      ]
+    },
+    {
       "path": "domain/world/lateMechanics.js",
       "layer": "domain",
       "purpose": "@param {import('../../contracts.d.ts').EvaluationContext} c @param {string} id @param {string} mechanicId @param {string} budgetId @param {Record<string,import('../../contracts.d.ts').Json>} runtime @param {number} warning",
@@ -9068,7 +9279,8 @@
         "domain/rewards.js",
         "domain/world/adventure.js",
         "domain/world/alarms.js",
-        "domain/world/lateMechanics.js"
+        "domain/world/lateMechanics.js",
+        "domain/world/safety.js"
       ],
       "functions": [
         {
@@ -9171,7 +9383,7 @@
           "result": "boolean",
           "description": "检查附近敌人、在途攻击、事件危险和检查点规则，不靠暂停制造安全。",
           "calls": [
-            "domain/geometry.js#distanceSquared"
+            "domain/world/safety.js#isWorldSafe"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -9189,6 +9401,7 @@
         "domain/geometry.js",
         "domain/plans.js",
         "domain/rewards.js",
+        "domain/world/api.js",
         "domain/world/lateMechanics.js"
       ],
       "functions": [
@@ -9248,16 +9461,24 @@
             {
               "name": "context",
               "type": "untyped"
+            },
+            {
+              "name": "afterCombat",
+              "default": "false",
+              "type": "untyped"
             }
           ],
           "result": "SystemPlan",
-          "description": "推进API时间、5分钟Boss日程与材料分钟限额，Boss死不结束局。",
-          "calls": [],
+          "description": "API世界调度入口，分别在战斗前推进时间、战斗后处理首领与撤回，其他模式返回空计划。",
+          "calls": [
+            "domain/world/api.js#planApiWorldAdvance"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "implementation": "placeholder"
+          "implementation": "implemented",
+          "implementationScope": "adventure-slice API"
         }
       ]
     },
@@ -9269,6 +9490,7 @@
         "domain/geometry.js",
         "domain/navigation.js",
         "domain/plans.js",
+        "domain/world/api.js",
         "domain/world/lateMechanics.js",
         "domain/world/pressureRules.js"
       ],
@@ -9284,6 +9506,7 @@
           "result": "SystemPlan",
           "description": "从完整已解锁机制池安排适用事件，常驻AI不被轮换移除。",
           "calls": [
+            "domain/world/api.js#planApiPressure",
             "domain/world/lateMechanics.js#planLateSchedule"
           ],
           "rule": "",
@@ -9372,6 +9595,39 @@
       ]
     },
     {
+      "path": "domain/world/safety.js",
+      "layer": "domain",
+      "purpose": "Shared live safety query for checkpoints and API withdrawal; no dependency on interaction dispatch or pressure schedulers.",
+      "dependencies": [
+        "domain/geometry.js"
+      ],
+      "functions": [
+        {
+          "description": "共享实际敌人、敌弹、待出生、额外压力与API首领预警的安全判定，检查点和撤回使用同一规则。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "isWorldSafe",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "position",
+              "type": "untyped"
+            }
+          ],
+          "result": "boolean",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared"
+          ]
+        }
+      ]
+    },
+    {
       "path": "domain/world/spawning.js",
       "layer": "domain",
       "purpose": "驻守、追兵、Grok群组和API预算。",
@@ -9392,7 +9648,7 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "推进有限预算分组追兵、延迟预警、错峰出生；首领战不新增追兵。",
+          "description": "有限短途追兵或持续API混编；API首领期间继续普通生成、优先首领队列，容量不足延期。",
           "calls": [
             "domain/collision.js#validateSpawnLocation",
             "domain/plans.js#createEmptyPlan",
@@ -9420,10 +9676,12 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "仅消费到期且位置合法的出生请求；实际出生才把预留预算转为已使用。",
+          "description": "合法位置实际出生时锁定API分钟数值与Fable/Mythos模型，推进一次世界随机流，活体不随时间补血。",
           "calls": [
             "content/catalog.js#findContentDefinition",
             "domain/collision.js#validateSpawnLocation",
+            "domain/difficulty.js#resolveApiSpawnMultipliers",
+            "domain/difficulty.js#resolveModelProfileId",
             "domain/entities.js#createEntityState",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange"
@@ -9454,6 +9712,7 @@
           "result": "SystemPlan",
           "description": "按阶段压力和屏幕外规则预留一组Bot预算，不积累补刷债务。",
           "calls": [
+            "domain/difficulty.js#resolveApiSpawnMultipliers",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange"
           ],
@@ -9478,6 +9737,7 @@
         "domain/plans.js",
         "domain/serialization.js",
         "domain/status.js",
+        "domain/world/api.js",
         "domain/world/map.js",
         "engine/flow.js"
       ],
@@ -9532,6 +9792,7 @@
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
             "domain/status.js#planEscapeInput",
+            "domain/world/api.js#planApiWithdrawal",
             "domain/world/map.js#planWorldInteraction",
             "engine/commands.js#validateGameCommand",
             "engine/flow.js#planPause",
@@ -10014,7 +10275,7 @@
             }
           ],
           "result": "GameSession",
-          "description": "校验目录与世界后发布Free或1–15短途私有Session，社区模组仅在Free开放。",
+          "description": "校验目录及状态不变量后发布Free/短途/API私有Session，正式模组仍拒绝。",
           "calls": [
             "content/catalog.js#validateContentCatalog",
             "content/registry.js#createHandlerRegistry",
@@ -10063,7 +10324,7 @@
             }
           ],
           "result": "TickResult",
-          "description": "消费到期世界命令，经engine/tick唯一流水线原子提交Free或1–15短途状态。",
+          "description": "消费世界命令，经唯一引擎流水线原子提交Free、1–15短途或API；无I/O。",
           "calls": [
             "engine/commands.js#orderPendingCommands",
             "engine/tick.js#advanceUiTick",
@@ -10288,6 +10549,7 @@
         "domain/rewards.js",
         "domain/scheduled.js",
         "domain/status.js",
+        "domain/world/apiMaintenance.js",
         "domain/world/map.js",
         "domain/world/objectives.js",
         "domain/world/pressure.js",
@@ -10346,7 +10608,9 @@
             "domain/rewards.js#planDeathRewards",
             "domain/scheduled.js#planScheduledActions",
             "domain/status.js#planStatusAdvance",
+            "domain/world/apiMaintenance.js#planApiMaintenance",
             "domain/world/map.js#planMapExploration",
+            "domain/world/objectives.js#planApiProgression",
             "domain/world/objectives.js#planObjectiveAdvance",
             "domain/world/pressure.js#planPressureEventAdvance",
             "domain/world/pressure.js#planPressureSchedule",
@@ -10423,6 +10687,7 @@
         "domain/difficulty.js",
         "domain/dshCycle.js",
         "domain/settlement.js",
+        "domain/world/api.js",
         "engine/session.js",
         "preview/modManager.js",
         "preview/nestManager.js",
@@ -10430,7 +10695,7 @@
       ],
       "functions": [
         {
-          "description": "组装Free/Pro1、八技能/六伙伴/插件替换、正式小窝消费与配装、事务结算和本地模组。",
+          "description": "组装Free、短途/API、配装/小窝/成长、真实检查点与结算，API支持安全检查点长按返回。",
           "rule": "",
           "ownership": "宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState",
           "phase": "query",
@@ -10463,6 +10728,7 @@
             "domain/difficulty.js#resolveDifficultySnapshot",
             "domain/dshCycle.js#readDshCycleTimers",
             "domain/settlement.js#createSettlement",
+            "domain/world/api.js#canApiWithdraw",
             "engine/session.js#createGameSession",
             "engine/session.js#disposeGameSession",
             "engine/session.js#enqueueSessionCommand",
@@ -10524,6 +10790,7 @@
       "purpose": "Mount the nest dashboard; Profile changes go through the application service and transactional port.",
       "dependencies": [
         "application/nest.js",
+        "content/achievements.js",
         "content/registry.js",
         "domain/profile/tree.js"
       ],
@@ -11573,9 +11840,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 103,
-    "functions": 383,
-    "implemented": 342,
-    "placeholders": 41
+    "modules": 107,
+    "functions": 391,
+    "implemented": 351,
+    "placeholders": 40
   }
 }

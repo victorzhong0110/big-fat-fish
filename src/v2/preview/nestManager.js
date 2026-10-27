@@ -1,3 +1,4 @@
+import {RESET_ACHIEVEMENT} from '../content/achievements.js';
 // @ts-check
 import { executeNestAction } from '../application/nest.js';
 import { validateTreePurchase, resolveDshSlotCount } from '../domain/profile/tree.js';
@@ -81,6 +82,8 @@ export function mountNestManager(root, catalog, storage, onProfile, notify) {
         if(definition.id==='dsh_claude_allowlist')select.onchange=()=>{if(equipped)void act({type:'equipDsh',slots:profile.equippedDsh.map(slot=>slot.id===definition.id?{...slot,options:{protect:select.value}}:slot)});};node.dataset.dshId=definition.id;node.append(toggle);
       }
     }else{
+      if(profile.bestApi){const r=profile.bestApi;card('API调用 · 个人记录',`最长${Math.floor(r.survivedTicks/3600)}分${Math.floor(r.survivedTicks/60)%60}秒 · 最多首领${r.bossKills} · 最高有效击杀${r.kills} · 最高等级${r.maxLevel}`);}
+      const achievement=RESET_ACHIEVEMENT,achievementCard=card(achievement.name,`${profile.unlockLedger.includes(achievement.ledgerId)?'成就已解锁':'成就未解锁'} · ${achievement.description}`);achievementCard.dataset.achievementId=achievement.id;
       card('我去吃饭，测完告诉我就行',`已经发现 ${profile.discovered.length} 件内容，收藏 ${profile.unlockedDsh.length} 件DSH。收获来自实际探索与结算，小窝不自动生产资源。`);
       const tasks={companion_rice:'最初的小伙伴。',companion_patch:'破坏一处Claude封禁装置。',companion_cache:'打开两个不同地点的秘密箱。',companion_router:'同一局发现两种MCP。',companion_decoy:'破解一次ChatGPT重置。',companion_rocket:'击败Grok首领后在这里接回。'};
       for(const [id,task]of Object.entries(tasks)){const owned=profile.unlockedCompanions.includes(id),node=card(catalog.definitions[id].displayName,`${owned?'已入住':'尚未救助'} · ${task}`),interact=button(owned?'聊聊':'接回伙伴');interact.disabled=locked||!owned&&(id!=='companion_rocket'||!profile.unlockLedger.includes('milestone:grok-defeated'));interact.onclick=()=>{if(owned)notify(`${catalog.definitions[id].displayName}：${id==='companion_rice'?'出门别忘了带饭，饿了就回来。':id==='companion_router'?'两把MCP各有用处，试试切换打法。':'一起出门吧，我会跟紧你的铁盆。'}`);else void act({type:'rescue',id});};node.dataset.residentId=id;node.append(interact);}

@@ -1,3 +1,4 @@
+import {drawRandom} from './random.js';
 // @ts-check
 import { toJson } from './serialization.js';
 import { createEmptyPlan, createStateChange } from './plans.js';
@@ -14,6 +15,7 @@ import { createEmptyPlan, createStateChange } from './plans.js';
  * @implementationScope core-preview + adventure-slice
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
+ * @calls domain/random.js#drawRandom
  * @calls domain/serialization.js#toJson
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {readonly import('../contracts.d.ts').DeathRecord[]} records
@@ -21,16 +23,18 @@ import { createEmptyPlan, createStateChange } from './plans.js';
  */
 export function planDeathRewards(context, records) {
   const state = context.state, changes = /** @type {import('../contracts.d.ts').StateChange[]} */ ([]), rewardIds = [];
+  const api=state.api?{...state.api}:null;let rewardRandom={...state.random.reward};
   const seen = new Set(state.processedRewardIds), events=/** @type {import('../contracts.d.ts').DomainEvent[]} */ ([]),persistence=/** @type {import('../contracts.d.ts').PersistenceIntent[]} */ ([]);
   for (const record of records) {
     const entity = state.world.entities[record.entityId], rewardId = `deathReward:${record.entityId}`;
     if (!entity || record.creditOwner !== 'player' || record.rewardPolicy === 'none' || seen.has(rewardId)) continue;
-    seen.add(rewardId);
-    if(state.bosses.some(boss=>boss.entityId===entity.id)){const event={id:`bossDefeated:${entity.id}`,runId:state.runId,tick:state.tick,seq:0,type:'BossDefeated',sourceId:record.sourceId,targetId:entity.id,payload:{entityId:entity.id,faction:record.faction,difficulty:state.start.difficulty.level,mode:state.start.difficulty.mode}};events.push(event);persistence.push({id:`unlock:${event.id}`,kind:'unlock',payload:toJson(event)});changes.push(createStateChange('progression',rewardId,'addCollectedResource',{kind:'gpuFragment',amount:10}),createStateChange('progression',rewardId,'addCollectedResource',{kind:'part',amount:6}));}
+    seen.add(rewardId);if(api){api.kills++;if(state.bosses.some(b=>b.entityId===entity.id))api.bossKills++;else{const fragment=drawRandom(rewardRandom),part=drawRandom(fragment.next);rewardRandom=part.next;for(const[kind,allowed]of /** @type {[string,boolean][]} */([['gpuFragment',fragment.value<.08&&api.fragmentsThisMinute<2],['part',part.value<.04&&api.partsThisMinute<1]])){if(!allowed)continue;if(kind==='gpuFragment')api.fragmentsThisMinute++;else api.partsThisMinute++;const id=`${rewardId}:${kind}`;changes.push(createStateChange('world',id,'putPickup',{id,kind,amount:1,position:entity.position,instanceId:null,collected:false}));}}}
+    if(state.bosses.some(boss=>boss.entityId===entity.id)){const event={id:`bossDefeated:${entity.id}`,runId:state.runId,tick:state.tick,seq:0,type:'BossDefeated',sourceId:record.sourceId,targetId:entity.id,payload:{entityId:entity.id,faction:record.faction,difficulty:state.start.difficulty.level,mode:state.start.difficulty.mode}};events.push(event);persistence.push({id:`unlock:${event.id}`,kind:'unlock',payload:toJson(event)});changes.push(createStateChange('progression',rewardId,'addCollectedResource',{kind:'gpuFragment',amount:api?8:10}),createStateChange('progression',rewardId,'addCollectedResource',{kind:'part',amount:api?4:6}));}
     const amount = state.bosses.some(boss => boss.entityId === entity.id) ? 120 : record.rewardPolicy === 'elite' ? 32 : record.faction === 'claude' ? 24 : record.faction === 'gpt' ? 8 : 4;
     changes.push(createStateChange('world', rewardId, 'putPickup', { id: rewardId, kind: 'riceXp', amount, position: entity.position, instanceId: null, collected: false }));
     changes.push(createStateChange('runtime', rewardId, 'recordReward', {})); rewardIds.push(rewardId);
   }
+  if(api&&rewardIds.length)changes.push(createStateChange('runtime','api','setApiState',api),createStateChange('random','reward','setRandomStream',rewardRandom));
   return { plan: { ...createEmptyPlan(), changes,events,persistence }, rewardIds };
 }
 

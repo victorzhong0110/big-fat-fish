@@ -158,7 +158,7 @@ export function readSessionView(session) {
 export function restoreGameSession(checkpoint, catalog) {
   const result = dependency1.restoreCheckpointState(checkpoint, catalog);
   if (!result.ok) return result;
-  if (!['core-preview', 'adventure-slice'].includes(String(result.value.start.runtimeProfile))) return { ok: false, code: 'UNSUPPORTED_RUNTIME', message: 'Only Free practice and short difficulties 1–15 can currently be restored' };
+  if (!['core-preview', 'adventure-slice'].includes(String(result.value.start.runtimeProfile))) return { ok: false, code: 'UNSUPPORTED_RUNTIME', message: 'Only Free, short difficulties 1–15 and API calling can currently be restored' };
   const record = { state: result.value, catalog: structuredClone(catalog), commands: [], disposed: false, running: false };
   const handle = Object.freeze({ get runId() { return record.state.runId; }, get revision() { return record.state.revision; } });
   sessions.set(handle, record); return { ok: true, value: handle };

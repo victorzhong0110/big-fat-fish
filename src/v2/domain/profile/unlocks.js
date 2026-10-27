@@ -1,3 +1,4 @@
+import {RESET_ACHIEVEMENT} from '../../content/achievements.js';
 // @ts-check
 /**
  * 发现/彩蛋/Boss里程碑，独立幂等id。
@@ -37,6 +38,7 @@ export function planDiscoveryUnlock(profile, event, catalog) {
 export function planBossUnlock(profile, event, catalog) {
   const p = /** @type {{faction?:string;difficulty?:number|string;mode?:string;entityId?:string}} */ (event.payload);
   if (event.type !== 'BossDefeated' || !['claude', 'gpt', 'grok'].includes(p?.faction ?? '') || !p?.entityId || !['short', 'expedition', 'api'].includes(p.mode ?? '')) return { ok: false, code: 'INVALID_BOSS_UNLOCK', message: 'Expected an actual boss-defeat event' };
+  if(p.mode==='api'){const milestone='milestone:grok-defeated',newMilestone=p.faction==='grok'&&!profile.unlockLedger.includes(milestone);return {ok:true,value:{expectedRevision:profile.revision,next:{...structuredClone(profile),revision:profile.revision+(newMilestone?1:0),unlockLedger:newMilestone?[...profile.unlockLedger,milestone]:[...profile.unlockLedger]},events:[]}};}
   const id = `boss:${event.runId}:${p.entityId}`;
   if (profile.unlockLedger.includes(id)) return { ok: true, value: { expectedRevision: profile.revision, next: structuredClone(profile), events: [] } };
   const number = typeof p.difficulty === 'number' && Number.isInteger(p.difficulty) && p.difficulty >= 1 && p.difficulty <= 15 && p.mode !== 'api' ? p.difficulty : 0;
@@ -66,4 +68,18 @@ export function planEasterUnlock(profile, event, catalog) {
   const id = `easter:${dshId}`;
   if (profile.unlockLedger.includes(id)) return { ok: true, value: { expectedRevision: profile.revision, next: structuredClone(profile), events: [] } };
   return { ok: true, value: { expectedRevision: profile.revision, next: { ...structuredClone(profile), revision: profile.revision + 1, unlockedDsh: [...new Set([...profile.unlockedDsh, dshId])], unlockLedger: [...profile.unlockLedger,id] }, events: [] } };
+}
+
+/** Persist the rare duration-reset achievement once, independently of later defeat, DSH slots or tree refunds. Practice events never qualify and the achievement grants no currency.
+ * @calls 无内部公开函数。
+ * @param {import('../../contracts.d.ts').Profile} profile
+ * @param {import('../../contracts.d.ts').DomainEvent} event
+ * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
+ * @returns {import('../../contracts.d.ts').Result<import('../../contracts.d.ts').ProfilePlan>}
+ */
+export function planAchievementUnlock(profile,event,catalog){
+ const p=/** @type {{achievementId?:string;mode?:string;activeRemaining?:number;durationResets?:number}|null} */(event.payload),a=RESET_ACHIEVEMENT;
+ if(event.type!=='DshCycleDurationReset'||event.sourceId!=='dsh_gpt_branch'||!event.runId||p?.achievementId!==a.id||!['short','expedition','api'].includes(p.mode??'')||p.activeRemaining!==300||!Number.isSafeInteger(p.durationResets)||Number(p.durationResets)<1)return {ok:false,code:'INVALID_ACHIEVEMENT',message:'Expected an actual formal-adventure duration-reset event'};
+ if(profile.unlockLedger.includes(a.ledgerId))return {ok:true,value:{expectedRevision:profile.revision,next:structuredClone(profile),events:[]}};
+ return {ok:true,value:{expectedRevision:profile.revision,next:{...structuredClone(profile),revision:profile.revision+1,unlockLedger:[...profile.unlockLedger,a.ledgerId]},events:[{...event,id:`${event.runId}:${a.ledgerId}`,type:'AchievementUnlocked',payload:{achievementId:a.id,name:a.name}}]}};
 }

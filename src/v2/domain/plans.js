@@ -65,6 +65,8 @@ export function validateSystemPlan(plan) {
       case 'setProjectileLeg': valid=change.target==='entity'&&typeof p.attackId==='string'&&!!p.runtime&&typeof p.runtime==='object'&&!Array.isArray(p.runtime);break;
       case 'setEntityRuntime': valid = change.target === 'entity' && !!p.runtime && typeof p.runtime === 'object' && !Array.isArray(p.runtime); break;
       case 'setObjectives': valid=change.target==='world'&&Array.isArray(p.objectives);break;
+      case 'compactApiLedgers':valid=change.target==='runtime'&&change.id==='api'&&ids('rewardIds')&&ids('resolvedTrialIds');break;
+      case 'setApiState': valid=change.target==='runtime'&&change.id==='api'&&['elapsedTicks','bossIndex','materialMinute','fragmentsThisMinute','partsThisMinute','nextBossAt','calmUntil','nextPressureAt','pressureSeq','kills','bossKills'].every(k=>Number.isSafeInteger(p[k])&&Number(p[k])>=0)&&(p.lastAdvancedTick===null||Number.isSafeInteger(p.lastAdvancedTick))&&(p.bossWarningAt===null||Number.isSafeInteger(p.bossWarningAt))&&(p.withdrawal===null||typeof p.withdrawal==='object');break;
       case 'setBosses': valid=change.target==='world'&&Array.isArray(p.bosses);break;
       case 'setPressureEvents': valid=change.target==='world'&&Array.isArray(p.events);break;
       case 'setSpawnDirector': valid=change.target==='world'&&Array.isArray(p.queue)&&Array.isArray(p.budgets)&&Number.isSafeInteger(p.nextAt)&&Number(p.nextAt)>=0;break;

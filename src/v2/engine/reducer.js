@@ -48,6 +48,8 @@ export function applySystemPlan(working, plan) {
       case 'setProjectileLeg': if(entity.kind!=='projectile')throw new Error('Only projectiles have attack legs');entity.attackId=String(p.attackId);entity.runtime=/** @type {Record<string,import('../contracts.d.ts').Json>} */(p.runtime);break;
       case 'setEntityRuntime': entity.runtime = /** @type {Record<string, import('../contracts.d.ts').Json>} */ (p.runtime); break;
       case 'setObjectives': next.world.objectives=/** @type {import('../contracts.d.ts').ObjectiveState[]} */ (JSON.parse(serializeCanonical(p.objectives)));break;
+      case 'compactApiLedgers':if(!next.api)throw new Error('API compaction outside API mode');next.processedRewardIds=/** @type {string[]} */(p.rewardIds);next.lora.resolvedTrialIds=/** @type {string[]} */(p.resolvedTrialIds);break;
+      case 'setApiState': if(!next.api)throw new Error('API state outside API mode');next.api=/** @type {import('../contracts.d.ts').ApiState} */(JSON.parse(serializeCanonical(p)));break;
       case 'setBosses': next.bosses=/** @type {import('../contracts.d.ts').BossState[]} */ (JSON.parse(serializeCanonical(p.bosses)));break;
       case 'setPressureEvents': next.world.pressureEvents=/** @type {import('../contracts.d.ts').PressureEvent[]} */(JSON.parse(serializeCanonical(p.events)));break;
       case 'setSpawnDirector': next.world.spawnQueue=/** @type {import('../contracts.d.ts').SpawnRequest[]} */ (JSON.parse(serializeCanonical(p.queue)));next.world.budgets=/** @type {import('../contracts.d.ts').EncounterBudget[]} */ (JSON.parse(serializeCanonical(p.budgets)));next.spawnDirectorNextAt=Number(p.nextAt);break;
@@ -140,7 +142,7 @@ export function applySystemPlan(working, plan) {
       case 'setHp':
         if (Number(p.hp) > entity.maxHp) throw new Error('HP exceeds maximum');
         entity.hp = Number(p.hp); break;
-      case 'setDeath': entity.dead = true; entity.dying = true; break;
+      case 'setDeath': entity.dead = true; entity.dying = true;entity.runtime={...entity.runtime,deathAt:next.tick};break;
       case 'setDamageCredit': entity.runtime = { ...entity.runtime, lastDamageSourceId: p.sourceId, lastDamageCreditOwner: p.creditOwner }; break;
       case 'setShell': entity.shell = { maxHp: Number(p.maxHp), hp: Number(p.hp), broken: p.broken === true, weakArcDegrees: Number(p.weakArcDegrees), stunRemaining: Number(p.stunRemaining), enraged: p.enraged === true }; break;
       case 'attachShield': entity.shieldIds=[...new Set([...entity.shieldIds,String(p.shieldId)])];break;

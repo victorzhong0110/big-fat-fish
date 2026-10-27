@@ -1,3 +1,4 @@
+import {planApiWorldAdvance} from './api.js';
 // @ts-check
 import {planObjectiveSignal} from './lateMechanics.js';
 import { createEmptyPlan, createStateChange } from '../plans.js';
@@ -58,11 +59,10 @@ export function planObjectiveCompletion(context, objectiveId) {
  * 推进API时间、5分钟Boss日程与材料分钟限额，Boss死不结束局。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部公开函数。
+ * @implementationScope adventure-slice API
+ * @calls domain/world/api.js#planApiWorldAdvance
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @returns {import('../../contracts.d.ts').SystemPlan}
- * @throws {Error} TODO placeholder until Grok implements this contract.
+ * @param {boolean} afterCombat
  */
-export function planApiProgression(context) {
-  throw new Error('TODO V2: domain/world/objectives.js#planApiProgression');
-}
+export function planApiProgression(context,afterCombat=false) {return planApiWorldAdvance(context,afterCombat);}

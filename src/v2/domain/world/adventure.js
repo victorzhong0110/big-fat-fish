@@ -13,7 +13,7 @@ import { createEntityState } from '../entities.js';
  * @returns {import('../../contracts.d.ts').SystemPlan}
  */
 export function createAdventureMapPlan(start, catalog) {
- const staged=start.difficulty.mechanicIds.includes('mech_02_reinforcements'),campBudgets=/** @type {import('../../contracts.d.ts').EncounterBudget[]} */([]);
+ const mapId=start.difficulty.mode==='api'?'adventure:api-sea':'adventure:claude-short';const staged=start.difficulty.mechanicIds.includes('mech_02_reinforcements'),campBudgets=/** @type {import('../../contracts.d.ts').EncounterBudget[]} */([]);
  const changes = /** @type {import('../../contracts.d.ts').StateChange[]} */ ([]);
  const put = (/** @type {import('../../contracts.d.ts').EntityState} */ entity) => changes.push(createStateChange('world', entity.id, 'putEntity', entity));
  const obstacles = [{x:650,y:500},{x:1200,y:600},{x:1800,y:750},{x:1200,y:1400},{x:2200,y:1250},{x:2500,y:1000}];
@@ -31,9 +31,9 @@ export function createAdventureMapPlan(start, catalog) {
    const enemyId=`resident:${i}:${member}`;put(createEntityState(enemyId,definitionId,'enemy','enemy',{x:position.x+Math.cos(theta)*230,y:position.y+Math.sin(theta)*230},{faction:crab?'claude':pet?'gpt':'grok',radius:Number(p.radius),hp:Number(p.hp)*start.difficulty.hpMultiplier,maxHp:Number(p.hp)*start.difficulty.hpMultiplier,modelProfileId:crab?start.difficulty.modelProfileIds.claude:pet?start.difficulty.modelProfileIds.gpt:'grok_bot',rewardPolicy:'normal',distillEligible:true,runtime:{moveSpeed:Number(p.moveSpeed),contactDamage:Number(p.contactDamage)*start.difficulty.damageMultiplier,damageMultiplier:start.difficulty.damageMultiplier,spawnGroup:`beacon:${i}`}}));
   }
  }
- put(createEntityState('boss:gate','world_gate','objective','neutral',{x:2500,y:1700},{radius:70,runtime:{interaction:'bossGate',unlocked:false}}));
+ if(start.difficulty.mode!=='api')put(createEntityState('boss:gate','world_gate','objective','neutral',{x:2500,y:1700},{radius:70,runtime:{interaction:'bossGate',unlocked:false}}));
  for(let i=0;i<3;i++)put(createEntityState(`cache:${i}`,'world_cache','objective','neutral',[{x:450,y:1000},{x:2000,y:1000},{x:2300,y:2000}][i],{radius:28,runtime:{interaction:'cache',opened:false,secret:i===2}}));
- changes.push(createStateChange('world','adventure:claude-short','setMap',{id:'adventure:claude-short',biomeIndex:0,width:3000,height:2200,exploredCells:[],obstacleIds,checkpointIds:['checkpoint:home','checkpoint:central'],exitIds:['boss:gate'],navigationRevision:0}),createStateChange('world','objectives','setObjectives',{objectives}),createStateChange('world','pursuers','setSpawnDirector',{queue:[],budgets:[{id:'pursuers',total:340,reserved:0,spawned:0,maxAlive:24}],nextAt:720}));
+ changes.push(createStateChange('world',mapId,'setMap',{id:mapId,biomeIndex:0,width:3000,height:2200,exploredCells:[],obstacleIds,checkpointIds:['checkpoint:home','checkpoint:central'],exitIds:start.difficulty.mode==='api'?[]:['boss:gate'],navigationRevision:0}),createStateChange('world','objectives','setObjectives',{objectives}),createStateChange('world','pursuers','setSpawnDirector',{queue:[],budgets:[{id:'pursuers',total:340,reserved:0,spawned:0,maxAlive:24}],nextAt:720}));
  for(const [index,definitionId]of ['mcp_vector','mcp_stream','mcp_return','mcp_batch'].entries()){
   const id=`equipment:${definitionId}`,instanceId=`${start.runId}:loot:${definitionId}`,position=[{x:500,y:650},{x:1700,y:900},{x:2050,y:1500},{x:2600,y:1950}][index];
   changes.push(createStateChange('world',id,'putPickup',{id,kind:'weapon',amount:1,position,instanceId,collected:false,weapon:{instanceId,definitionId,originalQuality:index<2?0:1,cooldown:0,temporaryQuality:null,updateExpiresAt:null}}));
@@ -51,8 +51,8 @@ export function createAdventureMapPlan(start, catalog) {
  if(start.difficulty.mechanicIds.includes('mech_15_integration')){const id='integration:0';put(createEntityState(id,'world_challenge','objective','neutral',{x:800,y:1900},{radius:30,runtime:{interaction:'challenge',challengeKind:'integration',started:false}}));put(createEntityState('current:integration','world_current','objective','neutral',{x:800,y:1900},{radius:160,runtime:{currentZone:true}}));objectives.push({id,kind:'integration',active:true,completed:false,progress:0,requiredEntityIds:[],rewardId:`objective:${id}`});campBudgets.push({id:'integrationBudget',total:32,reserved:0,spawned:0,maxAlive:16});}
  put(createEntityState('cache:3','world_cache','objective','neutral',{x:2750,y:500},{radius:28,runtime:{interaction:'cache',opened:false,secret:true}}));
  changes.push(createStateChange('world','objectives','setObjectives',{objectives}));
- const mapChange=changes.find(c=>c.operation==='setMap');if(mapChange)changes.push(createStateChange('world','adventure:claude-short','setMap',{.../** @type {object} */(mapChange.payload),obstacleIds}));
- changes.push(createStateChange('world','pursuers','setSpawnDirector',{queue:[],budgets:[{id:'pursuers',total:Math.floor(340*start.difficulty.spawnBudgetMultiplier),reserved:0,spawned:0,maxAlive:24},...campBudgets],nextAt:720}));
+ const mapChange=changes.find(c=>c.operation==='setMap');if(mapChange)changes.push(createStateChange('world',mapId,'setMap',{.../** @type {object} */(mapChange.payload),obstacleIds}));
+ changes.push(createStateChange('world','pursuers','setSpawnDirector',{queue:[],budgets:[{id:'pursuers',total:start.difficulty.mode==='api'?Number.MAX_SAFE_INTEGER:Math.floor(340*start.difficulty.spawnBudgetMultiplier),reserved:0,spawned:0,maxAlive:24},...campBudgets],nextAt:720}));
  return {...createEmptyPlan(),changes:[...changes,...createEasterObjectives().changes]};
 }
 /** 在已开放入口启动一次Claude首领；同一实体/稳定ID不能重复生成。

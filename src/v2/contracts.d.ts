@@ -75,7 +75,7 @@ export interface LoraTrialCreation { trial: LoraTrial; nextRandom: RandomState; 
 export interface LoraState { inputHeld?: boolean; active: LoraTrial | null; pendingLevels: readonly number[]; modifiers: readonly StatModifier[]; underfitRemaining: number; overfitRemaining: number; resolvedTrialIds: readonly Id[]; }
 export interface DshCycleState { activeRemaining?: number; durationResets?: number; remaining: number; pendingOutcome: 'update' | 'reset' | null; triggerSeq: number; lastAdvancedTick: Tick | null; }
 export interface BossState { entityId: Id; faction: Faction; phase: number; telegraph: Json; resetNodes: readonly { id: Id; hp: number; consumed: boolean; position: Vec2 }[]; resetRemaining: number; resetCooldown: number; spawnGroupSeq: number; }
-export interface ApiState { elapsedTicks: Tick; bossIndex: number; materialMinute: number; fragmentsThisMinute: number; partsThisMinute: number; }
+export interface ApiState { lastAdvancedTick:Tick|null; nextBossAt:Tick; bossWarningAt:Tick|null; calmUntil:Tick; nextPressureAt:Tick; pressureSeq:number; kills:number; bossKills:number; withdrawal:{startedAt:Tick;position:Vec2;hpDamageTotal:number}|null; elapsedTicks: Tick; bossIndex: number; materialMinute: number; fragmentsThisMinute: number; partsThisMinute: number; }
 export interface DifficultySnapshot { level: number | 'api'; mode: Mode; mechanicIds: readonly Id[]; difficultyPerkIds: readonly Id[]; modelProfileIds: Readonly<Record<Faction, Id>>; hpMultiplier: number; damageMultiplier: number; spawnBudgetMultiplier: number; }
 export interface StartSnapshot { bossFaction?:Faction; modLock?: readonly ModLockEntry[]; runtimeProfile?: 'core-preview' | 'adventure-slice' | 'full'; runId?: Id; treeNodeIds: readonly Id[]; dsh: readonly DshSlot[]; loadout: Loadout; difficulty: DifficultySnapshot; }
 export interface FlowState { suspendedResumePhase?: Phase | null; phase: Phase; resumePhase: Phase | null; queuedLevelRewards: readonly LevelReward[]; choice: PluginChoice | null; settlementPending: boolean; pluginRerollsUsed?: number; }
@@ -110,7 +110,8 @@ export interface ShellResolution { blocked: boolean; damage: number; broke: bool
 export interface ShieldResolution { absorbed: number; remainingDamage: number; plan: SystemPlan; }
 export interface DeathRecord { entityId: Id; sourceId: Id; creditOwner: EntityState['creditOwner']; faction: Faction | null; rewardPolicy: EntityState['rewardPolicy']; distillEligible: boolean; groupId: Id | null; }
 export interface RewardPlan { plan: SystemPlan; rewardIds: readonly Id[]; }
-export interface Profile {
+export interface ApiRecord { survivedTicks:number; bossKills:number; kills:number; maxLevel:number; }
+export interface Profile { bestApi?:ApiRecord;
   version: number; revision: number; gpuCards: number; gpuFragments: number; parts: number;
   purchasedTree: readonly Id[]; discovered: readonly Id[]; unlockedWeapons: readonly Id[]; unlockedSkills: readonly Id[];
   unlockedCompanions: readonly Id[]; unlockedDsh: readonly Id[]; equippedDsh: readonly DshSlot[];
@@ -121,7 +122,7 @@ export interface Profile {
 export interface ProfilePlan { expectedRevision: number; next: Profile; events: readonly DomainEvent[]; }
 export interface StartRequest { bossFaction?:Faction; mode: Mode; difficulty: number | 'api'; seed: number; weaponIds: readonly Id[]; skillId: Id; companionId: Id | null; }
 export interface Checkpoint { id: Id; versions: Versions; revision: number; digest: string; state: GameState; }
-export interface Settlement { difficulty?: number | 'api'; mode?: Mode; id: Id; runId: Id; outcome: 'victory' | 'defeat' | 'withdrawal'; gpuFragments: number; parts: number; survivedTicks: number; bossKills: number; discoveries: readonly Id[]; }
+export interface Settlement { apiResult?:ApiRecord; difficulty?: number | 'api'; mode?: Mode; id: Id; runId: Id; outcome: 'victory' | 'defeat' | 'withdrawal'; gpuFragments: number; parts: number; survivedTicks: number; bossKills: number; discoveries: readonly Id[]; }
 export interface StorageRecord { revision: number; profile: Profile; }
 export interface StoragePort { read(): Promise<Result<StorageRecord>>; compareAndSwap(expectedRevision: number, next: StorageRecord): Promise<Result<StorageRecord>>; }
 export interface AssetRequest { id: Id; source: string; kind: 'sprite' | 'music' | 'sfx'; }

@@ -53,6 +53,7 @@ export async function commitProfilePlan(storage, plan, catalog) {
  * 调用阶段：query；下游模式：dispatch。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @calls domain/checkpoint.js#validateCheckpoint
+ * @calls domain/profile/unlocks.js#planAchievementUnlock
  * @calls domain/profile/unlocks.js#planBossUnlock
  * @calls domain/profile/unlocks.js#planDiscoveryUnlock
  * @calls domain/profile/unlocks.js#planEasterUnlock
@@ -84,7 +85,7 @@ export function mergePersistenceIntents(profile, intents, catalog) {
       next = { ...next, revision: next.revision + 1, checkpoint }; continue;
     } else {
       const event = /** @type {import('../contracts.d.ts').DomainEvent} */ (JSON.parse(serializeCanonical(intent.payload)));
-      result = intent.kind === 'discovery' ? dependency1.planDiscoveryUnlock(next, event, catalog) : event.type === 'BossDefeated' ? dependency1.planBossUnlock(next, event, catalog) : dependency1.planEasterUnlock(next, event, catalog);
+      result = intent.kind === 'discovery' ? dependency1.planDiscoveryUnlock(next, event, catalog) : event.type === 'DshCycleDurationReset' ? dependency1.planAchievementUnlock(next,event,catalog) : event.type === 'BossDefeated' ? dependency1.planBossUnlock(next, event, catalog) : dependency1.planEasterUnlock(next, event, catalog);
     }
     if (!result.ok) return result;
     next = result.value.next; events.push(...result.value.events);

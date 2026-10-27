@@ -84,7 +84,7 @@ export function validateSpawnLocation(context, request) {
   if(dependency1.distanceSquared(point,player.position)<420**2)return fail('Spawn is too close to the player');
   if(point.x+radius>=view.x-128&&point.x-radius<=view.x+view.width+128&&point.y+radius>=view.y-128&&point.y-radius<=view.y+view.height+128)return fail('Spawn would be visible');
   const enemies=Object.values(state.world.entities).filter(entity=>entity.kind==='enemy'&&!entity.dead&&entity.runtime.noAi!==true);
-  if(enemies.length>=(state.start.difficulty.mode==='expedition'?100:80)||request.enemyId==='enemy_grok_bot'&&enemies.filter(entity=>entity.definitionId===request.enemyId).length>=24)return fail('Alive capacity is full');
+  if(enemies.length>=(state.api?(state.bosses.some(b=>!state.world.entities[b.entityId]?.dead)?100:99):state.start.difficulty.mode==='expedition'?100:80)||request.enemyId==='enemy_grok_bot'&&enemies.filter(entity=>entity.definitionId===request.enemyId).length>=(state.api?(request.bossOwner?40:24):24))return fail('Alive capacity is full');
   const temporary={...player,definitionId:request.enemyId,kind:/** @type {const} */ ('enemy'),runtime:{}};
   if(state.world.map.obstacleIds.some(id=>{const obstacle=state.world.entities[id];return obstacle&&!canTraverseObstacle(temporary,obstacle,context.catalog)&&dependency1.distanceSquared(point,obstacle.position)<(radius+obstacle.radius)**2;}))return fail('Spawn intersects blocking terrain');
   return {ok:true,value:{...point}};

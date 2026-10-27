@@ -19,9 +19,9 @@ import { validateTreePurchase, resolveDshSlotCount } from './profile/tree.js';
  * @returns {import('../contracts.d.ts').Settlement}
  */
 export function createSettlement(state, outcome) {
-  if (state.flow.phase !== outcome || !['victory', 'defeat', 'withdrawal'].includes(outcome) || outcome === 'withdrawal' && state.start.difficulty.mode !== 'api') throw new Error('Settlement must describe a terminal run');
+  if (state.flow.phase !== outcome || !['victory', 'defeat', 'withdrawal'].includes(outcome) || outcome === 'withdrawal' && state.start.difficulty.mode !== 'api'||state.api&&outcome==='victory') throw new Error('Settlement must describe a terminal run');
   const keep = outcome === 'defeat' ? state.start.treeNodeIds.includes('tree_explore_c') ? 0.5 : 0.4 : 1;
-  return { id: `settlement:${state.runId}`, runId: state.runId, outcome, gpuFragments: Math.floor(state.inventory.gpuFragments * keep), parts: Math.floor(state.inventory.parts * keep), survivedTicks: state.tick, bossKills: state.bosses.filter(boss => state.world.entities[boss.entityId]?.dead).length, discoveries: [], difficulty: state.start.difficulty.level, mode: state.start.difficulty.mode };
+  return { id: `settlement:${state.runId}`, runId: state.runId, outcome, gpuFragments: Math.floor(state.inventory.gpuFragments * keep), parts: Math.floor(state.inventory.parts * keep), survivedTicks: state.tick, bossKills: state.api?.bossKills??state.bosses.filter(boss => state.world.entities[boss.entityId]?.dead).length,...(state.api?{apiResult:{survivedTicks:state.api.elapsedTicks,bossKills:state.api.bossKills,kills:state.api.kills,maxLevel:state.level}}:{}), discoveries: [], difficulty: state.start.difficulty.level, mode: state.start.difficulty.mode };
 }
 
 /**
@@ -36,12 +36,14 @@ export function createSettlement(state, outcome) {
  */
 export function planSettlementCommit(profile, settlement, catalog) {
   if (settlement.id !== `settlement:${settlement.runId}` || !['victory', 'defeat', 'withdrawal'].includes(settlement.outcome) || ![settlement.gpuFragments, settlement.parts, settlement.survivedTicks, settlement.bossKills].every(value => Number.isSafeInteger(value) && value >= 0)) return { ok: false, code: 'INVALID_SETTLEMENT', message: 'Invalid settlement identity or resources' };
+  if(settlement.mode==='api'&&(settlement.outcome==='victory'||!settlement.apiResult||!['survivedTicks','bossKills','kills','maxLevel'].every(k=>Number.isSafeInteger(settlement.apiResult?.[/** @type {keyof import('../contracts.d.ts').ApiRecord} */(k)])&&Number(settlement.apiResult?.[/** @type {keyof import('../contracts.d.ts').ApiRecord} */(k)])>=0)))return {ok:false,code:'INVALID_SETTLEMENT',message:'API requires a valid survival record and cannot end in victory'};
   if (profile.settlementLedger.includes(settlement.id)) return { ok: true, value: { expectedRevision: profile.revision, next: structuredClone(profile), events: [] } };
   if (profile.checkpoint && profile.checkpoint.state.runId !== settlement.runId) return { ok: false, code: 'ACTIVE_RUN_CONFLICT', message: 'Cannot settle over another active run' };
   const fragments = profile.gpuFragments + settlement.gpuFragments;
   const difficulty = settlement.outcome === 'victory' && ['short', 'expedition'].includes(settlement.mode ?? '') && typeof settlement.difficulty === 'number' ? settlement.difficulty : 0;
   const highestDifficulty = Math.max(profile.highestDifficulty, difficulty);
   const next = { ...structuredClone(profile), revision: profile.revision + 1, gpuCards: profile.gpuCards + Math.floor(fragments / 5), gpuFragments: fragments % 5, parts: profile.parts + settlement.parts, highestDifficulty, apiUnlocked: highestDifficulty >= 15, unlockedDsh: difficulty >= 6 ? [...new Set([...profile.unlockedDsh, 'dsh_lora'])] : [...profile.unlockedDsh], discovered: [...new Set([...profile.discovered, ...settlement.discoveries])], settlementLedger: [...profile.settlementLedger, settlement.id], checkpoint: null };
+  if(settlement.mode==='api'&&settlement.apiResult){const result=settlement.apiResult,previous=profile.bestApi;next.bestApi={survivedTicks:Math.max(previous?.survivedTicks??0,result.survivedTicks),bossKills:Math.max(previous?.bossKills??0,result.bossKills),kills:Math.max(previous?.kills??0,result.kills),maxLevel:Math.max(previous?.maxLevel??0,result.maxLevel)};}
   const report = validateProfileRecord(next, catalog);
   if (!report.valid) return { ok: false, code: 'INVALID_SETTLEMENT', message: report.diagnostics.map(item => item.message).join('; ') };
   return { ok: true, value: { expectedRevision: profile.revision, next, events: [] } };
@@ -65,6 +67,7 @@ export function validateProfileRecord(profile, catalog) {
   try {
     serializeCanonical(profile);
     if (profile.version !== 1 || !['revision', 'gpuCards', 'gpuFragments', 'parts', 'highestDifficulty'].every(key => Number.isSafeInteger(profile[/** @type {'revision'|'gpuCards'|'gpuFragments'|'parts'|'highestDifficulty'} */ (key)]) && Number(profile[/** @type {'revision'|'gpuCards'|'gpuFragments'|'parts'|'highestDifficulty'} */ (key)]) >= 0) || profile.gpuFragments >= 5 || profile.highestDifficulty > 15 || typeof profile.apiUnlocked !== 'boolean' || profile.apiUnlocked !== (profile.highestDifficulty >= 15)) fail('Invalid profile version, balances or progression');
+    if(profile.bestApi&&!['survivedTicks','bossKills','kills','maxLevel'].every(k=>Number.isSafeInteger(profile.bestApi?.[/** @type {keyof import('../contracts.d.ts').ApiRecord} */(k)])&&Number(profile.bestApi?.[/** @type {keyof import('../contracts.d.ts').ApiRecord} */(k)])>=0))fail('Invalid API personal best');
     for (const key of /** @type {const} */ (['purchasedTree', 'discovered', 'unlockedWeapons', 'unlockedSkills', 'unlockedCompanions', 'unlockedDsh', 'facilities', 'discoveryLedger', 'unlockLedger', 'settlementLedger'])) { const ids = profile[key]; if (!Array.isArray(ids) || new Set(ids).size !== ids.length || ids.some(id => typeof id !== 'string' || !id)) fail(`Invalid ${key}`); }
     for (const [ids, kind] of /** @type {[readonly string[], string][]} */ ([[profile.purchasedTree, 'tree'], [profile.unlockedWeapons, 'weapon'], [profile.unlockedSkills, 'skill'], [profile.unlockedCompanions, 'companion'], [profile.unlockedDsh, 'dsh'], [profile.facilities, 'facility']])) if (ids.some(id => catalog.definitions[id]?.kind !== kind)) fail(`Unknown ${kind} reference`);
     if (profile.discovered.some(id => !catalog.definitions[id])) fail('Unknown discovery reference');

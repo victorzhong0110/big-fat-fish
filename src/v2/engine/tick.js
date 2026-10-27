@@ -1,3 +1,4 @@
+import {planApiMaintenance} from '../domain/world/apiMaintenance.js';
 // @ts-check
 import{planCombatPluginWorld}from'../domain/combatPlugins.js';
 import{planScheduledActions}from'../domain/scheduled.js';
@@ -19,7 +20,7 @@ import { planProgressionPanels } from './flow.js';
 import { planStatusAdvance } from '../domain/status.js';
 import { planMapExploration } from '../domain/world/map.js';
 import { planSpawnSchedule } from '../domain/world/spawning.js';
-import { planObjectiveAdvance } from '../domain/world/objectives.js';
+import { planApiProgression,planObjectiveAdvance } from '../domain/world/objectives.js';
 import { planEnemyAi, planBossAi, planCompanionAi } from '../domain/ai.js';
 import { planPlayerMovement, planEntityMotion, planPickupMotion } from '../domain/movement.js';
 import { planWeaponFire, planCollisionEffects } from '../domain/attacks.js';
@@ -59,7 +60,9 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls domain/rewards.js#planDeathRewards
  * @calls domain/scheduled.js#planScheduledActions
  * @calls domain/status.js#planStatusAdvance
+ * @calls domain/world/apiMaintenance.js#planApiMaintenance
  * @calls domain/world/map.js#planMapExploration
+ * @calls domain/world/objectives.js#planApiProgression
  * @calls domain/world/objectives.js#planObjectiveAdvance
  * @calls domain/world/pressure.js#planPressureEventAdvance
  * @calls domain/world/pressure.js#planPressureSchedule
@@ -87,6 +90,7 @@ export function advanceWorldTick(state, commands, catalog) {
   const apply = (/** @type {import('../contracts.d.ts').SystemPlan} */ plan) => { if (plan.changes.length) working = applySystemPlan(working, plan); effects.push(...plan.effects); outbox.events.push(...plan.events); outbox.persistence.push(...plan.persistence); outbox.diagnostics.push(...plan.diagnostics); for (const event of plan.events) { const hook = planEventHooks(context(), event); if (hook.changes.length) working = applySystemPlan(working, hook); effects.push(...hook.effects);outbox.events.push(...hook.events);outbox.persistence.push(...hook.persistence); } };
   for (const command of orderPendingCommands(commands, working.tick, 'world')) apply(planGameCommand(context(), command).plan);
   apply(planStatusAdvance(context()));
+  apply(planApiProgression(context()));
   apply(planDshCycleEvent(context(), { id: `world:${working.tick}`, runId: working.runId, tick: working.tick, seq: 0, type: 'WorldTick', sourceId: null, targetId: null, payload: {} }));
   apply(planMechanicEvent(context(),{id:`mechanics:${working.tick}`,runId:working.runId,tick:working.tick,seq:0,type:'WorldTick',sourceId:null,targetId:null,payload:{}}));
   apply(planPressureSchedule(context()));
@@ -118,9 +122,12 @@ export function advanceWorldTick(state, commands, catalog) {
   apply(planDeathRewards(context(), drained.deaths).plan);
   apply(planAbilityHistory(context()));
   const outcome = resolveTerminalOutcome(context(), drained.deaths);
-  if (outcome) apply({ ...createEmptyPlan(), changes: [createStateChange('flow', 'phase', 'setFlowPhase', { phase: outcome, resumePhase: null }), createStateChange('runtime', 'input', 'setInput', { ...working.input, move: { x: 0, y: 0 }, firing: false })] });
+  if (outcome) apply({ ...createEmptyPlan(), changes: [createStateChange('flow', 'phase', 'setFlowPhase', { phase: outcome, resumePhase: null }), createStateChange('runtime', 'input', 'setInput', { ...working.input, move: { x: 0, y: 0 }, firing: false }),...(working.api?[createStateChange('runtime','api','setApiState',{...working.api,withdrawal:null})]:[])] });
+  if (!outcome) apply(planApiProgression(context(),true));
   if (!outcome) apply(planObjectiveAdvance(context()));
   if (!outcome) for (let i = 0; i < 128; i++) { const plan = planProgressionPanels(context()); if (!plan.changes.length) break; apply(plan); if (i === 127) throw new Error('Growth queue did not settle'); }
+  if(working.api?.withdrawal&&working.flow.phase!=='exploring')apply({...createEmptyPlan(),changes:[createStateChange('runtime','api','setApiState',{...working.api,withdrawal:null})]});
+  if(working.api)apply(planApiMaintenance(context()));
   return commitWorkingState(state, working, catalog, outbox);
 }
 /** Process pause/resume immediately without advancing the stopped UI/world clock.

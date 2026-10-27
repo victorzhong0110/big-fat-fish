@@ -21,7 +21,8 @@
     "test:v2:factions": "node scripts/test-v2-factions-browser.mjs",
     "test:v2:difficulty": "node scripts/test-v2-difficulty-browser.mjs",
     "test:v2:max20": "node scripts/test-v2-max20-browser.mjs",
-    "replay:v2": "node scripts/replay-v2.mjs"
+    "replay:v2": "node scripts/replay-v2.mjs",
+    "test:v2:api": "node scripts/test-v2-api-browser.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"

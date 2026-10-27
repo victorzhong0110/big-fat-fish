@@ -1,3 +1,4 @@
+import {isWorldSafe} from './safety.js';
 // @ts-check
 import {planChallengeInteraction} from './lateMechanics.js';
 import {planAlarmCache} from './alarms.js';
@@ -114,7 +115,7 @@ export function planWorldInteraction(context, command) {
   if(entity.runtime.interaction==='challenge')return planChallengeInteraction(context,entity.id);
   if(entity.runtime.interaction==='alarmCache')return planAlarmCache(context,entity.id);
   if(['chair','note','lunchbox','console'].includes(String(entity.runtime.interaction)))return planEasterInteraction(context,entity.id);
-  if (entity.runtime.interaction === 'bossGate') return planBossEncounter(context);
+  if (entity.runtime.interaction === 'bossGate') return state.api?createEmptyPlan():planBossEncounter(context);
   if (entity.runtime.opened === true) return createEmptyPlan();
   const reward = dependency3.planWorldReward(context, `cache:${entity.id}`);
   const changes=[...reward.plan.changes,createStateChange('entity',entity.id,'setEntityRuntime',{runtime:{...entity.runtime,opened:true}})],events=[...reward.plan.events,{id:`cacheOpened:${state.runId}:${entity.id}`,runId:state.runId,tick:state.tick,seq:0,type:'CacheOpened',sourceId:player.id,targetId:entity.id,payload:{cacheId:entity.id,secret:entity.runtime.secret===true}}],persistence=[...reward.plan.persistence];
@@ -131,16 +132,11 @@ export function planWorldInteraction(context, command) {
  * 检查附近敌人、在途攻击、事件危险和检查点规则，不靠暂停制造安全。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls domain/geometry.js#distanceSquared
+ * @calls domain/world/safety.js#isWorldSafe
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').Vec2} position
  * @returns {boolean}
  */
 export function isSafeForInteraction(context, position) {
-  const state = context.state;
-  if (state.flow.phase !== 'exploring' || state.world.pressureEvents.some(event => event.phase === 'active' || event.phase === 'telegraph')) return false;
-  const activeBoss = state.bosses.some(boss => { const entity = state.world.entities[boss.entityId]; return entity && !entity.dead && entity.hp > 0; });
-  if (activeBoss) return false;
-  if (Object.values(state.world.entities).some(entity => !entity.dead && !entity.dying && entity.team === 'enemy' && (entity.expiresAt === null || entity.expiresAt >= state.tick) && (entity.kind === 'projectile' || dependency1.distanceSquared(entity.position, position) <= 600 ** 2))) return false;
-  return !state.world.spawnQueue.some(spawn => spawn.at <= state.tick + 300 && dependency1.distanceSquared(spawn.position, position) <= 800 ** 2);
+  return isWorldSafe(context,position);
 }

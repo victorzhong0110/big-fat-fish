@@ -22,7 +22,7 @@ export function canCreateCheckpoint(context) {
   const diagnostics = /** @type {import('../contracts.d.ts').Diagnostic[]} */ ([]);
   const player = state.world.entities[state.player.entityId];
   if (!player || player.hp <= 0 || player.dead || player.dying) diagnostics.push({ code: 'CHECKPOINT_DEAD', message: 'A living player is required', relatedIds: [] });
-  if (state.flow.phase !== 'exploring' || state.flow.choice || state.flow.queuedLevelRewards.length || state.lora.active || state.lora.pendingLevels.length || state.pendingEffects.pending.length || state.flow.settlementPending) diagnostics.push({ code: 'CHECKPOINT_BUSY', message: 'Finish combat and pending level/effect processing', relatedIds: [] });
+  if (state.flow.phase !== 'exploring' || state.flow.choice || state.flow.queuedLevelRewards.length || state.lora.active || state.lora.pendingLevels.length || state.pendingEffects.pending.length || state.flow.settlementPending || state.api?.withdrawal) diagnostics.push({ code: 'CHECKPOINT_BUSY', message: 'Finish combat and pending level/effect processing', relatedIds: [] });
   if (state.start.runtimeProfile === 'core-preview' && (state.input.firing || state.input.move.x || state.input.move.y)) diagnostics.push({ code: 'CHECKPOINT_INPUT_ACTIVE', message: 'Release movement and shooting before saving', relatedIds: [] });
   const nearby = player && state.world.map.checkpointIds.some(id => {
     const checkpoint = state.world.entities[id];
@@ -43,7 +43,7 @@ export function canCreateCheckpoint(context) {
  * @returns {import('../contracts.d.ts').Checkpoint}
  */
 export function createCheckpoint(state) {
-  if (state.flow.phase !== 'exploring' || state.flow.choice || state.lora.active || state.flow.queuedLevelRewards.length || state.pendingEffects.pending.length || state.flow.settlementPending) throw new Error('Checkpoint requires a settled exploration boundary');
+  if (state.flow.phase !== 'exploring' || state.flow.choice || state.lora.active || state.flow.queuedLevelRewards.length || state.pendingEffects.pending.length || state.flow.settlementPending || state.api?.withdrawal) throw new Error('Checkpoint requires a settled exploration boundary');
   const snapshot = /** @type {import('../contracts.d.ts').GameState} */ (JSON.parse(serializeCanonical(state)));
   const id = `checkpoint:${JSON.stringify([state.runId, state.tick, state.revision])}`;
   const data = { id, versions: { ...state.versions }, revision: state.revision, state: snapshot };
@@ -71,7 +71,7 @@ export function validateCheckpoint(checkpoint, versions, catalog) {
     if (!checkpoint.id || checkpoint.revision !== checkpoint.state.revision || serializeCanonical(checkpoint.versions) !== serializeCanonical(checkpoint.state.versions)) diagnostics.push({ code: 'CHECKPOINT_HEADER', message: 'Checkpoint header differs from state', relatedIds: [] });
     diagnostics.push(...inspectGameState(checkpoint.state, catalog).diagnostics);
     const state = checkpoint.state;
-    if (state.flow.phase !== 'exploring' || state.world.entities[state.player.entityId]?.hp <= 0 || state.flow.choice || state.flow.queuedLevelRewards.length || state.lora.active || state.lora.pendingLevels.length || state.pendingEffects.pending.length || state.flow.settlementPending) diagnostics.push({ code: 'CHECKPOINT_BOUNDARY', message: 'Checkpoint contains an unsettled boundary', relatedIds: [] });
+    if (state.flow.phase !== 'exploring' || state.world.entities[state.player.entityId]?.hp <= 0 || state.flow.choice || state.flow.queuedLevelRewards.length || state.lora.active || state.lora.pendingLevels.length || state.pendingEffects.pending.length || state.flow.settlementPending || state.api?.withdrawal) diagnostics.push({ code: 'CHECKPOINT_BOUNDARY', message: 'Checkpoint contains an unsettled boundary', relatedIds: [] });
   } catch { diagnostics.push({ code: 'CHECKPOINT_MALFORMED', message: 'Malformed checkpoint data', relatedIds: [] }); }
   return { valid: diagnostics.length === 0, diagnostics };
 }

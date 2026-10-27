@@ -1,3 +1,5 @@
+import {RESET_ACHIEVEMENT} from '../content/achievements.js';
+import {toJson} from './serialization.js';
 // @ts-check
 /**
  * 10秒开奖、5分钟有效期与极低概率续期彩蛋。
@@ -28,6 +30,7 @@ export function readDshCycleTimers(state){
  * @calls domain/dshCycle.js#planTemporaryWeaponUpdate
  * @calls domain/dshCycle.js#readDshCycleTimers
  * @calls domain/random.js#drawRandom
+ * @calls domain/serialization.js#toJson
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').DomainEvent} event
  * @returns {import('../contracts.d.ts').EffectPlan}
@@ -46,10 +49,11 @@ export function planDshCycleEvent(context, event) {
   const result=outcome==='update'?planTemporaryWeaponUpdate(context):planCooldownReset(context);
   const nextCycle={...cycle,remaining:DSH_CYCLE_INTERVAL_SECONDS,activeRemaining:durationRefreshed?DSH_CYCLE_DURATION_SECONDS:cycle.activeRemaining,durationResets:cycle.durationResets+(durationRefreshed?1:0),pendingOutcome:null,triggerSeq:cycle.triggerSeq+1};
   const resolved={id:`dshcycle:${state.runId}:${nextCycle.triggerSeq}`,runId:state.runId,tick:state.tick,seq:0,type:'DshCycleResolved',sourceId:'dsh_gpt_branch',targetId:state.player.entityId,payload:{outcome,durationRefreshed,activeRemaining:nextCycle.activeRemaining}};
-  return {...result,changes:[...result.changes,
+  const resetEvent={...resolved,id:`${resolved.id}:duration-reset`,type:'DshCycleDurationReset',payload:{achievementId:RESET_ACHIEVEMENT.id,mode:state.start.difficulty.mode,activeRemaining:DSH_CYCLE_DURATION_SECONDS,durationResets:nextCycle.durationResets}};
+  return {...result,persistence:[...result.persistence,...(durationRefreshed&&state.start.runtimeProfile==='adventure-slice'?[{id:`unlock:${resetEvent.id}`,kind:/** @type {const} */('unlock'),payload:toJson(resetEvent)}]:[])],changes:[...result.changes,
     {target:'random',id:'dsh',operation:'setRandomStream',payload:{...refreshDraw.next}},
     {target:'runtime',id:'dsh_gpt_branch',operation:'setDshCycle',payload:nextCycle}
-  ],events:[...result.events,resolved,...(durationRefreshed?[{...resolved,id:`${resolved.id}:duration-reset`,type:'DshCycleDurationReset',payload:{activeRemaining:DSH_CYCLE_DURATION_SECONDS,durationResets:nextCycle.durationResets}}]:[])]};
+  ],events:[...result.events,resolved,...(durationRefreshed?[resetEvent]:[])]};
 }
 
 /**
