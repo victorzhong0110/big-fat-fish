@@ -1,3 +1,5 @@
+import {planExpeditionMaintenance} from '../domain/world/expeditionMaintenance.js';
+import {planExpeditionProgression} from '../domain/world/expedition.js';
 import {planApiMaintenance} from '../domain/world/apiMaintenance.js';
 // @ts-check
 import{planCombatPluginWorld}from'../domain/combatPlugins.js';
@@ -61,6 +63,8 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls domain/scheduled.js#planScheduledActions
  * @calls domain/status.js#planStatusAdvance
  * @calls domain/world/apiMaintenance.js#planApiMaintenance
+ * @calls domain/world/expedition.js#planExpeditionProgression
+ * @calls domain/world/expeditionMaintenance.js#planExpeditionMaintenance
  * @calls domain/world/map.js#planMapExploration
  * @calls domain/world/objectives.js#planApiProgression
  * @calls domain/world/objectives.js#planObjectiveAdvance
@@ -121,6 +125,7 @@ export function advanceWorldTick(state, commands, catalog) {
   for(const boss of working.bosses)if(boss.faction==='gpt')apply(planGptReset(context(),boss));
   apply(planDeathRewards(context(), drained.deaths).plan);
   apply(planAbilityHistory(context()));
+  apply(planExpeditionProgression(context()));
   const outcome = resolveTerminalOutcome(context(), drained.deaths);
   if (outcome) apply({ ...createEmptyPlan(), changes: [createStateChange('flow', 'phase', 'setFlowPhase', { phase: outcome, resumePhase: null }), createStateChange('runtime', 'input', 'setInput', { ...working.input, move: { x: 0, y: 0 }, firing: false }),...(working.api?[createStateChange('runtime','api','setApiState',{...working.api,withdrawal:null})]:[])] });
   if (!outcome) apply(planApiProgression(context(),true));
@@ -128,6 +133,7 @@ export function advanceWorldTick(state, commands, catalog) {
   if (!outcome) for (let i = 0; i < 128; i++) { const plan = planProgressionPanels(context()); if (!plan.changes.length) break; apply(plan); if (i === 127) throw new Error('Growth queue did not settle'); }
   if(working.api?.withdrawal&&working.flow.phase!=='exploring')apply({...createEmptyPlan(),changes:[createStateChange('runtime','api','setApiState',{...working.api,withdrawal:null})]});
   if(working.api)apply(planApiMaintenance(context()));
+  if(working.expedition)apply(planExpeditionMaintenance(context()));
   return commitWorkingState(state, working, catalog, outbox);
 }
 /** Process pause/resume immediately without advancing the stopped UI/world clock.

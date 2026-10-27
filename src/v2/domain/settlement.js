@@ -21,7 +21,7 @@ import { validateTreePurchase, resolveDshSlotCount } from './profile/tree.js';
 export function createSettlement(state, outcome) {
   if (state.flow.phase !== outcome || !['victory', 'defeat', 'withdrawal'].includes(outcome) || outcome === 'withdrawal' && state.start.difficulty.mode !== 'api'||state.api&&outcome==='victory') throw new Error('Settlement must describe a terminal run');
   const keep = outcome === 'defeat' ? state.start.treeNodeIds.includes('tree_explore_c') ? 0.5 : 0.4 : 1;
-  return { id: `settlement:${state.runId}`, runId: state.runId, outcome, gpuFragments: Math.floor(state.inventory.gpuFragments * keep), parts: Math.floor(state.inventory.parts * keep), survivedTicks: state.tick, bossKills: state.api?.bossKills??state.bosses.filter(boss => state.world.entities[boss.entityId]?.dead).length,...(state.api?{apiResult:{survivedTicks:state.api.elapsedTicks,bossKills:state.api.bossKills,kills:state.api.kills,maxLevel:state.level}}:{}), discoveries: [], difficulty: state.start.difficulty.level, mode: state.start.difficulty.mode };
+  return { id: `settlement:${state.runId}`, runId: state.runId, outcome, gpuFragments: Math.floor(state.inventory.gpuFragments * keep), parts: Math.floor(state.inventory.parts * keep), survivedTicks: state.tick, bossKills: state.expedition?.clearedBiomes.length??state.api?.bossKills??state.bosses.filter(boss => state.world.entities[boss.entityId]?.dead).length,...(state.api?{apiResult:{survivedTicks:state.api.elapsedTicks,bossKills:state.api.bossKills,kills:state.api.kills,maxLevel:state.level}}:{}), discoveries: [], difficulty: state.start.difficulty.level, mode: state.start.difficulty.mode };
 }
 
 /**

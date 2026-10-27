@@ -35,6 +35,7 @@ import * as dependency5 from './random.js';
 export function resolveDamageRequest(context, request) {
   const empty = { changes: [], effects: [], events: [], persistence: [], diagnostics: [] };
   if (!isDamageRequestValid(context, request)) return { accepted: false, allowedBeforeDefense: 0, shellDamage: 0, shieldDamage: 0, hpDamage: 0, plan: empty };
+  const blockadeTarget=context.state.world.entities[request.targetId];if(blockadeTarget?.runtime.blockadeCore===true&&/** @type {readonly string[]} */(blockadeTarget.runtime.lockedByIds??[]).some(id=>{const relay=context.state.world.entities[id];return relay&&!relay.dead&&relay.hp>0;}))return {accepted:false,allowedBeforeDefense:0,shellDamage:0,shieldDamage:0,hpDamage:0,plan:empty};
   const state = context.state, target = state.world.entities[request.targetId];
   const plans = /** @type {import('../contracts.d.ts').SystemPlan[]} */ ([]);
   const changes = /** @type {import('../contracts.d.ts').StateChange[]} */ ([{ target: 'runtime', id: request.id, operation: 'registerHit', payload: { attackId: request.attackId, targetId: request.targetId, expiresAt: request.expiresAt } }]);

@@ -1,3 +1,4 @@
+import {planExpeditionRest} from '../domain/world/expedition.js';
 import {planApiWithdrawal} from '../domain/world/api.js';
 // @ts-check
 import { serializeCanonical } from '../domain/serialization.js';
@@ -32,12 +33,13 @@ export function validateGameCommand(state, command) {
   if (typeof command.id !== 'string' || !command.id || typeof command.type !== 'string' || !Number.isSafeInteger(command.seq) || command.seq < 0 || command.seq <= state.lastCommandSeq || !Number.isSafeInteger(command.targetTick) || command.targetTick < 0 || !['world', 'ui'].includes(command.clock) || state.processedCommandIds.includes(command.id) || terminal) diagnostics.push({ code: 'INVALID_COMMAND', message: 'Invalid, stale or terminal command', relatedIds: [command.id] });
   const ui = ['Pause', 'Resume', 'SelectPlugin', 'RerollPlugin', 'SkipPlugin', 'StartTraining', 'ConfirmTraining', 'ReleaseTraining', 'Abandon'].includes(command.type);
   if (ui && command.clock !== 'ui' || !ui && command.clock !== 'world') diagnostics.push({ code: 'WRONG_CLOCK', message: 'Command is in the wrong clock domain', relatedIds: [command.id] });
-  if (!['SetInput', 'Pause', 'Resume', 'Dash', 'Skill', 'SwitchWeapon', 'EquipPickup', 'EquipSkillPickup', 'SelectPlugin', 'RerollPlugin', 'SkipPlugin', 'StartTraining', 'ConfirmTraining', 'ReleaseTraining', 'Abandon', 'StartWithdrawal','CancelWithdrawal','Interact', 'EscapePress', 'ReleaseEscape', 'EscapeHeld'].includes(command.type)) diagnostics.push({ code: 'UNSUPPORTED_COMMAND', message: 'Command is not available in the combat preview', relatedIds: [command.id] });
+  if (!['SetInput', 'Pause', 'Resume', 'Dash', 'Skill', 'SwitchWeapon', 'EquipPickup', 'EquipSkillPickup', 'SelectPlugin', 'RerollPlugin', 'SkipPlugin', 'StartTraining', 'ConfirmTraining', 'ReleaseTraining', 'Abandon', 'ChooseExpeditionRest','StartWithdrawal','CancelWithdrawal','Interact', 'EscapePress', 'ReleaseEscape', 'EscapeHeld'].includes(command.type)) diagnostics.push({ code: 'UNSUPPORTED_COMMAND', message: 'Command is not available in the combat preview', relatedIds: [command.id] });
   if (!ui && !['exploring', 'boss'].includes(state.flow.phase)) diagnostics.push({ code: 'WRONG_PHASE', message: 'World input is suspended', relatedIds: [command.id] });
   if (['SelectPlugin', 'RerollPlugin', 'SkipPlugin'].includes(command.type)) {
     const payload = /** @type {{choiceId?:string;optionId?:string;replaceId?:string}|null} */ (command.payload), choice = state.flow.choice;
     if (state.flow.phase !== 'pluginChoice' || !choice || choice.resolved || payload?.choiceId !== choice.id || command.type === 'SelectPlugin' && !choice.candidates.some(candidate => candidate.id === payload?.optionId) || command.type === 'RerollPlugin' && (state.flow.pluginRerollsUsed ?? 0) >= 1) diagnostics.push({ code: 'INVALID_CHOICE', message: 'Stale or invalid plugin choice', relatedIds: [command.id] });
   }
+  if(command.type==='ChooseExpeditionRest'){const p=/** @type {{restId?:string;choice?:string}|null} */(command.payload);if(!state.expedition||typeof p?.restId!=='string'||!['heal','weapon'].includes(p?.choice??''))diagnostics.push({code:'INVALID_REST',message:'Invalid expedition rest choice',relatedIds:[]});}
   if(command.type==='EquipSkillPickup'&&typeof /** @type {{pickupId?:string}|null} */(command.payload)?.pickupId!=='string')diagnostics.push({code:'INVALID_EQUIPMENT_CHOICE',message:'Invalid skill pickup',relatedIds:[]});
   if(command.type==='EquipPickup'){const p=/** @type {{pickupId?:string;slotIndex?:number}|null} */(command.payload);if(!p||typeof p.pickupId!=='string'||!Number.isInteger(p.slotIndex)||Number(p.slotIndex)<0||Number(p.slotIndex)>1)diagnostics.push({code:'INVALID_EQUIPMENT_CHOICE',message:'Invalid ground weapon/slot',relatedIds:[]});}
   if(['EscapePress','ReleaseEscape','EscapeHeld'].includes(command.type)){const payload=/** @type {{edge?:string;repeat?:boolean}|null} */(command.payload);if(!payload||payload.edge!==(command.type==='EscapePress'?'press':command.type==='ReleaseEscape'?'release':'held')||payload.repeat===true)diagnostics.push({code:'INVALID_ESCAPE_INPUT',message:'Escape input requires a valid non-repeat edge',relatedIds:[command.id]});}
@@ -77,6 +79,7 @@ export function validateGameCommand(state, command) {
  * @calls domain/plans.js#createStateChange
  * @calls domain/status.js#planEscapeInput
  * @calls domain/world/api.js#planApiWithdrawal
+ * @calls domain/world/expedition.js#planExpeditionRest
  * @calls domain/world/map.js#planWorldInteraction
  * @calls engine/commands.js#validateGameCommand
  * @calls engine/flow.js#planPause
@@ -89,7 +92,8 @@ export function planGameCommand(context, command) {
   const report = validateGameCommand(context.state, command);
   if (!report.valid) return { accepted: false, reason: report.diagnostics[0].message, plan: { ...createEmptyPlan(), diagnostics: report.diagnostics } };
   let plan = createEmptyPlan();
-  if(['StartWithdrawal','CancelWithdrawal'].includes(command.type))plan=planApiWithdrawal(context,command.type);
+  if(command.type==='ChooseExpeditionRest'){const p=/** @type {{restId:string;choice:'heal'|'weapon'}} */(command.payload);plan=planExpeditionRest(context,p.restId,p.choice);}
+  else if(['StartWithdrawal','CancelWithdrawal'].includes(command.type))plan=planApiWithdrawal(context,command.type);
   else if(command.type==='Abandon')plan={...plan,changes:[createStateChange('flow','phase','setFlowPhase',{phase:'defeat',resumePhase:null}),createStateChange('runtime','input','setInput',{...context.state.input,move:{x:0,y:0},firing:false,heldKeys:[],pointerIds:[]})]};
   else if(command.type==='Interact')plan=dependency5.planWorldInteraction(context,command);
   else if(['EscapePress','ReleaseEscape','EscapeHeld'].includes(command.type))plan=dependency4.planEscapeInput(context,command);

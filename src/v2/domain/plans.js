@@ -66,6 +66,8 @@ export function validateSystemPlan(plan) {
       case 'setEntityRuntime': valid = change.target === 'entity' && !!p.runtime && typeof p.runtime === 'object' && !Array.isArray(p.runtime); break;
       case 'setObjectives': valid=change.target==='world'&&Array.isArray(p.objectives);break;
       case 'compactApiLedgers':valid=change.target==='runtime'&&change.id==='api'&&ids('rewardIds')&&ids('resolvedTrialIds');break;
+      case 'setExpeditionState':valid=change.target==='runtime'&&change.id==='expedition'&&Array.isArray(p.route)&&Array.isArray(p.clearedBiomes)&&Array.isArray(p.regions)&&Number.isInteger(p.furthestBiome);break;
+      case 'replaceExpeditionWorld':valid=change.target==='world'&&change.id==='expedition'&&!!p.world&&typeof p.world==='object'&&Array.isArray(p.bosses)&&Array.isArray(p.attackHits)&&Number.isSafeInteger(p.nextAt)&&!!p.expedition;break;
       case 'setApiState': valid=change.target==='runtime'&&change.id==='api'&&['elapsedTicks','bossIndex','materialMinute','fragmentsThisMinute','partsThisMinute','nextBossAt','calmUntil','nextPressureAt','pressureSeq','kills','bossKills'].every(k=>Number.isSafeInteger(p[k])&&Number(p[k])>=0)&&(p.lastAdvancedTick===null||Number.isSafeInteger(p.lastAdvancedTick))&&(p.bossWarningAt===null||Number.isSafeInteger(p.bossWarningAt))&&(p.withdrawal===null||typeof p.withdrawal==='object');break;
       case 'setBosses': valid=change.target==='world'&&Array.isArray(p.bosses);break;
       case 'setPressureEvents': valid=change.target==='world'&&Array.isArray(p.events);break;

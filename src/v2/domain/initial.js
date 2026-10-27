@@ -1,3 +1,4 @@
+import {resolveExpeditionRoute} from './world/regionRules.js';
 import { resolveWeaponTemplate } from '../content/weaponCapabilities.js';
 // @ts-check
 import { createTreeBaseStats, isTreeSnapshotValid } from './treeRuntime.js';
@@ -13,6 +14,7 @@ import { CORE_VERSION, SCHEMA_VERSION } from '../versions.js';
  * @calls domain/serialization.js#serializeCanonical
  * @calls domain/treeRuntime.js#createTreeBaseStats
  * @calls domain/treeRuntime.js#isTreeSnapshotValid
+ * @calls domain/world/regionRules.js#resolveExpeditionRoute
  * @param {import('../contracts.d.ts').StartSnapshot} start
  * @param {number} seed
  * @param {Readonly<import('../contracts.d.ts').ContentCatalog>} catalog
@@ -22,7 +24,7 @@ export function createInitialGameState(start, seed, catalog) {
   if (serializeCanonical(start.modLock ?? []) !== serializeCanonical(catalog.modLock ?? [])) throw new Error('Run mod lock differs from catalog');
   if (catalog.modLock?.length && start.runtimeProfile !== 'core-preview') throw new Error('Modded permanent adventures are not yet enabled');
   if (!start.runId || !Number.isSafeInteger(seed)) throw new Error('Caller must provide a stable unique runId and integer seed');
-  const free=start.runtimeProfile==='core-preview'&&start.difficulty.mode==='tutorial'&&start.difficulty.level===0,short=start.runtimeProfile==='adventure-slice'&&start.difficulty.mode==='short'&&typeof start.difficulty.level==='number'&&start.difficulty.level>=1&&start.difficulty.level<=15,api=start.runtimeProfile==='adventure-slice'&&start.difficulty.mode==='api'&&start.difficulty.level==='api';if(!free&&!short&&!api)throw new Error('Only Free, short difficulties 1–15 and API calling are implemented; expedition/full remain unfinished');
+  const free=start.runtimeProfile==='core-preview'&&start.difficulty.mode==='tutorial'&&start.difficulty.level===0,short=start.runtimeProfile==='adventure-slice'&&start.difficulty.mode==='short'&&typeof start.difficulty.level==='number'&&start.difficulty.level>=1&&start.difficulty.level<=15,api=start.runtimeProfile==='adventure-slice'&&start.difficulty.mode==='api'&&start.difficulty.level==='api';const expedition=start.runtimeProfile==='adventure-slice'&&start.difficulty.mode==='expedition'&&typeof start.difficulty.level==='number'&&start.difficulty.level>=1&&start.difficulty.level<=15;if(!free&&!short&&!api&&!expedition)throw new Error('Free, short, expedition and API are implemented through the explicit preview profiles; full bootstrap is unfinished');
   if(start.bossFaction!==undefined&&!['claude','gpt','grok'].includes(start.bossFaction))throw new Error('Invalid boss faction');
   const supportedDsh = start.runtimeProfile === 'core-preview' ? ['dsh_lora', 'dsh_gpt_branch'] : ['dsh_lora', 'dsh_gpt_branch', 'dsh_claude_appeal', 'dsh_claude_allowlist','dsh_gpt_preview','dsh_grok_license','dsh_grok_salvage','dsh_sleep','dsh_rice','dsh_open'];
   if (!isTreeSnapshotValid(start.treeNodeIds, catalog) || start.runtimeProfile === 'core-preview' && start.treeNodeIds.length || start.dsh.length > (start.runtimeProfile === 'core-preview' ? 1 : 3) || start.dsh.some(slot => !supportedDsh.includes(slot.id)) || start.loadout.companionId !== null && catalog.definitions[start.loadout.companionId]?.kind !== 'companion') throw new Error('Tree, unimplemented DSH and companion startup are not enabled in this preview');
@@ -30,7 +32,7 @@ export function createInitialGameState(start, seed, catalog) {
   if (start.loadout.weapons.some(weapon => resolveWeaponTemplate(catalog,weapon.definitionId) === null) || !['skill_cache','skill_disconnect','skill_batch','skill_redirect','skill_sandbox','skill_fork','skill_rollback','skill_overclock'].includes(start.loadout.skillId)) throw new Error('Unsupported preview loadout');
   const baseStats = createTreeBaseStats(start.treeNodeIds);
   return {
-    versions: { schema: SCHEMA_VERSION, core: CORE_VERSION, content: catalog.version }, runId: start.runId, seed, tick: 0, uiTick: 0, revision: 0, lastWorldAdvanceTick: null,
+    expedition:start.difficulty.mode==='expedition'?{route:resolveExpeditionRoute(seed),clearedBiomes:[],furthestBiome:0,regions:[null,null,null]}:null,versions: { schema: SCHEMA_VERSION, core: CORE_VERSION, content: catalog.version }, runId: start.runId, seed, tick: 0, uiTick: 0, revision: 0, lastWorldAdvanceTick: null,
     input: { move: { x: 0, y: 0 }, aim: { x: 1, y: 0 }, firing: false, heldKeys: [], pointerIds: [] }, lastCommandSeq: -1,
     start: structuredClone(start), flow: { phase: 'exploring', resumePhase: null, queuedLevelRewards: [], choice: null, settlementPending: false, pluginRerollsUsed: 0 }, random: createRandomStreams(seed),
     player: { entityId: 'fish', baseStats, modifiers: [], loadout: structuredClone(start.loadout), invulnerableRemaining: 0, controlImmuneRemaining: 0 },

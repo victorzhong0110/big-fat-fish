@@ -4767,7 +4767,8 @@
         "domain/geometry.js",
         "domain/motionSolver.js",
         "domain/plans.js",
-        "domain/serialization.js"
+        "domain/serialization.js",
+        "domain/world/regionRules.js"
       ],
       "functions": [
         {
@@ -4792,7 +4793,8 @@
             "domain/motionSolver.js#resolveBodyDestination",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
-            "domain/serialization.js#toJson"
+            "domain/serialization.js#toJson",
+            "domain/world/regionRules.js#expeditionRegionScale"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -5432,7 +5434,8 @@
       "purpose": "Current drift uses effective ticks and the normal body solver; native dash/root/shell stun keep their movement rules.",
       "dependencies": [
         "domain/geometry.js",
-        "domain/stats.js"
+        "domain/stats.js",
+        "domain/world/regionRules.js"
       ],
       "functions": [
         {
@@ -5464,7 +5467,8 @@
           "implementation": "implemented",
           "calls": [
             "domain/geometry.js#distanceSquared",
-            "domain/stats.js#derivePlayerStats"
+            "domain/stats.js#derivePlayerStats",
+            "domain/world/regionRules.js#regionWorldTick"
           ]
         }
       ]
@@ -6061,7 +6065,8 @@
       "dependencies": [
         "domain/entities.js",
         "domain/plans.js",
-        "domain/serialization.js"
+        "domain/serialization.js",
+        "domain/world/regionRules.js"
       ],
       "functions": [
         {
@@ -6147,7 +6152,8 @@
           "calls": [
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
-            "domain/serialization.js#toJson"
+            "domain/serialization.js#toJson",
+            "domain/world/regionRules.js#localWorldId"
           ]
         }
       ]
@@ -6542,6 +6548,7 @@
         "domain/random.js",
         "domain/serialization.js",
         "domain/treeRuntime.js",
+        "domain/world/regionRules.js",
         "versions.js"
       ],
       "functions": [
@@ -6574,7 +6581,8 @@
             "domain/random.js#createRandomStreams",
             "domain/serialization.js#serializeCanonical",
             "domain/treeRuntime.js#createTreeBaseStats",
-            "domain/treeRuntime.js#isTreeSnapshotValid"
+            "domain/treeRuntime.js#isTreeSnapshotValid",
+            "domain/world/regionRules.js#resolveExpeditionRoute"
           ],
           "implementationScope": "core-preview + adventure-slice"
         }
@@ -8519,7 +8527,8 @@
       "dependencies": [
         "content/weaponCapabilities.js",
         "domain/serialization.js",
-        "domain/treeRuntime.js"
+        "domain/treeRuntime.js",
+        "domain/world/regionRules.js"
       ],
       "functions": [
         {
@@ -8539,7 +8548,8 @@
           "calls": [
             "content/weaponCapabilities.js#resolveWeaponTemplate",
             "domain/serialization.js#serializeCanonical",
-            "domain/treeRuntime.js#isTreeSnapshotValid"
+            "domain/treeRuntime.js#isTreeSnapshotValid",
+            "domain/world/regionRules.js#resolveExpeditionRoute"
           ],
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
@@ -9014,6 +9024,7 @@
         "domain/geometry.js",
         "domain/plans.js",
         "domain/world/adventure.js",
+        "domain/world/encounterIds.js",
         "domain/world/pressureRules.js",
         "domain/world/safety.js"
       ],
@@ -9084,7 +9095,8 @@
             "domain/difficulty.js#resolveApiSpawnMultipliers",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
-            "domain/world/adventure.js#planBossEncounter"
+            "domain/world/adventure.js#planBossEncounter",
+            "domain/world/encounterIds.js#namespaceEncounterPlan"
           ],
           "implementationScope": "adventure-slice API"
         },
@@ -9174,6 +9186,274 @@
       ]
     },
     {
+      "path": "domain/world/encounterIds.js",
+      "layer": "domain",
+      "purpose": "Namespace all newly created encounter identities while preserving marker:<nodeId> derivation. Existing map IDs and content definition IDs stay intact.",
+      "dependencies": [],
+      "functions": [
+        {
+          "description": "namespaceEncounterPlan",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "namespaceEncounterPlan",
+          "args": [
+            {
+              "name": "plan",
+              "type": "untyped"
+            },
+            {
+              "name": "previous",
+              "type": "untyped"
+            },
+            {
+              "name": "prefix",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": []
+        }
+      ]
+    },
+    {
+      "path": "domain/world/expedition.js",
+      "layer": "domain",
+      "purpose": "Archive only local state. Player/companion bodies, their statuses/shields, and all build/currency/random/progression state remain global.",
+      "dependencies": [
+        "domain/damage.js",
+        "domain/geometry.js",
+        "domain/plans.js",
+        "domain/serialization.js",
+        "domain/world/adventure.js",
+        "domain/world/encounterIds.js",
+        "domain/world/expeditionMap.js",
+        "domain/world/regionRules.js",
+        "domain/world/regionTime.js",
+        "domain/world/safety.js"
+      ],
+      "functions": [
+        {
+          "description": "createRegionArchive",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createRegionArchive",
+          "args": [
+            {
+              "name": "s",
+              "type": "untyped"
+            }
+          ],
+          "result": "RegionArchive",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "assembleRegionArchive",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "assembleRegionArchive",
+          "args": [
+            {
+              "name": "plan",
+              "type": "untyped"
+            }
+          ],
+          "result": "RegionArchive",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "planExpeditionTravel",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planExpeditionTravel",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            },
+            {
+              "name": "target",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/serialization.js#toJson",
+            "domain/world/expedition.js#assembleRegionArchive",
+            "domain/world/expedition.js#createRegionArchive",
+            "domain/world/expeditionMap.js#createExpeditionRegionPlan",
+            "domain/world/regionRules.js#localWorldId",
+            "domain/world/regionTime.js#rebaseRegionTime",
+            "domain/world/safety.js#isWorldSafe"
+          ]
+        },
+        {
+          "description": "planExpeditionBossEncounter",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planExpeditionBossEncounter",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/world/adventure.js#planBossEncounter",
+            "domain/world/encounterIds.js#namespaceEncounterPlan",
+            "domain/world/regionRules.js#expeditionPoint",
+            "domain/world/regionRules.js#expeditionRegionScale"
+          ]
+        },
+        {
+          "description": "planExpeditionProgression",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planExpeditionProgression",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/world/regionRules.js#localWorldId"
+          ]
+        },
+        {
+          "description": "planExpeditionRest",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planExpeditionRest",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            },
+            {
+              "name": "id",
+              "type": "untyped"
+            },
+            {
+              "name": "choice",
+              "default": "null",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/damage.js#planLifeChange",
+            "domain/geometry.js#distanceSquared",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/world/safety.js#isWorldSafe"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "domain/world/expeditionMaintenance.js",
+      "layer": "domain",
+      "purpose": "Bound long-region debris without regenerating residents or changing resource totals. Boss/objective identities and every still-referenced attack/status/shield owner remain. Finite reward and pressure ledgers are retained, including pending challenge rewards.",
+      "dependencies": [
+        "domain/plans.js"
+      ],
+      "functions": [
+        {
+          "description": "planExpeditionMaintenance",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planExpeditionMaintenance",
+          "args": [
+            {
+              "name": "c",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "domain/world/expeditionMap.js",
+      "layer": "domain",
+      "purpose": "Build one region once. Static entities/budgets/rewards get a regional namespace; instance IDs include the region. Guard camps, equipment and secrets are retained and later archived without regeneration.",
+      "dependencies": [
+        "domain/entities.js",
+        "domain/plans.js",
+        "domain/world/adventure.js",
+        "domain/world/regionRules.js"
+      ],
+      "functions": [
+        {
+          "description": "createExpeditionRegionPlan",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createExpeditionRegionPlan",
+          "args": [
+            {
+              "name": "start",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            },
+            {
+              "name": "index",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/entities.js#createEntityState",
+            "domain/plans.js#createStateChange",
+            "domain/world/adventure.js#createAdventureMapPlan",
+            "domain/world/regionRules.js#expeditionPoint",
+            "domain/world/regionRules.js#expeditionRegionScale"
+          ]
+        }
+      ]
+    },
+    {
       "path": "domain/world/lateMechanics.js",
       "layer": "domain",
       "purpose": "@param {import('../../contracts.d.ts').EvaluationContext} c @param {string} id @param {string} mechanicId @param {string} budgetId @param {Record<string,import('../../contracts.d.ts').Json>} runtime @param {number} warning",
@@ -9183,7 +9463,8 @@
         "domain/navigation.js",
         "domain/plans.js",
         "domain/rewards.js",
-        "domain/world/pressureRules.js"
+        "domain/world/pressureRules.js",
+        "domain/world/regionRules.js"
       ],
       "functions": [
         {
@@ -9235,7 +9516,8 @@
             "domain/geometry.js#distanceSquared",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
-            "domain/world/pressureRules.js#validatePressureReservation"
+            "domain/world/pressureRules.js#validatePressureReservation",
+            "domain/world/regionRules.js#localWorldId"
           ]
         },
         {
@@ -9260,7 +9542,8 @@
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
             "domain/rewards.js#planWorldReward",
-            "domain/world/pressureRules.js#validatePressureReservation"
+            "domain/world/pressureRules.js#validatePressureReservation",
+            "domain/world/regionRules.js#localWorldId"
           ]
         }
       ]
@@ -9279,7 +9562,10 @@
         "domain/rewards.js",
         "domain/world/adventure.js",
         "domain/world/alarms.js",
+        "domain/world/expedition.js",
+        "domain/world/expeditionMap.js",
         "domain/world/lateMechanics.js",
+        "domain/world/regionRules.js",
         "domain/world/safety.js"
       ],
       "functions": [
@@ -9305,7 +9591,8 @@
             "domain/entities.js#createEntityState",
             "domain/plans.js#createStateChange",
             "domain/random.js#drawRandom",
-            "domain/world/adventure.js#createAdventureMapPlan"
+            "domain/world/adventure.js#createAdventureMapPlan",
+            "domain/world/expeditionMap.js#createExpeditionRegionPlan"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -9359,7 +9646,11 @@
             "domain/rewards.js#planWorldReward",
             "domain/world/adventure.js#planBossEncounter",
             "domain/world/alarms.js#planAlarmCache",
-            "domain/world/lateMechanics.js#planChallengeInteraction"
+            "domain/world/expedition.js#planExpeditionBossEncounter",
+            "domain/world/expedition.js#planExpeditionRest",
+            "domain/world/expedition.js#planExpeditionTravel",
+            "domain/world/lateMechanics.js#planChallengeInteraction",
+            "domain/world/regionRules.js#localWorldId"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -9402,7 +9693,8 @@
         "domain/plans.js",
         "domain/rewards.js",
         "domain/world/api.js",
-        "domain/world/lateMechanics.js"
+        "domain/world/lateMechanics.js",
+        "domain/world/regionRules.js"
       ],
       "functions": [
         {
@@ -9446,7 +9738,8 @@
           "calls": [
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
-            "domain/rewards.js#planWorldReward"
+            "domain/rewards.js#planWorldReward",
+            "domain/world/regionRules.js#localWorldId"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -9595,6 +9888,136 @@
       ]
     },
     {
+      "path": "domain/world/regionRules.js",
+      "layer": "domain",
+      "purpose": "Resolve a fixed, previewable permutation without consuming any gameplay random stream.",
+      "dependencies": [],
+      "functions": [
+        {
+          "description": "resolveExpeditionRoute",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolveExpeditionRoute",
+          "args": [
+            {
+              "name": "seed",
+              "type": "untyped"
+            }
+          ],
+          "result": "readonly Faction[]",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "expeditionRegionScale",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "expeditionRegionScale",
+          "args": [
+            {
+              "name": "index",
+              "type": "untyped"
+            }
+          ],
+          "result": "{hp:number;damage:number;speed:number}",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "localWorldId",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "localWorldId",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            },
+            {
+              "name": "id",
+              "type": "untyped"
+            }
+          ],
+          "result": "string",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "expeditionPoint",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "expeditionPoint",
+          "args": [
+            {
+              "name": "index",
+              "type": "untyped"
+            },
+            {
+              "name": "point",
+              "type": "untyped"
+            }
+          ],
+          "result": "Vec2",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "regionWorldTick",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "regionWorldTick",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            }
+          ],
+          "result": "number",
+          "implementation": "implemented",
+          "calls": []
+        }
+      ]
+    },
+    {
+      "path": "domain/world/regionTime.js",
+      "layer": "domain",
+      "purpose": "Rebase only absolute local time keys. Zero remains the inactive/ready sentinel except real history timestamps. Relative durations, HP, cooldown seconds, IDs, coordinates and budgets never change.",
+      "dependencies": [],
+      "functions": [
+        {
+          "description": "rebaseRegionTime",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "rebaseRegionTime",
+          "args": [
+            {
+              "name": "value",
+              "type": "untyped"
+            },
+            {
+              "name": "delta",
+              "type": "untyped"
+            }
+          ],
+          "result": "Json",
+          "implementation": "implemented",
+          "calls": []
+        }
+      ]
+    },
+    {
       "path": "domain/world/safety.js",
       "layer": "domain",
       "purpose": "Shared live safety query for checkpoints and API withdrawal; no dependency on interaction dispatch or pressure schedulers.",
@@ -9636,7 +10059,8 @@
         "domain/collision.js",
         "domain/difficulty.js",
         "domain/entities.js",
-        "domain/plans.js"
+        "domain/plans.js",
+        "domain/world/regionRules.js"
       ],
       "functions": [
         {
@@ -9653,6 +10077,8 @@
             "domain/collision.js#validateSpawnLocation",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
+            "domain/world/regionRules.js#localWorldId",
+            "domain/world/regionRules.js#regionWorldTick",
             "domain/world/spawning.js#planEnemySpawn",
             "domain/world/spawning.js#planReinforcementGroup"
           ],
@@ -9684,7 +10110,8 @@
             "domain/difficulty.js#resolveModelProfileId",
             "domain/entities.js#createEntityState",
             "domain/plans.js#createEmptyPlan",
-            "domain/plans.js#createStateChange"
+            "domain/plans.js#createStateChange",
+            "domain/world/regionRules.js#expeditionRegionScale"
           ],
           "rule": "模型壳/基础能力在下一阶段按相同profile处理，出生倍率只快照一次；实体来源和奖励策略不丢失。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -9714,7 +10141,8 @@
           "calls": [
             "domain/difficulty.js#resolveApiSpawnMultipliers",
             "domain/plans.js#createEmptyPlan",
-            "domain/plans.js#createStateChange"
+            "domain/plans.js#createStateChange",
+            "domain/world/regionRules.js#regionWorldTick"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -9738,6 +10166,7 @@
         "domain/serialization.js",
         "domain/status.js",
         "domain/world/api.js",
+        "domain/world/expedition.js",
         "domain/world/map.js",
         "engine/flow.js"
       ],
@@ -9793,6 +10222,7 @@
             "domain/plans.js#createStateChange",
             "domain/status.js#planEscapeInput",
             "domain/world/api.js#planApiWithdrawal",
+            "domain/world/expedition.js#planExpeditionRest",
             "domain/world/map.js#planWorldInteraction",
             "engine/commands.js#validateGameCommand",
             "engine/flow.js#planPause",
@@ -10475,7 +10905,8 @@
       "layer": "engine",
       "purpose": "表现层只读投影，不把活实体对象交给UI。",
       "dependencies": [
-        "domain/serialization.js"
+        "domain/serialization.js",
+        "domain/world/regionRules.js"
       ],
       "functions": [
         {
@@ -10493,7 +10924,8 @@
           "result": "RenderSnapshot",
           "description": "只读投影战斗实体、掉落、探索格、Claude预警与首领生命，供Canvas绘制。",
           "calls": [
-            "domain/serialization.js#toJson"
+            "domain/serialization.js#toJson",
+            "domain/world/regionRules.js#regionWorldTick"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -10550,6 +10982,8 @@
         "domain/scheduled.js",
         "domain/status.js",
         "domain/world/apiMaintenance.js",
+        "domain/world/expedition.js",
+        "domain/world/expeditionMaintenance.js",
         "domain/world/map.js",
         "domain/world/objectives.js",
         "domain/world/pressure.js",
@@ -10609,6 +11043,8 @@
             "domain/scheduled.js#planScheduledActions",
             "domain/status.js#planStatusAdvance",
             "domain/world/apiMaintenance.js#planApiMaintenance",
+            "domain/world/expedition.js#planExpeditionProgression",
+            "domain/world/expeditionMaintenance.js#planExpeditionMaintenance",
             "domain/world/map.js#planMapExploration",
             "domain/world/objectives.js#planApiProgression",
             "domain/world/objectives.js#planObjectiveAdvance",
@@ -10688,6 +11124,7 @@
         "domain/dshCycle.js",
         "domain/settlement.js",
         "domain/world/api.js",
+        "domain/world/regionRules.js",
         "engine/session.js",
         "preview/modManager.js",
         "preview/nestManager.js",
@@ -10729,6 +11166,8 @@
             "domain/dshCycle.js#readDshCycleTimers",
             "domain/settlement.js#createSettlement",
             "domain/world/api.js#canApiWithdraw",
+            "domain/world/regionRules.js#localWorldId",
+            "domain/world/regionRules.js#resolveExpeditionRoute",
             "engine/session.js#createGameSession",
             "engine/session.js#disposeGameSession",
             "engine/session.js#enqueueSessionCommand",
@@ -11840,9 +12279,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 107,
-    "functions": 391,
-    "implemented": 351,
+    "modules": 113,
+    "functions": 406,
+    "implemented": 366,
     "placeholders": 40
   }
 }

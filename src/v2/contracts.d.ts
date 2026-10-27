@@ -57,11 +57,11 @@ export interface WeaponState { instanceId: Id; definitionId: Id; originalQuality
 export interface Loadout { skillInstanceId?:Id; weapons: readonly WeaponState[]; activeWeaponIndex: number; skillId: Id; skillCooldown: number; companionId: Id | null; companionCooldown: number; dashCooldown: number; }
 export interface PlayerState { entityId: Id; baseStats: BaseStats; modifiers: readonly StatModifier[]; loadout: Loadout; invulnerableRemaining: number; controlImmuneRemaining: number; }
 export interface PickupState { exclusiveGroup?: Id; skill?:{instanceId:Id;definitionId:Id;cooldown:number}; weapon?: WeaponState; id: Id; kind: 'riceXp' | 'gpuFragment' | 'part' | 'weapon' | 'skill'; amount: number; position: Vec2; instanceId: Id | null; collected: boolean; }
-export interface ObjectiveState { id: Id; kind: string; active: boolean; completed: boolean; progress: number; requiredEntityIds: readonly Id[]; rewardId: Id; }
+export interface ObjectiveState { requiredProgress?:Tick; id: Id; kind: string; active: boolean; completed: boolean; progress: number; requiredEntityIds: readonly Id[]; rewardId: Id; }
 export interface SpawnRequest { elite?:boolean; bossOwner?:Id; bossGrokSample?:boolean; id: Id; groupId: Id; enemyId: Id; position: Vec2; at: Tick; modelProfileId: Id; budgetId: Id; rewardPolicy: EntityState['rewardPolicy']; distillEligible: boolean; }
 export interface EncounterBudget { id: Id; total: number; reserved: number; spawned: number; maxAlive: number; }
 export interface PressureEvent { id: Id; mechanicId: Id; phase: 'queued' | 'telegraph' | 'active' | 'completed' | 'cancelled'; startedAt: Tick | null; remaining: number; budgetId: Id; runtime: Readonly<Record<string, Json>>; }
-export interface MapState { id: Id; biomeIndex: number; width: number; height: number; exploredCells: readonly Id[]; obstacleIds: readonly Id[]; checkpointIds: readonly Id[]; exitIds: readonly Id[]; navigationRevision: number; }
+export interface MapState { clockOffset?:Tick; id: Id; biomeIndex: number; width: number; height: number; exploredCells: readonly Id[]; obstacleIds: readonly Id[]; checkpointIds: readonly Id[]; exitIds: readonly Id[]; navigationRevision: number; }
 export interface WorldState { map: MapState; entities: Readonly<Record<Id, EntityState>>; pickups: Readonly<Record<Id, PickupState>>; statuses: Readonly<Record<Id, StatusState>>; shields: Readonly<Record<Id, ShieldState>>; objectives: readonly ObjectiveState[]; spawnQueue: readonly SpawnRequest[]; budgets: readonly EncounterBudget[]; pressureEvents: readonly PressureEvent[]; }
 export interface PluginState { id: Id; rank: 1 | 2; origin: 'run' | 'difficulty'; runtime: Readonly<Record<string, Json>>; }
 export interface DshSlot { id: Id; options: Readonly<Record<string, string>>; }
@@ -79,7 +79,9 @@ export interface ApiState { lastAdvancedTick:Tick|null; nextBossAt:Tick; bossWar
 export interface DifficultySnapshot { level: number | 'api'; mode: Mode; mechanicIds: readonly Id[]; difficultyPerkIds: readonly Id[]; modelProfileIds: Readonly<Record<Faction, Id>>; hpMultiplier: number; damageMultiplier: number; spawnBudgetMultiplier: number; }
 export interface StartSnapshot { bossFaction?:Faction; modLock?: readonly ModLockEntry[]; runtimeProfile?: 'core-preview' | 'adventure-slice' | 'full'; runId?: Id; treeNodeIds: readonly Id[]; dsh: readonly DshSlot[]; loadout: Loadout; difficulty: DifficultySnapshot; }
 export interface FlowState { suspendedResumePhase?: Phase | null; phase: Phase; resumePhase: Phase | null; queuedLevelRewards: readonly LevelReward[]; choice: PluginChoice | null; settlementPending: boolean; pluginRerollsUsed?: number; }
-export interface GameState {
+export interface RegionArchive { world:WorldState; bosses:readonly BossState[]; attackHits:readonly AttackHitRecord[]; nextAt:Tick; suspendedAt:Tick; }
+export interface ExpeditionState { route:readonly Faction[]; clearedBiomes:readonly number[]; furthestBiome:number; regions:readonly (RegionArchive|null)[]; }
+export interface GameState { expedition?:ExpeditionState|null;
   spawnDirectorNextAt?: Tick; versions: Versions; runId: Id; seed: number; tick: Tick; uiTick: Tick; revision: number; lastWorldAdvanceTick: Tick | null; input: InputState; lastCommandSeq: number;
   start: StartSnapshot; flow: FlowState; random: RandomStreams; player: PlayerState; world: WorldState;
   level: number; xpRemainder: number; totalTokens: number; plugins: readonly PluginState[];
@@ -131,7 +133,7 @@ export interface PresentationPort { render(snapshot: RenderSnapshot): void; pres
 export interface InputPort { poll(): readonly InputSample[]; suspend(): void; dispose(): void; }
 export interface AudioPort { unlock(): Promise<void>; play(events: readonly DomainEvent[]): void; suspend(): void; dispose(): void; }
 export interface RuntimePorts { storage: StoragePort; presentation: PresentationPort; input: InputPort; audio: AudioPort; }
-export interface RenderEntity { currentDirection?:number; currentWarning?:boolean; alarmArmed?:boolean; petCast?:Json; petZone?:string; guardHp?:number; linkEnd?:Vec2|null; abilityKind?:string; reflected?:number; projectileStyle?:string; quality?:number; effectRadius?:number; bossTelegraph?: Json; objectiveProgress?: number; unlocked?: boolean; opened?: boolean; radius: number; team: EntityState['team']; hp: number; maxHp: number; telegraphRemaining: number; shieldAmount: number; id: Id; kind: string; position: Vec2; facingRadians: number; spriteId: Id; modelLabel: string | null; hpFraction: number; weakArcDegrees: number | null; statusLabels: readonly string[]; }
+export interface RenderEntity { currentDirection?:number; currentWarning?:boolean; alarmArmed?:boolean; petCast?:Json; petZone?:string; guardHp?:number; linkEnd?:Vec2|null; abilityKind?:string; reflected?:number; projectileStyle?:string; quality?:number; effectRadius?:number; bossTelegraph?: Json; objectiveProgress?: number; objectiveRequired?:number; unlocked?: boolean; opened?: boolean; radius: number; team: EntityState['team']; hp: number; maxHp: number; telegraphRemaining: number; shieldAmount: number; id: Id; kind: string; position: Vec2; facingRadians: number; spriteId: Id; modelLabel: string | null; hpFraction: number; weakArcDegrees: number | null; statusLabels: readonly string[]; }
 export interface RenderSnapshot { revision: number; tick: Tick; uiTick: Tick; phase: Phase; entities: readonly RenderEntity[]; hud: Json; panel: Json; }
 export interface UiAction { id: Id; type: string; payload: Json; }
 export interface ViewHandle { id: Id; }

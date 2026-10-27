@@ -1,3 +1,4 @@
+import {localWorldId} from './regionRules.js';
 import {planApiWorldAdvance} from './api.js';
 // @ts-check
 import {planObjectiveSignal} from './lateMechanics.js';
@@ -26,10 +27,12 @@ import * as dependency1 from '../rewards.js';
 export function planObjectiveAdvance(context) {
   const state=context.state;if(state.start.runtimeProfile!=='adventure-slice'||state.flow.phase!=='exploring')return createEmptyPlan();
   const player=state.world.entities[state.player.entityId],next=state.world.objectives.map(objective=>({...objective}));
+  const blockade=next.find(o=>o.kind==='blockade'&&o.active&&!o.completed&&o.requiredEntityIds.some(id=>state.world.entities[id]?.hp<state.world.entities[id]?.maxHp));
+  if(blockade){const signal=planObjectiveSignal(context,blockade.id);if(signal.changes.length)return signal;const progress=blockade.requiredEntityIds.filter(id=>state.world.entities[id]?.dead).length;if(progress>=blockade.requiredEntityIds.length)return planObjectiveCompletion({...context,state:{...state,world:{...state.world,objectives:next.map(o=>o.id===blockade.id?{...o,progress}:o)}}},blockade.id);if(progress!==blockade.progress){blockade.progress=progress;return {...createEmptyPlan(),changes:[createStateChange('world','objectives','setObjectives',{objectives:next})]};}}
   const completing=next.find(objective=>objective.kind==='beacon'&&objective.active&&!objective.completed&&state.world.entities[objective.id]&&distanceSquared(player.position,state.world.entities[objective.id].position)<=120**2);
   if(!completing)return createEmptyPlan();
   const signal=planObjectiveSignal(context,completing.id);if(signal.changes.length)return signal;
-  if(completing.progress>=2099)return planObjectiveCompletion(context,completing.id);
+  if(completing.progress>=Number(completing.requiredProgress??2100)-1)return planObjectiveCompletion(context,completing.id);
   completing.progress++;
   return {...createEmptyPlan(),changes:[createStateChange('world','objectives','setObjectives',{objectives:next})]};
 }
@@ -42,16 +45,17 @@ export function planObjectiveAdvance(context) {
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @calls domain/rewards.js#planWorldReward
+ * @calls domain/world/regionRules.js#localWorldId
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').Id} objectiveId
  * @returns {import('../../contracts.d.ts').SystemPlan}
  */
 export function planObjectiveCompletion(context, objectiveId) {
   const state=context.state,objective=state.world.objectives.find(item=>item.id===objectiveId);
-  if(!objective||objective.completed||objective.progress<2099)return createEmptyPlan();
-  const objectives=state.world.objectives.map(item=>item.id===objectiveId?{...item,progress:2100,completed:true,active:false}:item),reward=dependency1.planWorldReward(context,objective.rewardId);
+  if(!objective||objective.completed||objective.progress<Number(objective.requiredProgress??2100)-1||objective.kind==='blockade'&&objective.requiredEntityIds.some(id=>!state.world.entities[id]?.dead))return createEmptyPlan();
+  const objectives=state.world.objectives.map(item=>item.id===objectiveId?{...item,progress:Number(item.requiredProgress??2100),completed:true,active:false}:item),reward=dependency1.planWorldReward(context,objective.rewardId);
   const changes=[...reward.plan.changes,createStateChange('world','objectives','setObjectives',{objectives})];
-  const gate=state.world.entities['boss:gate'];if(gate&&objectives.filter(item=>item.kind==='beacon'&&item.completed).length>=2)changes.push(createStateChange('entity',gate.id,'setEntityRuntime',{runtime:{...gate.runtime,unlocked:true}}));
+  const gate=state.world.entities[localWorldId(state,'boss:gate')];if(gate&&objectives.filter(item=>['beacon','blockade'].includes(item.kind)&&item.completed).length>=2)changes.push(createStateChange('entity',gate.id,'setEntityRuntime',{runtime:{...gate.runtime,unlocked:true}}));
   return {...reward.plan,changes,events:[...reward.plan.events,{id:`objective:${objectiveId}:completed`,runId:state.runId,tick:state.tick,seq:0,type:'ObjectiveCompleted',sourceId:state.player.entityId,targetId:objectiveId,payload:{objectiveId}}]};
 }
 

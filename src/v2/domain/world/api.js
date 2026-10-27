@@ -1,3 +1,4 @@
+import {namespaceEncounterPlan} from './encounterIds.js';
 // @ts-check
 import {createEmptyPlan,createStateChange} from '../plans.js';
 import {createEntityState} from '../entities.js';
@@ -30,16 +31,14 @@ export function planApiWithdrawal(c,type){const s=c.state;if(!s.api)return creat
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @calls domain/world/adventure.js#planBossEncounter
+ * @calls domain/world/encounterIds.js#namespaceEncounterPlan
  * @param {import('../../contracts.d.ts').EvaluationContext} c
  * @returns {import('../../contracts.d.ts').SystemPlan}
  */
 export function planApiBossEncounter(c){
  const s=c.state,a=s.api;if(!a||s.bosses.some(b=>!s.world.entities[b.entityId]?.dead))return createEmptyPlan();const strength=resolveApiSpawnMultipliers(a.elapsedTicks);if(!strength.ok)throw new Error(strength.message);const faction=/** @type {import('../../contracts.d.ts').Faction} */(['claude','gpt','grok'][a.bossIndex%3]),fake={...s,start:{...s.start,bossFaction:faction,difficulty:{...s.start.difficulty,hpMultiplier:strength.value.hp,damageMultiplier:strength.value.damage}},bosses:[],world:{...s.world,objectives:s.world.objectives.map((o,i)=>o.kind==='beacon'?{...o,completed:true}:o)}};
- const plan=planBossEncounter({...c,state:fake}),ids=new Map();for(const ch of plan.changes)if(ch.operation==='putEntity')ids.set(ch.id,`api:${a.bossIndex}:${ch.id}`);
- const bossChange=plan.changes.find(ch=>ch.operation==='setBosses'),raw=/** @type {{bosses:readonly import('../../contracts.d.ts').BossState[]}|undefined} */(bossChange?.payload);for(const b of raw?.bosses??[])for(const node of b.resetNodes){const nodeId=`api:${a.bossIndex}:${node.id}`;ids.set(node.id,nodeId);ids.set(`marker:${node.id}`,`marker:${nodeId}`);}
- const rewrite=(/** @type {import('../../contracts.d.ts').Json} */value)=>JSON.parse(JSON.stringify(value,(_key,v)=>typeof v==='string'?(ids.get(v)??v):v));
- const changes=plan.changes.map(ch=>({...ch,id:ids.get(ch.id)??ch.id,payload:rewrite(ch.payload)}));
- for(const ch of changes){if(ch.operation==='putEntity'){const e=/** @type {import('../../contracts.d.ts').EntityState} */(ch.payload);if(e.definitionId.startsWith('boss_'))e.runtime={...e.runtime,finalBoss:false,apiStage:true,damageMultiplier:strength.value.damage};}if(ch.operation==='setBosses'){const p=/** @type {{bosses:import('../../contracts.d.ts').BossState[]}} */(ch.payload);p.bosses=[...s.bosses,...p.bosses];}}
+ const plan=namespaceEncounterPlan(planBossEncounter({...c,state:fake}),s.bosses,`api:${a.bossIndex}:`),changes=plan.changes;
+ for(const ch of changes){if(ch.operation==='putEntity'){const e=/** @type {import('../../contracts.d.ts').EntityState} */(/** @type {unknown} */(ch.payload));if(e.definitionId.startsWith('boss_'))e.runtime={...e.runtime,finalBoss:false,apiStage:true,damageMultiplier:strength.value.damage};}}
  return {...plan,changes:[...changes,createStateChange('runtime','api','setApiState',{...a,bossIndex:a.bossIndex+1,nextBossAt:a.nextBossAt+18000,bossWarningAt:null,withdrawal:null})]};
 }
 /** Advance API time once per world step; afterCombat reacts only after damage/death settlement, so death beats a completed withdrawal and a stage Boss never ends the run.

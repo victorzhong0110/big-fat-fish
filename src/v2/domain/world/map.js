@@ -1,3 +1,6 @@
+import {createExpeditionRegionPlan} from './expeditionMap.js';
+import {planExpeditionBossEncounter,planExpeditionTravel,planExpeditionRest} from './expedition.js';
+import {localWorldId} from './regionRules.js';
 import {isWorldSafe} from './safety.js';
 // @ts-check
 import {planChallengeInteraction} from './lateMechanics.js';
@@ -26,12 +29,14 @@ import * as dependency3 from '../rewards.js';
  * @calls domain/plans.js#createStateChange
  * @calls domain/random.js#drawRandom
  * @calls domain/world/adventure.js#createAdventureMapPlan
+ * @calls domain/world/expeditionMap.js#createExpeditionRegionPlan
  * @param {import('../../contracts.d.ts').StartSnapshot} start
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
  * @param {import('../../contracts.d.ts').RandomState} random
  * @returns {import('../../contracts.d.ts').SystemPlan}
  */
 export function createMapPlan(start, catalog, random) {
+  if(start.difficulty.mode==='expedition')return createExpeditionRegionPlan(start,catalog,0);
   if (start.runtimeProfile === 'adventure-slice') return createAdventureMapPlan(start, catalog);
   if (start.runtimeProfile !== 'core-preview') throw new Error('Full adventure map generation is not implemented');
   const changes = /** @type {import('../../contracts.d.ts').StateChange[]} */ ([]);
@@ -101,7 +106,11 @@ export function planMapExploration(context) {
  * @calls domain/rewards.js#planWorldReward
  * @calls domain/world/adventure.js#planBossEncounter
  * @calls domain/world/alarms.js#planAlarmCache
+ * @calls domain/world/expedition.js#planExpeditionBossEncounter
+ * @calls domain/world/expedition.js#planExpeditionRest
+ * @calls domain/world/expedition.js#planExpeditionTravel
  * @calls domain/world/lateMechanics.js#planChallengeInteraction
+ * @calls domain/world/regionRules.js#localWorldId
  * @param {import('../../contracts.d.ts').EvaluationContext} context
  * @param {import('../../contracts.d.ts').Command} command
  * @returns {import('../../contracts.d.ts').SystemPlan}
@@ -110,18 +119,20 @@ export function planWorldInteraction(context, command) {
   const state = context.state, player = state.world.entities[state.player.entityId];
   if (state.flow.phase !== 'exploring') return createEmptyPlan();
   const equipment=planEquipmentInteraction(context);if(equipment)return equipment;
-  const candidates = Object.values(state.world.entities).filter(entity => entity.kind === 'objective' && !(typeof entity.runtime.hiddenBy==='string'&&state.world.entities[entity.runtime.hiddenBy]?.hp>0)&& ['challenge','cache','alarmCache','bossGate','chair','note','lunchbox','console'].includes(String(entity.runtime.interaction)) && dependency1.distanceSquared(entity.position, player.position) <= 96 ** 2).sort((a,b)=>dependency1.distanceSquared(a.position,player.position)-dependency1.distanceSquared(b.position,player.position)||(a.id<b.id?-1:1));
+  const candidates = Object.values(state.world.entities).filter(entity => entity.kind === 'objective' && !(typeof entity.runtime.hiddenBy==='string'&&state.world.entities[entity.runtime.hiddenBy]?.hp>0)&& ['expeditionExit','expeditionBack','expeditionRest','challenge','cache','alarmCache','bossGate','chair','note','lunchbox','console'].includes(String(entity.runtime.interaction)) && dependency1.distanceSquared(entity.position, player.position) <= 96 ** 2).sort((a,b)=>dependency1.distanceSquared(a.position,player.position)-dependency1.distanceSquared(b.position,player.position)||(a.id<b.id?-1:1));
   const entity = candidates[0]; if (!entity) return createEmptyPlan();
+  if(['expeditionExit','expeditionBack'].includes(String(entity.runtime.interaction)))return planExpeditionTravel(context,Number(entity.runtime.targetBiome));
+  if(entity.runtime.interaction==='expeditionRest')return planExpeditionRest(context,entity.id);
   if(entity.runtime.interaction==='challenge')return planChallengeInteraction(context,entity.id);
   if(entity.runtime.interaction==='alarmCache')return planAlarmCache(context,entity.id);
   if(['chair','note','lunchbox','console'].includes(String(entity.runtime.interaction)))return planEasterInteraction(context,entity.id);
-  if (entity.runtime.interaction === 'bossGate') return state.api?createEmptyPlan():planBossEncounter(context);
+  if (entity.runtime.interaction === 'bossGate') return state.expedition?planExpeditionBossEncounter(context):state.api?createEmptyPlan():planBossEncounter(context);
   if (entity.runtime.opened === true) return createEmptyPlan();
   const reward = dependency3.planWorldReward(context, `cache:${entity.id}`);
   const changes=[...reward.plan.changes,createStateChange('entity',entity.id,'setEntityRuntime',{runtime:{...entity.runtime,opened:true}})],events=[...reward.plan.events,{id:`cacheOpened:${state.runId}:${entity.id}`,runId:state.runId,tick:state.tick,seq:0,type:'CacheOpened',sourceId:player.id,targetId:entity.id,payload:{cacheId:entity.id,secret:entity.runtime.secret===true}}],persistence=[...reward.plan.persistence];
-  if(entity.id==='cache:0'&&state.start.dsh.some(slot=>slot.id==='dsh_open')&&state.world.map.biomeIndex===0){
+  if(entity.id===localWorldId(state,'cache:0')&&state.start.dsh.some(slot=>slot.id==='dsh_open')&&state.world.map.biomeIndex===0){
     for(const [i,definitionId]of ['mcp_fan','mcp_vector'].entries()){const instanceId=`${state.runId}:open:${i}`,id=`open:${entity.id}:${i}`;changes.push(createStateChange('world',id,'putPickup',{id,kind:'weapon',amount:1,position:{x:entity.position.x+(i?35:-35),y:entity.position.y},instanceId,collected:false,exclusiveGroup:`open:${state.runId}`,weapon:{instanceId,definitionId,originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null}}));}
-  }else if(entity.id==='cache:0'&&state.player.loadout.weapons.length<2&&!state.player.loadout.weapons.some(weapon=>weapon.definitionId==='mcp_fan')){
+  }else if(entity.id===localWorldId(state,'cache:0')&&state.player.loadout.weapons.length<2&&!state.player.loadout.weapons.some(weapon=>weapon.definitionId==='mcp_fan')){
     changes.push(createStateChange('player',player.id,'setLoadout',{...state.player.loadout,weapons:[...state.player.loadout.weapons,{instanceId:`${state.runId}:found:fan`,definitionId:'mcp_fan',originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null}]}));
     const event={id:`discovery:${state.runId}:mcp_fan`,runId:state.runId,tick:state.tick,seq:0,type:'ContentDiscovered',sourceId:player.id,targetId:entity.id,payload:{definitionId:'mcp_fan'}};events.push(event);persistence.push({id:event.id,kind:'discovery',payload:/** @type {import('../../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(event)))});
   }

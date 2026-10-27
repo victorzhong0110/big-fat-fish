@@ -1,3 +1,4 @@
+import {localWorldId} from './world/regionRules.js';
 // @ts-check
 import {createEmptyPlan,createStateChange} from './plans.js';
 import {createEntityState} from './entities.js';
@@ -48,11 +49,12 @@ export function planEasterInteraction(context,entityId){
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @calls domain/serialization.js#toJson
+ * @calls domain/world/regionRules.js#localWorldId
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @returns {import('../contracts.d.ts').SystemPlan}
  */
 export function planEasterAdvance(context){
- const state=context.state,player=state.world.entities[state.player.entityId],chair=state.world.entities['easter:chair'];if(!['exploring','boss'].includes(state.flow.phase)||!chair||chair.runtime.seated!==true||chair.runtime.opened===true)return createEmptyPlan();
+ const state=context.state,player=state.world.entities[state.player.entityId],chair=state.world.entities[localWorldId(state,'easter:chair')];if(!['exploring','boss'].includes(state.flow.phase)||!chair||chair.runtime.seated!==true||chair.runtime.opened===true)return createEmptyPlan();
  const active=Math.hypot(player.position.x-chair.position.x,player.position.y-chair.position.y)<=96&&!state.input.move.x&&!state.input.move.y&&!state.input.firing&&Number(player.runtime.lastSkillCastAt??-1)!==state.tick&&Number(player.runtime.dashUntil??0)<=state.tick,satTicks=active?Number(chair.runtime.satTicks??0)+1:0;
  const plan={...createEmptyPlan(),changes:[createStateChange('entity',chair.id,'setEntityRuntime',{runtime:{...chair.runtime,seated:active,satTicks,opened:satTicks>=480}})]};
  if(satTicks>=480){const event={id:`easter:${state.runId}:${chair.id}`,runId:state.runId,tick:state.tick,seq:0,type:'EasterCompleted',sourceId:player.id,targetId:chair.id,payload:{easterId:'easter_sleep',satTicks}};return {...plan,events:[event],persistence:[{id:event.id,kind:'unlock',payload:toJson(event)}]};}

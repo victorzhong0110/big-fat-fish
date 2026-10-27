@@ -124,24 +124,28 @@ ChatGPT重置只走`planGptReset`，绝不能调用checkpoint恢复或创建新S
 
 1. ClockState带当前world/UI域，切换模式时不把余下的世界时间用于训练。
 2. GameState带有到期时间的attackHits；DamageRequest必须提供expiresAt。发射端使用不可复用的攻击ID；同一目标可分别受击的多弹/回旋去回/爆炸阶段需分配不同的攻击ID，并共享chainId进行派生预算管理。
-3. GameState.lastWorldAdvanceTick与DshCycleState.lastAdvancedTick使世界计时/28秒计时每tick至多推进一次；保存时完整保留。
+3. GameState.lastWorldAdvanceTick与DshCycleState.lastAdvancedTick使世界计时/10秒开奖计时每tick至多推进一次；保存时完整保留。
 4. `createLoraTrial`返回LoraTrialCreation（trial、nextRandom），调用者同一计划提交二者，不能只选目标而丢掉随机游标。
 5. `commitWorkingState(previous, working, catalog, outbox)`增加显式目录与outbox参数。Reducer只应用changes，不自动把plan.effects/events/persistence写回状态；tick编排器负责效果队列与outbox，最终只提交一次。提交器重新编号事件seq，拒绝重复事件、跨局或错误时钟域提交。
 6. domain/stateValidation复用状态校验，避免检查点反向import engine；序列化/版本常量同样是实际依赖。
 
-恢复低层检查点只构造新状态，设为paused并记录resumePhase；没有推进时间或授予生命/资源。`createCheckpoint`是编码器，应用入口必须先通过canCreateCheckpoint；当前试作宿主已用独立localStorage单键保存/继续完整检查点；正式应用层Profile/StoragePort原子事务仍待实现。
+恢复低层检查点只构造新状态，设为paused并记录resumePhase；没有推进时间或授予生命/资源。`createCheckpoint`是编码器，应用入口必须先通过canCreateCheckpoint；Free使用独立localStorage调试槽；正式冒险的Profile/StoragePort通过CAS原子保存、结算和删档。
 
 ## 11. 当前战斗试作的调用入口
 
-`v2.html → src/v2-preview.js → preview/host.mountCombatPreview`组装独立宿主，不修改旧main。host只持Session句柄、输入与表现；`createGameSession`只接受显式core-preview/0级，拒绝full和未开放能力。正式engine/tick依然TODO；预览使用engine/previewTick，不跳过未实现系统后假装正式模式完成。
+`v2.html → src/v2-preview.js → preview/host.mountCombatPreview`组装试作宿主；host只持Session句柄、输入与表现，不修改旧main。`createGameSession`接受显式core-preview/Free及adventure-slice的短途/远征1–15、API，通用full bootstrap仍拒绝。世界/UI统一进入正式`engine/tick`，previewTick仅作兼容委托；当前Canvas2D表现和preview/host不冒充未实现的Phaser/通用宿主适配器。
 
-世界：enqueue命令→Session筛出到期命令→previewTick推进world tick→命令/计时/AI/移动/开火/扫掠/拾取→有界效果队列逐次伤害与死亡声明→唯一掉落→校验与commit一次→新投影。UI暂停/继续由Session立即消费UI命令，不推进停止的时钟。暂停清除持有输入，宿主恢复时清空墙钟积压。
+世界：enqueue命令→Session筛出到期命令→tick推进→计时/出生/AI/移动/开火/扫掠/拾取→有界效果队列逐次伤害与死亡→唯一奖励→远征首领推进→玩家优先的终局判定→API继续/撤回与目标→成长/LoRA/插件面板→维护→校验与commit一次。UI暂停/继续只消费UI命令，不推进冻结的世界钟；恢复清空墙钟积压。插件候选与随机、LoRA试验与随机必须同一计划提交。
 
-Session的模块私有step/getRecord不导出，但其转达的公开依赖已由AST工具展开到函数图。工具不会因公有函数只调用私有helper，就漏掉它实际进入previewTick的边。snapshot不暴露私有引用；Renderer只画图，不运行另一套物理。
+Session私有step/getRecord不导出；AST工具展开它们转达的真实公开依赖。snapshot和公开读取返回副本，Renderer不运行物理。当前范围、原版169定义/95绑定、测试和未完成事项统一见13；逐函数实现范围及调用上下游见12/manifest。
 
-当前Canvas2D是试作表现，正式Phaser适配器仍TODO。registry声明20项实际开放内容能力；目录140项定义包括计划内容，不代表所有参数和效果已实现。完整范围、调试检查点和后续顺序以13为准。
+## 远征地区状态增量
 
-本批成长接口补全：`createPluginChoice`返回`Result<{choice,nextRandom}>`，候选与随机流必须同一计划提交；`flow.pluginRerollsUsed`保存整局次数，`distillRuntime`独立保存内置冷却，避免移除再装备重置。实际串联顺序与范围见13，LoRA升级面板仍未接通。
+`GameState.expedition`只在远征持有seed路线、已击败海域、访问最远海域与三个归档槽，当前地区槽为null。`RegionArchive`保存当地World/Boss/命中与生成时间；玩家/伙伴及其状态/护盾、全局背包/成长/随机和DSH使用标记保留在当前GameState。Map.clockOffset记录离开当地的世界时间。当前地区之外不运行AI/出生/潮流。
+
+`map.planWorldInteraction`只路由Boss/通道/休整意图；`planExpeditionTravel`生成replaceExpeditionWorld计划，Reducer是唯一状态写入者。新地区由独立expeditionMap工厂建立，归档装配器只接受明确地图初始化操作，domain不依赖engine。返程只恢复档案并平移NPC绝对时钟；regionRules提供海域倍率/路线/当地时钟，Boss共享encounterIds保证节点命名关系。归档完整性在domain/stateValidation递归验证，不反向依赖Session。
+
+`ChooseExpeditionRest`是恢复后重新校验安全/距离/未领取的世界命令；面板本身不授予收益。独立休整、通道和检查点分别处理，后二者不修改生命/冷却。Boss奖励在终局前提交计划，结算累计击败数包含归档海域。更多精确调用规则和本轮验证见13。
 
 ## 小窝与社区MCP增量
 
