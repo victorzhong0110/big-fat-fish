@@ -2,6 +2,7 @@
 import { planTreeWeaponSwitch } from './treeRuntime.js';
 import { createEmptyPlan,createStateChange } from './plans.js';
 import { resolveWeaponTemplate } from '../content/weaponCapabilities.js';
+import { resolveSkillTemplate } from '../content/skillCapabilities.js';
 import { toJson } from './serialization.js';
 
 /** F interacts with the closest weapon; fill an empty slot or emit a reviewable replacement offer.
@@ -44,6 +45,7 @@ export function planWeaponPickup(context,pickupId,slotIndex){
 }
 
 /** Exchange the single active-skill instance; cooldown is max(old, new half-base, stored ground cooldown).
+ * @calls content/skillCapabilities.js#resolveSkillTemplate
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @calls domain/serialization.js#toJson
@@ -53,7 +55,7 @@ export function planWeaponPickup(context,pickupId,slotIndex){
  */
 export function planSkillPickup(context,pickupId){
  const state=context.state,player=state.world.entities[state.player.entityId],pickup=state.world.pickups[pickupId],skill=pickup?.skill;
- if(state.flow.phase!=='exploring'||!pickup||pickup.collected||pickup.kind!=='skill'||!skill||context.catalog.definitions[skill.definitionId]?.kind!=='skill'||Math.hypot(pickup.position.x-player.position.x,pickup.position.y-player.position.y)>96)return createEmptyPlan();
+ if(state.flow.phase!=='exploring'||!pickup||pickup.collected||pickup.kind!=='skill'||!skill||!resolveSkillTemplate(context.catalog,skill.definitionId)||Math.hypot(pickup.position.x-player.position.x,pickup.position.y-player.position.y)>96)return createEmptyPlan();
  const current=state.player.loadout,oldId=current.skillInstanceId??`${state.runId}:initial:${current.skillId}`,dropId=`drop:${oldId}`,cooldown=Math.max(current.skillCooldown,Number(context.catalog.definitions[skill.definitionId].parameters.cooldown)*.5,skill.cooldown),discovery={id:`discovery:${state.runId}:${skill.definitionId}`,runId:state.runId,tick:state.tick,seq:0,type:'ContentDiscovered',sourceId:player.id,targetId:pickup.id,payload:{definitionId:skill.definitionId}};
  return {...createEmptyPlan(),changes:[createStateChange('world',pickup.id,'removePickup',{}),createStateChange('world',dropId,'putPickup',{id:dropId,kind:'skill',amount:1,position:pickup.position,instanceId:oldId,collected:false,skill:{instanceId:oldId,definitionId:current.skillId,cooldown:current.skillCooldown}}),createStateChange('player',player.id,'setLoadout',{...current,skillInstanceId:skill.instanceId,skillId:skill.definitionId,skillCooldown:cooldown})],events:[discovery,{...discovery,id:`equip:${pickupId}:${state.tick}`,type:'EquipmentEquipped',payload:{definitionId:skill.definitionId,slotIndex:0}}],persistence:[{id:discovery.id,kind:'discovery',payload:toJson(discovery)}]};
 }

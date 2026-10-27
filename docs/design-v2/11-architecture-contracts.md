@@ -1,6 +1,6 @@
 # 11 · V2架构骨架、状态权限与调用规则
 
-状态：**独立战斗试作v2.html已可操作，完整冒险仍未完成**。用户已授权先由Codex编码。376个函数有实现，40个显式TODO；core-preview和adventure-slice的具体范围按函数标注。实际范围见[开发进度](13-development-status.md)。旧src/main.js保持独立。
+状态：**独立战斗试作v2.html已可操作，完整冒险仍未完成**。用户已授权先由Codex编码。383个函数有实现，40个显式TODO；core-preview和adventure-slice的具体范围按函数标注。实际范围见[开发进度](13-development-status.md)。旧src/main.js保持独立。
 
 入口文档：[全部函数目录](12-function-catalog.md)；入口源码：[bootstrap.js](../../src/v2/bootstrap.js)；类型契约：[contracts.d.ts](../../src/v2/contracts.d.ts)；机器可读依赖与绑定：[architecture-manifest.json](../../src/v2/architecture-manifest.json)。函数目录和manifest列出全部跨模块接口以及逐内容处理器，Grok填写函数体时应保留接口/约束，新增公共函数要同步契约。
 
@@ -129,7 +129,7 @@ ChatGPT重置只走`planGptReset`，绝不能调用checkpoint恢复或创建新S
 5. `commitWorkingState(previous, working, catalog, outbox)`增加显式目录与outbox参数。Reducer只应用changes，不自动把plan.effects/events/persistence写回状态；tick编排器负责效果队列与outbox，最终只提交一次。提交器重新编号事件seq，拒绝重复事件、跨局或错误时钟域提交。
 6. domain/stateValidation复用状态校验，避免检查点反向import engine；序列化/版本常量同样是实际依赖。
 
-恢复低层检查点只构造新状态，设为paused并记录resumePhase；没有推进时间或授予生命/资源。`createCheckpoint`是编码器，应用入口必须先通过canCreateCheckpoint；Free练习使用独立localStorage调试槽；正式Free引导及冒险的Profile/StoragePort通过CAS原子保存、结算和删档。
+每组模组按内容版本和完整锁拥有独立Profile；用户显式选择从零或复制原版一次，活动检查点不复制。持久化意图携带范围，仓储拒绝跨范围、错run或对已结算run新增进度；已结算的原批次可幂等重试。恢复低层检查点只构造新状态，设为paused并记录resumePhase；没有推进时间或授予生命/资源。`createCheckpoint`是编码器，应用入口必须先通过canCreateCheckpoint；Free练习使用独立localStorage调试槽；正式Free引导及冒险的Profile/StoragePort通过CAS原子保存、结算和删档。
 
 ## 11. 当前战斗试作的调用入口
 
@@ -151,7 +151,7 @@ Session私有step/getRecord不导出；AST工具展开它们转达的真实公�
 
 `application/nest.executeNestAction`是小窝消费入口：读取最新档案→拒绝活动检查点→纯领域计划→CAS；冲突重读重算，最多3次。`prepareAdventureStart`验证拥有/能力后复制树与DSH，Session不再读取局外档。体魄只在初始化应用一次；MCP专属输出、换枪触发、伤害保命和无伤CD由各自明确消费者处理，检查点保留全部已用标记/时钟。
 
-社区MCP使用`ContentCatalog.modWeapons`、技能使用`modSkills`明确注册原生行为模板与所属包；`resolveWeaponTemplate`/`resolveSkillTemplate`验证包锁后分派原生处理器，不把社区ID伪装成95项原版绑定之一。新武器走相同命中/额度/暴击/伤害链；护盾/爆发技能走相同技能、插件事件与存档链。SDK1.0–1.3仅Free练习开放，正式Profile继续原版目录。
+社区MCP使用`ContentCatalog.modWeapons`、技能使用`modSkills`明确注册原生行为模板与所属包；`resolveWeaponTemplate`/`resolveSkillTemplate`验证包锁后分派原生处理器，不把社区ID伪装成95项原版绑定之一。新武器走相同命中/额度/暴击/伤害链；护盾/爆发技能走相同技能、插件事件与存档链。SDK1.0–1.3可用于Free练习及独立模组冒险；原版引导与原版Profile继续使用原版目录。
 
 ## 弹体与装备实例增量
 

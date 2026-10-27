@@ -1,6 +1,6 @@
 # 12 · 全部函数目录与调用契约
 
-当前116个JS模块、416个公开函数：376个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、1–15短途/远征及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
+当前118个JS模块、423个公开函数：383个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途/远征与已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
 
 调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。
 
@@ -206,23 +206,49 @@ Phaser只表现，UI只发送UiAction。
 - `drainApplicationEvents` ← `bootstrap.js#onBrowserFrame`。
 - `dispatchApplicationAction` ← `bootstrap.js#onUiAction`。
 
+## application/modProfile.js
+
+Return a stable storage namespace for one exact content version and ordered mod lock.
+
+[源码](../../src/v2/application/modProfile.js)；层：`domain`。
+
+直接依赖：`application/repository.js`、`content/catalog.js`、`content/registry.js`、`domain/serialization.js`、`domain/settlement.js`。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `createModProfileNamespace(catalog: untyped)` | `string` | 已实现 | 以内容版本和完整模组锁生成独立存储键；档案仍核对完整锁，校验值不能代替锁。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `createModProfileSnapshot(catalog: untyped, base: untyped, source: untyped)` | `Result<Profile>` | 已实现 | 按用户选择从零或复制原版进度，剔除活动检查点并解锁当前组合的社区装备，创建独立档案快照。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `initializeModProfile(storage: untyped, catalog: untyped, base: untyped, source: untyped)` | `Promise<Result<StorageRecord>>` | 已实现 | 只对缺失的模组档案执行CAS创建；并发创建冲突时读取已存在的获胜档案，不覆盖。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `createModProfileNamespace` → `content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`domain/serialization.js#createDataDigest`。
+- `createModProfileSnapshot` → `application/modProfile.js#createModProfileNamespace`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`domain/serialization.js#createDataDigest`、`domain/settlement.js#createDefaultProfile`、`domain/settlement.js#validateProfileRecord`。
+- `initializeModProfile` → `application/modProfile.js#createModProfileSnapshot`、`application/repository.js#readProfileRepository`。
+
+公开函数上游：
+
+- `createModProfileNamespace` ← `application/modProfile.js#createModProfileSnapshot`、`preview/host.js#mountCombatPreview`。
+- `createModProfileSnapshot` ← `application/modProfile.js#initializeModProfile`。
+- `initializeModProfile` ← `preview/host.js#mountCombatPreview`。
+
 ## application/nest.js
 
 Execute a nest command against the latest revision; recompute after CAS conflicts, never during a run.
 
 [源码](../../src/v2/application/nest.js)；层：`domain`。
 
-直接依赖：`application/repository.js`、`content/registry.js`、`domain/difficulty.js`、`domain/profile/nest.js`、`domain/profile/tree.js`。
+直接依赖：`application/repository.js`、`content/registry.js`、`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/difficulty.js`、`domain/profile/nest.js`、`domain/profile/tree.js`、`domain/serialization.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
 | `executeNestAction(storage: untyped, catalog: untyped, action: untyped)` | `Promise<Result<StorageRecord>>` | 已实现 | 读取最新Profile，拒绝活动冒险，规划购买/退款/建设/解锁/DSH并事务提交；CAS冲突最多重算三次。；仅无活动检查点的小窝可执行；冲突重读重算；状态权限：只经注入StoragePort事务修改Profile，不写Session |
-| `prepareAdventureStart(profile: untyped, request: untyped, catalog: untyped, runId: untyped)` | `Result<StartSnapshot>` | 已实现 | 验证拥有与难度并锁定出发快照；Free引导强制固定装备且不带技能树/DSH，通关15才允许API。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `prepareAdventureStart(profile: untyped, request: untyped, catalog: untyped, runId: untyped)` | `Result<StartSnapshot>` | 已实现 | 校验拥有、难度和档案范围并锁定装备/树/DSH；模组冒险附完整锁，Free引导保持原版。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
 - `executeNestAction` → `application/repository.js#commitProfilePlan`、`application/repository.js#readProfileRepository`、`content/registry.js#createHandlerRegistry`、`domain/profile/nest.js#planDshEquipment`、`domain/profile/nest.js#planFacilityPurchase`、`domain/profile/nest.js#planPermanentUnlock`、`domain/profile/nest.js#planResidentRescue`、`domain/profile/tree.js#planTreePurchase`、`domain/profile/tree.js#planTreeRespec`。
-- `prepareAdventureStart` → `content/registry.js#createHandlerRegistry`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/profile/nest.js#validateStartRequest`。
+- `prepareAdventureStart` → `content/registry.js#createHandlerRegistry`、`content/skillCapabilities.js#resolveSkillTemplate`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/profile/nest.js#validateStartRequest`、`domain/serialization.js#serializeCanonical`。
 
 公开函数上游：
 
@@ -264,23 +290,23 @@ Execute a nest command against the latest revision; recompute after CAS conflict
 
 [源码](../../src/v2/application/repository.js)；层：`application`。
 
-直接依赖：`domain/checkpoint.js`、`domain/profile/unlocks.js`、`domain/serialization.js`、`domain/settlement.js`、`versions.js`。
+直接依赖：`domain/checkpoint.js`、`domain/modScope.js`、`domain/profile/unlocks.js`、`domain/serialization.js`、`domain/settlement.js`、`versions.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `readProfileRepository(storage: untyped, catalog: untyped)` | `Promise<Result<StorageRecord>>` | 已实现 | 通过注入存储读取并验证档案，坏档不覆盖；不在世界tick内等待I/O。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `commitProfilePlan(storage: untyped, plan: untyped, catalog: untyped)` | `Promise<Result<StorageRecord>>` | 已实现 | 以expectedRevision原子提交一个余额/解锁/检查点计划；冲突必须重读重算，不覆盖他人更新。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `mergePersistenceIntents(profile: untyped, intents: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 稳定顺序合并发现/解锁/结算/存档，读取账本去重，输出单次revision计划。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `readProfileRepository(storage: untyped, catalog: untyped)` | `Promise<Result<StorageRecord>>` | 已实现 | 读取并验证完整档案范围；原版缺失时创建默认档，模组档案必须由用户显式创建。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `commitProfilePlan(storage: untyped, plan: untyped, catalog: untyped)` | `Promise<Result<StorageRecord>>` | 已实现 | 校验新旧档案的模组范围及revision后CAS提交；冲突重读，绝不跨范围覆盖。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `mergePersistenceIntents(profile: untyped, intents: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 按发出顺序合并发现、解锁、存档和结算；模组范围及活动run必须匹配，已结算重复批次仅允许无变化重试。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
 - `readProfileRepository` → `domain/settlement.js#createDefaultProfile`、`domain/settlement.js#validateProfileRecord`。
-- `commitProfilePlan` → `domain/serialization.js#serializeCanonical`、`domain/settlement.js#validateProfileRecord`。
-- `mergePersistenceIntents` → `domain/checkpoint.js#validateCheckpoint`、`domain/profile/unlocks.js#planAchievementUnlock`、`domain/profile/unlocks.js#planBossUnlock`、`domain/profile/unlocks.js#planDiscoveryUnlock`、`domain/profile/unlocks.js#planEasterUnlock`、`domain/serialization.js#serializeCanonical`、`domain/settlement.js#planSettlementCommit`、`domain/settlement.js#validateProfileRecord`。
+- `commitProfilePlan` → `domain/modScope.js#createProfileModScope`、`domain/modScope.js#equalModScopes`、`domain/serialization.js#serializeCanonical`、`domain/settlement.js#validateProfileRecord`。
+- `mergePersistenceIntents` → `domain/checkpoint.js#validateCheckpoint`、`domain/modScope.js#createProfileModScope`、`domain/modScope.js#equalModScopes`、`domain/profile/unlocks.js#planAchievementUnlock`、`domain/profile/unlocks.js#planBossUnlock`、`domain/profile/unlocks.js#planDiscoveryUnlock`、`domain/profile/unlocks.js#planEasterUnlock`、`domain/serialization.js#serializeCanonical`、`domain/settlement.js#planSettlementCommit`、`domain/settlement.js#validateProfileRecord`。
 
 公开函数上游：
 
-- `readProfileRepository` ← `application/game.js#flushPersistenceQueue`、`application/game.js#continueAdventure`、`application/nest.js#executeNestAction`、`bootstrap.js#bootstrapV2`、`preview/host.js#mountCombatPreview`。
+- `readProfileRepository` ← `application/game.js#flushPersistenceQueue`、`application/game.js#continueAdventure`、`application/modProfile.js#initializeModProfile`、`application/nest.js#executeNestAction`、`bootstrap.js#bootstrapV2`、`preview/host.js#mountCombatPreview`。
 - `commitProfilePlan` ← `application/game.js#flushPersistenceQueue`、`application/game.js#saveAdventureCheckpoint`、`application/game.js#settleAdventure`、`application/game.js#submitNestAction`、`application/nest.js#executeNestAction`、`preview/host.js#mountCombatPreview`。
 - `mergePersistenceIntents` ← `application/game.js#flushPersistenceQueue`、`preview/host.js#mountCombatPreview`。
 
@@ -355,7 +381,7 @@ Stable achievement metadata shared by simulation evidence, Profile persistence a
 公开函数上游：
 
 - `loadContentCatalog` ← `bootstrap.js#bootstrapV2`、`preview/host.js#mountCombatPreview`。
-- `validateContentCatalog` ← `application/game.js#createApplication`、`bootstrap.js#bootstrapV2`、`content/mods.js#composeModCatalog`、`engine/session.js#createGameSession`、`engine/session.js#createReplaySession`、`preview/host.js#mountCombatPreview`。
+- `validateContentCatalog` ← `application/game.js#createApplication`、`application/modProfile.js#createModProfileNamespace`、`application/modProfile.js#createModProfileSnapshot`、`bootstrap.js#bootstrapV2`、`content/mods.js#composeModCatalog`、`engine/session.js#createGameSession`、`engine/session.js#createReplaySession`、`preview/host.js#mountCombatPreview`。
 - `findContentDefinition` ← `domain/stats.js#deriveWeaponStats`、`domain/world/spawning.js#planEnemySpawn`。
 - `listContentByKind` ← 宿主/工具入口或待编排。
 
@@ -841,7 +867,7 @@ Versioned declarative mod SDK. No dynamic code, global registry mutation or host
 
 公开函数上游：
 
-- `createHandlerRegistry` ← `application/nest.js#executeNestAction`、`application/nest.js#prepareAdventureStart`、`bootstrap.js#bootstrapV2`、`content/mods.js#parseModPackage`、`content/mods.js#composeModCatalog`、`domain/draft.js#createPluginChoice`、`engine/session.js#createGameSession`、`engine/session.js#createReplaySession`、`preview/host.js#mountCombatPreview`、`preview/nestManager.js#mountNestManager`。
+- `createHandlerRegistry` ← `application/modProfile.js#createModProfileNamespace`、`application/modProfile.js#createModProfileSnapshot`、`application/nest.js#executeNestAction`、`application/nest.js#prepareAdventureStart`、`bootstrap.js#bootstrapV2`、`content/mods.js#parseModPackage`、`content/mods.js#composeModCatalog`、`domain/draft.js#createPluginChoice`、`engine/session.js#createGameSession`、`engine/session.js#createReplaySession`、`preview/host.js#mountCombatPreview`、`preview/nestManager.js#mountNestManager`。
 
 ## content/skillCapabilities.js
 
@@ -863,8 +889,8 @@ Resolve an implemented native skill, or a declarative community recipe owned by 
 
 公开函数上游：
 
-- `resolveSkillTemplate` ← `content/skillCapabilities.js#listRuntimeSkills`、`dispatch/skills.js#dispatchSkillsHandler`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/draft.js#createPluginChoice`、`domain/initial.js#createInitialGameState`、`domain/stateValidation.js#inspectGameState`、`engine/snapshot.js#createRenderSnapshot`。
-- `listRuntimeSkills` ← `preview/host.js#mountCombatPreview`。
+- `resolveSkillTemplate` ← `application/nest.js#prepareAdventureStart`、`content/skillCapabilities.js#listRuntimeSkills`、`dispatch/skills.js#dispatchSkillsHandler`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/draft.js#createPluginChoice`、`domain/equipment.js#planSkillPickup`、`domain/initial.js#createInitialGameState`、`domain/stateValidation.js#inspectGameState`、`engine/snapshot.js#createRenderSnapshot`。
+- `listRuntimeSkills` ← `preview/host.js#mountCombatPreview`、`preview/nestManager.js#mountNestManager`。
 
 ## content/weaponCapabilities.js
 
@@ -886,8 +912,8 @@ Resolve native behavior for an official weapon or an explicitly registered commu
 
 公开函数上游：
 
-- `resolveWeaponTemplate` ← `content/handlers/weapons.js#planWeaponBubble`、`content/handlers/weapons.js#planWeaponFan`、`content/handlers/weapons.js#planWeaponVector`、`content/handlers/weapons.js#planWeaponStream`、`content/handlers/weapons.js#planWeaponReturn`、`content/handlers/weapons.js#planWeaponBatch`、`content/weaponCapabilities.js#listRuntimeWeapons`、`dispatch/weapons.js#dispatchWeaponsHandler`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/draft.js#createPluginChoice`、`domain/equipment.js#planWeaponPickup`、`domain/initial.js#createInitialGameState`、`domain/projectiles.js#createWeaponProjectile`、`domain/stateValidation.js#inspectGameState`、`preview/host.js#mountCombatPreview`。
-- `listRuntimeWeapons` ← `preview/host.js#mountCombatPreview`。
+- `resolveWeaponTemplate` ← `application/nest.js#prepareAdventureStart`、`content/handlers/weapons.js#planWeaponBubble`、`content/handlers/weapons.js#planWeaponFan`、`content/handlers/weapons.js#planWeaponVector`、`content/handlers/weapons.js#planWeaponStream`、`content/handlers/weapons.js#planWeaponReturn`、`content/handlers/weapons.js#planWeaponBatch`、`content/weaponCapabilities.js#listRuntimeWeapons`、`dispatch/weapons.js#dispatchWeaponsHandler`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/draft.js#createPluginChoice`、`domain/equipment.js#planWeaponPickup`、`domain/initial.js#createInitialGameState`、`domain/projectiles.js#createWeaponProjectile`、`domain/stateValidation.js#inspectGameState`、`preview/host.js#mountCombatPreview`。
+- `listRuntimeWeapons` ← `preview/host.js#mountCombatPreview`、`preview/nestManager.js#mountNestManager`。
 
 ## dispatch/companions.js
 
@@ -1616,7 +1642,7 @@ Canonical entity constructor; callers provide stable identity and source snapsho
 
 [源码](../../src/v2/domain/equipment.js)；层：`domain`。
 
-直接依赖：`content/weaponCapabilities.js`、`domain/plans.js`、`domain/serialization.js`、`domain/treeRuntime.js`。
+直接依赖：`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/plans.js`、`domain/serialization.js`、`domain/treeRuntime.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -1628,7 +1654,7 @@ Canonical entity constructor; callers provide stable identity and source snapsho
 
 - `planEquipmentInteraction` → `domain/equipment.js#planWeaponPickup`、`domain/plans.js#createEmptyPlan`。
 - `planWeaponPickup` → `content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#toJson`、`domain/treeRuntime.js#planTreeWeaponSwitch`。
-- `planSkillPickup` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#toJson`。
+- `planSkillPickup` → `content/skillCapabilities.js#resolveSkillTemplate`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#toJson`。
 
 公开函数上游：
 
@@ -1704,7 +1730,7 @@ Create an unpublished initial state. Map plans are applied before Session publis
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `createInitialGameState(start: untyped, seed: untyped, catalog: untyped)` | `GameState` | 已实现 / core-preview + adventure-slice | 创建Free引导/练习、1–15短途/远征或API初态，锁定配装和累计机制；full仍拒绝。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `createInitialGameState(start: untyped, seed: untyped, catalog: untyped)` | `GameState` | 已实现 / core-preview + adventure-slice | 创建Free引导/练习、短途/远征或API初态；模组冒险要求显式标记及完整锁，full仍拒绝。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
@@ -1817,6 +1843,35 @@ Shared navigation/contact logic; only the brown crab has a telegraphed heavy cla
 公开函数上游：
 
 - `planMeleeEnemy` ← `content/handlers/enemies.js#planEnemyClaudeGuard`、`content/handlers/enemies.js#planEnemyGrokBot`、`domain/bosses/claude.js#planClaudeBoss`、`domain/gptPets.js#planGptPet`。
+
+## domain/modScope.js
+
+Snapshot the exact namespace carried by a modded adventure; ordinary and practice runs have no permanent mod scope.
+
+[源码](../../src/v2/domain/modScope.js)；层：`domain`。
+
+直接依赖：`domain/serialization.js`。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `createRunModScope(state: untyped)` | `ModScope\|null` | 已实现 | 从模组冒险出发快照提取完整包锁和内容版本；原版与练习没有永久模组范围。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `scopePersistenceIntent(intent: untyped, state: untyped)` | `PersistenceIntent` | 已实现 | 为模组冒险的保存、发现、解锁和结算意图附上完整范围，不修改原意图。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `createProfileModScope(profile: untyped)` | `ModScope\|null` | 已实现 | 读取局外档绑定的完整模组范围；旧原版档案返回空范围。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `equalModScopes(a: untyped, b: untyped)` | `boolean` | 已实现 | 比较完整内容版本和模组锁；非法或非有限数据视为不匹配。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `createRunModScope` → 无内部公开函数。
+- `scopePersistenceIntent` → `domain/modScope.js#createRunModScope`。
+- `createProfileModScope` → 无内部公开函数。
+- `equalModScopes` → `domain/serialization.js#serializeCanonical`。
+
+公开函数上游：
+
+- `createRunModScope` ← `domain/modScope.js#scopePersistenceIntent`、`domain/settlement.js#createSettlement`。
+- `scopePersistenceIntent` ← `engine/tick.js#advanceWorldTick`、`preview/host.js#mountCombatPreview`。
+- `createProfileModScope` ← `application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`domain/settlement.js#planSettlementCommit`。
+- `equalModScopes` ← `application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`domain/settlement.js#planSettlementCommit`。
 
 ## domain/modelProfiles.js
 
@@ -2222,8 +2277,8 @@ Store typed declarative delayed actions, never a stale mutable-state replacement
 
 公开函数上游：
 
-- `serializeCanonical` ← `adapters/storage.js#compareAndSwapStorageRecord`、`application/replay.js#beginRecording`、`application/replay.js#appendRecordedCommands`、`application/replay.js#appendRecordingStep`、`application/replay.js#replayRecording`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`content/catalog.js#validateContentCatalog`、`content/mods.js#parseModPackage`、`content/mods.js#composeModCatalog`、`domain/checkpoint.js#createCheckpoint`、`domain/checkpoint.js#validateCheckpoint`、`domain/checkpoint.js#restoreCheckpointState`、`domain/initial.js#createInitialGameState`、`domain/plans.js#validateSystemPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#createDataDigest`、`domain/serialization.js#toJson`、`domain/settlement.js#validateProfileRecord`、`domain/stateValidation.js#inspectGameState`、`engine/commands.js#validateGameCommand`、`engine/effectLoop.js#evaluateEffectRequest`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#applyOwnedTickPlan`、`engine/session.js#createReplaySession`。
-- `createDataDigest` ← `content/mods.js#composeModCatalog`、`domain/checkpoint.js#createCheckpoint`、`domain/checkpoint.js#validateCheckpoint`、`engine/snapshot.js#createStateDigest`。
+- `serializeCanonical` ← `adapters/storage.js#compareAndSwapStorageRecord`、`application/nest.js#prepareAdventureStart`、`application/replay.js#beginRecording`、`application/replay.js#appendRecordedCommands`、`application/replay.js#appendRecordingStep`、`application/replay.js#replayRecording`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`content/catalog.js#validateContentCatalog`、`content/mods.js#parseModPackage`、`content/mods.js#composeModCatalog`、`domain/checkpoint.js#createCheckpoint`、`domain/checkpoint.js#validateCheckpoint`、`domain/checkpoint.js#restoreCheckpointState`、`domain/initial.js#createInitialGameState`、`domain/modScope.js#equalModScopes`、`domain/plans.js#validateSystemPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#createDataDigest`、`domain/serialization.js#toJson`、`domain/settlement.js#validateProfileRecord`、`domain/stateValidation.js#inspectGameState`、`engine/commands.js#validateGameCommand`、`engine/effectLoop.js#evaluateEffectRequest`、`engine/reducer.js#applySystemPlan`、`engine/reducer.js#applyOwnedTickPlan`、`engine/session.js#createReplaySession`。
+- `createDataDigest` ← `application/modProfile.js#createModProfileNamespace`、`application/modProfile.js#createModProfileSnapshot`、`content/mods.js#composeModCatalog`、`domain/checkpoint.js#createCheckpoint`、`domain/checkpoint.js#validateCheckpoint`、`engine/snapshot.js#createStateDigest`。
 - `toJson` ← `domain/abilities.js#planAbilityDamage`、`domain/attacks.js#planSkillCast`、`domain/attacks.js#planCollisionEffects`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/claude.js#planClaudeBan`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionMilestones`、`domain/dshCycle.js#planDshCycleEvent`、`domain/easter.js#planEasterInteraction`、`domain/easter.js#planEasterAdvance`、`domain/equipment.js#planWeaponPickup`、`domain/equipment.js#planSkillPickup`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/mechanics.js#planMechanicEvent`、`domain/meleeAi.js#planMeleeEnemy`、`domain/projectiles.js#planProjectileBurst`、`domain/rewards.js#planDeathRewards`、`domain/scheduled.js#scheduleAbilityActions`、`domain/status.js#resolveControlRequest`、`domain/world/expedition.js#planExpeditionTravel`、`engine/snapshot.js#createRenderSnapshot`。
 
 ## domain/settlement.js
@@ -2232,19 +2287,19 @@ Store typed declarative delayed actions, never a stale mutable-state replacement
 
 [源码](../../src/v2/domain/settlement.js)；层：`domain`。
 
-直接依赖：`domain/checkpoint.js`、`domain/profile/tree.js`、`domain/serialization.js`、`versions.js`。
+直接依赖：`domain/checkpoint.js`、`domain/modScope.js`、`domain/profile/tree.js`、`domain/serialization.js`、`versions.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `createSettlement(state: untyped, outcome: untyped)` | `Settlement` | 已实现 | 按真实终态生成一次结算；Free引导只在胜利时标记教学完成，不给普通资源；API不能胜利。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planSettlementCommit(profile: untyped, settlement: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 校验结算与活动检查点并幂等入账；正式Free首次完成通过全局账本发一张算力卡。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `createSettlement(state: untyped, outcome: untyped)` | `Settlement` | 已实现 | 按真实终态产生一次结算；模组冒险附完整范围，Free引导仅首次奖励标记，API不能胜利。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planSettlementCommit(profile: untyped, settlement: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 校验结算与档案范围、活动检查点并幂等入账；Free引导首次完成发一张算力卡。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `validateProfileRecord(profile: untyped, catalog: untyped)` | `ValidationReport` | 已实现 | 校验余额/树前置/槽位/去重/活动存档引用；迁移失败不覆盖原数据。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `createDefaultProfile()` | `Profile` | 已实现 | createDefaultProfile；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
-- `createSettlement` → 无内部公开函数。
-- `planSettlementCommit` → `domain/settlement.js#validateProfileRecord`。
+- `createSettlement` → `domain/modScope.js#createRunModScope`。
+- `planSettlementCommit` → `domain/modScope.js#createProfileModScope`、`domain/modScope.js#equalModScopes`、`domain/settlement.js#validateProfileRecord`。
 - `validateProfileRecord` → `domain/checkpoint.js#validateCheckpoint`、`domain/profile/tree.js#resolveDshSlotCount`、`domain/profile/tree.js#validateTreePurchase`、`domain/serialization.js#serializeCanonical`。
 - `createDefaultProfile` → 无内部公开函数。
 
@@ -2252,8 +2307,8 @@ Store typed declarative delayed actions, never a stale mutable-state replacement
 
 - `createSettlement` ← `application/game.js#settleAdventure`、`preview/host.js#mountCombatPreview`。
 - `planSettlementCommit` ← `application/game.js#settleAdventure`、`application/repository.js#mergePersistenceIntents`。
-- `validateProfileRecord` ← `application/game.js#createApplication`、`application/repository.js#readProfileRepository`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`domain/settlement.js#planSettlementCommit`。
-- `createDefaultProfile` ← `application/repository.js#readProfileRepository`。
+- `validateProfileRecord` ← `application/game.js#createApplication`、`application/modProfile.js#createModProfileSnapshot`、`application/repository.js#readProfileRepository`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`domain/settlement.js#planSettlementCommit`。
+- `createDefaultProfile` ← `application/modProfile.js#createModProfileSnapshot`、`application/repository.js#readProfileRepository`。
 
 ## domain/shells.js
 
@@ -3044,7 +3099,7 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `createGameSession(start: untyped, seed: untyped, catalog: untyped)` | `GameSession` | 已实现 / core-preview + adventure-slice | 校验目录及状态不变量后发布Free引导/练习、短途、远征和API私有Session；正式模组仍拒绝。；；状态权限：创建Session私有状态；不接触Profile和宿主对象 |
+| `createGameSession(start: untyped, seed: untyped, catalog: untyped)` | `GameSession` | 已实现 / core-preview + adventure-slice | 校验目录与世界后发布私有Session；正式模组使用隔离档案和精确锁。；；状态权限：创建Session私有状态；不接触Profile和宿主对象 |
 | `enqueueSessionCommand(session: untyped, command: untyped)` | `Result<Command>` | 已实现 / core-preview | 只排队不重入tick，拒绝终态/重复命令。；；状态权限：只写Session待处理命令队列 |
 | `stepSessionWorld(session: untyped)` | `TickResult` | 已实现 / core-preview + adventure-slice | 消费世界命令，经唯一引擎流水线原子提交Free引导/练习、短途、远征或API；无I/O。；；状态权限：唯一门面允许提交世界状态 |
 | `stepSessionUi(session: untyped, advanceClock: untyped = true)` | `TickResult` | 已实现 / core-preview + adventure-slice | 消费独立UI命令，经engine/tick推进指针或只flush；暂停保持原面板。；；状态权限：唯一门面允许提交UI状态 |
@@ -3107,7 +3162,7 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 [源码](../../src/v2/engine/tick.js)；层：`engine`。
 
-直接依赖：`domain/abilities.js`、`domain/ai.js`、`domain/attacks.js`、`domain/bosses/gpt.js`、`domain/bosses/grok.js`、`domain/collision.js`、`domain/combatPlugins.js`、`domain/companions.js`、`domain/deaths.js`、`domain/distill.js`、`domain/dshCycle.js`、`domain/dshEffects.js`、`domain/easter.js`、`domain/gptPets.js`、`domain/lora.js`、`domain/mechanics.js`、`domain/movement.js`、`domain/plans.js`、`domain/rewards.js`、`domain/scheduled.js`、`domain/status.js`、`domain/world/apiMaintenance.js`、`domain/world/escort.js`、`domain/world/expedition.js`、`domain/world/expeditionMaintenance.js`、`domain/world/map.js`、`domain/world/objectives.js`、`domain/world/pressure.js`、`domain/world/spawning.js`、`domain/world/tutorial.js`、`engine/commands.js`、`engine/effectLoop.js`、`engine/flow.js`、`engine/hooks.js`、`engine/reducer.js`。
+直接依赖：`domain/abilities.js`、`domain/ai.js`、`domain/attacks.js`、`domain/bosses/gpt.js`、`domain/bosses/grok.js`、`domain/collision.js`、`domain/combatPlugins.js`、`domain/companions.js`、`domain/deaths.js`、`domain/distill.js`、`domain/dshCycle.js`、`domain/dshEffects.js`、`domain/easter.js`、`domain/gptPets.js`、`domain/lora.js`、`domain/mechanics.js`、`domain/modScope.js`、`domain/movement.js`、`domain/plans.js`、`domain/rewards.js`、`domain/scheduled.js`、`domain/status.js`、`domain/world/apiMaintenance.js`、`domain/world/escort.js`、`domain/world/expedition.js`、`domain/world/expeditionMaintenance.js`、`domain/world/map.js`、`domain/world/objectives.js`、`domain/world/pressure.js`、`domain/world/spawning.js`、`domain/world/tutorial.js`、`engine/commands.js`、`engine/effectLoop.js`、`engine/flow.js`、`engine/hooks.js`、`engine/reducer.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -3116,7 +3171,7 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 公开函数下游：
 
-- `advanceWorldTick` → `domain/abilities.js#planAbilityBursts`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityHistory`、`domain/ai.js#planBossAi`、`domain/ai.js#planCompanionAi`、`domain/ai.js#planEnemyAi`、`domain/attacks.js#planCollisionEffects`、`domain/attacks.js#planWeaponFire`、`domain/bosses/gpt.js#planGptReset`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/collision.js#detectCollisions`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planPartnerBanContact`、`domain/deaths.js#resolveTerminalOutcome`、`domain/distill.js#planDistilledAbilities`、`domain/dshCycle.js#planDshCycleEvent`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#planEasterAdvance`、`domain/gptPets.js#planGptFields`、`domain/mechanics.js#planMechanicEvent`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/movement.js#planPlayerMovement`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#planDeathRewards`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#planStatusAdvance`、`domain/world/apiMaintenance.js#planApiMaintenance`、`domain/world/escort.js#planEscortAdvance`、`domain/world/expedition.js#planExpeditionProgression`、`domain/world/expeditionMaintenance.js#planExpeditionMaintenance`、`domain/world/map.js#planMapExploration`、`domain/world/objectives.js#planApiProgression`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/pressure.js#planPressureEventAdvance`、`domain/world/pressure.js#planPressureSchedule`、`domain/world/spawning.js#planSpawnSchedule`、`domain/world/tutorial.js#planTutorialAdvance`、`domain/world/tutorial.js#planTutorialRetry`、`engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/effectLoop.js#drainEffectQueue`、`engine/flow.js#planProgressionPanels`、`engine/hooks.js#planEventHooks`、`engine/reducer.js#applyOwnedTickPlan`、`engine/reducer.js#commitOwnedTickState`。
+- `advanceWorldTick` → `domain/abilities.js#planAbilityBursts`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityHistory`、`domain/ai.js#planBossAi`、`domain/ai.js#planCompanionAi`、`domain/ai.js#planEnemyAi`、`domain/attacks.js#planCollisionEffects`、`domain/attacks.js#planWeaponFire`、`domain/bosses/gpt.js#planGptReset`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/collision.js#detectCollisions`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planPartnerBanContact`、`domain/deaths.js#resolveTerminalOutcome`、`domain/distill.js#planDistilledAbilities`、`domain/dshCycle.js#planDshCycleEvent`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#planEasterAdvance`、`domain/gptPets.js#planGptFields`、`domain/mechanics.js#planMechanicEvent`、`domain/modScope.js#scopePersistenceIntent`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`domain/movement.js#planPlayerMovement`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#planDeathRewards`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#planStatusAdvance`、`domain/world/apiMaintenance.js#planApiMaintenance`、`domain/world/escort.js#planEscortAdvance`、`domain/world/expedition.js#planExpeditionProgression`、`domain/world/expeditionMaintenance.js#planExpeditionMaintenance`、`domain/world/map.js#planMapExploration`、`domain/world/objectives.js#planApiProgression`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/pressure.js#planPressureEventAdvance`、`domain/world/pressure.js#planPressureSchedule`、`domain/world/spawning.js#planSpawnSchedule`、`domain/world/tutorial.js#planTutorialAdvance`、`domain/world/tutorial.js#planTutorialRetry`、`engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/effectLoop.js#drainEffectQueue`、`engine/flow.js#planProgressionPanels`、`engine/hooks.js#planEventHooks`、`engine/reducer.js#applyOwnedTickPlan`、`engine/reducer.js#commitOwnedTickState`。
 - `advanceUiTick` → `domain/dshEffects.js#planDshEffects`、`domain/lora.js#planLoraUiStep`、`engine/commands.js#orderPendingCommands`、`engine/commands.js#planGameCommand`、`engine/flow.js#planProgressionPanels`、`engine/reducer.js#applyOwnedTickPlan`、`engine/reducer.js#commitOwnedTickState`。
 
 公开函数上游：
@@ -3130,15 +3185,15 @@ Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,
 
 [源码](../../src/v2/preview/host.js)；层：`host`。
 
-直接依赖：`adapters/storage.js`、`application/nest.js`、`application/repository.js`、`content/catalog.js`、`content/registry.js`、`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/checkpoint.js`、`domain/clock.js`、`domain/difficulty.js`、`domain/dshCycle.js`、`domain/settlement.js`、`domain/world/api.js`、`domain/world/regionRules.js`、`engine/session.js`、`preview/modManager.js`、`preview/nestManager.js`、`preview/view.js`。
+直接依赖：`adapters/storage.js`、`application/modProfile.js`、`application/nest.js`、`application/repository.js`、`content/catalog.js`、`content/registry.js`、`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/checkpoint.js`、`domain/clock.js`、`domain/difficulty.js`、`domain/dshCycle.js`、`domain/modScope.js`、`domain/settlement.js`、`domain/world/api.js`、`domain/world/regionRules.js`、`engine/session.js`、`preview/modManager.js`、`preview/nestManager.js`、`preview/view.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `mountCombatPreview(mountElementId: untyped)` | `() => void` | 已实现 / core-preview + adventure-slice | 组装Free引导/练习、短途、远征/API、配装/小窝/成长、检查点与结算；保留原练习模组入口。；；状态权限：宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState |
+| `mountCombatPreview(mountElementId: untyped)` | `() => void` | 已实现 / core-preview + adventure-slice | 组装Free引导/练习、原版及模组短途/远征/API、显式模组档创建、检查点和结算。；；状态权限：宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState |
 
 公开函数下游：
 
-- `mountCombatPreview` → `adapters/storage.js#createStoragePort`、`application/nest.js#prepareAdventureStart`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`application/repository.js#readProfileRepository`、`content/catalog.js#loadContentCatalog`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`content/skillCapabilities.js#listRuntimeSkills`、`content/weaponCapabilities.js#listRuntimeWeapons`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/checkpoint.js#canCreateCheckpoint`、`domain/checkpoint.js#createCheckpoint`、`domain/clock.js#createClockState`、`domain/clock.js#resumeClock`、`domain/clock.js#scheduleFrame`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/dshCycle.js#readDshCycleTimers`、`domain/settlement.js#createSettlement`、`domain/world/api.js#canApiWithdraw`、`domain/world/regionRules.js#localWorldId`、`domain/world/regionRules.js#resolveExpeditionRoute`、`engine/session.js#createGameSession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#readSessionView`、`engine/session.js#restoreGameSession`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`preview/modManager.js#mountModManager`、`preview/nestManager.js#mountNestManager`、`preview/view.js#getPreviewCamera`、`preview/view.js#renderPreviewFrame`。
+- `mountCombatPreview` → `adapters/storage.js#createStoragePort`、`application/modProfile.js#createModProfileNamespace`、`application/modProfile.js#initializeModProfile`、`application/nest.js#prepareAdventureStart`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`application/repository.js#readProfileRepository`、`content/catalog.js#loadContentCatalog`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`content/skillCapabilities.js#listRuntimeSkills`、`content/weaponCapabilities.js#listRuntimeWeapons`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/checkpoint.js#canCreateCheckpoint`、`domain/checkpoint.js#createCheckpoint`、`domain/clock.js#createClockState`、`domain/clock.js#resumeClock`、`domain/clock.js#scheduleFrame`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/dshCycle.js#readDshCycleTimers`、`domain/modScope.js#scopePersistenceIntent`、`domain/settlement.js#createSettlement`、`domain/world/api.js#canApiWithdraw`、`domain/world/regionRules.js#localWorldId`、`domain/world/regionRules.js#resolveExpeditionRoute`、`engine/session.js#createGameSession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#readSessionView`、`engine/session.js#restoreGameSession`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`preview/modManager.js#mountModManager`、`preview/nestManager.js#mountNestManager`、`preview/view.js#getPreviewCamera`、`preview/view.js#renderPreviewFrame`。
 
 公开函数上游：
 
@@ -3154,7 +3209,7 @@ Local community mod manager. Installation is persistent; activation applies only
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `mountModManager(root: untyped, base: untyped, notify: untyped)` | `{getCatalog: () => ContentCatalog; dispose: () => void}` | 已实现 | 提供本地JSON安装、启停与移除；SDK1.0–1.3包只影响下次Free练习。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `mountModManager(root: untyped, base: untyped, notify: untyped)` | `{getCatalog: () => ContentCatalog; dispose: () => void}` | 已实现 | 提供本地JSON安装、启停与移除；组合影响下次Free练习或独立模组冒险，不热替换对局。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
@@ -3170,15 +3225,15 @@ Mount the nest dashboard; Profile changes go through the application service and
 
 [源码](../../src/v2/preview/nestManager.js)；层：`host`。
 
-直接依赖：`application/nest.js`、`content/achievements.js`、`content/registry.js`、`domain/profile/tree.js`。
+直接依赖：`application/nest.js`、`content/achievements.js`、`content/registry.js`、`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/profile/tree.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `mountNestManager(root: untyped, catalog: untyped, storage: untyped, onProfile: untyped, notify: untyped)` | `{setProfile:(record:StorageRecord\|null)=>void; getLoadout:()=>{weaponIds:string[];skillId:string;companionId:string\|null};dispose:()=>void}` | 已实现 | 组装27节点、设施、装备、DSH和收藏小窝UI；所有消费经应用用例，不接触GameState。；；状态权限：宿主只读Profile副本，经应用服务消费；不修改GameState |
+| `mountNestManager(root: untyped, catalog: untyped, storage: untyped, onProfile: untyped, notify: untyped)` | `{setProfile:(record:StorageRecord\|null)=>void; getLoadout:()=>{weaponIds:string[];skillId:string;companionId:string\|null};dispose:()=>void}` | 已实现 | 组装当前原版或精确模组档案的小窝UI；所有消费经应用服务，不接触GameState。；；状态权限：宿主只读Profile副本，经应用服务消费；不修改GameState |
 
 公开函数下游：
 
-- `mountNestManager` → `application/nest.js#executeNestAction`、`content/registry.js#createHandlerRegistry`、`domain/profile/tree.js#resolveDshSlotCount`、`domain/profile/tree.js#validateTreePurchase`。
+- `mountNestManager` → `application/nest.js#executeNestAction`、`content/registry.js#createHandlerRegistry`、`content/skillCapabilities.js#listRuntimeSkills`、`content/weaponCapabilities.js#listRuntimeWeapons`、`domain/profile/tree.js#resolveDshSlotCount`、`domain/profile/tree.js#validateTreePurchase`。
 
 公开函数上游：
 

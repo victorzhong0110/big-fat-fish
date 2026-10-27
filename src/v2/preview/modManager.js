@@ -42,7 +42,7 @@ export function mountModManager(root, base, notify) {
       card.append(name, description, toggle, remove); list.append(card);
     }
     root.dispatchEvent(new Event('modschange'));
-    status.textContent = installed.length ? `已安装 ${installed.length} 个 · 已启用 ${installed.filter(item => item.enabled).length} 个。仅影响下次 Free 出发；原版和每组模组使用独立检查点。` : '暂无模组。SDK 1.0–1.3支持MCP参数、名称、新武器及护盾/爆发技能配方。仅在Free练习生效。';
+    status.textContent = installed.length ? `已安装 ${installed.length} 个 · 已启用 ${installed.filter(item => item.enabled).length} 个。下次Free练习或模组冒险使用当前组合；原版与每组模组档案独立。` : '暂无模组。SDK 1.0–1.3支持MCP参数、名称、新武器及护盾/爆发技能配方，可在Free练习和独立模组冒险使用。';
   }
   function read() {
     try {
@@ -70,7 +70,7 @@ export function mountModManager(root, base, notify) {
       const pack = parseModPackage(await file.text(), base);
       if (disposed) return;
       if (installed.some(item => item.pack.id === pack.id)) throw new Error('此模组ID已安装，请先移除旧版');
-      persist([...installed, { pack, enabled: false }]); notify(`已安装 ${pack.name}，点击启用后下次Free出发生效。`);
+      persist([...installed, { pack, enabled: false }]); notify(`已安装 ${pack.name}，点击启用后下次练习或模组冒险生效。`);
     } catch (error) { if (!disposed) notify(`安装失败：${String(error)}`); }
     finally { loading = false; if (!disposed) { input.value = ''; button.disabled = false; } }
   })(); });

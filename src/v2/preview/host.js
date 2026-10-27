@@ -6,10 +6,12 @@ import { resolveWeaponTemplate, listRuntimeWeapons } from '../content/weaponCapa
 import { listRuntimeSkills } from '../content/skillCapabilities.js';
 import { mountNestManager } from './nestManager.js';
 import { prepareAdventureStart } from '../application/nest.js';
+import {createModProfileNamespace,initializeModProfile} from '../application/modProfile.js';
 import { mountModManager } from './modManager.js';
 import { createStoragePort } from '../adapters/storage.js';
 import { readProfileRepository, commitProfilePlan, mergePersistenceIntents } from '../application/repository.js';
 import { createSettlement } from '../domain/settlement.js';
+import {scopePersistenceIntent} from '../domain/modScope.js';
 import { loadContentCatalog, validateContentCatalog } from '../content/catalog.js';
 import { createHandlerRegistry } from '../content/registry.js';
 import { resolveDifficultySnapshot } from '../domain/difficulty.js';
@@ -22,6 +24,8 @@ import { getPreviewCamera, renderPreviewFrame } from './view.js';
  * are isolated; the adventure uses transactional permanent Profile storage. Returns cleanup.
  * @implementationScope core-preview + adventure-slice
  * @calls adapters/storage.js#createStoragePort
+ * @calls application/modProfile.js#createModProfileNamespace
+ * @calls application/modProfile.js#initializeModProfile
  * @calls application/nest.js#prepareAdventureStart
  * @calls application/repository.js#commitProfilePlan
  * @calls application/repository.js#mergePersistenceIntents
@@ -39,6 +43,7 @@ import { getPreviewCamera, renderPreviewFrame } from './view.js';
  * @calls domain/clock.js#scheduleFrame
  * @calls domain/difficulty.js#resolveDifficultySnapshot
  * @calls domain/dshCycle.js#readDshCycleTimers
+ * @calls domain/modScope.js#scopePersistenceIntent
  * @calls domain/settlement.js#createSettlement
  * @calls domain/world/api.js#canApiWithdraw
  * @calls domain/world/regionRules.js#localWorldId
@@ -70,7 +75,8 @@ export function mountCombatPreview(mountElementId) {
   let catalog=baseCatalog;
   if(!report.valid)throw new Error(report.diagnostics.map(item=>item.message).join('; '));
   let checkpointKey='big-fat-fish:v2-combat-preview:checkpoint';
-  const profilePort=createStoragePort('big-fat-fish:v2:profile');
+  const baseProfilePort=createStoragePort('big-fat-fish:v2:profile');
+  let profilePort=baseProfilePort,profileCatalog=baseCatalog,scopeKey='',scopeGeneration=0,scopeLoading=false,modProfileMissing=false,scopeUnavailable=false,beginWorking=false;
   let profileRecord=/** @type {import('../contracts.d.ts').StorageRecord|null} */(null),profileWorking=false,profileFailed=false,settledRunId='',formal=false,escapePressing=false;
   const pendingPersistence=/** @type {import('../contracts.d.ts').PersistenceIntent[]} */([]);
   let session=/** @type {import('../contracts.d.ts').GameSession|null} */(null);
@@ -117,10 +123,11 @@ export function mountCombatPreview(mountElementId) {
     const preview=node('equipment-preview');preview.dataset.template=template??'';preview.replaceChildren();for(let index=0;index<3;index++){const dot=document.createElement('i');dot.style.setProperty('--n',String(index));preview.append(dot);}
     const options=node('equipment-options');options.replaceChildren();for(const [index,current]of state.player.loadout.weapons.entries()){const button=document.createElement('button');button.type='button';button.dataset.equipSlot=String(index);button.textContent=`替换槽${index+1}：${catalog.definitions[current.definitionId].displayName}（${['标准','增强','特制'][current.originalQuality]}）`;button.onclick=()=>{const pickupId=offeredPickupId;resume();send('EquipPickup',{pickupId,slotIndex:index});};options.append(button);}
   }
-  const nest=mountNestManager(node('nest-manager'),baseCatalog,profilePort,record=>{profileRecord=record;updateWallet();},toast);removers.push(()=>nest.dispose());
+  let nest=mountNestManager(node('nest-manager'),baseCatalog,profilePort,record=>{profileRecord=record;updateWallet();},toast);removers.push(()=>nest.dispose());
   const mods=mountModManager(node('mods-manager'),baseCatalog,toast);removers.push(()=>mods.dispose());
-  try{const savedMode=localStorage.getItem('big-fat-fish:v2:mode'),legacyPractice=!savedMode&&Object.keys(localStorage).some(key=>key.startsWith('big-fat-fish:v2-combat-preview:checkpoint')),mode=savedMode??(legacyPractice?'tutorial':null);if(mode&&['tutorial-guide','tutorial','short','expedition'].includes(mode))/** @type {HTMLSelectElement} */(node('mode-select')).value=mode;}catch{}
-  function selectCatalog(adventure=false){catalog=adventure?baseCatalog:mods.getCatalog();
+  try{const savedMode=localStorage.getItem('big-fat-fish:v2:mode'),legacyPractice=!savedMode&&Object.keys(localStorage).some(key=>key.startsWith('big-fat-fish:v2-combat-preview:checkpoint')),mode=savedMode??(legacyPractice?'tutorial':null);if(mode&&['tutorial-guide','tutorial','short','expedition','mod-short','mod-expedition'].includes(mode))/** @type {HTMLSelectElement} */(node('mode-select')).value=mode;}catch{}
+  function isModMode(){return ['mod-short','mod-expedition'].includes(/** @type {HTMLSelectElement} */(node('mode-select')).value);}
+  function selectCatalog(adventure=false){catalog=adventure&&!isModMode()?baseCatalog:mods.getCatalog();
     if(!session)for(const [index,id] of ['practice-weapon-a','practice-weapon-b'].entries()){const select=/** @type {HTMLSelectElement} */(node(id)),previous=select.value;select.replaceChildren();for(const weaponId of listRuntimeWeapons(catalog)){const option=document.createElement('option');option.value=weaponId;option.textContent=catalog.definitions[weaponId].displayName;select.append(option);}select.value=listRuntimeWeapons(catalog).includes(previous)?previous:index===0?'mcp_bubble':'mcp_fan';select.disabled=adventure;}
     if(!session){const select=/** @type {HTMLSelectElement} */(node('skill-select')),previous=select.value;select.replaceChildren();for(const id of listRuntimeSkills(catalog)){const option=document.createElement('option');option.value=id;option.textContent=catalog.definitions[id].displayName;select.append(option);}select.value=listRuntimeSkills(catalog).includes(previous)?previous:'skill_cache';}
     checkpointKey=catalog.modLock?.length?`big-fat-fish:v2-combat-preview:checkpoint:${catalog.version}`:'big-fat-fish:v2-combat-preview:checkpoint';}
@@ -128,15 +135,37 @@ export function mountCombatPreview(mountElementId) {
   let withdrawalPointerHeld=false;
   function canWithdrawNow(){if(!session)return false;const state=readSessionState(session);return canApiWithdraw({state,catalog,random:state.random.combat,event:null,entityId:null});}
   function refreshContinue(){try{const adventure=/** @type {HTMLSelectElement} */(node('mode-select')).value!=='tutorial';if(!session)selectCatalog(adventure);node('continue').toggleAttribute('disabled',adventure?!profileRecord?.profile.checkpoint:!localStorage.getItem(checkpointKey));}catch{node('continue').setAttribute('disabled','');}}
-  function updateWallet(){if(disposed)return;nest.setProfile(profileRecord);const difficulty=/** @type {HTMLSelectElement} */(node('difficulty-select')),selected=difficulty.value,max=Math.min(15,(profileRecord?.profile.highestDifficulty??0)+1);difficulty.replaceChildren();const guided=/** @type {HTMLSelectElement} */(node('mode-select')).value==='tutorial-guide';if(guided){const option=document.createElement('option');option.value='0';option.textContent='Free 0 · 引导教学';difficulty.append(option);}for(let d=1;d<=max;d++){const option=document.createElement('option');option.value=String(d);option.textContent=`${d<=5?'Pro':d<=10?'Max5x':'Max20x'} ${d} · ${catalog.mechanics.filter(m=>m.unlockAt<=d).length}项累计机制`;difficulty.append(option);}if(profileRecord?.profile.apiUnlocked){const option=document.createElement('option');option.value='api';option.textContent='API调用 · 持续生存 / 三阵营轮换';difficulty.append(option);}if(guided)difficulty.value='0';else if(Number(selected)>=1&&Number(selected)<=max||selected==='api'&&profileRecord?.profile.apiUnlocked)difficulty.value=selected;difficulty.disabled=guided;node('boss-select').toggleAttribute('disabled',difficulty.value==='api'||['expedition','tutorial-guide'].includes(/** @type {HTMLSelectElement} */(node('mode-select')).value));node('wallet').textContent=profileRecord?`小窝 · 算力卡 ${profileRecord.profile.gpuCards} · 碎片 ${profileRecord.profile.gpuFragments}/5 · 零件 ${profileRecord.profile.parts}`:'小窝档案暂不可用';refreshContinue();}
-  async function loadProfile(){const result=await readProfileRepository(profilePort,baseCatalog);if(result.ok)profileRecord=result.value;else toast(`小窝档案读取失败：${result.message}`);updateWallet();}
+  function updateWallet(){if(disposed)return;nest.setProfile(profileRecord);const difficulty=/** @type {HTMLSelectElement} */(node('difficulty-select')),selected=difficulty.value,max=Math.min(15,(profileRecord?.profile.highestDifficulty??0)+1);difficulty.replaceChildren();const guided=/** @type {HTMLSelectElement} */(node('mode-select')).value==='tutorial-guide';if(guided){const option=document.createElement('option');option.value='0';option.textContent='Free 0 · 引导教学';difficulty.append(option);}for(let d=1;d<=max;d++){const option=document.createElement('option');option.value=String(d);option.textContent=`${d<=5?'Pro':d<=10?'Max5x':'Max20x'} ${d} · ${catalog.mechanics.filter(m=>m.unlockAt<=d).length}项累计机制`;difficulty.append(option);}if(profileRecord?.profile.apiUnlocked){const option=document.createElement('option');option.value='api';option.textContent='API调用 · 持续生存 / 三阵营轮换';difficulty.append(option);}if(guided)difficulty.value='0';else if(Number(selected)>=1&&Number(selected)<=max||selected==='api'&&profileRecord?.profile.apiUnlocked)difficulty.value=selected;difficulty.disabled=guided;node('boss-select').toggleAttribute('disabled',difficulty.value==='api'||['expedition','mod-expedition','tutorial-guide'].includes(/** @type {HTMLSelectElement} */(node('mode-select')).value));node('wallet').textContent=profileRecord?`${isModMode()?'模组小窝':'小窝'} · 算力卡 ${profileRecord.profile.gpuCards} · 碎片 ${profileRecord.profile.gpuFragments}/5 · 零件 ${profileRecord.profile.parts}`:scopeUnavailable&&isModMode()?'请先启用至少一个模组':modProfileMissing?'请先创建这组模组的小窝':scopeLoading?'小窝档案读取中':'小窝档案暂不可用';node('mod-profile-setup').classList.toggle('hidden',!(isModMode()&&modProfileMissing));node('mod-profile-create').toggleAttribute('disabled',scopeLoading||beginWorking);node('start').toggleAttribute('disabled',beginWorking||scopeLoading||isModMode()&&(scopeUnavailable||!profileRecord));refreshContinue();}
+  async function syncProfileScope(){
+    if(session||beginWorking)return;
+    let generation=scopeGeneration;
+    try{
+      const mod=isModMode(),selected=mod?mods.getCatalog():baseCatalog,unavailable=mod&&!selected.modLock?.length,key=unavailable?'mod:unavailable':mod?createModProfileNamespace(selected):'big-fat-fish:v2:profile';
+      if(key===scopeKey){updateWallet();return;}
+      generation=++scopeGeneration;scopeKey=key;profileRecord=null;profileCatalog=selected;profilePort=mod&&!unavailable?createStoragePort(key):baseProfilePort;scopeUnavailable=unavailable;scopeLoading=!unavailable;modProfileMissing=false;
+      nest.dispose();nest=mountNestManager(node('nest-manager'),selected,profilePort,record=>{if(scopeGeneration===generation){profileRecord=record;updateWallet();}},toast);updateWallet();
+      if(unavailable)return;
+      const result=await readProfileRepository(profilePort,selected);if(disposed||generation!==scopeGeneration)return;
+      scopeLoading=false;if(result.ok)profileRecord=result.value;else if(mod&&result.code==='PROFILE_MISSING')modProfileMissing=true;else toast(`小窝档案读取失败：${result.message}`);updateWallet();
+    }catch(error){if(disposed||generation!==scopeGeneration)return;scopeGeneration++;scopeKey='';scopeLoading=false;scopeUnavailable=true;profileRecord=null;updateWallet();toast(`模组小窝不可用：${error instanceof Error?error.message:String(error)}`);}
+  }
+  async function createSelectedModProfile(){
+    if(!isModMode()||!modProfileMissing||scopeLoading||session||beginWorking)return;
+    const generation=scopeGeneration,port=profilePort,selected=profileCatalog,source=/** @type {HTMLSelectElement} */(node('mod-profile-source')).value;scopeLoading=true;updateWallet();
+    try{
+      let vanilla=null;if(source==='copy'){const read=await readProfileRepository(baseProfilePort,baseCatalog);if(!read.ok)throw new Error(read.message);vanilla=read.value.profile;}
+      const result=await initializeModProfile(port,selected,baseCatalog,vanilla);if(!result.ok)throw new Error(result.message);
+      if(disposed||generation!==scopeGeneration)return;profileRecord=result.value;modProfileMissing=false;toast(source==='copy'?'模组小窝已从原版复制；后续进度独立。':'已创建全新的模组小窝。');
+    }catch(error){if(!disposed&&generation===scopeGeneration)toast(`模组小窝未创建：${error instanceof Error?error.message:String(error)}`);}
+    finally{if(!disposed&&generation===scopeGeneration){scopeLoading=false;updateWallet();}}
+  }
   async function flushProfile(){
     if(profileWorking||!pendingPersistence.length)return;profileWorking=true;profileFailed=false;
     const batch=[...pendingPersistence];
     try{for(let attempt=0;attempt<3;attempt++){
-      const current=await readProfileRepository(profilePort,baseCatalog);if(!current.ok)throw new Error(current.message);
-      const plan=mergePersistenceIntents(current.value.profile,batch,baseCatalog);if(!plan.ok)throw new Error(plan.message);
-      const committed=await commitProfilePlan(profilePort,plan.value,baseCatalog);if(!committed.ok){if(committed.code==='REVISION_CONFLICT')continue;throw new Error(committed.message);}
+      const current=await readProfileRepository(profilePort,profileCatalog);if(!current.ok)throw new Error(current.message);
+      const plan=mergePersistenceIntents(current.value.profile,batch,profileCatalog);if(!plan.ok)throw new Error(plan.message);
+      const committed=await commitProfilePlan(profilePort,plan.value,profileCatalog);if(!committed.ok){if(committed.code==='REVISION_CONFLICT')continue;throw new Error(committed.message);}
       profileRecord=committed.value;const ids=new Set(batch.map(intent=>intent.id));for(let i=pendingPersistence.length-1;i>=0;i--)if(ids.has(pendingPersistence[i].id))pendingPersistence.splice(i,1);
       if(session&&profileRecord.profile.settlementLedger.includes(`settlement:${session.runId}`))settledRunId=session.runId;
       updateWallet();return;
@@ -144,20 +173,22 @@ export function mountCombatPreview(mountElementId) {
   }
   /** @param {boolean} restore */
   async function begin(restore=false){
-    if(profileWorking||pendingPersistence.length)return;
+    if(beginWorking||profileWorking||pendingPersistence.length||scopeLoading)return;
+    if(isModMode()&&(scopeUnavailable||!profileRecord)){toast('请先启用模组并创建对应的小窝。');return;}
+    beginWorking=true;/** @type {HTMLSelectElement} */(node('mode-select')).disabled=true;
     let replacement=/** @type {import('../contracts.d.ts').GameSession|null} */(null);
     node('start').setAttribute('disabled','');node('continue').setAttribute('disabled','');
     try{
       const adventure=/** @type {HTMLSelectElement} */(node('mode-select')).value!=='tutorial';selectCatalog(adventure);
-      if(adventure){const record=await readProfileRepository(profilePort,baseCatalog);if(!record.ok)throw new Error(record.message);profileRecord=record.value;
+      if(adventure){const record=await readProfileRepository(profilePort,profileCatalog);if(!record.ok)throw new Error(record.message);profileRecord=record.value;
         if(restore){if(!record.value.profile.checkpoint)throw new Error('还没有保存的冒险');const result=restoreGameSession(record.value.profile.checkpoint,catalog);if(!result.ok)throw new Error(result.message);replacement=result.value;}
         else{
           if(record.value.profile.checkpoint)throw new Error('请先继续或放弃现有冒险');
           const seed=Number(/** @type {HTMLInputElement} */(node('seed')).value);if(!Number.isSafeInteger(seed)||seed<0||seed>0xffffffff)throw new Error('请输入有效整数种子');
           const runId=`adventure:${Array.from(crypto.getRandomValues(new Uint32Array(4)),value=>value.toString(16).padStart(8,'0')).join('')}`;
-          const guided=/** @type {HTMLSelectElement} */(node('mode-select')).value==='tutorial-guide',prepared=prepareAdventureStart(record.value.profile,guided?{mode:'tutorial',difficulty:0,seed,weaponIds:['mcp_bubble'],skillId:'skill_disconnect',companionId:'companion_rice'}:{mode:(/** @type {HTMLSelectElement} */(node('difficulty-select')).value==='api'?'api':/** @type {HTMLSelectElement} */(node('mode-select')).value==='expedition'?'expedition':'short'),difficulty:(/** @type {HTMLSelectElement} */(node('difficulty-select')).value==='api'?'api':Number(/** @type {HTMLSelectElement} */(node('difficulty-select')).value)),seed,bossFaction:/** @type {import('../contracts.d.ts').Faction} */(/** @type {HTMLSelectElement} */(node('boss-select')).value),...nest.getLoadout()},catalog,runId);if(!prepared.ok)throw new Error(prepared.message);
+          const guided=/** @type {HTMLSelectElement} */(node('mode-select')).value==='tutorial-guide',prepared=prepareAdventureStart(record.value.profile,guided?{mode:'tutorial',difficulty:0,seed,weaponIds:['mcp_bubble'],skillId:'skill_disconnect',companionId:'companion_rice'}:{mode:(/** @type {HTMLSelectElement} */(node('difficulty-select')).value==='api'?'api':/** @type {HTMLSelectElement} */(node('mode-select')).value.endsWith('expedition')?'expedition':'short'),difficulty:(/** @type {HTMLSelectElement} */(node('difficulty-select')).value==='api'?'api':Number(/** @type {HTMLSelectElement} */(node('difficulty-select')).value)),seed,bossFaction:/** @type {import('../contracts.d.ts').Faction} */(/** @type {HTMLSelectElement} */(node('boss-select')).value),...nest.getLoadout()},catalog,runId);if(!prepared.ok)throw new Error(prepared.message);
           replacement=createGameSession(prepared.value,seed,catalog);
-          const checkpoint=createCheckpoint(readSessionState(replacement)),plan=mergePersistenceIntents(record.value.profile,[{id:checkpoint.id,kind:'checkpoint',payload:/** @type {import('../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(checkpoint)))}],catalog);if(!plan.ok)throw new Error(plan.message);const saved=await commitProfilePlan(profilePort,plan.value,baseCatalog);if(!saved.ok)throw new Error(saved.message);profileRecord=saved.value;
+          const initial=readSessionState(replacement),checkpoint=createCheckpoint(initial),intent=scopePersistenceIntent({id:checkpoint.id,kind:'checkpoint',payload:/** @type {import('../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(checkpoint)))},initial),plan=mergePersistenceIntents(record.value.profile,[intent],catalog);if(!plan.ok)throw new Error(plan.message);const saved=await commitProfilePlan(profilePort,plan.value,profileCatalog);if(!saved.ok)throw new Error(saved.message);profileRecord=saved.value;
         }
       }else if(restore){
         const raw=localStorage.getItem(checkpointKey);if(!raw)throw new Error('还没有保存的检查点');const result=restoreGameSession(JSON.parse(raw),catalog);if(!result.ok)throw new Error(result.message);replacement=result.value;
@@ -172,13 +203,13 @@ export function mountCombatPreview(mountElementId) {
       displayedChoice='';displayedTrial='';offeredPickupId='';offeredRestId='';node('equipment-menu').classList.add('hidden');node('lora-menu').classList.add('hidden');node('plugin-menu').classList.add('hidden');view=readSessionView(session);clock=createClockState();lastTime=performance.now();clearInput();popups=[];saveRequested=false;
       node('menu').classList.add('hidden');node('hud').classList.remove('hidden');node('controls').classList.remove('hidden');mount?.classList.add('started');node('mods-panel').classList.add('hidden');node('nest-panel').classList.add('hidden');updateWallet();
       toast(restore?'已恢复原进度，点击继续才开始。':formal&&readSessionState(session).start.guidedTutorial?'Free教学：移动、瞄准并射击，按提示一步步探索。':formal&&readSessionState(session).expedition?'远征：完成每片海域任意两个目标并击败首领，通道可往返。三海域顺序已锁定。':formal&&readSessionState(session).api?'API调用：敌人随时间增强，每5分钟一位首领。在安全检查点长按F或交互3秒返回。':formal?'占领任意两个信标，前往右下方首领入口。F交互，R保存检查点。':'WASD移动，鼠标射击。F交互，R保存起点检查点。');canvas.focus();
-    }catch(error){if(replacement)disposeGameSession(replacement);toast(`未能开始：${error instanceof Error?error.message:String(error)}`);}finally{node('start').removeAttribute('disabled');refreshContinue();}
+    }catch(error){if(replacement)disposeGameSession(replacement);toast(`未能开始：${error instanceof Error?error.message:String(error)}`);}finally{beginWorking=false;/** @type {HTMLSelectElement} */(node('mode-select')).disabled=false;updateWallet();if(!session)void syncProfileScope();}
   }
   function save(){
     if(!session)return;const snapshot=readSessionState(session),validation=canCreateCheckpoint({state:snapshot,catalog,event:null,entityId:null,random:snapshot.random.world});
     if(!validation.valid){toast(validation.diagnostics.map(item=>item.message).join('；').replace('Move within 96 units of a checkpoint','请靠近检查点').replace('Threats or pressure events are still active','附近仍有敌人或在途攻击'));return;}
     const checkpoint=createCheckpoint(snapshot);
-    if(formal){pendingPersistence.push({id:checkpoint.id,kind:'checkpoint',payload:/** @type {import('../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(checkpoint)))});void flushProfile().then(()=>{if(!profileFailed)toast('冒险检查点已保存，生命和冷却原样保留。');});return;}
+    if(formal){pendingPersistence.push(scopePersistenceIntent({id:checkpoint.id,kind:'checkpoint',payload:/** @type {import('../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(checkpoint)))},snapshot));void flushProfile().then(()=>{if(!profileFailed)toast('冒险检查点已保存，生命和冷却原样保留。');});return;}
     try{localStorage.setItem(checkpointKey,JSON.stringify(checkpoint));refreshContinue();toast('检查点已保存，生命、冷却和战斗进度原样保留。');}catch{toast('保存失败，原存档已保留。');}
   }
   /** @param {boolean} release */
@@ -203,12 +234,13 @@ export function mountCombatPreview(mountElementId) {
   on(node('escape-input'),'pointerdown',event=>{blockTrainingClick=true;event.preventDefault();escape(false);});on(window,'pointerup',()=>{if(escapePressing)escape(true);});
   on(node('nest-panel'),'toggle',()=>{if(/** @type {HTMLDetailsElement} */(node('nest-panel')).open)/** @type {HTMLDetailsElement} */(node('mods-panel')).open=false;});
   on(node('mods-panel'),'toggle',()=>{if(/** @type {HTMLDetailsElement} */(node('mods-panel')).open)/** @type {HTMLDetailsElement} */(node('nest-panel')).open=false;});
-  on(node('mods-manager'),'modschange',()=>refreshContinue());
-  on(node('mode-select'),'change',()=>{try{localStorage.setItem('big-fat-fish:v2:mode',/** @type {HTMLSelectElement} */(node('mode-select')).value);}catch{}const adventure=/** @type {HTMLSelectElement} */(node('mode-select')).value!=='tutorial';updateWallet();if(adventure){/** @type {HTMLSelectElement} */(node('skill-select')).value='skill_disconnect';/** @type {HTMLSelectElement} */(node('dsh-select')).value='';}node('boss-select').toggleAttribute('disabled',['expedition','tutorial-guide'].includes(/** @type {HTMLSelectElement} */(node('mode-select')).value)||/** @type {HTMLSelectElement} */(node('difficulty-select')).value==='api');node('skill-select').toggleAttribute('disabled',adventure);node('companion-select').toggleAttribute('disabled',adventure);node('dsh-select').toggleAttribute('disabled',adventure);refreshContinue();});on(node('retry-profile'),'click',()=>{void flushProfile();});on(node('difficulty-select'),'change',()=>node('boss-select').toggleAttribute('disabled',/** @type {HTMLSelectElement} */(node('difficulty-select')).value==='api'||['expedition','tutorial-guide'].includes(/** @type {HTMLSelectElement} */(node('mode-select')).value)));on(node('interact'),'pointerdown',event=>{if(canWithdrawNow()){event.preventDefault();withdrawalPointerHeld=true;send('StartWithdrawal');}});on(window,'pointerup',()=>{if(withdrawalPointerHeld){withdrawalPointerHeld=false;send('CancelWithdrawal');}});on(node('interact'),'click',()=>{if(!canWithdrawNow())send('Interact');});
+  on(node('mods-manager'),'modschange',()=>{void syncProfileScope();});
+  on(node('mod-profile-create'),'click',()=>{void createSelectedModProfile();});
+  on(node('mode-select'),'change',()=>{try{localStorage.setItem('big-fat-fish:v2:mode',/** @type {HTMLSelectElement} */(node('mode-select')).value);}catch{}const adventure=/** @type {HTMLSelectElement} */(node('mode-select')).value!=='tutorial';void syncProfileScope();if(adventure){/** @type {HTMLSelectElement} */(node('skill-select')).value='skill_disconnect';/** @type {HTMLSelectElement} */(node('dsh-select')).value='';}node('boss-select').toggleAttribute('disabled',['expedition','mod-expedition','tutorial-guide'].includes(/** @type {HTMLSelectElement} */(node('mode-select')).value)||/** @type {HTMLSelectElement} */(node('difficulty-select')).value==='api');node('skill-select').toggleAttribute('disabled',adventure);node('companion-select').toggleAttribute('disabled',adventure);node('dsh-select').toggleAttribute('disabled',adventure);refreshContinue();});on(node('retry-profile'),'click',()=>{void flushProfile();});on(node('difficulty-select'),'change',()=>node('boss-select').toggleAttribute('disabled',/** @type {HTMLSelectElement} */(node('difficulty-select')).value==='api'||['expedition','mod-expedition','tutorial-guide'].includes(/** @type {HTMLSelectElement} */(node('mode-select')).value)));on(node('interact'),'pointerdown',event=>{if(canWithdrawNow()){event.preventDefault();withdrawalPointerHeld=true;send('StartWithdrawal');}});on(window,'pointerup',()=>{if(withdrawalPointerHeld){withdrawalPointerHeld=false;send('CancelWithdrawal');}});on(node('interact'),'click',()=>{if(!canWithdrawNow())send('Interact');});
   on(node('equipment-leave'),'click',()=>resume());
   on(node('abandon'),'click',()=>{if(send('Abandon',{},'ui')&&session)stepSessionUi(session,false);});
   on(node('start'),'click',()=>begin(false));on(node('continue'),'click',()=>begin(true));on(node('pause'),'click',()=>session&&readSessionState(session).flow.phase==='paused'?resume():pause());on(node('resume'),'click',()=>resume());
-  on(node('restart'),'click',()=>{if(formal&&session&&settledRunId!==session.runId){pause();return;}if(session)disposeGameSession(session);session=null;view=null;displayedChoice='';displayedTrial='';offeredPickupId='';offeredRestId='';node('equipment-menu').classList.add('hidden');node('lora-menu').classList.add('hidden');node('plugin-menu').classList.add('hidden');clearInput();node('menu').classList.remove('hidden');node('pause-menu').classList.add('hidden');node('hud').classList.add('hidden');node('controls').classList.add('hidden');mount?.classList.remove('started');node('mods-panel').classList.remove('hidden');node('nest-panel').classList.remove('hidden');refreshContinue();});
+  on(node('restart'),'click',()=>{if(formal&&session&&settledRunId!==session.runId){pause();return;}if(session)disposeGameSession(session);session=null;view=null;displayedChoice='';displayedTrial='';offeredPickupId='';offeredRestId='';node('equipment-menu').classList.add('hidden');node('lora-menu').classList.add('hidden');node('plugin-menu').classList.add('hidden');clearInput();node('menu').classList.remove('hidden');node('pause-menu').classList.add('hidden');node('hud').classList.add('hidden');node('controls').classList.add('hidden');mount?.classList.remove('started');node('mods-panel').classList.remove('hidden');node('nest-panel').classList.remove('hidden');void syncProfileScope();refreshContinue();});
   on(window,'pointerdown',()=>{blockTrainingClick=false;},true);on(window,'click',event=>{if(blockTrainingClick&&/** @type {MouseEvent} */(event).detail>0){blockTrainingClick=false;event.preventDefault();event.stopImmediatePropagation();}},true);
   on(node('training-input'),'pointerdown',event=>{blockTrainingClick=true;event.preventDefault();train(false);});on(window,'pointerup',()=>train(true));on(node('training-input'),'click',event=>{if(/** @type {MouseEvent} */(event).detail===0){train(false);train(true);}});
   on(node('plugin-reroll'),'click',()=>choose('RerollPlugin'));on(node('plugin-skip'),'click',()=>choose('SkipPlugin'));
@@ -295,7 +327,7 @@ export function mountCombatPreview(mountElementId) {
         const skillLabel=node('skill').firstChild;if(skillLabel)skillLabel.textContent=`${catalog.definitions[hud.skillId]?.displayName??hud.skillId} `;node('skill-cd').textContent=hud.skillCooldown>0?`${hud.skillCooldown.toFixed(1)}s`:'就绪';node('dash-cd').textContent=hud.dashCooldown>0?`${hud.dashCooldown.toFixed(1)}s`:'就绪';node('skill').toggleAttribute('disabled',hud.skillCooldown>0||player.statusIds.some(id=>growth.world.statuses[id]?.kind==='skillBan'));node('dash').toggleAttribute('disabled',hud.dashCooldown>0);
         const terminal=['victory','defeat','withdrawal'].includes(view.phase),stopped=view.phase==='paused'||terminal;
         if(formal&&terminal&&settledRunId!==session.runId&&!pendingPersistence.some(intent=>intent.id===`settlement:${growth.runId}`)){
-          const outcome=/** @type {'victory'|'defeat'|'withdrawal'} */(view.phase),settlement=createSettlement(growth,outcome);pendingPersistence.push({id:settlement.id,kind:'settlement',payload:/** @type {import('../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(settlement)))});
+          const outcome=/** @type {'victory'|'defeat'|'withdrawal'} */(view.phase),settlement=createSettlement(growth,outcome);pendingPersistence.push(scopePersistenceIntent({id:settlement.id,kind:'settlement',payload:/** @type {import('../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(settlement)))},growth));
         }
         if(formal&&pendingPersistence.length&&!profileWorking&&!profileFailed)void flushProfile();
         node('equipment-menu').setAttribute('aria-label',offeredRestId?'选择休整奖励':'选择要替换的装备');node('equipment-menu').classList.toggle('hidden',(!offeredPickupId&&!offeredRestId)||view.phase!=='paused');node('pause-menu').classList.toggle('hidden',!stopped||(!!offeredPickupId||!!offeredRestId)&&view.phase==='paused');node('resume').classList.toggle('hidden',terminal);node('abandon').classList.toggle('hidden',!formal||terminal);node('retry-profile').classList.toggle('hidden',!profileFailed);node('restart').toggleAttribute('disabled',formal&&settledRunId!==session.runId);node('pause-title').textContent=view.phase==='victory'?'带着收获回家！':view.phase==='defeat'?'这次先回小窝':view.phase==='withdrawal'?'调用结束，带收获回家！':'已暂停';node('pause-description').textContent=terminal?(formal?(settledRunId===session.runId?'收获已保存。可以返回出发页查看小窝余额。':'正在保存收获，请稍候。失败时可重试，原档不会被覆盖。'):'练习结束，不产生永久资源。'):formal?'战斗已冻结。继续原进度，或明确放弃并按失败结算。':'战斗时间已冻结；回来后不会补跑。';mount?.classList.toggle('stopped',stopped);
@@ -305,7 +337,7 @@ export function mountCombatPreview(mountElementId) {
     }catch(error){pause();toast(`试作已暂停：${error instanceof Error?error.message:String(error)}`);}
     lastTime=now;frameId=requestAnimationFrame(frame);
   }
-  const routeHint=document.createElement('p');routeHint.id='expedition-route';routeHint.className='scope-note';node('difficulty-select').closest('.setup')?.after(routeHint);function updateRouteHint(){const mode=/** @type {HTMLSelectElement} */(node('mode-select')).value,seed=Number(/** @type {HTMLInputElement} */(node('seed')).value);routeHint.textContent=mode==='expedition'?`本局海域顺序：${resolveExpeditionRoute(seed).map(f=>catalog.definitions[`boss_${f}`].displayName).join(' → ')}。可往返，第三位首领结束远征。`:'';}on(node('mode-select'),'change',updateRouteHint);on(node('seed'),'input',updateRouteHint);updateRouteHint();
-  node('mode-select').dispatchEvent(new Event('change'));void loadProfile();refreshContinue();frameId=requestAnimationFrame(frame);
+  const routeHint=document.createElement('p');routeHint.id='expedition-route';routeHint.className='scope-note';node('difficulty-select').closest('.setup')?.after(routeHint);function updateRouteHint(){const mode=/** @type {HTMLSelectElement} */(node('mode-select')).value,seed=Number(/** @type {HTMLInputElement} */(node('seed')).value);routeHint.textContent=mode.endsWith('expedition')?`本局海域顺序：${resolveExpeditionRoute(seed).map(f=>catalog.definitions[`boss_${f}`].displayName).join(' → ')}。可往返，第三位首领结束远征。`:'';}on(node('mode-select'),'change',updateRouteHint);on(node('seed'),'input',updateRouteHint);updateRouteHint();
+  node('mode-select').dispatchEvent(new Event('change'));refreshContinue();frameId=requestAnimationFrame(frame);
   return ()=>{if(disposed)return;disposed=true;cancelAnimationFrame(frameId);for(const remove of removers)remove();if(session)disposeGameSession(session);clearInput();};
 }

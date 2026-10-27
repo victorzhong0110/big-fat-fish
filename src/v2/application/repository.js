@@ -9,6 +9,7 @@ import * as dependency2 from '../domain/settlement.js';
 import { validateCheckpoint } from '../domain/checkpoint.js';
 import { CORE_VERSION, SCHEMA_VERSION } from '../versions.js';
 import { serializeCanonical } from '../domain/serialization.js';
+import {createProfileModScope,equalModScopes} from '../domain/modScope.js';
 
 /**
  * 通过注入存储读取并验证档案，坏档不覆盖；不在世界tick内等待I/O。
@@ -22,7 +23,7 @@ import { serializeCanonical } from '../domain/serialization.js';
  */
 export async function readProfileRepository(storage, catalog) {
   let result = await storage.read();
-  if (!result.ok && result.code === 'PROFILE_MISSING') { const profile = dependency2.createDefaultProfile(); result = await storage.compareAndSwap(-1, { revision: 0, profile }); if (!result.ok && result.code === 'REVISION_CONFLICT') result = await storage.read(); }
+  if (!result.ok && result.code === 'PROFILE_MISSING' && !catalog.modLock?.length) { const profile = dependency2.createDefaultProfile(); result = await storage.compareAndSwap(-1, { revision: 0, profile }); if (!result.ok && result.code === 'REVISION_CONFLICT') result = await storage.read(); }
   if (!result.ok) return result;
   const validation = dependency2.validateProfileRecord(result.value.profile, catalog);
   if (!validation.valid || result.value.revision !== result.value.profile.revision) return { ok: false, code: 'INVALID_PROFILE', message: validation.diagnostics.map(item => item.message).join('; ') || 'Profile revision mismatch' };
@@ -33,6 +34,8 @@ export async function readProfileRepository(storage, catalog) {
  * 以expectedRevision原子提交一个余额/解锁/检查点计划；冲突必须重读重算，不覆盖他人更新。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
+ * @calls domain/modScope.js#createProfileModScope
+ * @calls domain/modScope.js#equalModScopes
  * @calls domain/serialization.js#serializeCanonical
  * @calls domain/settlement.js#validateProfileRecord
  * @param {import('../contracts.d.ts').StoragePort} storage
@@ -43,8 +46,12 @@ export async function readProfileRepository(storage, catalog) {
 export async function commitProfilePlan(storage, plan, catalog) {
   const validation = dependency2.validateProfileRecord(plan.next, catalog);
   if (!validation.valid) return { ok: false, code: 'INVALID_PROFILE', message: validation.diagnostics.map(item => item.message).join('; ') };
-  if (plan.next.revision === plan.expectedRevision) { const current = await storage.read(); if (!current.ok) return current; return current.value.revision === plan.expectedRevision && serializeCanonical(current.value.profile) === serializeCanonical(plan.next) ? current : { ok: false, code: 'REVISION_CONFLICT', message: 'No-op plan does not match the stored profile' }; }
-  if (plan.next.revision !== plan.expectedRevision + 1) return { ok: false, code: 'INVALID_PROFILE_REVISION', message: 'Profile plans advance one revision' };
+  if (plan.next.revision !== plan.expectedRevision && plan.next.revision !== plan.expectedRevision + 1) return { ok: false, code: 'INVALID_PROFILE_REVISION', message: 'Profile plans advance one revision' };
+  const current=await storage.read();if(!current.ok)return current;
+  if(current.value.revision!==plan.expectedRevision)return {ok:false,code:'REVISION_CONFLICT',message:'Profile changed; read and recalculate before retrying'};
+  try{if(!equalModScopes(createProfileModScope(current.value.profile),createProfileModScope(plan.next)))return {ok:false,code:'PROFILE_SCOPE_MISMATCH',message:'Cannot write a profile into a different mod namespace'};}catch{return {ok:false,code:'INVALID_PROFILE',message:'Stored profile is invalid; original retained'};}
+  const currentReport=dependency2.validateProfileRecord(current.value.profile,catalog);if(!currentReport.valid)return {ok:false,code:'INVALID_PROFILE',message:'Stored profile is invalid; original retained'};
+  if (plan.next.revision === plan.expectedRevision) return serializeCanonical(current.value.profile) === serializeCanonical(plan.next) ? current : { ok: false, code: 'REVISION_CONFLICT', message: 'No-op plan does not match the stored profile' };
   return storage.compareAndSwap(plan.expectedRevision, { revision: plan.next.revision, profile: structuredClone(plan.next) });
 }
 
@@ -53,6 +60,8 @@ export async function commitProfilePlan(storage, plan, catalog) {
  * 调用阶段：query；下游模式：dispatch。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @calls domain/checkpoint.js#validateCheckpoint
+ * @calls domain/modScope.js#createProfileModScope
+ * @calls domain/modScope.js#equalModScopes
  * @calls domain/profile/unlocks.js#planAchievementUnlock
  * @calls domain/profile/unlocks.js#planBossUnlock
  * @calls domain/profile/unlocks.js#planDiscoveryUnlock
@@ -74,6 +83,16 @@ export function mergePersistenceIntents(profile, intents, catalog) {
   // Caller order is logical emission order: discover/boss facts survive a subsequent defeat.
   for (const intent of intents) {
     if (!intent.id || !['discovery', 'checkpoint', 'settlement', 'unlock'].includes(intent.kind)) return { ok: false, code: 'INVALID_PERSISTENCE_INTENT', message: 'Unknown persistence intent or missing identity' };
+    const modScope=createProfileModScope(next);
+    if(!equalModScopes(intent.modScope,modScope))return {ok:false,code:'PERSISTENCE_SCOPE_MISMATCH',message:'Persistence intent belongs to a different mod profile'};
+    let settledRetry=false;
+    if(modScope&&intent.kind!=='checkpoint'){
+      const payload=/** @type {{runId?:string}|null} */(intent.payload);
+      if(!next.checkpoint||payload?.runId!==next.checkpoint.state.runId){
+        if(!payload?.runId||!next.settlementLedger.includes(`settlement:${payload.runId}`))return {ok:false,code:'MOD_RUN_MISMATCH',message:'Mod progress requires the matching active checkpoint'};
+        settledRetry=true;
+      }
+    }
     if (seen.has(intent.id)) continue; seen.add(intent.id);
     let result;
     if (intent.kind === 'settlement') result = dependency2.planSettlementCommit(next, /** @type {import('../contracts.d.ts').Settlement} */ (JSON.parse(serializeCanonical(intent.payload))), catalog);
@@ -88,6 +107,7 @@ export function mergePersistenceIntents(profile, intents, catalog) {
       result = intent.kind === 'discovery' ? dependency1.planDiscoveryUnlock(next, event, catalog) : event.type === 'DshCycleDurationReset' ? dependency1.planAchievementUnlock(next,event,catalog) : event.type === 'BossDefeated' ? dependency1.planBossUnlock(next, event, catalog) : dependency1.planEasterUnlock(next, event, catalog);
     }
     if (!result.ok) return result;
+    if(settledRetry&&serializeCanonical(result.value.next)!==serializeCanonical(next))return {ok:false,code:'MOD_RUN_MISMATCH',message:'A settled mod run cannot generate new progress'};
     next = result.value.next; events.push(...result.value.events);
   }
   const changed = serializeCanonical({ ...next, revision: profile.revision }) !== serializeCanonical(profile);

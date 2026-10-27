@@ -1,4 +1,5 @@
 import {planTutorialAdvance,planTutorialRetry} from '../domain/world/tutorial.js';
+import {scopePersistenceIntent} from '../domain/modScope.js';
 import {planEscortAdvance} from '../domain/world/escort.js';
 import {planExpeditionMaintenance} from '../domain/world/expeditionMaintenance.js';
 import {planExpeditionProgression} from '../domain/world/expedition.js';
@@ -56,6 +57,7 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls domain/easter.js#planEasterAdvance
  * @calls domain/gptPets.js#planGptFields
  * @calls domain/mechanics.js#planMechanicEvent
+ * @calls domain/modScope.js#scopePersistenceIntent
  * @calls domain/movement.js#planEntityMotion
  * @calls domain/movement.js#planPickupMotion
  * @calls domain/movement.js#planPlayerMovement
@@ -142,6 +144,7 @@ export function advanceWorldTick(state, commands, catalog) {
   if(working.api?.withdrawal&&working.flow.phase!=='exploring')apply({...createEmptyPlan(),changes:[createStateChange('runtime','api','setApiState',{...working.api,withdrawal:null})]});
   if(working.api)apply(planApiMaintenance(context()));
   if(working.expedition)apply(planExpeditionMaintenance(context()));
+  if(working.start.moddedAdventure===true)outbox.persistence=outbox.persistence.map(intent=>scopePersistenceIntent(intent,working));
   return commitOwnedTickState(state, working, catalog, outbox);
 }
 /** Process pause/resume immediately without advancing the stopped UI/world clock.

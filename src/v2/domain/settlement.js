@@ -3,6 +3,7 @@ import { validateCheckpoint } from './checkpoint.js';
 import { CORE_VERSION, SCHEMA_VERSION } from '../versions.js';
 import { serializeCanonical } from './serialization.js';
 import { validateTreePurchase, resolveDshSlotCount } from './profile/tree.js';
+import {createRunModScope,createProfileModScope,equalModScopes} from './modScope.js';
 /**
  * 对局结果与局外余额同事务计划。
  * Incremental implementation; unavailable functions remain explicit TODOs.
@@ -13,7 +14,7 @@ import { validateTreePurchase, resolveDshSlotCount } from './profile/tree.js';
  * 计算成功/失败40或50%/API主动撤回，资源向下取整；本局id固定。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部公开函数。
+ * @calls domain/modScope.js#createRunModScope
  * @param {import('../contracts.d.ts').StateSnapshot} state
  * @param {'victory' | 'defeat' | 'withdrawal'} outcome
  * @returns {import('../contracts.d.ts').Settlement}
@@ -21,13 +22,16 @@ import { validateTreePurchase, resolveDshSlotCount } from './profile/tree.js';
 export function createSettlement(state, outcome) {
   if (state.flow.phase !== outcome || !['victory', 'defeat', 'withdrawal'].includes(outcome) || outcome === 'withdrawal' && state.start.difficulty.mode !== 'api'||state.api&&outcome==='victory') throw new Error('Settlement must describe a terminal run');
   const keep = outcome === 'defeat' ? state.start.treeNodeIds.includes('tree_explore_c') ? 0.5 : 0.4 : 1;
-  return { id: `settlement:${state.runId}`, runId: state.runId, outcome,...(state.start.guidedTutorial&&outcome==='victory'?{tutorialCompleted:true}:{}), gpuFragments: state.start.guidedTutorial?0:Math.floor(state.inventory.gpuFragments * keep), parts: state.start.guidedTutorial?0:Math.floor(state.inventory.parts * keep), survivedTicks: state.tick, bossKills: state.expedition?.clearedBiomes.length??state.api?.bossKills??state.bosses.filter(boss => state.world.entities[boss.entityId]?.dead).length,...(state.api?{apiResult:{survivedTicks:state.api.elapsedTicks,bossKills:state.api.bossKills,kills:state.api.kills,maxLevel:state.level}}:{}), discoveries: [], difficulty: state.start.difficulty.level, mode: state.start.difficulty.mode };
+  const modScope=createRunModScope(state);
+  return { id: `settlement:${state.runId}`, runId: state.runId, outcome,...(modScope?{modScope}:{}),...(state.start.guidedTutorial&&outcome==='victory'?{tutorialCompleted:true}:{}), gpuFragments: state.start.guidedTutorial?0:Math.floor(state.inventory.gpuFragments * keep), parts: state.start.guidedTutorial?0:Math.floor(state.inventory.parts * keep), survivedTicks: state.tick, bossKills: state.expedition?.clearedBiomes.length??state.api?.bossKills??state.bosses.filter(boss => state.world.entities[boss.entityId]?.dead).length,...(state.api?{apiResult:{survivedTicks:state.api.elapsedTicks,bossKills:state.api.bossKills,kills:state.api.kills,maxLevel:state.level}}:{}), discoveries: [], difficulty: state.start.difficulty.level, mode: state.start.difficulty.mode };
 }
 
 /**
  * 去重、入账、碎片换卡、解锁并清当前检查点，单个revision计划。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
+ * @calls domain/modScope.js#createProfileModScope
+ * @calls domain/modScope.js#equalModScopes
  * @calls domain/settlement.js#validateProfileRecord
  * @param {import('../contracts.d.ts').Profile} profile
  * @param {import('../contracts.d.ts').Settlement} settlement
@@ -35,9 +39,11 @@ export function createSettlement(state, outcome) {
  * @returns {import('../contracts.d.ts').Result<import('../contracts.d.ts').ProfilePlan>}
  */
 export function planSettlementCommit(profile, settlement, catalog) {
+  if(!equalModScopes(settlement.modScope,createProfileModScope(profile)))return {ok:false,code:'SETTLEMENT_SCOPE_MISMATCH',message:'Modded and vanilla settlements cannot share a profile'};
   if (settlement.id !== `settlement:${settlement.runId}` || !['victory', 'defeat', 'withdrawal'].includes(settlement.outcome) || ![settlement.gpuFragments, settlement.parts, settlement.survivedTicks, settlement.bossKills].every(value => Number.isSafeInteger(value) && value >= 0)) return { ok: false, code: 'INVALID_SETTLEMENT', message: 'Invalid settlement identity or resources' };
   if(settlement.mode==='api'&&(settlement.outcome==='victory'||!settlement.apiResult||!['survivedTicks','bossKills','kills','maxLevel'].every(k=>Number.isSafeInteger(settlement.apiResult?.[/** @type {keyof import('../contracts.d.ts').ApiRecord} */(k)])&&Number(settlement.apiResult?.[/** @type {keyof import('../contracts.d.ts').ApiRecord} */(k)])>=0)))return {ok:false,code:'INVALID_SETTLEMENT',message:'API requires a valid survival record and cannot end in victory'};
   if (profile.settlementLedger.includes(settlement.id)) return { ok: true, value: { expectedRevision: profile.revision, next: structuredClone(profile), events: [] } };
+  if(profile.modLock?.length&&(!profile.checkpoint||profile.checkpoint.state.runId!==settlement.runId))return {ok:false,code:'MOD_RUN_MISMATCH',message:'Mod settlement requires its matching active checkpoint'};
   if (profile.checkpoint && profile.checkpoint.state.runId !== settlement.runId) return { ok: false, code: 'ACTIVE_RUN_CONFLICT', message: 'Cannot settle over another active run' };
   if(settlement.tutorialCompleted&&(settlement.mode!=='tutorial'||settlement.difficulty!==0||settlement.outcome!=='victory'||settlement.bossKills<1||settlement.gpuFragments!==0||settlement.parts!==0||profile.checkpoint?.state.start.guidedTutorial!==true))return {ok:false,code:'INVALID_TUTORIAL_REWARD',message:'A completed active tutorial is required'};
   const fragments = profile.gpuFragments + settlement.gpuFragments;
@@ -68,6 +74,7 @@ export function validateProfileRecord(profile, catalog) {
   const fail = (/** @type {string} */ message) => diagnostics.push({ code: 'INVALID_PROFILE', message, relatedIds: [] });
   try {
     serializeCanonical(profile);
+    if(serializeCanonical(profile.modLock??[])!==serializeCanonical(catalog.modLock??[])||(catalog.modLock?.length?profile.modContentVersion!==catalog.version:profile.modContentVersion!==undefined))fail('Profile mod scope differs from the installed catalog');
     if (profile.version !== 1 || !['revision', 'gpuCards', 'gpuFragments', 'parts', 'highestDifficulty'].every(key => Number.isSafeInteger(profile[/** @type {'revision'|'gpuCards'|'gpuFragments'|'parts'|'highestDifficulty'} */ (key)]) && Number(profile[/** @type {'revision'|'gpuCards'|'gpuFragments'|'parts'|'highestDifficulty'} */ (key)]) >= 0) || profile.gpuFragments >= 5 || profile.highestDifficulty > 15 || typeof profile.apiUnlocked !== 'boolean' || profile.apiUnlocked !== (profile.highestDifficulty >= 15)) fail('Invalid profile version, balances or progression');
     if(profile.bestApi&&!['survivedTicks','bossKills','kills','maxLevel'].every(k=>Number.isSafeInteger(profile.bestApi?.[/** @type {keyof import('../contracts.d.ts').ApiRecord} */(k)])&&Number(profile.bestApi?.[/** @type {keyof import('../contracts.d.ts').ApiRecord} */(k)])>=0))fail('Invalid API personal best');
     for (const key of /** @type {const} */ (['purchasedTree', 'discovered', 'unlockedWeapons', 'unlockedSkills', 'unlockedCompanions', 'unlockedDsh', 'facilities', 'discoveryLedger', 'unlockLedger', 'settlementLedger'])) { const ids = profile[key]; if (!Array.isArray(ids) || new Set(ids).size !== ids.length || ids.some(id => typeof id !== 'string' || !id)) fail(`Invalid ${key}`); }

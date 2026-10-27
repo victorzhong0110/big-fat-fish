@@ -4,6 +4,9 @@ import { planTreePurchase, planTreeRespec } from '../domain/profile/tree.js';
 import { planFacilityPurchase, planPermanentUnlock, planDshEquipment, validateStartRequest, planResidentRescue } from '../domain/profile/nest.js';
 import { resolveDifficultySnapshot } from '../domain/difficulty.js';
 import { createHandlerRegistry } from '../content/registry.js';
+import {resolveWeaponTemplate} from '../content/weaponCapabilities.js';
+import {resolveSkillTemplate} from '../content/skillCapabilities.js';
+import {serializeCanonical} from '../domain/serialization.js';
 
 /** Execute a nest command against the latest revision; recompute after CAS conflicts, never during a run.
  * @calls application/repository.js#commitProfilePlan
@@ -44,8 +47,11 @@ export async function executeNestAction(storage, catalog, action) {
 
 /** Validate permanent ownership and current runtime capabilities before building the immutable departure snapshot.
  * @calls content/registry.js#createHandlerRegistry
+ * @calls content/skillCapabilities.js#resolveSkillTemplate
+ * @calls content/weaponCapabilities.js#resolveWeaponTemplate
  * @calls domain/difficulty.js#resolveDifficultySnapshot
  * @calls domain/profile/nest.js#validateStartRequest
+ * @calls domain/serialization.js#serializeCanonical
  * @param {import('../contracts.d.ts').Profile} profile
  * @param {import('../contracts.d.ts').StartRequest} request
  * @param {Readonly<import('../contracts.d.ts').ContentCatalog>} catalog
@@ -53,15 +59,16 @@ export async function executeNestAction(storage, catalog, action) {
  * @returns {import('../contracts.d.ts').Result<import('../contracts.d.ts').StartSnapshot>}
  */
 export function prepareAdventureStart(profile, request, catalog, runId) {
+  if(serializeCanonical(profile.modLock??[])!==serializeCanonical(catalog.modLock??[])||(catalog.modLock?.length?profile.modContentVersion!==catalog.version:profile.modContentVersion!==undefined))return {ok:false,code:'PROFILE_SCOPE_MISMATCH',message:'当前小窝与启用模组不匹配，请切回对应模组组合。'};
   const validation = validateStartRequest(profile, request, catalog);
   if (!validation.valid) return { ok: false, code: 'START_REJECTED', message: validation.diagnostics.map(item => item.message).join('; ') };
   if(request.mode==='tutorial'){
-    if(request.difficulty!==0||request.weaponIds.length!==1||request.weaponIds[0]!=='mcp_bubble'||request.skillId!=='skill_disconnect'||request.companionId!=='companion_rice'||!runId)return {ok:false,code:'UNSUPPORTED_TUTORIAL',message:'教学使用基础MCP、断开连接和饭团。'};
+    if(catalog.modLock?.length||request.difficulty!==0||request.weaponIds.length!==1||request.weaponIds[0]!=='mcp_bubble'||request.skillId!=='skill_disconnect'||request.companionId!=='companion_rice'||!runId)return {ok:false,code:'UNSUPPORTED_TUTORIAL',message:'教学使用原版基础MCP、断开连接和饭团。'};
     const difficulty=resolveDifficultySnapshot(request,catalog);if(!difficulty.ok)return difficulty;
     return {ok:true,value:{runtimeProfile:'adventure-slice',guidedTutorial:true,runId,treeNodeIds:[],dsh:[],difficulty:difficulty.value,loadout:{weapons:[{instanceId:`${runId}:weapon:0`,definitionId:'mcp_bubble',originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null}],activeWeaponIndex:0,skillId:'skill_disconnect',skillCooldown:0,companionId:'companion_rice',companionCooldown:0,dashCooldown:0}}};
   }
   const available = createHandlerRegistry().implementedIds;
-  if (request.bossFaction!==undefined&&!['claude','gpt','grok'].includes(request.bossFaction)||!['short','api','expedition'].includes(request.mode) || (request.mode!=='api'&&(typeof request.difficulty!=='number'||request.difficulty<1||request.difficulty>15)) || request.companionId !== null && !available.includes(request.companionId) || request.weaponIds.some(id => !available.includes(id)) || !available.includes(request.skillId) || profile.equippedDsh.some(slot => !available.includes(slot.id)) || !runId) return { ok: false, code: 'UNSUPPORTED_RUNTIME', message: '当前开放Pro1–Max20x15短途、三海域远征与已解锁的API调用。' };
+  if (request.bossFaction!==undefined&&!['claude','gpt','grok'].includes(request.bossFaction)||!['short','api','expedition'].includes(request.mode) || (request.mode!=='api'&&(typeof request.difficulty!=='number'||request.difficulty<1||request.difficulty>15)) || request.companionId !== null && !available.includes(request.companionId) || request.weaponIds.some(id => !resolveWeaponTemplate(catalog,id)) || !resolveSkillTemplate(catalog,request.skillId) || profile.equippedDsh.some(slot => !available.includes(slot.id)) || !runId) return { ok: false, code: 'UNSUPPORTED_RUNTIME', message: '当前开放Pro1–Max20x15短途、三海域远征与已解锁的API调用。' };
   const difficulty = resolveDifficultySnapshot(request, catalog); if (!difficulty.ok) return difficulty;
-  return { ok: true, value: { runtimeProfile: 'adventure-slice',bossFaction:request.bossFaction??'claude', runId, treeNodeIds: [...profile.purchasedTree], dsh: structuredClone(profile.equippedDsh), difficulty: difficulty.value, loadout: { weapons: request.weaponIds.map((id, index) => ({ instanceId: `${runId}:weapon:${index}`, definitionId: id, originalQuality: 0, cooldown: 0, temporaryQuality: null, updateExpiresAt: null })), activeWeaponIndex: 0, skillId: request.skillId, skillCooldown: 0, companionId: request.companionId, companionCooldown: 0, dashCooldown: 0 } } };
+  return { ok: true, value: { runtimeProfile: 'adventure-slice',...(catalog.modLock?.length?{moddedAdventure:true,modLock:structuredClone(catalog.modLock)}:{}),bossFaction:request.bossFaction??'claude', runId, treeNodeIds: [...profile.purchasedTree], dsh: structuredClone(profile.equippedDsh), difficulty: difficulty.value, loadout: { weapons: request.weaponIds.map((id, index) => ({ instanceId: `${runId}:weapon:${index}`, definitionId: id, originalQuality: 0, cooldown: 0, temporaryQuality: null, updateExpiresAt: null })), activeWeaponIndex: 0, skillId: request.skillId, skillCooldown: 0, companionId: request.companionId, companionCooldown: 0, dashCooldown: 0 } } };
 }

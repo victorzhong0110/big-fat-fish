@@ -3,10 +3,14 @@ import {RESET_ACHIEVEMENT} from '../content/achievements.js';
 import { executeNestAction } from '../application/nest.js';
 import { validateTreePurchase, resolveDshSlotCount } from '../domain/profile/tree.js';
 import { createHandlerRegistry } from '../content/registry.js';
+import {listRuntimeWeapons} from '../content/weaponCapabilities.js';
+import {listRuntimeSkills} from '../content/skillCapabilities.js';
 
 /** Mount the nest dashboard; Profile changes go through the application service and transactional port.
  * @calls application/nest.js#executeNestAction
  * @calls content/registry.js#createHandlerRegistry
+ * @calls content/skillCapabilities.js#listRuntimeSkills
+ * @calls content/weaponCapabilities.js#listRuntimeWeapons
  * @calls domain/profile/tree.js#resolveDshSlotCount
  * @calls domain/profile/tree.js#validateTreePurchase
  * @param {HTMLElement} root
@@ -18,7 +22,7 @@ import { createHandlerRegistry } from '../content/registry.js';
  */
 export function mountNestManager(root, catalog, storage, onProfile, notify) {
   let record = /** @type {import('../contracts.d.ts').StorageRecord|null} */(null), busy = false, disposed = false, tab = 'tree', weaponIds = ['mcp_bubble'], skillId = 'skill_disconnect', companionId='companion_rice';
-  const available = createHandlerRegistry().implementedIds, title = document.createElement('p'), tabs = document.createElement('nav'), body = document.createElement('div');
+  const available = [...new Set([...createHandlerRegistry().implementedIds,...listRuntimeWeapons(catalog),...listRuntimeSkills(catalog)])], title = document.createElement('p'), tabs = document.createElement('nav'), body = document.createElement('div');
   title.className = 'nest-balance'; tabs.className = 'nest-tabs'; tabs.setAttribute('aria-label','小窝设施'); body.className = 'nest-content'; root.append(title,tabs,body);
   /** @param {string} text @returns {HTMLButtonElement} */
   function button(text) { const node = document.createElement('button'); node.type = 'button'; node.textContent = text; return node; }
@@ -49,7 +53,7 @@ export function mountNestManager(root, catalog, storage, onProfile, notify) {
     }
     const companionLabel=document.createElement('label'),companionSelect=document.createElement('select');companionLabel.textContent='随行伙伴';companionSelect.dataset.loadout='companion';const empty=document.createElement('option');empty.value='';empty.textContent='独自出门';companionSelect.append(empty);
     const companionIds=profile.unlockedCompanions.filter(id=>available.includes(id)&&(id==='companion_rice'||profile.facilities.includes('home_guest')));for(const id of companionIds){const option=document.createElement('option');option.value=id;option.textContent=catalog.definitions[id].displayName;companionSelect.append(option);}if(!companionIds.includes(companionId))companionId='';companionSelect.value=companionId;companionSelect.disabled=busy||!!profile.checkpoint;companionSelect.onchange=()=>{companionId=companionSelect.value;};companionLabel.append(companionSelect);body.append(companionLabel);
-    const note=document.createElement('p');note.className='scope-note';note.textContent='此配装用于下次Pro1出发。每局一位随行伙伴；被封禁时能力、跟随与冷却冻结。Free练习使用出发页试用设置。';body.append(note);
+    const note=document.createElement('p');note.className='scope-note';note.textContent=catalog.modLock?.length?'此配装用于当前模组组合的冒险；社区装备只在本档内可用。':'此配装用于下次正式冒险。每局一位随行伙伴；被封禁时能力、跟随与冷却冻结。Free练习使用出发页试用设置。';body.append(note);
   }
   function render() {
     if(disposed)return;body.replaceChildren();

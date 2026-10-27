@@ -33,7 +33,7 @@ for(const module of sourceModel){
    planClaudeEncounter:'任意两个信标完成后，以稳定ID创建一次Claude首领并切换boss阶段。',
    createInitialGameState:'创建Free或Pro1初态，验证树前置/DSH槽/模组锁并一次应用永久基础属性；full仍拒绝。',
    createMapPlan:'按模式生成Free演练、短途/API海域或远征区域；远征包含信标、封锁与护送。',
-   createGameSession:'校验内容与初始世界后发布Free/Pro1私有Session；模组仅允许Free练习。',
+   createGameSession:'校验内容与初始世界后发布Free/Pro1私有Session；模组可在独立档案使用。',
    restoreGameSession:'校验版本、模组锁及状态后构建暂停Session；失败保留原检查点。',
    stepSessionWorld:'消费到期世界命令，执行Free/Pro1固定世界步并原子提交。',
    advancePreviewWorldTick:'执行Free/Pro1固定世界步，推进探索/追兵/Claude/效果/掉落与成长后统一提交。',
@@ -58,7 +58,7 @@ for(const module of sourceModel){
    parseModPackage:'校验SDK1.0/1.1清单、补丁和独立MCP配方；限制模板、命名空间、参数边界与大小。',
    resolveModLoadOrder:'检查精确依赖版本与冲突，生成稳定拓扑顺序，拒绝依赖环。',
    composeModCatalog:'从原版复制并组装声明式模组；重复字段报错，生成内容指纹和存档锁。',
-   mountModManager:'提供本地JSON安装、启停、移除与持久化菜单，只影响下次Free出发。'
+   mountModManager:'提供本地JSON安装、启停、移除与持久化菜单，只影响下一次练习或模组冒险。'
   };
   if(currentDescriptions[fn.name])item.description=currentDescriptions[fn.name];
   const nestDescriptions={
@@ -120,7 +120,7 @@ for(const module of sourceModel){
    planChallengeInteraction:'F主动启动三阵营可选精英或15级三段遭遇；距离/阶段复核后一次提交。',
    planLateSchedule:'协调精英一次奖励、13级衔接、三段遭遇及15秒间隔、每海域两次安全地图异常。',
    createInitialGameState:'创建Free、1–15短途/远征或API初态，锁定树、装备、DSH、模型和累计机制；full仍拒绝。',
-   createGameSession:'校验目录与世界后发布Free或1–15短途私有Session，社区模组仅在Free开放。',
+   createGameSession:'校验目录与世界后发布Free或1–15短途私有Session，社区模组使用独立冒险档。',
    planPressureEventAdvance:'推进预警/真实出生/信号/临时捷径，结束退回未出生预留；精英超时失败，不发挑战奖励。'
   };
   if(finalDescriptions[fn.name])item.description=finalDescriptions[fn.name];
@@ -136,7 +136,7 @@ for(const module of sourceModel){
    planApiProgression:'API世界调度入口，分别在战斗前推进时间、战斗后处理首领与撤回，其他模式返回空计划。',
    isWorldSafe:'共享实际敌人、敌弹、待出生、额外压力与API首领预警的安全判定，检查点和撤回使用同一规则。',
    createInitialGameState:'创建Free、1–15短途/远征或API初态，锁定配装和累计机制；full仍拒绝。',
-   createGameSession:'校验目录及状态不变量后发布Free、短途、远征和API私有Session；正式模组仍拒绝。',
+   createGameSession:'校验目录及状态不变量后发布Free、短途、远征和API私有Session；模组冒险使用精确锁与独立档。',
    prepareAdventureStart:'验证拥有与真实最高难度，复制树/DSH/标准装备；支持数字短途/远征，通关15才允许API。',
    planSpawnSchedule:'有限短途追兵或持续API混编；API首领期间继续普通生成、优先首领队列，容量不足延期。',
    planEnemySpawn:'合法位置实际出生时锁定API分钟数值与Fable/Mythos模型，推进一次世界随机流，活体不随时间补血。',
@@ -155,7 +155,7 @@ for(const module of sourceModel){
    planTutorialRetry:'教学中玩家死亡时回到安全位置重试并保留教学与成长进度；同帧首领死亡亦优先重试。',
    createMapPlan:'按模式生成Free引导/练习、短途/API海域或远征区域；远征包含信标、封锁与护送。',
    createInitialGameState:'创建Free引导/练习、1–15短途/远征或API初态，锁定配装和累计机制；full仍拒绝。',
-   createGameSession:'校验目录及状态不变量后发布Free引导/练习、短途、远征和API私有Session；正式模组仍拒绝。',
+   createGameSession:'校验目录及状态不变量后发布Free引导/练习、短途、远征和API私有Session；模组冒险使用精确锁与独立档。',
    prepareAdventureStart:'验证拥有与难度并锁定出发快照；Free引导强制固定装备且不带技能树/DSH，通关15才允许API。',
    createSettlement:'按真实终态生成一次结算；Free引导只在胜利时标记教学完成，不给普通资源；API不能胜利。',
    planSettlementCommit:'校验结算与活动检查点并幂等入账；正式Free首次完成通过全局账本发一张算力卡。',
@@ -171,7 +171,7 @@ for(const module of sourceModel){
    listRuntimeSkills:'列出当前目录确有原生处理器的技能，供Free练习装配菜单选择。',
    dispatchSkillsHandler:'先解析技能模板，再调用对应原生处理器；保留社区技能实际ID供事件与存档使用。',
    planSkillCast:'以装备技能参数和插件准备倍率施放实际模板，设置独立冷却并发布保留真实ID的SkillCast事件。',
-   mountModManager:'提供本地JSON安装、启停与移除；SDK1.0–1.3包只影响下次Free练习。'
+   mountModManager:'提供本地JSON安装、启停与移除；SDK1.0–1.3包影响下次练习或独立模组冒险。'
   };
   if(modSkillDescriptions[fn.name])item.description=modSkillDescriptions[fn.name];
   const correctedDescriptions={
@@ -187,6 +187,27 @@ for(const module of sourceModel){
    commitOwnedTickState:'仅接收tick从完整输入副本独占得到的工作状态；验证状态/输出后移交所有权，避免额外复制；失败不发布。'
   };
   if(correctedDescriptions[fn.name])item.description=correctedDescriptions[fn.name];
+  const modAdventureDescriptions={
+   createModProfileNamespace:'以内容版本和完整模组锁生成独立存储键；档案仍核对完整锁，校验值不能代替锁。',
+   createModProfileSnapshot:'按用户选择从零或复制原版进度，剔除活动检查点并解锁当前组合的社区装备，创建独立档案快照。',
+   initializeModProfile:'只对缺失的模组档案执行CAS创建；并发创建冲突时读取已存在的获胜档案，不覆盖。',
+   createRunModScope:'从模组冒险出发快照提取完整包锁和内容版本；原版与练习没有永久模组范围。',
+   scopePersistenceIntent:'为模组冒险的保存、发现、解锁和结算意图附上完整范围，不修改原意图。',
+   createProfileModScope:'读取局外档绑定的完整模组范围；旧原版档案返回空范围。',
+   equalModScopes:'比较完整内容版本和模组锁；非法或非有限数据视为不匹配。',
+   readProfileRepository:'读取并验证完整档案范围；原版缺失时创建默认档，模组档案必须由用户显式创建。',
+   commitProfilePlan:'校验新旧档案的模组范围及revision后CAS提交；冲突重读，绝不跨范围覆盖。',
+   mergePersistenceIntents:'按发出顺序合并发现、解锁、存档和结算；模组范围及活动run必须匹配，已结算重复批次仅允许无变化重试。',
+   prepareAdventureStart:'校验拥有、难度和档案范围并锁定装备/树/DSH；模组冒险附完整锁，Free引导保持原版。',
+   createInitialGameState:'创建Free引导/练习、短途/远征或API初态；模组冒险要求显式标记及完整锁，full仍拒绝。',
+   createGameSession:'校验目录与世界后发布私有Session；正式模组使用隔离档案和精确锁。',
+   createSettlement:'按真实终态产生一次结算；模组冒险附完整范围，Free引导仅首次奖励标记，API不能胜利。',
+   planSettlementCommit:'校验结算与档案范围、活动检查点并幂等入账；Free引导首次完成发一张算力卡。',
+   mountModManager:'提供本地JSON安装、启停与移除；组合影响下次Free练习或独立模组冒险，不热替换对局。',
+   mountNestManager:'组装当前原版或精确模组档案的小窝UI；所有消费经应用服务，不接触GameState。',
+   mountCombatPreview:'组装Free引导/练习、原版及模组短途/远征/API、显式模组档创建、检查点和结算。'
+  };
+  if(modAdventureDescriptions[fn.name])item.description=modAdventureDescriptions[fn.name];
   if(fn.name==='inspectGameState')item.rule='返回诊断，不修改状态；完整内容目录由独立catalog校验。';
   if(fn.name==='commitOwnedTickState'){item.implementationScope='core-preview + adventure-slice';item.ownership='仅tick私有副本；成功后转移所有权，不可再被调用方修改';}
   if(['resolveSkillTemplate','listRuntimeSkills'].includes(fn.name))item.implementationScope='core-preview + adventure-slice';
@@ -207,7 +228,7 @@ manifest.rules=[...new Set(manifest.rules)];
 const fns=manifest.modules.flatMap(module=>module.functions),implemented=fns.filter(fn=>fn.implementation==='implemented').length;
 manifest.counts={modules:manifest.modules.length,functions:fns.length,implemented,placeholders:fns.length-implemented};
 await fs.writeFile(filename,JSON.stringify(manifest,null,2)+'\n');
-const esc=value=>value.replaceAll('|','\\|').replaceAll('\n',' '),rows=['# 12 · 全部函数目录与调用契约','',`当前${manifest.counts.modules}个JS模块、${fns.length}个公开函数：${implemented}个有实现，${fns.length-implemented}个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、1–15短途/远征及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。`,'','调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。',''];
+const esc=value=>value.replaceAll('|','\\|').replaceAll('\n',' '),rows=['# 12 · 全部函数目录与调用契约','',`当前${manifest.counts.modules}个JS模块、${fns.length}个公开函数：${implemented}个有实现，${fns.length-implemented}个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途/远征与已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。`,'','调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。',''];
 for(const module of manifest.modules){rows.push(`## ${module.path}`,'',module.purpose,'',`[源码](../../src/v2/${module.path})；层：\`${module.layer}\`。`,'',`直接依赖：${module.dependencies.map(dep=>'`'+dep+'`').join('、')||'无'}。`,'','| 函数签名 | 返回 | 状态/范围 | 功能与约束 |','|---|---|---|---|');
  for(const fn of module.functions)rows.push(`| \`${esc(fn.name+'('+fn.args.map(arg=>arg.name+': '+arg.type+(arg.default!==undefined?' = '+arg.default:'')).join(', ')+')')}\` | \`${esc(fn.result)}\` | ${fn.implementation==='implemented'?'已实现':'TODO'}${fn.implementationScope?' / '+fn.implementationScope:''} | ${esc(fn.description+'；'+fn.rule+'；状态权限：'+fn.ownership)} |`);
  rows.push('','公开函数下游：','');for(const fn of module.functions)rows.push(`- \`${fn.name}\` → ${fn.calls.map(call=>'`'+call+'`').join('、')||'无内部公开函数'}。`);

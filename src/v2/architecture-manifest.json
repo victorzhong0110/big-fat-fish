@@ -897,15 +897,117 @@
       ]
     },
     {
+      "path": "application/modProfile.js",
+      "layer": "domain",
+      "purpose": "Return a stable storage namespace for one exact content version and ordered mod lock.",
+      "dependencies": [
+        "application/repository.js",
+        "content/catalog.js",
+        "content/registry.js",
+        "domain/serialization.js",
+        "domain/settlement.js"
+      ],
+      "functions": [
+        {
+          "description": "以内容版本和完整模组锁生成独立存储键；档案仍核对完整锁，校验值不能代替锁。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createModProfileNamespace",
+          "args": [
+            {
+              "name": "catalog",
+              "type": "untyped"
+            }
+          ],
+          "result": "string",
+          "implementation": "implemented",
+          "calls": [
+            "content/catalog.js#validateContentCatalog",
+            "content/registry.js#createHandlerRegistry",
+            "domain/serialization.js#createDataDigest"
+          ]
+        },
+        {
+          "description": "按用户选择从零或复制原版进度，剔除活动检查点并解锁当前组合的社区装备，创建独立档案快照。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createModProfileSnapshot",
+          "args": [
+            {
+              "name": "catalog",
+              "type": "untyped"
+            },
+            {
+              "name": "base",
+              "type": "untyped"
+            },
+            {
+              "name": "source",
+              "type": "untyped"
+            }
+          ],
+          "result": "Result<Profile>",
+          "implementation": "implemented",
+          "calls": [
+            "application/modProfile.js#createModProfileNamespace",
+            "content/catalog.js#validateContentCatalog",
+            "content/registry.js#createHandlerRegistry",
+            "domain/serialization.js#createDataDigest",
+            "domain/settlement.js#createDefaultProfile",
+            "domain/settlement.js#validateProfileRecord"
+          ]
+        },
+        {
+          "description": "只对缺失的模组档案执行CAS创建；并发创建冲突时读取已存在的获胜档案，不覆盖。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "initializeModProfile",
+          "args": [
+            {
+              "name": "storage",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            },
+            {
+              "name": "base",
+              "type": "untyped"
+            },
+            {
+              "name": "source",
+              "type": "untyped"
+            }
+          ],
+          "result": "Promise<Result<StorageRecord>>",
+          "implementation": "implemented",
+          "calls": [
+            "application/modProfile.js#createModProfileSnapshot",
+            "application/repository.js#readProfileRepository"
+          ]
+        }
+      ]
+    },
+    {
       "path": "application/nest.js",
       "layer": "domain",
       "purpose": "Execute a nest command against the latest revision; recompute after CAS conflicts, never during a run.",
       "dependencies": [
         "application/repository.js",
         "content/registry.js",
+        "content/skillCapabilities.js",
+        "content/weaponCapabilities.js",
         "domain/difficulty.js",
         "domain/profile/nest.js",
-        "domain/profile/tree.js"
+        "domain/profile/tree.js",
+        "domain/serialization.js"
       ],
       "functions": [
         {
@@ -944,7 +1046,7 @@
           ]
         },
         {
-          "description": "验证拥有与难度并锁定出发快照；Free引导强制固定装备且不带技能树/DSH，通关15才允许API。",
+          "description": "校验拥有、难度和档案范围并锁定装备/树/DSH；模组冒险附完整锁，Free引导保持原版。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -972,8 +1074,11 @@
           "implementation": "implemented",
           "calls": [
             "content/registry.js#createHandlerRegistry",
+            "content/skillCapabilities.js#resolveSkillTemplate",
+            "content/weaponCapabilities.js#resolveWeaponTemplate",
             "domain/difficulty.js#resolveDifficultySnapshot",
-            "domain/profile/nest.js#validateStartRequest"
+            "domain/profile/nest.js#validateStartRequest",
+            "domain/serialization.js#serializeCanonical"
           ]
         }
       ]
@@ -1105,6 +1210,7 @@
       "purpose": "局外档与活动检查点的单写者事务入口。",
       "dependencies": [
         "domain/checkpoint.js",
+        "domain/modScope.js",
         "domain/profile/unlocks.js",
         "domain/serialization.js",
         "domain/settlement.js",
@@ -1124,7 +1230,7 @@
             }
           ],
           "result": "Promise<Result<StorageRecord>>",
-          "description": "通过注入存储读取并验证档案，坏档不覆盖；不在世界tick内等待I/O。",
+          "description": "读取并验证完整档案范围；原版缺失时创建默认档，模组档案必须由用户显式创建。",
           "calls": [
             "domain/settlement.js#createDefaultProfile",
             "domain/settlement.js#validateProfileRecord"
@@ -1152,8 +1258,10 @@
             }
           ],
           "result": "Promise<Result<StorageRecord>>",
-          "description": "以expectedRevision原子提交一个余额/解锁/检查点计划；冲突必须重读重算，不覆盖他人更新。",
+          "description": "校验新旧档案的模组范围及revision后CAS提交；冲突重读，绝不跨范围覆盖。",
           "calls": [
+            "domain/modScope.js#createProfileModScope",
+            "domain/modScope.js#equalModScopes",
             "domain/serialization.js#serializeCanonical",
             "domain/settlement.js#validateProfileRecord"
           ],
@@ -1180,9 +1288,11 @@
             }
           ],
           "result": "Result<ProfilePlan>",
-          "description": "稳定顺序合并发现/解锁/结算/存档，读取账本去重，输出单次revision计划。",
+          "description": "按发出顺序合并发现、解锁、存档和结算；模组范围及活动run必须匹配，已结算重复批次仅允许无变化重试。",
           "calls": [
             "domain/checkpoint.js#validateCheckpoint",
+            "domain/modScope.js#createProfileModScope",
+            "domain/modScope.js#equalModScopes",
             "domain/profile/unlocks.js#planAchievementUnlock",
             "domain/profile/unlocks.js#planBossUnlock",
             "domain/profile/unlocks.js#planDiscoveryUnlock",
@@ -6269,6 +6379,7 @@
       "layer": "domain",
       "purpose": "探索中MCP交互、满槽预览与实例保留交换。",
       "dependencies": [
+        "content/skillCapabilities.js",
         "content/weaponCapabilities.js",
         "domain/plans.js",
         "domain/serialization.js",
@@ -6348,6 +6459,7 @@
           "result": "SystemPlan",
           "implementation": "implemented",
           "calls": [
+            "content/skillCapabilities.js#resolveSkillTemplate",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
             "domain/serialization.js#toJson"
@@ -6610,7 +6722,7 @@
       ],
       "functions": [
         {
-          "description": "创建Free引导/练习、1–15短途/远征或API初态，锁定配装和累计机制；full仍拒绝。",
+          "description": "创建Free引导/练习、短途/远征或API初态；模组冒险要求显式标记及完整锁，full仍拒绝。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -6964,6 +7076,96 @@
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
             "domain/serialization.js#toJson"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "domain/modScope.js",
+      "layer": "domain",
+      "purpose": "Snapshot the exact namespace carried by a modded adventure; ordinary and practice runs have no permanent mod scope.",
+      "dependencies": [
+        "domain/serialization.js"
+      ],
+      "functions": [
+        {
+          "description": "从模组冒险出发快照提取完整包锁和内容版本；原版与练习没有永久模组范围。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createRunModScope",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            }
+          ],
+          "result": "ModScope|null",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "为模组冒险的保存、发现、解锁和结算意图附上完整范围，不修改原意图。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "scopePersistenceIntent",
+          "args": [
+            {
+              "name": "intent",
+              "type": "untyped"
+            },
+            {
+              "name": "state",
+              "type": "untyped"
+            }
+          ],
+          "result": "PersistenceIntent",
+          "implementation": "implemented",
+          "calls": [
+            "domain/modScope.js#createRunModScope"
+          ]
+        },
+        {
+          "description": "读取局外档绑定的完整模组范围；旧原版档案返回空范围。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createProfileModScope",
+          "args": [
+            {
+              "name": "profile",
+              "type": "untyped"
+            }
+          ],
+          "result": "ModScope|null",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "比较完整内容版本和模组锁；非法或非有限数据视为不匹配。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "equalModScopes",
+          "args": [
+            {
+              "name": "a",
+              "type": "untyped"
+            },
+            {
+              "name": "b",
+              "type": "untyped"
+            }
+          ],
+          "result": "boolean",
+          "implementation": "implemented",
+          "calls": [
+            "domain/serialization.js#serializeCanonical"
           ]
         }
       ]
@@ -8364,6 +8566,7 @@
       "purpose": "对局结果与局外余额同事务计划。",
       "dependencies": [
         "domain/checkpoint.js",
+        "domain/modScope.js",
         "domain/profile/tree.js",
         "domain/serialization.js",
         "versions.js"
@@ -8382,8 +8585,10 @@
             }
           ],
           "result": "Settlement",
-          "description": "按真实终态生成一次结算；Free引导只在胜利时标记教学完成，不给普通资源；API不能胜利。",
-          "calls": [],
+          "description": "按真实终态产生一次结算；模组冒险附完整范围，Free引导仅首次奖励标记，API不能胜利。",
+          "calls": [
+            "domain/modScope.js#createRunModScope"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
@@ -8407,8 +8612,10 @@
             }
           ],
           "result": "Result<ProfilePlan>",
-          "description": "校验结算与活动检查点并幂等入账；正式Free首次完成通过全局账本发一张算力卡。",
+          "description": "校验结算与档案范围、活动检查点并幂等入账；Free引导首次完成发一张算力卡。",
           "calls": [
+            "domain/modScope.js#createProfileModScope",
+            "domain/modScope.js#equalModScopes",
             "domain/settlement.js#validateProfileRecord"
           ],
           "rule": "",
@@ -11000,7 +11207,7 @@
             }
           ],
           "result": "GameSession",
-          "description": "校验目录及状态不变量后发布Free引导/练习、短途、远征和API私有Session；正式模组仍拒绝。",
+          "description": "校验目录与世界后发布私有Session；正式模组使用隔离档案和精确锁。",
           "calls": [
             "content/catalog.js#validateContentCatalog",
             "content/registry.js#createHandlerRegistry",
@@ -11273,6 +11480,7 @@
         "domain/gptPets.js",
         "domain/lora.js",
         "domain/mechanics.js",
+        "domain/modScope.js",
         "domain/movement.js",
         "domain/plans.js",
         "domain/rewards.js",
@@ -11333,6 +11541,7 @@
             "domain/easter.js#planEasterAdvance",
             "domain/gptPets.js#planGptFields",
             "domain/mechanics.js#planMechanicEvent",
+            "domain/modScope.js#scopePersistenceIntent",
             "domain/movement.js#planEntityMotion",
             "domain/movement.js#planPickupMotion",
             "domain/movement.js#planPlayerMovement",
@@ -11415,6 +11624,7 @@
       "purpose": "Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,",
       "dependencies": [
         "adapters/storage.js",
+        "application/modProfile.js",
         "application/nest.js",
         "application/repository.js",
         "content/catalog.js",
@@ -11425,6 +11635,7 @@
         "domain/clock.js",
         "domain/difficulty.js",
         "domain/dshCycle.js",
+        "domain/modScope.js",
         "domain/settlement.js",
         "domain/world/api.js",
         "domain/world/regionRules.js",
@@ -11435,7 +11646,7 @@
       ],
       "functions": [
         {
-          "description": "组装Free引导/练习、短途、远征/API、配装/小窝/成长、检查点与结算；保留原练习模组入口。",
+          "description": "组装Free引导/练习、原版及模组短途/远征/API、显式模组档创建、检查点和结算。",
           "rule": "",
           "ownership": "宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState",
           "phase": "query",
@@ -11451,6 +11662,8 @@
           "implementation": "implemented",
           "calls": [
             "adapters/storage.js#createStoragePort",
+            "application/modProfile.js#createModProfileNamespace",
+            "application/modProfile.js#initializeModProfile",
             "application/nest.js#prepareAdventureStart",
             "application/repository.js#commitProfilePlan",
             "application/repository.js#mergePersistenceIntents",
@@ -11468,6 +11681,7 @@
             "domain/clock.js#scheduleFrame",
             "domain/difficulty.js#resolveDifficultySnapshot",
             "domain/dshCycle.js#readDshCycleTimers",
+            "domain/modScope.js#scopePersistenceIntent",
             "domain/settlement.js#createSettlement",
             "domain/world/api.js#canApiWithdraw",
             "domain/world/regionRules.js#localWorldId",
@@ -11498,7 +11712,7 @@
       ],
       "functions": [
         {
-          "description": "提供本地JSON安装、启停与移除；SDK1.0–1.3包只影响下次Free练习。",
+          "description": "提供本地JSON安装、启停与移除；组合影响下次Free练习或独立模组冒险，不热替换对局。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -11535,11 +11749,13 @@
         "application/nest.js",
         "content/achievements.js",
         "content/registry.js",
+        "content/skillCapabilities.js",
+        "content/weaponCapabilities.js",
         "domain/profile/tree.js"
       ],
       "functions": [
         {
-          "description": "组装27节点、设施、装备、DSH和收藏小窝UI；所有消费经应用用例，不接触GameState。",
+          "description": "组装当前原版或精确模组档案的小窝UI；所有消费经应用服务，不接触GameState。",
           "rule": "",
           "ownership": "宿主只读Profile副本，经应用服务消费；不修改GameState",
           "phase": "query",
@@ -11572,6 +11788,8 @@
           "calls": [
             "application/nest.js#executeNestAction",
             "content/registry.js#createHandlerRegistry",
+            "content/skillCapabilities.js#listRuntimeSkills",
+            "content/weaponCapabilities.js#listRuntimeWeapons",
             "domain/profile/tree.js#resolveDshSlotCount",
             "domain/profile/tree.js#validateTreePurchase"
           ]
@@ -12583,9 +12801,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 116,
-    "functions": 416,
-    "implemented": 376,
+    "modules": 118,
+    "functions": 423,
+    "implemented": 383,
     "placeholders": 40
   }
 }
