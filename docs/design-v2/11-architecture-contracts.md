@@ -137,7 +137,7 @@ ChatGPT重置只走`planGptReset`，绝不能调用checkpoint恢复或创建新S
 
 世界：enqueue命令→Session筛出到期命令→tick推进→计时/出生/AI/移动/开火/扫掠/拾取→有界效果队列逐次伤害与死亡→唯一奖励→远征首领推进→玩家优先的终局判定→API继续/撤回与目标→成长/LoRA/插件面板→维护→校验与commit一次。UI暂停/继续只消费UI命令，不推进冻结的世界钟；恢复清空墙钟积压。插件候选与随机、LoRA试验与随机必须同一计划提交。
 
-Session私有step/getRecord不导出；AST工具展开它们转达的真实公开依赖。snapshot和公开读取返回副本，Renderer不运行物理。当前范围、原版169定义/95绑定、测试和未完成事项统一见13；逐函数实现范围及调用上下游见12/manifest。
+Session私有step/getRecord不导出；AST工具展开它们转达的真实公开依赖。snapshot和公开读取返回副本，Renderer不运行物理。当前范围、原版170定义/95绑定、测试和未完成事项统一见13；逐函数实现范围及调用上下游见12/manifest。
 
 ## 远征地区状态增量
 
@@ -158,3 +158,7 @@ Session私有step/getRecord不导出；AST工具展开它们转达的真实公�
 `createWeaponProjectile`统一建立原生/并行次级弹的行为快照，`planEntityMotion`推进回旋分段和生命周期，`planCollisionEffects`处理碰撞、一次爆破；`setProjectileLeg`仅可变更真实弹体的攻击段。换程不能使本步已有请求失效。所有爆破仍进入原有damage队列，不能直接扣血。
 
 `PickupState.weapon`是可选完整实例；世界与背包不能同时存在同一instanceId。地面武器只经F/EquipPickup原子换装，不能经Collect吸入。宿主满槽预览暂停世界，确认后恢复并排世界命令，领域重新校验距离/槽位；原实例留地并继续保存CD/更新期限。
+
+护送`planEscortStart`处理一次近距启动；`planEscortAdvance`在战斗死亡之后基于附近玩家与敌人推进机器人，复用`findNavigationPath`与压力仲裁，末站调用共享目标完成函数。路径、目标、波次预算和绝对期限保存在区域状态，冻结归档时重置期限基准；暂停不推进。
+
+tick内部的`applyOwnedTickPlan`使用实体写时复制；远征另外复用只读海域归档，前提是工作状态由该tick或效果队列私有持有；外部使用完整隔离的`applySystemPlan`。出错时私有副本不发布，统一commit完整校验并复制结果。根状态的JSON完整性已覆盖全部归档，嵌套业务校验不重复编码同一数据。

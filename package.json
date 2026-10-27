@@ -23,7 +23,9 @@
     "test:v2:max20": "node scripts/test-v2-max20-browser.mjs",
     "replay:v2": "node scripts/replay-v2.mjs",
     "test:v2:api": "node scripts/test-v2-api-browser.mjs",
-    "test:v2:expedition": "node scripts/test-v2-expedition-browser.mjs"
+    "test:v2:expedition": "node scripts/test-v2-expedition-browser.mjs",
+    "test:v2:escort": "node scripts/test-v2-escort-browser.mjs",
+    "bench:v2:expedition": "node scripts/bench-v2-expedition.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"

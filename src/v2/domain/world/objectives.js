@@ -52,10 +52,10 @@ export function planObjectiveAdvance(context) {
  */
 export function planObjectiveCompletion(context, objectiveId) {
   const state=context.state,objective=state.world.objectives.find(item=>item.id===objectiveId);
-  if(!objective||objective.completed||objective.progress<Number(objective.requiredProgress??2100)-1||objective.kind==='blockade'&&objective.requiredEntityIds.some(id=>!state.world.entities[id]?.dead))return createEmptyPlan();
+  if(!objective||objective.completed||objective.progress<Number(objective.requiredProgress??2100)-1||objective.kind==='blockade'&&objective.requiredEntityIds.some(id=>!state.world.entities[id]?.dead)||objective.kind==='escort'&&(objective.progress!==objective.requiredProgress||state.world.entities[objective.id]?.runtime.escortState!=='arrived'))return createEmptyPlan();
   const objectives=state.world.objectives.map(item=>item.id===objectiveId?{...item,progress:Number(item.requiredProgress??2100),completed:true,active:false}:item),reward=dependency1.planWorldReward(context,objective.rewardId);
   const changes=[...reward.plan.changes,createStateChange('world','objectives','setObjectives',{objectives})];
-  const gate=state.world.entities[localWorldId(state,'boss:gate')];if(gate&&objectives.filter(item=>['beacon','blockade'].includes(item.kind)&&item.completed).length>=2)changes.push(createStateChange('entity',gate.id,'setEntityRuntime',{runtime:{...gate.runtime,unlocked:true}}));
+  const gate=state.world.entities[localWorldId(state,'boss:gate')];if(gate&&objectives.filter(item=>['beacon','blockade','escort'].includes(item.kind)&&item.completed).length>=2)changes.push(createStateChange('entity',gate.id,'setEntityRuntime',{runtime:{...gate.runtime,unlocked:true}}));
   return {...reward.plan,changes,events:[...reward.plan.events,{id:`objective:${objectiveId}:completed`,runId:state.runId,tick:state.tick,seq:0,type:'ObjectiveCompleted',sourceId:state.player.entityId,targetId:objectiveId,payload:{objectiveId}}]};
 }
 

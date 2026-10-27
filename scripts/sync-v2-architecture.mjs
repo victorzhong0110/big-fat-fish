@@ -31,7 +31,7 @@ for(const module of sourceModel){
    createAdventureMapPlan:'构建Pro1连续地图：三信标、两检查点、资源箱、驻守敌人与有限追兵预算。',
    planClaudeEncounter:'任意两个信标完成后，以稳定ID创建一次Claude首领并切换boss阶段。',
    createInitialGameState:'创建Free或Pro1初态，验证树前置/DSH槽/模组锁并一次应用永久基础属性；full仍拒绝。',
-   createMapPlan:'按运行范围生成Free演练或Pro1三信标地图；不假装完整区域生成已完成。',
+   createMapPlan:'按模式生成Free演练、短途/API海域或远征区域；远征包含信标、封锁与护送。',
    createGameSession:'校验内容与初始世界后发布Free/Pro1私有Session；模组仅允许Free练习。',
    restoreGameSession:'校验版本、模组锁及状态后构建暂停Session；失败保留原检查点。',
    stepSessionWorld:'消费到期世界命令，执行Free/Pro1固定世界步并原子提交。',
@@ -118,7 +118,7 @@ for(const module of sourceModel){
    planObjectiveSignal:'首次实际占领信标时生成可摧毁40生命信号，绑定独立有限无奖励援军预算，不能重建刷收益。',
    planChallengeInteraction:'F主动启动三阵营可选精英或15级三段遭遇；距离/阶段复核后一次提交。',
    planLateSchedule:'协调精英一次奖励、13级衔接、三段遭遇及15秒间隔、每海域两次安全地图异常。',
-   createInitialGameState:'创建Free或1–15短途初态，锁定树/装备/DSH/模型/累计机制；远征/API与full仍拒绝。',
+   createInitialGameState:'创建Free、1–15短途/远征或API初态，锁定树、装备、DSH、模型和累计机制；full仍拒绝。',
    createGameSession:'校验目录与世界后发布Free或1–15短途私有Session，社区模组仅在Free开放。',
    planPressureEventAdvance:'推进预警/真实出生/信号/临时捷径，结束退回未出生预留；精英超时失败，不发挑战奖励。'
   };
@@ -134,16 +134,16 @@ for(const module of sourceModel){
    planApiMaintenance:'每600步回收过期死体和已结算临时账本，保留在途攻击来源；按类型/网格等值合并拾取，保留必要遭遇记录。',
    planApiProgression:'API世界调度入口，分别在战斗前推进时间、战斗后处理首领与撤回，其他模式返回空计划。',
    isWorldSafe:'共享实际敌人、敌弹、待出生、额外压力与API首领预警的安全判定，检查点和撤回使用同一规则。',
-   createInitialGameState:'创建Free、1–15短途或API初态，锁定配装和累计机制；远征/full仍拒绝。',
-   createGameSession:'校验目录及状态不变量后发布Free/短途/API私有Session，正式模组仍拒绝。',
-   prepareAdventureStart:'验证拥有与真实最高难度，复制树/DSH/标准装备；通关15才允许API，远征仍拒绝。',
+   createInitialGameState:'创建Free、1–15短途/远征或API初态，锁定配装和累计机制；full仍拒绝。',
+   createGameSession:'校验目录及状态不变量后发布Free、短途、远征和API私有Session；正式模组仍拒绝。',
+   prepareAdventureStart:'验证拥有与真实最高难度，复制树/DSH/标准装备；支持数字短途/远征，通关15才允许API。',
    planSpawnSchedule:'有限短途追兵或持续API混编；API首领期间继续普通生成、优先首领队列，容量不足延期。',
    planEnemySpawn:'合法位置实际出生时锁定API分钟数值与Fable/Mythos模型，推进一次世界随机流，活体不随时间补血。',
    planDeathRewards:'幂等死亡经验/材料；API首领8碎片4零件，普通材料每分钟2碎片1零件，回响/召兵无额外收益。',
    planBossUnlock:'数字难度首领触发DSH里程碑；API不发数字成就或为每阶段堆永久账本，仅保留Grok居民事实。',
    createSettlement:'按真实终态生成一次结算，API返回全留、失败按树比例；用持续计数保存生存记录，API不允许胜利。',
-   stepSessionWorld:'消费世界命令，经唯一引擎流水线原子提交Free、1–15短途或API；无I/O。',
-   mountCombatPreview:'组装Free、短途/API、配装/小窝/成长、真实检查点与结算，API支持安全检查点长按返回。'
+   stepSessionWorld:'消费世界命令，经唯一引擎流水线原子提交Free、短途、远征或API；无I/O。',
+   mountCombatPreview:'组装Free、短途、远征/API、配装/小窝/成长、检查点与结算；API支持安全检查点长按返回。'
   };
   if(apiDescriptions[fn.name])item.description=apiDescriptions[fn.name];
   if(['canApiWithdraw','planApiWithdrawal','planApiBossEncounter','planApiWorldAdvance','planApiPressure','planApiMaintenance','planApiProgression'].includes(fn.name))item.implementationScope='adventure-slice API';
@@ -164,7 +164,7 @@ manifest.rules=[...new Set(manifest.rules)];
 const fns=manifest.modules.flatMap(module=>module.functions),implemented=fns.filter(fn=>fn.implementation==='implemented').length;
 manifest.counts={modules:manifest.modules.length,functions:fns.length,implemented,placeholders:fns.length-implemented};
 await fs.writeFile(filename,JSON.stringify(manifest,null,2)+'\n');
-const esc=value=>value.replaceAll('|','\\|').replaceAll('\n',' '),rows=['# 12 · 全部函数目录与调用契约','',`当前${manifest.counts.modules}个JS模块、${fns.length}个公开函数：${implemented}个有实现，${fns.length-implemented}个明确TODO。core-preview为Free练习，adventure-slice为1–15级短途；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。`,'','调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。',''];
+const esc=value=>value.replaceAll('|','\\|').replaceAll('\n',' '),rows=['# 12 · 全部函数目录与调用契约','',`当前${manifest.counts.modules}个JS模块、${fns.length}个公开函数：${implemented}个有实现，${fns.length-implemented}个明确TODO。core-preview为Free练习，adventure-slice为1–15短途/远征及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。`,'','调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。',''];
 for(const module of manifest.modules){rows.push(`## ${module.path}`,'',module.purpose,'',`[源码](../../src/v2/${module.path})；层：\`${module.layer}\`。`,'',`直接依赖：${module.dependencies.map(dep=>'`'+dep+'`').join('、')||'无'}。`,'','| 函数签名 | 返回 | 状态/范围 | 功能与约束 |','|---|---|---|---|');
  for(const fn of module.functions)rows.push(`| \`${esc(fn.name+'('+fn.args.map(arg=>arg.name+': '+arg.type+(arg.default!==undefined?' = '+arg.default:'')).join(', ')+')')}\` | \`${esc(fn.result)}\` | ${fn.implementation==='implemented'?'已实现':'TODO'}${fn.implementationScope?' / '+fn.implementationScope:''} | ${esc(fn.description+'；'+fn.rule+'；状态权限：'+fn.ownership)} |`);
  rows.push('','公开函数下游：','');for(const fn of module.functions)rows.push(`- \`${fn.name}\` → ${fn.calls.map(call=>'`'+call+'`').join('、')||'无内部公开函数'}。`);

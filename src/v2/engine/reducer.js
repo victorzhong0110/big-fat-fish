@@ -19,14 +19,35 @@ import { inspectGameState } from '../domain/stateValidation.js';
  * @returns {import('../contracts.d.ts').GameState}
  */
 export function applySystemPlan(working, plan) {
+  return applyPlan(working,plan,false);
+}
+
+/** Apply a plan to an unpublished tick-owned state. Unchanged entities and suspended expedition archives may be shared between transient copies; callers must never mutate them and must publish through commitWorkingState, which detaches the result. External/public callers use applySystemPlan instead.
+ * @calls domain/plans.js#validateSystemPlan
+ * @calls domain/serialization.js#serializeCanonical
+ * @param {import('../contracts.d.ts').GameState} working
+ * @param {import('../contracts.d.ts').SystemPlan} plan
+ * @returns {import('../contracts.d.ts').GameState}
+ */
+export function applyOwnedTickPlan(working,plan){return applyPlan(working,plan,true);}
+
+/** @param {import('../contracts.d.ts').GameState} working @param {import('../contracts.d.ts').SystemPlan} plan @param {boolean} tickOwned @returns {import('../contracts.d.ts').GameState} */
+function applyPlan(working,plan,tickOwned) {
   const report = dependency1.validateSystemPlan(plan);
   if (!report.valid) throw new Error(report.diagnostics.map(item => item.message).join('; '));
   // Copy first: a rejected change cannot leak a partly applied tick to any reader.
-  const next = structuredClone(working);
+  const copyOnWrite = tickOwned;
+  const next = /** @type {import('../contracts.d.ts').GameState} */ (copyOnWrite ? {...structuredClone({...working,...(working.expedition?{expedition:null}:{}),world:{...working.world,entities:{}}}),...(working.expedition?{expedition:working.expedition}:{})} : structuredClone(working));
+  if(copyOnWrite)next.world.entities={...working.world.entities};
+  const copiedEntities=new Set();
+  /** @param {string} id */
+  const copyEntity=(id)=>{if(!copyOnWrite||copiedEntities.has(id)||!next.world.entities[id])return;next.world.entities={...next.world.entities,[id]:structuredClone(next.world.entities[id])};copiedEntities.add(id);};
   next.attackHits = next.attackHits.filter(hit => hit.expiresAt >= next.tick);
   const ownedChanges = structuredClone(plan.changes);
   for (const change of ownedChanges) {
     const p = /** @type {Record<string, import('../contracts.d.ts').Json>} */ (change.payload);
+    if(change.target==='entity')copyEntity(change.id);
+    if(['applyLevelGrowth','applyLoraOutcome'].includes(change.operation))copyEntity(next.player.entityId);
     const entity = next.world.entities[change.id];
     if (change.target === 'entity' && !entity) throw new Error(`Unknown entity: ${change.id}`);
     switch (change.operation) {
@@ -172,7 +193,7 @@ export function applySystemPlan(working, plan) {
     }
   }
   // Effects/events/persistence are returned to the tick orchestrator, never silently reapplied here.
-  // Both the working copy and payloads are detached from caller-owned objects.
+  // The public entry detaches everything. The tick-owned entry shares only unchanged entities and immutable regional archives until commit.
   return next;
 }
 

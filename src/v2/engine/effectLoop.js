@@ -50,7 +50,7 @@ export function evaluateEffectRequest(context, request) {
  * @calls domain/deaths.js#planDeathTransitions
  * @calls engine/effectLoop.js#evaluateEffectRequest
  * @calls engine/hooks.js#planEventHooks
- * @calls engine/reducer.js#applySystemPlan
+ * @calls engine/reducer.js#applyOwnedTickPlan
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').EffectQueue} queue
  * @returns {import('../contracts.d.ts').EffectDrain}
@@ -67,15 +67,15 @@ export function drainEffectQueue(context, queue) {
     processed.add(request.id);
     if (request.generation < 0 || request.generation > 4) { diagnostics.push({ code: 'EFFECT_GENERATION_LIMIT', message: 'Dropped out-of-bounds descendant', relatedIds: [request.id] }); continue; }
     const plan = evaluateEffectRequest({ ...context, state: working }, request);
-    working = dependency8.applySystemPlan(working, plan);
+    working = dependency8.applyOwnedTickPlan(working, plan);
     const records = dependency2.collectDeathRecords({ ...context, state: working });
     const deathPlan = dependency2.planDeathTransitions({ ...context, state: working }, records);
-    if (deathPlan.changes.length) working = dependency8.applySystemPlan(working, deathPlan); deaths.push(...records);
+    if (deathPlan.changes.length) working = dependency8.applyOwnedTickPlan(working, deathPlan); deaths.push(...records);
     const allEvents = [...plan.events, ...deathPlan.events];
     const childPlans = [plan, deathPlan];
     for (const event of allEvents) {
       const hooks = dependency7.planEventHooks({ ...context, state: working, event }, event);
-      if (hooks.changes.length) working = dependency8.applySystemPlan(working, hooks); childPlans.push(hooks);
+      if (hooks.changes.length) working = dependency8.applyOwnedTickPlan(working, hooks); childPlans.push(hooks);
     }
     events.push(...allEvents, ...childPlans.slice(2).flatMap(item => item.events)); persistence.push(...childPlans.flatMap(item => item.persistence)); diagnostics.push(...childPlans.flatMap(item => item.diagnostics));
     for (const child of childPlans.flatMap(item => item.effects)) {

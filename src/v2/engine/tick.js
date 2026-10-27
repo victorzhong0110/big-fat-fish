@@ -1,3 +1,4 @@
+import {planEscortAdvance} from '../domain/world/escort.js';
 import {planExpeditionMaintenance} from '../domain/world/expeditionMaintenance.js';
 import {planExpeditionProgression} from '../domain/world/expedition.js';
 import {planApiMaintenance} from '../domain/world/apiMaintenance.js';
@@ -30,7 +31,7 @@ import { detectCollisions } from '../domain/collision.js';
 import { planDeathRewards } from '../domain/rewards.js';
 import { resolveTerminalOutcome } from '../domain/deaths.js';
 import { orderPendingCommands, planGameCommand } from './commands.js';
-import { applySystemPlan, commitWorkingState } from './reducer.js';
+import { applyOwnedTickPlan, commitWorkingState } from './reducer.js';
 import { drainEffectQueue } from './effectLoop.js';
 /** Canonical fixed-step pipeline shared by live Sessions and replay. Only implemented runtime profiles are accepted.
  * @implementationScope core-preview + adventure-slice
@@ -63,6 +64,7 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls domain/scheduled.js#planScheduledActions
  * @calls domain/status.js#planStatusAdvance
  * @calls domain/world/apiMaintenance.js#planApiMaintenance
+ * @calls domain/world/escort.js#planEscortAdvance
  * @calls domain/world/expedition.js#planExpeditionProgression
  * @calls domain/world/expeditionMaintenance.js#planExpeditionMaintenance
  * @calls domain/world/map.js#planMapExploration
@@ -76,7 +78,7 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls engine/effectLoop.js#drainEffectQueue
  * @calls engine/flow.js#planProgressionPanels
  * @calls engine/hooks.js#planEventHooks
- * @calls engine/reducer.js#applySystemPlan
+ * @calls engine/reducer.js#applyOwnedTickPlan
  * @calls engine/reducer.js#commitWorkingState
  * @param {import('../contracts.d.ts').StateSnapshot} state
  * @param {readonly import('../contracts.d.ts').Command[]} commands
@@ -91,7 +93,7 @@ export function advanceWorldTick(state, commands, catalog) {
   const outbox = { events: /** @type {import('../contracts.d.ts').DomainEvent[]} */ ([]), persistence: /** @type {import('../contracts.d.ts').PersistenceIntent[]} */ ([]), diagnostics: /** @type {import('../contracts.d.ts').Diagnostic[]} */ ([]) };
   const effects = /** @type {import('../contracts.d.ts').EffectRequest[]} */ ([]);
   const context = () => ({ state: working, catalog, event: null, entityId: null, random: working.random.combat });
-  const apply = (/** @type {import('../contracts.d.ts').SystemPlan} */ plan) => { if (plan.changes.length) working = applySystemPlan(working, plan); effects.push(...plan.effects); outbox.events.push(...plan.events); outbox.persistence.push(...plan.persistence); outbox.diagnostics.push(...plan.diagnostics); for (const event of plan.events) { const hook = planEventHooks(context(), event); if (hook.changes.length) working = applySystemPlan(working, hook); effects.push(...hook.effects);outbox.events.push(...hook.events);outbox.persistence.push(...hook.persistence); } };
+  const apply = (/** @type {import('../contracts.d.ts').SystemPlan} */ plan) => { if (plan.changes.length) working = applyOwnedTickPlan(working, plan); effects.push(...plan.effects); outbox.events.push(...plan.events); outbox.persistence.push(...plan.persistence); outbox.diagnostics.push(...plan.diagnostics); for (const event of plan.events) { const hook = planEventHooks(context(), event); if (hook.changes.length) working = applyOwnedTickPlan(working, hook); effects.push(...hook.effects);outbox.events.push(...hook.events);outbox.persistence.push(...hook.persistence); } };
   for (const command of orderPendingCommands(commands, working.tick, 'world')) apply(planGameCommand(context(), command).plan);
   apply(planStatusAdvance(context()));
   apply(planApiProgression(context()));
@@ -129,6 +131,7 @@ export function advanceWorldTick(state, commands, catalog) {
   const outcome = resolveTerminalOutcome(context(), drained.deaths);
   if (outcome) apply({ ...createEmptyPlan(), changes: [createStateChange('flow', 'phase', 'setFlowPhase', { phase: outcome, resumePhase: null }), createStateChange('runtime', 'input', 'setInput', { ...working.input, move: { x: 0, y: 0 }, firing: false }),...(working.api?[createStateChange('runtime','api','setApiState',{...working.api,withdrawal:null})]:[])] });
   if (!outcome) apply(planApiProgression(context(),true));
+  if (!outcome) apply(planEscortAdvance(context()));
   if (!outcome) apply(planObjectiveAdvance(context()));
   if (!outcome) for (let i = 0; i < 128; i++) { const plan = planProgressionPanels(context()); if (!plan.changes.length) break; apply(plan); if (i === 127) throw new Error('Growth queue did not settle'); }
   if(working.api?.withdrawal&&working.flow.phase!=='exploring')apply({...createEmptyPlan(),changes:[createStateChange('runtime','api','setApiState',{...working.api,withdrawal:null})]});
@@ -143,7 +146,7 @@ export function advanceWorldTick(state, commands, catalog) {
  * @calls engine/commands.js#orderPendingCommands
  * @calls engine/commands.js#planGameCommand
  * @calls engine/flow.js#planProgressionPanels
- * @calls engine/reducer.js#applySystemPlan
+ * @calls engine/reducer.js#applyOwnedTickPlan
  * @calls engine/reducer.js#commitWorkingState
  * @param {import('../contracts.d.ts').StateSnapshot} state
  * @param {readonly import('../contracts.d.ts').Command[]} commands
@@ -158,9 +161,9 @@ export function advanceUiTick(state, commands, catalog, advanceClock = false) {
   if (!due.length && !shouldAdvance) return { next: working, events: [], persistence: [], diagnostics: [] };
   const diagnostics = /** @type {import('../contracts.d.ts').Diagnostic[]} */ ([]);
   const events = /** @type {import('../contracts.d.ts').DomainEvent[]} */ ([]);
-  for (const command of due) { const result = planGameCommand({ state: working, catalog, event: null, entityId: null, random: working.random.combat }, command); working = applySystemPlan(working, result.plan); diagnostics.push(...result.plan.diagnostics); events.push(...result.plan.events); }
-  for(const event of events.filter(e=>e.type==='LifeRestored'))working=applySystemPlan(working,planDshEffects({state:working,catalog,event:null,entityId:null,random:working.random.combat},event));
-  if (shouldAdvance && working.flow.phase === 'loraTraining' && working.lora.active?.id === state.lora.active?.id && working.lora.active?.phase === 'running') { working.uiTick++; const plan = planLoraUiStep({ state: working, catalog, random: working.random.lora, event: null, entityId: null }); working = applySystemPlan(working, plan); events.push(...plan.events); }
-  for (let i = 0; i < 128; i++) { const plan = planProgressionPanels({ state: working, catalog, event: null, entityId: null, random: working.random.reward }); if (!plan.changes.length) break; working = applySystemPlan(working, plan); events.push(...plan.events); if (i === 127) throw new Error('Growth queue did not settle'); }
+  for (const command of due) { const result = planGameCommand({ state: working, catalog, event: null, entityId: null, random: working.random.combat }, command); working = applyOwnedTickPlan(working, result.plan); diagnostics.push(...result.plan.diagnostics); events.push(...result.plan.events); }
+  for(const event of events.filter(e=>e.type==='LifeRestored'))working=applyOwnedTickPlan(working,planDshEffects({state:working,catalog,event:null,entityId:null,random:working.random.combat},event));
+  if (shouldAdvance && working.flow.phase === 'loraTraining' && working.lora.active?.id === state.lora.active?.id && working.lora.active?.phase === 'running') { working.uiTick++; const plan = planLoraUiStep({ state: working, catalog, random: working.random.lora, event: null, entityId: null }); working = applyOwnedTickPlan(working, plan); events.push(...plan.events); }
+  for (let i = 0; i < 128; i++) { const plan = planProgressionPanels({ state: working, catalog, event: null, entityId: null, random: working.random.reward }); if (!plan.changes.length) break; working = applyOwnedTickPlan(working, plan); events.push(...plan.events); if (i === 127) throw new Error('Growth queue did not settle'); }
   return commitWorkingState(state, working, catalog, { events, persistence: [], diagnostics });
 }

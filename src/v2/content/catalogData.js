@@ -2,6 +2,7 @@
 export const CATALOG_DATA = {
   "version": "2.0.0-preview.5",
   "definitions": {
+    "world_escort": {"id":"world_escort","kind":"entity","displayName":"补给机器人","parameters":{},"version":"2.0.0-preview.5"},
     "world_blockade": {"id":"world_blockade","kind":"entity","displayName":"封锁装置","parameters":{},"version":"2.0.0-preview.5"},
     "world_blockade_relay": {"id":"world_blockade_relay","kind":"entity","displayName":"封锁供能柱","parameters":{},"version":"2.0.0-preview.5"},
     "world_blockade_core": {"id":"world_blockade_core","kind":"entity","displayName":"封锁核心","parameters":{},"version":"2.0.0-preview.5"},

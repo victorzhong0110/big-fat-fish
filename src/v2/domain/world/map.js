@@ -1,3 +1,4 @@
+import {planEscortStart} from './escort.js';
 import {createExpeditionRegionPlan} from './expeditionMap.js';
 import {planExpeditionBossEncounter,planExpeditionTravel,planExpeditionRest} from './expedition.js';
 import {localWorldId} from './regionRules.js';
@@ -106,6 +107,7 @@ export function planMapExploration(context) {
  * @calls domain/rewards.js#planWorldReward
  * @calls domain/world/adventure.js#planBossEncounter
  * @calls domain/world/alarms.js#planAlarmCache
+ * @calls domain/world/escort.js#planEscortStart
  * @calls domain/world/expedition.js#planExpeditionBossEncounter
  * @calls domain/world/expedition.js#planExpeditionRest
  * @calls domain/world/expedition.js#planExpeditionTravel
@@ -119,9 +121,10 @@ export function planWorldInteraction(context, command) {
   const state = context.state, player = state.world.entities[state.player.entityId];
   if (state.flow.phase !== 'exploring') return createEmptyPlan();
   const equipment=planEquipmentInteraction(context);if(equipment)return equipment;
-  const candidates = Object.values(state.world.entities).filter(entity => entity.kind === 'objective' && !(typeof entity.runtime.hiddenBy==='string'&&state.world.entities[entity.runtime.hiddenBy]?.hp>0)&& ['expeditionExit','expeditionBack','expeditionRest','challenge','cache','alarmCache','bossGate','chair','note','lunchbox','console'].includes(String(entity.runtime.interaction)) && dependency1.distanceSquared(entity.position, player.position) <= 96 ** 2).sort((a,b)=>dependency1.distanceSquared(a.position,player.position)-dependency1.distanceSquared(b.position,player.position)||(a.id<b.id?-1:1));
+  const candidates = Object.values(state.world.entities).filter(entity => entity.kind === 'objective' && (entity.runtime.interaction!=='escort'||entity.runtime.escortState==='ready') && !(typeof entity.runtime.hiddenBy==='string'&&state.world.entities[entity.runtime.hiddenBy]?.hp>0)&& ['expeditionExit','expeditionBack','expeditionRest','escort','challenge','cache','alarmCache','bossGate','chair','note','lunchbox','console'].includes(String(entity.runtime.interaction)) && dependency1.distanceSquared(entity.position, player.position) <= 96 ** 2).sort((a,b)=>dependency1.distanceSquared(a.position,player.position)-dependency1.distanceSquared(b.position,player.position)||(a.id<b.id?-1:1));
   const entity = candidates[0]; if (!entity) return createEmptyPlan();
   if(['expeditionExit','expeditionBack'].includes(String(entity.runtime.interaction)))return planExpeditionTravel(context,Number(entity.runtime.targetBiome));
+  if(entity.runtime.interaction==='escort')return planEscortStart(context,entity.id);
   if(entity.runtime.interaction==='expeditionRest')return planExpeditionRest(context,entity.id);
   if(entity.runtime.interaction==='challenge')return planChallengeInteraction(context,entity.id);
   if(entity.runtime.interaction==='alarmCache')return planAlarmCache(context,entity.id);
