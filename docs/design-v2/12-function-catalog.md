@@ -1,6 +1,6 @@
 # 12 · 全部函数目录与调用契约
 
-当前115个JS模块、413个公开函数：373个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、1–15短途/远征及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
+当前116个JS模块、415个公开函数：375个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、1–15短途/远征及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
 
 调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。
 
@@ -332,7 +332,7 @@ Stable achievement metadata shared by simulation evidence, Profile persistence a
 
 ## content/catalog.js
 
-玩法定义与版本的唯一读取入口；值尚未填充，规格见02–09。
+读取和验证版本化内容目录、原版绑定与受包锁约束的社区配方。
 
 [源码](../../src/v2/content/catalog.js)；层：`content`。
 
@@ -341,7 +341,7 @@ Stable achievement metadata shared by simulation evidence, Profile persistence a
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
 | `loadContentCatalog()` | `ContentCatalog` | 已实现 | 返回来源于设计表格的正式版本化内容副本；数据存在不表示其处理器已经实现。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `validateContentCatalog(catalog: untyped, registry: untyped)` | `ValidationReport` | 已实现 | 校验原版目录数量、社区MCP注册与锁、稳定ID/引用、160点树前置DAG及运行能力声明。；27树节点、30局内插件、10DSH、16机制、6MCP、8技能、6伙伴、9敌人；覆盖1–15含11级双机制。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `validateContentCatalog(catalog: untyped, registry: untyped)` | `ValidationReport` | 已实现 | 校验原版目录数量、社区MCP/技能注册与包锁、稳定ID/引用、160点树前置DAG及运行能力声明。；27树节点、30局内插件、10DSH、16机制、6MCP、8技能、6伙伴、9敌人；覆盖1–15含11级双机制。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `findContentDefinition(catalog: untyped, definitionId: untyped)` | `Result<Definition>` | 已实现 | 按稳定ID取得定义；未知ID返回错误，不按显示名猜测。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `listContentByKind(catalog: untyped, kind: untyped)` | `readonly Definition[]` | 已实现 | 列出指定类别定义供候选/图鉴使用。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
@@ -807,9 +807,9 @@ Versioned declarative mod SDK. No dynamic code, global registry mutation or host
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `parseModPackage(text: untyped, base: untyped)` | `ModPackage` | 已实现 | 校验SDK1.0–1.2、精确依赖、补丁与六种原生模板配方；按版本开放模板并验证参数边界。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `parseModPackage(text: untyped, base: untyped)` | `ModPackage` | 已实现 | 校验SDK1.0–1.3、依赖、补丁、武器和护盾/爆发技能配方；拒绝未知字段及越界参数。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 | `resolveModLoadOrder(packs: untyped)` | `readonly ModPackage[]` | 已实现 | 检查精确依赖版本与冲突，生成稳定拓扑顺序，拒绝依赖环。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
-| `composeModCatalog(base: untyped, packs: untyped)` | `ContentCatalog` | 已实现 | 从原版复制并组装声明式模组；重复字段报错，生成内容指纹和存档锁。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `composeModCatalog(base: untyped, packs: untyped)` | `ContentCatalog` | 已实现 | 复核并排序启用包，以独立目录合成武器/技能和补丁，验证字段冲突、命名空间、包锁及指纹。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
@@ -842,6 +842,29 @@ Versioned declarative mod SDK. No dynamic code, global registry mutation or host
 公开函数上游：
 
 - `createHandlerRegistry` ← `application/nest.js#executeNestAction`、`application/nest.js#prepareAdventureStart`、`bootstrap.js#bootstrapV2`、`content/mods.js#parseModPackage`、`content/mods.js#composeModCatalog`、`domain/draft.js#createPluginChoice`、`engine/session.js#createGameSession`、`engine/session.js#createReplaySession`、`preview/host.js#mountCombatPreview`、`preview/nestManager.js#mountNestManager`。
+
+## content/skillCapabilities.js
+
+Resolve an implemented native skill, or a declarative community recipe owned by a locked package.
+
+[源码](../../src/v2/content/skillCapabilities.js)；层：`content`。
+
+直接依赖：无。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `resolveSkillTemplate(catalog: untyped, id: untyped)` | `SkillTemplateId\|null` | 已实现 / core-preview + adventure-slice | 将原版技能或有包锁的社区护盾/爆发配方解析到真实原生行为；未知/未注册返回null。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `listRuntimeSkills(catalog: untyped)` | `readonly string[]` | 已实现 / core-preview + adventure-slice | 列出当前目录确有原生处理器的技能，供Free练习装配菜单选择。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `resolveSkillTemplate` → 无内部公开函数。
+- `listRuntimeSkills` → `content/skillCapabilities.js#resolveSkillTemplate`。
+
+公开函数上游：
+
+- `resolveSkillTemplate` ← `content/skillCapabilities.js#listRuntimeSkills`、`dispatch/skills.js#dispatchSkillsHandler`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/draft.js#createPluginChoice`、`domain/initial.js#createInitialGameState`、`domain/stateValidation.js#inspectGameState`、`engine/snapshot.js#createRenderSnapshot`。
+- `listRuntimeSkills` ← `preview/host.js#mountCombatPreview`。
 
 ## content/weaponCapabilities.js
 
@@ -992,15 +1015,15 @@ DSH稳定ID分派，不得把所有候选处理器依次执行。
 
 [源码](../../src/v2/dispatch/skills.js)；层：`dispatch`。
 
-直接依赖：`content/handlers/skills.js`。
+直接依赖：`content/handlers/skills.js`、`content/skillCapabilities.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `dispatchSkillsHandler(context: untyped, definitionId: untyped)` | `EffectPlan` | 已实现 / core-preview | 按合法稳定id和已实现绑定只调用一个对应处理器。；@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `dispatchSkillsHandler(context: untyped, definitionId: untyped)` | `EffectPlan` | 已实现 / core-preview | 先解析技能模板，再调用对应原生处理器；保留社区技能实际ID供事件与存档使用。；@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
-- `dispatchSkillsHandler` → `content/handlers/skills.js#planSkillBatch`、`content/handlers/skills.js#planSkillCache`、`content/handlers/skills.js#planSkillDisconnect`、`content/handlers/skills.js#planSkillFork`、`content/handlers/skills.js#planSkillOverclock`、`content/handlers/skills.js#planSkillRedirect`、`content/handlers/skills.js#planSkillRollback`、`content/handlers/skills.js#planSkillSandbox`。
+- `dispatchSkillsHandler` → `content/handlers/skills.js#planSkillBatch`、`content/handlers/skills.js#planSkillCache`、`content/handlers/skills.js#planSkillDisconnect`、`content/handlers/skills.js#planSkillFork`、`content/handlers/skills.js#planSkillOverclock`、`content/handlers/skills.js#planSkillRedirect`、`content/handlers/skills.js#planSkillRollback`、`content/handlers/skills.js#planSkillSandbox`、`content/skillCapabilities.js#resolveSkillTemplate`。
 
 公开函数上游：
 
@@ -1077,9 +1100,9 @@ AI系统收集意图，模型和难度共同生效。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planEnemyAi(context: untyped)` | `SystemPlan` | 已实现 / core-preview + adventure-slice | 当前只分派棕蟹与基础Bot，不执行未实现的GPT/模型/累计机制处理器。；分派为每个合法entity/handler一次，不能把声明的所有分支直接全跑。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planEnemyAi(context: untyped)` | `SystemPlan` | 已实现 / core-preview + adventure-slice | 按稳定ID分派各普通敌人真实处理器，跳过死亡、首领及禁用AI的实体。；分派为每个合法entity/handler一次，不能把声明的所有分支直接全跑。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planCompanionAi(context: untyped)` | `SystemPlan` | 已实现 | 未封禁时按原冷却和条件自动协助，输出来源companion。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planBossAi(context: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 仅分派当前Claude首领，GPT/Grok首领明确拒绝。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planBossAi(context: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 按阵营分派Claude、ChatGPT和Grok的真实首领处理器，跳过已死亡实体。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
@@ -1104,7 +1127,7 @@ AI系统收集意图，模型和难度共同生效。
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
 | `planWeaponFire(context: untyped)` | `SystemPlan` | 已实现 / core-preview | 按当前六种MCP/社区配方的独立CD与手动瞄准开火，消费一次换枪下一发加成。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planSkillCast(context: untyped)` | `SystemPlan` | 已实现 / core-preview | 当前只施放缓存护盾/断开连接，检查冷却与技能封禁后成功才发SkillCast。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planSkillCast(context: untyped)` | `SystemPlan` | 已实现 / core-preview | 以装备技能参数和插件准备倍率施放实际模板，设置独立冷却并发布保留真实ID的SkillCast事件。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planDash(context: untyped, command: untyped)` | `SystemPlan` | 已实现 | 检验可用后冲刺/短保护，禁锢中不允许；不给装备技能事件。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planLoadoutChange(context: untyped, command: untyped)` | `SystemPlan` | 已实现 / core-preview | 处理Q切枪与探索地面实例替换；各自保留CD，实际换到当前槽才触发永久换枪效果。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planCollisionEffects(context: untyped, collisions: untyped)` | `SystemPlan` | 已实现 / core-preview | 连续碰撞产去重伤害；回旋碰墙下一步换程，保留本步去程命中；爆破首碰只爆一次。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
@@ -1135,7 +1158,7 @@ Claude高数值/封禁招式意图；控制由统一管线处理。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planClaudeBoss(context: untyped, boss: untyped)` | `EffectPlan` | 已实现 / adventure-slice | 实现Pro1重钳禁锢、技能封印与半血三条带扫击；真实伙伴封禁弹和高难连招仍待接通。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planClaudeBoss(context: untyped, boss: untyped)` | `EffectPlan` | 已实现 / adventure-slice | 规划重钳控制、技能与伙伴封禁、半血扫击和难度连招；Free教学首领只使用钳击。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planClaudeBan(context: untyped, boss: untyped, kind: untyped)` | `EffectPlan` | 已实现 / adventure-slice | 无合法槽则普通攻击；只发一份封禁请求和可破封装置计划。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
@@ -1290,7 +1313,7 @@ Grok首领只有简单火箭和召集人海。
 
 [源码](../../src/v2/domain/combatPlugins.js)；层：`domain`。
 
-直接依赖：`content/weaponCapabilities.js`、`domain/abilities.js`、`domain/entities.js`、`domain/geometry.js`、`domain/motionSolver.js`、`domain/plans.js`、`domain/pluginStats.js`、`domain/projectiles.js`、`domain/scheduled.js`、`domain/serialization.js`、`domain/shields.js`、`domain/stats.js`。
+直接依赖：`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/abilities.js`、`domain/entities.js`、`domain/geometry.js`、`domain/motionSolver.js`、`domain/plans.js`、`domain/pluginStats.js`、`domain/projectiles.js`、`domain/scheduled.js`、`domain/serialization.js`、`domain/shields.js`、`domain/stats.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -1299,7 +1322,7 @@ Grok首领只有简单火箭和召集人海。
 
 公开函数下游：
 
-- `planCombatPluginEvent` → `content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/abilities.js#planAbilityDamage`、`domain/entities.js#createEntityState`、`domain/geometry.js#distanceSquared`、`domain/geometry.js#normalizeVector`、`domain/motionSolver.js#resolveBodyDestination`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/plans.js#mergeSystemPlans`、`domain/pluginStats.js#deriveRawWeaponStats`、`domain/projectiles.js#createWeaponProjectile`、`domain/scheduled.js#scheduleAbilityActions`、`domain/stats.js#derivePlayerStats`。
+- `planCombatPluginEvent` → `content/skillCapabilities.js#resolveSkillTemplate`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/abilities.js#planAbilityDamage`、`domain/entities.js#createEntityState`、`domain/geometry.js#distanceSquared`、`domain/geometry.js#normalizeVector`、`domain/motionSolver.js#resolveBodyDestination`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/plans.js#mergeSystemPlans`、`domain/pluginStats.js#deriveRawWeaponStats`、`domain/projectiles.js#createWeaponProjectile`、`domain/scheduled.js#scheduleAbilityActions`、`domain/stats.js#derivePlayerStats`。
 - `planCombatPluginWorld` → `domain/abilities.js#planAbilityDamage`、`domain/entities.js#createEntityState`、`domain/geometry.js#distanceSquared`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/plans.js#mergeSystemPlans`、`domain/serialization.js#toJson`、`domain/shields.js#planShieldGrant`、`domain/stats.js#derivePlayerStats`。
 
 公开函数上游：
@@ -1466,7 +1489,7 @@ Current drift uses effective ticks and the normal body solver; native dash/root/
 
 [源码](../../src/v2/domain/draft.js)；层：`domain`。
 
-直接依赖：`content/registry.js`、`content/weaponCapabilities.js`、`domain/damage.js`、`domain/distill.js`、`domain/plans.js`、`domain/random.js`。
+直接依赖：`content/registry.js`、`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/damage.js`、`domain/distill.js`、`domain/plans.js`、`domain/random.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -1477,7 +1500,7 @@ Current drift uses effective ticks and the normal body solver; native dash/root/
 
 公开函数下游：
 
-- `createPluginChoice` → `content/registry.js#createHandlerRegistry`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/random.js#chooseWeightedIndex`。
+- `createPluginChoice` → `content/registry.js#createHandlerRegistry`、`content/skillCapabilities.js#resolveSkillTemplate`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/random.js#chooseWeightedIndex`。
 - `planPluginSelection` → `domain/distill.js#advanceDistillTrack`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
 - `planPluginReroll` → `domain/draft.js#createPluginChoice`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
 - `planPluginSkip` → `domain/damage.js#planLifeChange`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
@@ -1677,7 +1700,7 @@ Create an unpublished initial state. Map plans are applied before Session publis
 
 [源码](../../src/v2/domain/initial.js)；层：`domain`。
 
-直接依赖：`content/weaponCapabilities.js`、`domain/entities.js`、`domain/random.js`、`domain/serialization.js`、`domain/treeRuntime.js`、`domain/world/regionRules.js`、`versions.js`。
+直接依赖：`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/entities.js`、`domain/random.js`、`domain/serialization.js`、`domain/treeRuntime.js`、`domain/world/regionRules.js`、`versions.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -1685,7 +1708,7 @@ Create an unpublished initial state. Map plans are applied before Session publis
 
 公开函数下游：
 
-- `createInitialGameState` → `content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/entities.js#createEntityState`、`domain/random.js#createRandomStreams`、`domain/serialization.js#serializeCanonical`、`domain/treeRuntime.js#createTreeBaseStats`、`domain/treeRuntime.js#isTreeSnapshotValid`、`domain/world/regionRules.js#resolveExpeditionRoute`。
+- `createInitialGameState` → `content/skillCapabilities.js#resolveSkillTemplate`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/entities.js#createEntityState`、`domain/random.js#createRandomStreams`、`domain/serialization.js#serializeCanonical`、`domain/treeRuntime.js#createTreeBaseStats`、`domain/treeRuntime.js#isTreeSnapshotValid`、`domain/world/regionRules.js#resolveExpeditionRoute`。
 
 公开函数上游：
 
@@ -2284,15 +2307,15 @@ Store typed declarative delayed actions, never a stale mutable-state replacement
 
 [源码](../../src/v2/domain/stateValidation.js)；层：`domain`。
 
-直接依赖：`content/weaponCapabilities.js`、`domain/serialization.js`、`domain/treeRuntime.js`、`domain/world/regionRules.js`。
+直接依赖：`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/serialization.js`、`domain/treeRuntime.js`、`domain/world/regionRules.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `inspectGameState(state: untyped, catalog: untyped)` | `ValidationReport` | 已实现 | 检查版本、有限数据、实体引用、壳、护盾、机制累计集合、槽位与命中账本。；返回诊断，不修改状态；内容全集校验仍由未实现的catalog校验负责。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `inspectGameState(state: untyped, catalog: untyped)` | `ValidationReport` | 已实现 | 检查版本、有限数据、实体引用、壳、护盾、机制累计集合、槽位与命中账本。；返回诊断，不修改状态；完整内容目录由独立catalog校验。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
-- `inspectGameState` → `content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/serialization.js#serializeCanonical`、`domain/treeRuntime.js#isTreeSnapshotValid`、`domain/world/regionRules.js#resolveExpeditionRoute`。
+- `inspectGameState` → `content/skillCapabilities.js#resolveSkillTemplate`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/serialization.js#serializeCanonical`、`domain/treeRuntime.js#isTreeSnapshotValid`、`domain/world/regionRules.js#resolveExpeditionRoute`。
 
 公开函数上游：
 
@@ -2398,7 +2421,7 @@ Claude短途纵切的连续地图；首领与其他模式不因此宣称完整�
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `createAdventureMapPlan(start: untyped, catalog: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 构建Pro1连续地图：三信标、两检查点、资源箱、驻守敌人与有限追兵预算。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `createAdventureMapPlan(start: untyped, catalog: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 构建短途/API海域：信标、检查点、资源箱、装备、驻守敌人和按难度开放的机制。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 | `planClaudeEncounter(context: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 任意两个信标完成后，以稳定ID创建一次Claude首领并切换boss阶段。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 | `planBossEncounter(context: untyped)` | `SystemPlan` | 已实现 / adventure-slice | planBossEncounter；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
@@ -2669,8 +2692,8 @@ Build one region once. Static entities/budgets/rewards get a regional namespace;
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planObjectiveAdvance(context: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 仅在探索阶段且进入120范围时推进一个信标；离开不清零，35秒完成。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planObjectiveCompletion(context: untyped, objectiveId: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 稳定去重完成信标、生成80经验/2碎片/3零件，完成两个后开放首领门。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planObjectiveAdvance(context: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 在探索阶段处理封锁进度或占领信标；所需进度由目标记录决定，短途默认35秒、远征120秒。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planObjectiveCompletion(context: untyped, objectiveId: untyped)` | `SystemPlan` | 已实现 / adventure-slice | 幂等完成信标、封锁或护送，发放一次目标奖励；累计完成两个后开放本区域首领门。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planApiProgression(context: untyped, afterCombat: untyped = false)` | `SystemPlan` | 已实现 / adventure-slice API | API世界调度入口，分别在战斗前推进时间、战斗后处理首领与撤回，其他模式返回空计划。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
@@ -2917,7 +2940,7 @@ Construct the formal Free lesson as an isolated small sea. It has no permanent l
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planFlowTransition(context: untyped, nextPhase: untyped)` | `SystemPlan` | 已实现 / core-preview | 预览只开放战斗→暂停/终态与暂停→原战斗状态；保留暂停前面板及其原世界返回阶段。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planFlowTransition(context: untyped, nextPhase: untyped)` | `SystemPlan` | 已实现 / core-preview | 校验探索、首领、成长面板、暂停与终态的允许转移，恢复时保留原面板。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planProgressionPanels(context: untyped)` | `SystemPlan` | 已实现 / core-preview | 按队首升级逐步开LoRA/插件，不能两个面板抢Space。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planPause(context: untyped, reason: untyped)` | `SystemPlan` | 已实现 / core-preview | 保留所有世界/UI剩余时间，后台/性能暂停清理持有输入。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planResume(context: untyped)` | `SystemPlan` | 已实现 / core-preview | 恢复战斗或LoRA/插件面板原阶段，保留指针和原世界返回位置，不补跑墙钟。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
@@ -3058,7 +3081,7 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 [源码](../../src/v2/engine/snapshot.js)；层：`engine`。
 
-直接依赖：`domain/serialization.js`、`domain/world/regionRules.js`。
+直接依赖：`content/skillCapabilities.js`、`domain/serialization.js`、`domain/world/regionRules.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -3067,7 +3090,7 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 公开函数下游：
 
-- `createRenderSnapshot` → `domain/serialization.js#toJson`、`domain/world/regionRules.js#regionWorldTick`。
+- `createRenderSnapshot` → `content/skillCapabilities.js#resolveSkillTemplate`、`domain/serialization.js#toJson`、`domain/world/regionRules.js#regionWorldTick`。
 - `createStateDigest` → `domain/serialization.js#createDataDigest`。
 
 公开函数上游：
@@ -3104,7 +3127,7 @@ Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,
 
 [源码](../../src/v2/preview/host.js)；层：`host`。
 
-直接依赖：`adapters/storage.js`、`application/nest.js`、`application/repository.js`、`content/catalog.js`、`content/registry.js`、`content/weaponCapabilities.js`、`domain/checkpoint.js`、`domain/clock.js`、`domain/difficulty.js`、`domain/dshCycle.js`、`domain/settlement.js`、`domain/world/api.js`、`domain/world/regionRules.js`、`engine/session.js`、`preview/modManager.js`、`preview/nestManager.js`、`preview/view.js`。
+直接依赖：`adapters/storage.js`、`application/nest.js`、`application/repository.js`、`content/catalog.js`、`content/registry.js`、`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/checkpoint.js`、`domain/clock.js`、`domain/difficulty.js`、`domain/dshCycle.js`、`domain/settlement.js`、`domain/world/api.js`、`domain/world/regionRules.js`、`engine/session.js`、`preview/modManager.js`、`preview/nestManager.js`、`preview/view.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -3112,7 +3135,7 @@ Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,
 
 公开函数下游：
 
-- `mountCombatPreview` → `adapters/storage.js#createStoragePort`、`application/nest.js#prepareAdventureStart`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`application/repository.js#readProfileRepository`、`content/catalog.js#loadContentCatalog`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`content/weaponCapabilities.js#listRuntimeWeapons`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/checkpoint.js#canCreateCheckpoint`、`domain/checkpoint.js#createCheckpoint`、`domain/clock.js#createClockState`、`domain/clock.js#resumeClock`、`domain/clock.js#scheduleFrame`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/dshCycle.js#readDshCycleTimers`、`domain/settlement.js#createSettlement`、`domain/world/api.js#canApiWithdraw`、`domain/world/regionRules.js#localWorldId`、`domain/world/regionRules.js#resolveExpeditionRoute`、`engine/session.js#createGameSession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#readSessionView`、`engine/session.js#restoreGameSession`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`preview/modManager.js#mountModManager`、`preview/nestManager.js#mountNestManager`、`preview/view.js#getPreviewCamera`、`preview/view.js#renderPreviewFrame`。
+- `mountCombatPreview` → `adapters/storage.js#createStoragePort`、`application/nest.js#prepareAdventureStart`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`application/repository.js#readProfileRepository`、`content/catalog.js#loadContentCatalog`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`content/skillCapabilities.js#listRuntimeSkills`、`content/weaponCapabilities.js#listRuntimeWeapons`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/checkpoint.js#canCreateCheckpoint`、`domain/checkpoint.js#createCheckpoint`、`domain/clock.js#createClockState`、`domain/clock.js#resumeClock`、`domain/clock.js#scheduleFrame`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/dshCycle.js#readDshCycleTimers`、`domain/settlement.js#createSettlement`、`domain/world/api.js#canApiWithdraw`、`domain/world/regionRules.js#localWorldId`、`domain/world/regionRules.js#resolveExpeditionRoute`、`engine/session.js#createGameSession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#readSessionView`、`engine/session.js#restoreGameSession`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`preview/modManager.js#mountModManager`、`preview/nestManager.js#mountNestManager`、`preview/view.js#getPreviewCamera`、`preview/view.js#renderPreviewFrame`。
 
 公开函数上游：
 
@@ -3128,7 +3151,7 @@ Local community mod manager. Installation is persistent; activation applies only
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `mountModManager(root: untyped, base: untyped, notify: untyped)` | `{getCatalog: () => ContentCatalog; dispose: () => void}` | 已实现 | 提供本地JSON安装、启停、移除与持久化菜单，只影响下次Free出发。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `mountModManager(root: untyped, base: untyped, notify: untyped)` | `{getCatalog: () => ContentCatalog; dispose: () => void}` | 已实现 | 提供本地JSON安装、启停与移除；SDK1.0–1.3包只影响下次Free练习。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 

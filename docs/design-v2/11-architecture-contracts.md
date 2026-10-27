@@ -1,6 +1,6 @@
 # 11 · V2架构骨架、状态权限与调用规则
 
-状态：**独立战斗试作v2.html已可操作，完整冒险仍未完成**。用户已授权先由Codex编码。197个函数有实现，136个显式TODO；带core-preview标记的实现仅覆盖当前试作。实际范围见[开发进度](13-development-status.md)。旧src/main.js保持独立。
+状态：**独立战斗试作v2.html已可操作，完整冒险仍未完成**。用户已授权先由Codex编码。375个函数有实现，40个显式TODO；core-preview和adventure-slice的具体范围按函数标注。实际范围见[开发进度](13-development-status.md)。旧src/main.js保持独立。
 
 入口文档：[全部函数目录](12-function-catalog.md)；入口源码：[bootstrap.js](../../src/v2/bootstrap.js)；类型契约：[contracts.d.ts](../../src/v2/contracts.d.ts)；机器可读依赖与绑定：[architecture-manifest.json](../../src/v2/architecture-manifest.json)。函数目录和manifest列出全部跨模块接口以及逐内容处理器，Grok填写函数体时应保留接口/约束，新增公共函数要同步契约。
 
@@ -66,7 +66,7 @@ flowchart TD
 ### 世界顺序（权威）
 
 1. 按world域筛选命令、排序和幂等校验，逐个产计划并应用。命令若转为暂停/训练/选择/终态，立即停止本tick后续战斗阶段，只提交该合法转移；不先刷一批怪。
-2. 更新合法世界计时、状态与到期；在相应Tick事件上处理28秒DSH和其他定时钩子。对同eventId只分派一次。
+2. 更新合法世界计时、状态与到期；在相应Tick事件上处理DSH每10秒开奖、5分钟有效期和其他定时钩子。对同eventId只分派一次。
 3. 安排/推进压力事件与刷怪，按预算和合法点提交实体；当场应用后的新实体可被本tick后续系统读取，不重复出生。
 4. 规划普通敌人/模型/累计常驻机制、Boss、伙伴意图与预警，解析控制/冷却限制。
 5. 规划玩家移动/实体运动/武器开火/大白饭运动，保存扫掠起终点；技能命令只在步骤1成功施放一次，不能此处再施放。
@@ -85,7 +85,7 @@ flowchart TD
 
 经验变化→`planLevelProgression`建立LevelReward队列→本级正常生命收益→有DSH时`createLoraTrial`→进入loraTraining→UI步推进指针→确认/超时→`planLoraOutcome`只提交一次→本级若有插件再`createPluginChoice`→下一级。只有完成整批才恢复世界。
 
-LoRA临时负面从世界恢复后才消耗，同类刷新、两类可并存；UI每次重新渲染不能重新生成trial、目标属性或完美区域。Space在LoRA域只作用训练，在控制域只作用挣脱，不向另一系统透传。28秒开奖由世界时钟驱动，训练中不开奖。
+LoRA临时负面从世界恢复后才消耗，同类刷新、两类可并存；UI每次重新渲染不能重新生成trial、目标属性或完美区域。Space在LoRA域只作用训练，在控制域只作用挣脱，不向另一系统透传。10秒开奖及5分钟有效期由世界时钟驱动，训练中不开奖。
 
 ## 7. 伤害、外壳、控制与重置
 
@@ -151,7 +151,7 @@ Session私有step/getRecord不导出；AST工具展开它们转达的真实公�
 
 `application/nest.executeNestAction`是小窝消费入口：读取最新档案→拒绝活动检查点→纯领域计划→CAS；冲突重读重算，最多3次。`prepareAdventureStart`验证拥有/能力后复制树与DSH，Session不再读取局外档。体魄只在初始化应用一次；MCP专属输出、换枪触发、伤害保命和无伤CD由各自明确消费者处理，检查点保留全部已用标记/时钟。
 
-社区MCP使用`ContentCatalog.modWeapons`明确注册原生行为模板与所属包；`resolveWeaponTemplate`验证包锁后才分派原生处理器，不把社区ID伪装成95项原版绑定之一。新武器仍走相同命中/额度/暴击/伤害链。SDK1.1仅Free开放，正式Profile继续原版目录。
+社区MCP使用`ContentCatalog.modWeapons`、技能使用`modSkills`明确注册原生行为模板与所属包；`resolveWeaponTemplate`/`resolveSkillTemplate`验证包锁后分派原生处理器，不把社区ID伪装成95项原版绑定之一。新武器走相同命中/额度/暴击/伤害链；护盾/爆发技能走相同技能、插件事件与存档链。SDK1.0–1.3仅Free练习开放，正式Profile继续原版目录。
 
 ## 弹体与装备实例增量
 

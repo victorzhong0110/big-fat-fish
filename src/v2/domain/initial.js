@@ -1,5 +1,6 @@
 import {resolveExpeditionRoute} from './world/regionRules.js';
 import { resolveWeaponTemplate } from '../content/weaponCapabilities.js';
+import { resolveSkillTemplate } from '../content/skillCapabilities.js';
 // @ts-check
 import { createTreeBaseStats, isTreeSnapshotValid } from './treeRuntime.js';
 import { serializeCanonical } from './serialization.js';
@@ -8,6 +9,7 @@ import { createEntityState } from './entities.js';
 import { CORE_VERSION, SCHEMA_VERSION } from '../versions.js';
 /** Create an unpublished initial state. Map plans are applied before Session publishes it.
  * @implementationScope core-preview + adventure-slice
+ * @calls content/skillCapabilities.js#resolveSkillTemplate
  * @calls content/weaponCapabilities.js#resolveWeaponTemplate
  * @calls domain/entities.js#createEntityState
  * @calls domain/random.js#createRandomStreams
@@ -30,7 +32,7 @@ export function createInitialGameState(start, seed, catalog) {
   const supportedDsh = start.runtimeProfile === 'core-preview' ? ['dsh_lora', 'dsh_gpt_branch'] : ['dsh_lora', 'dsh_gpt_branch', 'dsh_claude_appeal', 'dsh_claude_allowlist','dsh_gpt_preview','dsh_grok_license','dsh_grok_salvage','dsh_sleep','dsh_rice','dsh_open'];
   if (!isTreeSnapshotValid(start.treeNodeIds, catalog) || start.runtimeProfile === 'core-preview' && start.treeNodeIds.length || start.dsh.length > (start.runtimeProfile === 'core-preview' ? 1 : 3) || start.dsh.some(slot => !supportedDsh.includes(slot.id)) || start.loadout.companionId !== null && catalog.definitions[start.loadout.companionId]?.kind !== 'companion') throw new Error('Tree, unimplemented DSH and companion startup are not enabled in this preview');
   if (new Set(start.dsh.map(slot => slot.id)).size !== start.dsh.length || start.runtimeProfile === 'adventure-slice' && start.dsh.length > start.treeNodeIds.filter(id => ['tree_dsh_a','tree_dsh_b','tree_dsh_c'].includes(id)).length || start.dsh.some(slot => slot.id === 'dsh_claude_allowlist' && !['skillBan','companionBan'].includes(slot.options.protect))) throw new Error('Invalid departure DSH slots');
-  if (start.loadout.weapons.some(weapon => resolveWeaponTemplate(catalog,weapon.definitionId) === null) || !['skill_cache','skill_disconnect','skill_batch','skill_redirect','skill_sandbox','skill_fork','skill_rollback','skill_overclock'].includes(start.loadout.skillId)) throw new Error('Unsupported preview loadout');
+  if (start.loadout.weapons.some(weapon => resolveWeaponTemplate(catalog,weapon.definitionId) === null) || resolveSkillTemplate(catalog,start.loadout.skillId) === null) throw new Error('Unsupported preview loadout');
   const baseStats = createTreeBaseStats(start.treeNodeIds);
   return {
     expedition:start.difficulty.mode==='expedition'?{route:resolveExpeditionRoute(seed),clearedBiomes:[],furthestBiome:0,regions:[null,null,null]}:null,versions: { schema: SCHEMA_VERSION, core: CORE_VERSION, content: catalog.version }, runId: start.runId, seed, tick: 0, uiTick: 0, revision: 0, lastWorldAdvanceTick: null,

@@ -1,5 +1,6 @@
 import {resolveExpeditionRoute} from './world/regionRules.js';
 import { resolveWeaponTemplate } from '../content/weaponCapabilities.js';
+import { resolveSkillTemplate } from '../content/skillCapabilities.js';
 // @ts-check
 import { isTreeSnapshotValid } from './treeRuntime.js';
 import { serializeCanonical } from './serialization.js';
@@ -36,7 +37,7 @@ function inspectSnapshot(state, catalog, validateArchives=true) {
     if (state.lastWorldAdvanceTick !== null && (!Number.isSafeInteger(state.lastWorldAdvanceTick) || state.lastWorldAdvanceTick < 0 || state.lastWorldAdvanceTick > state.tick) || state.dshCycle.lastAdvancedTick !== null && (!Number.isSafeInteger(state.dshCycle.lastAdvancedTick) || state.dshCycle.lastAdvancedTick < 0 || state.dshCycle.lastAdvancedTick > state.tick)) reject('Invalid timer cursor');
     if (!Number.isSafeInteger(state.lastCommandSeq) || state.lastCommandSeq < -1 || !state.input || typeof state.input.firing !== 'boolean' || ![state.input.move.x, state.input.move.y, state.input.aim.x, state.input.aim.y].every(value => typeof value === 'number' && Number.isFinite(value)) || !Array.isArray(state.input.heldKeys) || !Array.isArray(state.input.pointerIds)) reject('Invalid input/command state');
     if (state.start.runtimeProfile === 'core-preview') {
-      if (!state.start.runId || state.start.runId !== state.runId || state.start.difficulty.level !== 0 || state.start.difficulty.mode !== 'tutorial' || state.start.treeNodeIds.length || (state.start.dsh.length > 1 || state.start.dsh.some(slot => !['dsh_lora', 'dsh_gpt_branch'].includes(slot.id))) || state.plugins.some(plugin=>catalog.definitions[plugin.id]?.kind!=='plugin'||catalog.definitions[plugin.id]?.parameters.previewAvailable!==true) || state.bosses.length || state.start.difficulty.mechanicIds.length || state.player.loadout.companionId !== null && catalog.definitions[state.player.loadout.companionId]?.kind !== 'companion' || state.player.loadout.weapons.some(weapon => resolveWeaponTemplate(catalog,weapon.definitionId) === null) || !['skill_cache','skill_disconnect','skill_batch','skill_redirect','skill_sandbox','skill_fork','skill_rollback','skill_overclock'].includes(state.player.loadout.skillId) || Object.values(state.world.entities).some(entity => entity.kind === 'enemy' && !['enemy_claude_guard', 'enemy_grok_bot','enemy_gpt_codex','enemy_gpt_dewey','enemy_gpt_fireball','enemy_gpt_hoots','enemy_gpt_rocky','enemy_gpt_seedy','enemy_gpt_stacky','gpt_core','gpt_decoy'].includes(entity.definitionId))) reject('Unsupported preview capability');
+      if (!state.start.runId || state.start.runId !== state.runId || state.start.difficulty.level !== 0 || state.start.difficulty.mode !== 'tutorial' || state.start.treeNodeIds.length || (state.start.dsh.length > 1 || state.start.dsh.some(slot => !['dsh_lora', 'dsh_gpt_branch'].includes(slot.id))) || state.plugins.some(plugin=>catalog.definitions[plugin.id]?.kind!=='plugin'||catalog.definitions[plugin.id]?.parameters.previewAvailable!==true) || state.bosses.length || state.start.difficulty.mechanicIds.length || state.player.loadout.companionId !== null && catalog.definitions[state.player.loadout.companionId]?.kind !== 'companion' || state.player.loadout.weapons.some(weapon => resolveWeaponTemplate(catalog,weapon.definitionId) === null) || resolveSkillTemplate(catalog,state.player.loadout.skillId) === null || Object.values(state.world.entities).some(entity => entity.kind === 'enemy' && !['enemy_claude_guard', 'enemy_grok_bot','enemy_gpt_codex','enemy_gpt_dewey','enemy_gpt_fireball','enemy_gpt_hoots','enemy_gpt_rocky','enemy_gpt_seedy','enemy_gpt_stacky','gpt_core','gpt_decoy'].includes(entity.definitionId))) reject('Unsupported preview capability');
     }
     if (!Number.isInteger(state.flow.pluginRerollsUsed ?? 0) || (state.flow.pluginRerollsUsed ?? 0) < 0 || (state.flow.pluginRerollsUsed ?? 0) > 1) reject('Invalid whole-run reroll count');
     const rewards = state.flow.queuedLevelRewards;
@@ -138,6 +139,7 @@ function inspectSnapshot(state, catalog, validateArchives=true) {
 }
 
 /** Validate the active state and every suspended expedition region without mutating either snapshot.
+ * @calls content/skillCapabilities.js#resolveSkillTemplate
  * @calls content/weaponCapabilities.js#resolveWeaponTemplate
  * @calls domain/serialization.js#serializeCanonical
  * @calls domain/treeRuntime.js#isTreeSnapshotValid

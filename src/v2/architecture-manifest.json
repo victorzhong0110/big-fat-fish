@@ -1336,7 +1336,7 @@
     {
       "path": "content/catalog.js",
       "layer": "content",
-      "purpose": "玩法定义与版本的唯一读取入口；值尚未填充，规格见02–09。",
+      "purpose": "读取和验证版本化内容目录、原版绑定与受包锁约束的社区配方。",
       "dependencies": [
         "content/catalogData.js",
         "domain/serialization.js"
@@ -1367,7 +1367,7 @@
             }
           ],
           "result": "ValidationReport",
-          "description": "校验原版目录数量、社区MCP注册与锁、稳定ID/引用、160点树前置DAG及运行能力声明。",
+          "description": "校验原版目录数量、社区MCP/技能注册与包锁、稳定ID/引用、160点树前置DAG及运行能力声明。",
           "calls": [
             "domain/serialization.js#serializeCanonical"
           ],
@@ -3711,7 +3711,7 @@
       ],
       "functions": [
         {
-          "description": "校验SDK1.0–1.2、精确依赖、补丁与六种原生模板配方；按版本开放模板并验证参数边界。",
+          "description": "校验SDK1.0–1.3、依赖、补丁、武器和护盾/爆发技能配方；拒绝未知字段及越界参数。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -3752,7 +3752,7 @@
           "calls": []
         },
         {
-          "description": "从原版复制并组装声明式模组；重复字段报错，生成内容指纹和存档锁。",
+          "description": "复核并排序启用包，以独立目录合成武器/技能和补丁，验证字段冲突、命名空间、包锁及指纹。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -3800,6 +3800,56 @@
           "phase": "query",
           "callMode": "sequence",
           "implementation": "implemented"
+        }
+      ]
+    },
+    {
+      "path": "content/skillCapabilities.js",
+      "layer": "content",
+      "purpose": "Resolve an implemented native skill, or a declarative community recipe owned by a locked package.",
+      "dependencies": [],
+      "functions": [
+        {
+          "description": "将原版技能或有包锁的社区护盾/爆发配方解析到真实原生行为；未知/未注册返回null。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolveSkillTemplate",
+          "args": [
+            {
+              "name": "catalog",
+              "type": "untyped"
+            },
+            {
+              "name": "id",
+              "type": "untyped"
+            }
+          ],
+          "result": "SkillTemplateId|null",
+          "implementation": "implemented",
+          "calls": [],
+          "implementationScope": "core-preview + adventure-slice"
+        },
+        {
+          "description": "列出当前目录确有原生处理器的技能，供Free练习装配菜单选择。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "listRuntimeSkills",
+          "args": [
+            {
+              "name": "catalog",
+              "type": "untyped"
+            }
+          ],
+          "result": "readonly string[]",
+          "implementation": "implemented",
+          "calls": [
+            "content/skillCapabilities.js#resolveSkillTemplate"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
         }
       ]
     },
@@ -4154,7 +4204,8 @@
       "layer": "dispatch",
       "purpose": "主动技能稳定ID分派，不得把所有候选处理器依次执行。",
       "dependencies": [
-        "content/handlers/skills.js"
+        "content/handlers/skills.js",
+        "content/skillCapabilities.js"
       ],
       "functions": [
         {
@@ -4170,7 +4221,7 @@
             }
           ],
           "result": "EffectPlan",
-          "description": "按合法稳定id和已实现绑定只调用一个对应处理器。",
+          "description": "先解析技能模板，再调用对应原生处理器；保留社区技能实际ID供事件与存档使用。",
           "calls": [
             "content/handlers/skills.js#planSkillBatch",
             "content/handlers/skills.js#planSkillCache",
@@ -4179,7 +4230,8 @@
             "content/handlers/skills.js#planSkillOverclock",
             "content/handlers/skills.js#planSkillRedirect",
             "content/handlers/skills.js#planSkillRollback",
-            "content/handlers/skills.js#planSkillSandbox"
+            "content/handlers/skills.js#planSkillSandbox",
+            "content/skillCapabilities.js#resolveSkillTemplate"
           ],
           "rule": "@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -4476,7 +4528,7 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "当前只分派棕蟹与基础Bot，不执行未实现的GPT/模型/累计机制处理器。",
+          "description": "按稳定ID分派各普通敌人真实处理器，跳过死亡、首领及禁用AI的实体。",
           "calls": [
             "dispatch/enemies.js#dispatchEnemiesHandler",
             "domain/plans.js#mergeSystemPlans"
@@ -4518,7 +4570,7 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "仅分派当前Claude首领，GPT/Grok首领明确拒绝。",
+          "description": "按阵营分派Claude、ChatGPT和Grok的真实首领处理器，跳过已死亡实体。",
           "calls": [
             "domain/bosses/claude.js#planClaudeBoss",
             "domain/bosses/gpt.js#planGptBoss",
@@ -4585,7 +4637,7 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "当前只施放缓存护盾/断开连接，检查冷却与技能封禁后成功才发SkillCast。",
+          "description": "以装备技能参数和插件准备倍率施放实际模板，设置独立冷却并发布保留真实ID的SkillCast事件。",
           "calls": [
             "dispatch/skills.js#dispatchSkillsHandler",
             "domain/plans.js#createEmptyPlan",
@@ -4707,7 +4759,7 @@
             }
           ],
           "result": "EffectPlan",
-          "description": "实现Pro1重钳禁锢、技能封印与半血三条带扫击；真实伙伴封禁弹和高难连招仍待接通。",
+          "description": "规划重钳控制、技能与伙伴封禁、半血扫击和难度连招；Free教学首领只使用钳击。",
           "calls": [
             "domain/bosses/claude.js#planClaudeBan",
             "domain/geometry.js#distanceSquared",
@@ -5233,6 +5285,7 @@
       "layer": "domain",
       "purpose": "@param {import('../contracts.d.ts').EvaluationContext} c @param {import('../contracts.d.ts').Vec2} point @param {number} range @param {readonly string[]} excluded",
       "dependencies": [
+        "content/skillCapabilities.js",
         "content/weaponCapabilities.js",
         "domain/abilities.js",
         "domain/entities.js",
@@ -5272,6 +5325,7 @@
           "result": "SystemPlan",
           "implementation": "implemented",
           "calls": [
+            "content/skillCapabilities.js#resolveSkillTemplate",
             "content/weaponCapabilities.js#resolveWeaponTemplate",
             "domain/abilities.js#planAbilityDamage",
             "domain/entities.js#createEntityState",
@@ -5809,6 +5863,7 @@
       "purpose": "候选、升级、换槽与一次性重抽。",
       "dependencies": [
         "content/registry.js",
+        "content/skillCapabilities.js",
         "content/weaponCapabilities.js",
         "domain/damage.js",
         "domain/distill.js",
@@ -5832,6 +5887,7 @@
           "description": "按权重生成3/DSH首轮4个互异候选，首组保底蒸馏。",
           "calls": [
             "content/registry.js#createHandlerRegistry",
+            "content/skillCapabilities.js#resolveSkillTemplate",
             "content/weaponCapabilities.js#resolveWeaponTemplate",
             "domain/random.js#chooseWeightedIndex"
           ],
@@ -6543,6 +6599,7 @@
       "layer": "domain",
       "purpose": "Create an unpublished initial state. Map plans are applied before Session publishes it.",
       "dependencies": [
+        "content/skillCapabilities.js",
         "content/weaponCapabilities.js",
         "domain/entities.js",
         "domain/random.js",
@@ -6576,6 +6633,7 @@
           "result": "GameState",
           "implementation": "implemented",
           "calls": [
+            "content/skillCapabilities.js#resolveSkillTemplate",
             "content/weaponCapabilities.js#resolveWeaponTemplate",
             "domain/entities.js#createEntityState",
             "domain/random.js#createRandomStreams",
@@ -8525,6 +8583,7 @@
       "layer": "domain",
       "purpose": "保存与提交共用的单局状态不变量检查；避免domain反向依赖engine。",
       "dependencies": [
+        "content/skillCapabilities.js",
         "content/weaponCapabilities.js",
         "domain/serialization.js",
         "domain/treeRuntime.js",
@@ -8546,6 +8605,7 @@
           "result": "ValidationReport",
           "description": "检查版本、有限数据、实体引用、壳、护盾、机制累计集合、槽位与命中账本。",
           "calls": [
+            "content/skillCapabilities.js#resolveSkillTemplate",
             "content/weaponCapabilities.js#resolveWeaponTemplate",
             "domain/serialization.js#serializeCanonical",
             "domain/treeRuntime.js#isTreeSnapshotValid",
@@ -8554,7 +8614,7 @@
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "rule": "返回诊断，不修改状态；内容全集校验仍由未实现的catalog校验负责。",
+          "rule": "返回诊断，不修改状态；完整内容目录由独立catalog校验。",
           "implementation": "implemented"
         }
       ]
@@ -8905,7 +8965,7 @@
       ],
       "functions": [
         {
-          "description": "构建Pro1连续地图：三信标、两检查点、资源箱、驻守敌人与有限追兵预算。",
+          "description": "构建短途/API海域：信标、检查点、资源箱、装备、驻守敌人和按难度开放的机制。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -9776,7 +9836,7 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "仅在探索阶段且进入120范围时推进一个信标；离开不清零，35秒完成。",
+          "description": "在探索阶段处理封锁进度或占领信标；所需进度由目标记录决定，短途默认35秒、远征120秒。",
           "calls": [
             "domain/geometry.js#distanceSquared",
             "domain/plans.js#createEmptyPlan",
@@ -9804,7 +9864,7 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "稳定去重完成信标、生成80经验/2碎片/3零件，完成两个后开放首领门。",
+          "description": "幂等完成信标、封锁或护送，发放一次目标奖励；累计完成两个后开放本区域首领门。",
           "calls": [
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
@@ -10540,7 +10600,7 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "预览只开放战斗→暂停/终态与暂停→原战斗状态；保留暂停前面板及其原世界返回阶段。",
+          "description": "校验探索、首领、成长面板、暂停与终态的允许转移，恢复时保留原面板。",
           "calls": [
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange"
@@ -11107,6 +11167,7 @@
       "layer": "engine",
       "purpose": "表现层只读投影，不把活实体对象交给UI。",
       "dependencies": [
+        "content/skillCapabilities.js",
         "domain/serialization.js",
         "domain/world/regionRules.js"
       ],
@@ -11126,6 +11187,7 @@
           "result": "RenderSnapshot",
           "description": "只读投影战斗实体、掉落、探索格、Claude预警与首领生命，供Canvas绘制。",
           "calls": [
+            "content/skillCapabilities.js#resolveSkillTemplate",
             "domain/serialization.js#toJson",
             "domain/world/regionRules.js#regionWorldTick"
           ],
@@ -11324,6 +11386,7 @@
         "application/repository.js",
         "content/catalog.js",
         "content/registry.js",
+        "content/skillCapabilities.js",
         "content/weaponCapabilities.js",
         "domain/checkpoint.js",
         "domain/clock.js",
@@ -11362,6 +11425,7 @@
             "content/catalog.js#loadContentCatalog",
             "content/catalog.js#validateContentCatalog",
             "content/registry.js#createHandlerRegistry",
+            "content/skillCapabilities.js#listRuntimeSkills",
             "content/weaponCapabilities.js#listRuntimeWeapons",
             "content/weaponCapabilities.js#resolveWeaponTemplate",
             "domain/checkpoint.js#canCreateCheckpoint",
@@ -11401,7 +11465,7 @@
       ],
       "functions": [
         {
-          "description": "提供本地JSON安装、启停、移除与持久化菜单，只影响下次Free出发。",
+          "description": "提供本地JSON安装、启停与移除；SDK1.0–1.3包只影响下次Free练习。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -12486,9 +12550,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 115,
-    "functions": 413,
-    "implemented": 373,
+    "modules": 116,
+    "functions": 415,
+    "implemented": 375,
     "placeholders": 40
   }
 }

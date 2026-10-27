@@ -5,6 +5,7 @@ import{derivePlayerStats}from'./stats.js';
 import{deriveRawWeaponStats}from'./pluginStats.js';
 import{createWeaponProjectile}from'./projectiles.js';
 import{resolveWeaponTemplate}from'../content/weaponCapabilities.js';
+import{resolveSkillTemplate}from'../content/skillCapabilities.js';
 import{distanceSquared,normalizeVector}from'./geometry.js';
 import{resolveBodyDestination}from'./motionSolver.js';
 import{planAbilityDamage}from'./abilities.js';
@@ -22,6 +23,7 @@ function bubble(c,id,point,amount,chain,targetId=null,maxHits=1,angle=Math.atan2
 function damage(c,targetId,amount,id,chain){const target=c.state.world.entities[targetId];return{id,sourceId:c.state.player.entityId,chainId:chain,generation:0,kind:'damage',payload:toJson({id,sourceId:c.state.player.entityId,creditOwner:'player',sourceKind:'plugin_secondary',attackId:id,projectileId:null,targetId,baseDamage:amount,contact:target.position,incomingDirection:{x:0,y:0},generation:0,chainId:chain,critEligible:false,expiresAt:c.state.tick+1})};}
 
 /** Apply actual native events to plugin counters and queued actions. Secondary events cannot become native casts.
+ * @calls content/skillCapabilities.js#resolveSkillTemplate
  * @calls content/weaponCapabilities.js#resolveWeaponTemplate
  * @calls domain/abilities.js#planAbilityDamage
  * @calls domain/entities.js#createEntityState
@@ -78,7 +80,7 @@ export function planCombatPluginEvent(context,event,onlyId=null){
    if(actions.length){extra.push(scheduleAbilityActions(context,id,18,actions,player.position));rt.readyAt=state.tick+300;changed=true;}
   }
   if(plugin.id==='plugin_recursion'&&nativeSkill&&ready){
-   const skill=String(p.skillId),multiplier=rank===1?.6:.85,field=state.world.entities[`ability:${skill.slice(6)}:${state.tick}`],actions=/** @type {import('../contracts.d.ts').ScheduledAction[]} */([]);
+   const skill=resolveSkillTemplate(context.catalog,String(p.skillId))??'',multiplier=rank===1?.6:.85,field=state.world.entities[`ability:${skill.slice(6)}:${state.tick}`],actions=/** @type {import('../contracts.d.ts').ScheduledAction[]} */([]);
    if(skill==='skill_batch'&&field)actions.push({kind:'area',point:{...field.position},radius:130,amount:Number(field.runtime.damage)*multiplier});
    else if(skill==='skill_cache')actions.push({kind:'shield',amount:25*Number(p.power??1)*multiplier,duration:5,sourceId:plugin.id});
    else if(skill==='skill_sandbox'&&field)actions.push({kind:'zone',point:{...field.position},radius:160,duration:Math.round((Number(field.runtime.executeAt)-state.tick)*multiplier)});

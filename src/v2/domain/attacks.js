@@ -57,11 +57,11 @@ export function planWeaponFire(context) {
 export function planSkillCast(context) {
   const state = context.state, player = state.world.entities[state.player.entityId];
   if (state.player.loadout.skillCooldown > 0 || player.statusIds.some(id => state.world.statuses[id]?.kind === 'skillBan')) return createEmptyPlan();
-  const preparation=resolveSkillPreparation(state);
-  const plan = dependency1.dispatchSkillsHandler({...context,skillPower:preparation.power,skillDuration:preparation.duration,skillPush:preparation.push}, state.player.loadout.skillId);
+  const preparation=resolveSkillPreparation(state),power=preparation.power*Number(context.catalog.definitions[state.player.loadout.skillId]?.parameters.powerMultiplier??1);
+  const plan = dependency1.dispatchSkillsHandler({...context,skillPower:power,skillDuration:preparation.duration,skillPush:preparation.push}, state.player.loadout.skillId);
   const cooldown = Number(context.catalog.definitions[state.player.loadout.skillId]?.parameters.cooldown);
   if (!Number.isFinite(cooldown) || cooldown < 3) throw new Error('Invalid equipped skill cooldown');
-  return { ...plan, changes: [...plan.changes,createStateChange('entity',player.id,'setEntityRuntime',{runtime:{...player.runtime,skillReadySince:null,lastSkillCastAt:state.tick}}), createStateChange('player', player.id, 'setLoadout', { ...state.player.loadout, skillCooldown: cooldown * (state.start.treeNodeIds.includes('tree_skill_a') ? 0.96 : 1) * (state.start.treeNodeIds.includes('tree_skill_e') ? 0.94 : 1) })], events: [...plan.events, { id: `skill:${state.tick}`, runId: state.runId, tick: state.tick, seq: 0, type: 'SkillCast', sourceId: player.id, targetId: null, payload: { skillId: state.player.loadout.skillId,effects:toJson(plan.effects),power:preparation.power,duration:preparation.duration } }] };
+  return { ...plan, changes: [...plan.changes,createStateChange('entity',player.id,'setEntityRuntime',{runtime:{...player.runtime,skillReadySince:null,lastSkillCastAt:state.tick}}), createStateChange('player', player.id, 'setLoadout', { ...state.player.loadout, skillCooldown: cooldown * (state.start.treeNodeIds.includes('tree_skill_a') ? 0.96 : 1) * (state.start.treeNodeIds.includes('tree_skill_e') ? 0.94 : 1) })], events: [...plan.events, { id: `skill:${state.tick}`, runId: state.runId, tick: state.tick, seq: 0, type: 'SkillCast', sourceId: player.id, targetId: null, payload: { skillId: state.player.loadout.skillId,effects:toJson(plan.effects),power,duration:preparation.duration } }] };
 }
 
 /**

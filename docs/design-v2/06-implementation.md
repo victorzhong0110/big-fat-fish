@@ -2,11 +2,11 @@
 
 ## 1. 交付约束与现状
 
-本目录定义完整设计与实现任务。用户已授权Codex先编码，后由Grok接续。src/v2当前115个函数有实现、196个函数保持TODO；独立v2.html战斗试作已有Session、部分内容和Canvas表现。实现范围见13，接口/依赖见11/12。完整成长/冒险未接通，旧游戏入口保持独立。设计数字是可调初值，调参要有记录，不改成另一种玩法。
+本目录定义完整设计与实现任务。用户已授权Codex先编码，后由Grok接续。src/v2当前375个函数有实现、40个函数保持TODO；独立v2.html已有Session、成长、小窝事务、Free引导、短途/远征/API与Canvas表现。具体实现范围见13，接口/依赖见11/12；完整游戏与长局验收仍未完成，旧游戏入口保持独立。设计数字是可调初值，调参要有记录，不改成另一种玩法。
 
 现有基线仍可玩，保留独立旧版入口。旧源码有可复用的绘图、音效与纯函数，但V2不沿用全部玩法假设：旧counterMult标签倍率、4章×5波、旧角色选择、露水/深化等都不直接迁入。
 
-当前npm test为37文件514项通过，含旧版390项和V2新124项；npm run check:v2及双入口build通过。Chromium自动化19项通过，含桌面和手机横屏触控仿真；不是物理手机/真人完整局验收，未给出平衡结论。
+当前测试和浏览器验证的准确范围统一见13；浏览器桌面/触屏自动化不等于物理手机或真人完整局验收。
 
 ## 2. 系统边界
 
@@ -87,7 +87,7 @@ type Session = {
   level: number; xpRemainder: number; totalTokens: number;
   plugins: {id: string; rank: 1 | 2; origin: PluginOrigin}[];
   pluginRuntime: Record<string, unknown>;
-  dshRuntime: Record<string, unknown>; // 含28秒开奖与武器临时更新
+  dshRuntime: Record<string, unknown>; // 含10秒开奖、5分钟窗口与28秒武器临时更新
   loraRuntime?: {pendingLevels: number[]; trialId: string | null; targetStat: string | null; uiTick: number; resolved: boolean; modifiers: unknown; penalties: unknown;};
   pendingChoices: unknown[]; rerollsRemaining: number;
   distill: Record<'claude' | 'gpt' | 'grok', {stage: number; samples: number}>;
@@ -105,7 +105,7 @@ type DamageRequest = {
 
 实际类型应展开unknown字段，不把上述省略字段照抄进生产逻辑。普通插件最多6个`origin=run`；Pro附带5h是额外一个difficulty来源；同id只一条状态，无论origin如何。DSH是另一个集合，不在plugins里混算。只有已解锁/已实现的内容可加入牌池，缺处理器不能静默吞效果。
 
-内容记录至少包括id、displayName、descriptionParams、unlockCondition、effects、stackingPolicy、tags（只作检索）、version。启动校验重复id、未知前置、不可达技能树、缺效果处理器、缺阵营、缺sourceId继承规则、负数伤害/冷却、插件2级缺参数。技能树全树27节点160点；局内插件30种；DSH10项设计（含已确认28秒更新/重置与LoRA微调）；MCP6把；主动8个；伙伴6位；普通敌人9类按GPT7/Claude1/Grok1分配。
+内容记录至少包括id、displayName、descriptionParams、unlockCondition、effects、stackingPolicy、tags（只作检索）、version。启动校验重复id、未知前置、不可达技能树、缺效果处理器、缺阵营、缺sourceId继承规则、负数伤害/冷却、插件2级缺参数。技能树全树27节点160点；局内插件30种；DSH10项设计（含已确认10秒开奖、5分钟窗口的更新/重置与LoRA微调）；MCP6把；主动8个；伙伴6位；普通敌人9类按GPT7/Claude1/Grok1分配。
 
 ### 难度机制契约
 
@@ -121,9 +121,9 @@ type DamageRequest = {
 
 60tick/秒，渲染帧累积时间。每帧最多执行8步，保留积压；持续积压超过1秒自动性能暂停，用户继续时清理墙钟积压但不快进游戏tick，显示性能提示。后台自动暂停；恢复等待确认，并重置墙钟基准。正常30/60/120渲染FPS下同输入tick得到同结果。
 
-LoRA训练期间暂停世界tick，用独立UI固定时钟驱动指针，后台/用户暂停同时暂停UI时钟；判定只提交一次，恢复后才走负面计时。战斗对象寿命、射速、控制、5h滚动窗口、蒸馏、伙伴、追兵、DSH28秒开奖、Boss读条使用世界tick；不使用表现tween或wall clock执行战斗事件。菜单装饰动画可以独立运行。
+LoRA训练期间暂停世界tick，用独立UI固定时钟驱动指针，后台/用户暂停同时暂停UI时钟；判定只提交一次，恢复后才走负面计时。战斗对象寿命、射速、控制、5h滚动窗口、蒸馏、伙伴、追兵、DSH10秒开奖和5分钟有效期、Boss读条使用世界tick；不使用表现tween或wall clock执行战斗事件。菜单装饰动画可以独立运行。
 
-单tick：输入命令→合法性/流程→计时/状态→移动AI→攻击生成→扫掠碰撞→排序后的伤害/控制→死亡→奖励/解锁→升级选择队列→目标完成→提交实体增删→事件与快照。命令按seq，碰撞按攻击/目标id稳定排序。玩家和最终首领同tick致死时明确判失败，但首领真实死亡的永久DSH解锁仍按击败事实记一次；不发最终胜利资源。
+单tick：输入命令→合法性/流程→计时/状态→移动AI→攻击生成→扫掠碰撞→排序后的伤害/控制→死亡→奖励/解锁→升级选择队列→目标完成→提交实体增删→事件与快照。命令按seq，碰撞按攻击/目标id稳定排序。普通冒险中玩家和最终首领同tick致死时判失败，但首领真实死亡的永久DSH解锁仍按击败事实记一次；不发最终胜利资源。Free引导同帧死亡则按教学重试，不算胜利。
 
 ### 伤害管线
 
@@ -200,7 +200,7 @@ T03首批6插件建议：并行调用、批量处理、大白饭回收、蒸馏�
 15. 行为集：12级GPT既有支援也有换位且可四职能编组；15级Claude Opus可破掩体且保留组合/Glasswing规定控制上限；高难度Grok仍无高级小怪技能。Pro5→6只取消福利，已解锁敌人/地图机制不能丢。
 16. 调度：最多两项压力事件、Boss/检查点优先、增援去重/预算不复制、无合法位置则延期/取消、通道始终可达；暂停/读档不刷新事件和箱子奖励。
 
-17. DSH28秒开奖：两结果均可复现，临时品质不叠不永久化，最高品质+20%，换枪/封禁/暂停/恢复正确，重置不触发施放事件或清5h/插件内置冷却。
+17. DSH每10秒开奖、有效期5分钟：两结果均可复现；极小概率重设有效期并提示“Reset！”，正式冒险首次触发解锁对应成就。武器临时更新持续28秒、不叠不永久化，最高品质+20%；重置不触发施放事件或清5h/插件内置冷却。
 18. LoRA：每次实际升级一次，连升顺序，固定速率与完美区左右边界、2秒超时、键盘repeat/双触点、暂停/后台、四属性上下限、两类负面恢复后计时、API长局封顶、trialId幂等。
 19. Claude四阶段壳/弱点/破壳眩晕覆盖与Grok穿障碰撞矩阵；GPT7×4模型组合的技能覆盖/继承；11级Glasswing与解控/封禁防护只处理一次。
 20. 09像素参考与梗名改名：稳定id、原伤害/冷却不变，拿铁盆不自动变格挡/近战，移动端与LoRA/挣脱Space输入不串。

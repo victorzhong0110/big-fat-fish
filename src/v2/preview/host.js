@@ -3,6 +3,7 @@ import {canApiWithdraw} from '../domain/world/api.js';
 import {readDshCycleTimers} from '../domain/dshCycle.js';
 // @ts-check
 import { resolveWeaponTemplate, listRuntimeWeapons } from '../content/weaponCapabilities.js';
+import { listRuntimeSkills } from '../content/skillCapabilities.js';
 import { mountNestManager } from './nestManager.js';
 import { prepareAdventureStart } from '../application/nest.js';
 import { mountModManager } from './modManager.js';
@@ -28,6 +29,7 @@ import { getPreviewCamera, renderPreviewFrame } from './view.js';
  * @calls content/catalog.js#loadContentCatalog
  * @calls content/catalog.js#validateContentCatalog
  * @calls content/registry.js#createHandlerRegistry
+ * @calls content/skillCapabilities.js#listRuntimeSkills
  * @calls content/weaponCapabilities.js#listRuntimeWeapons
  * @calls content/weaponCapabilities.js#resolveWeaponTemplate
  * @calls domain/checkpoint.js#canCreateCheckpoint
@@ -120,7 +122,7 @@ export function mountCombatPreview(mountElementId) {
   try{const savedMode=localStorage.getItem('big-fat-fish:v2:mode'),legacyPractice=!savedMode&&Object.keys(localStorage).some(key=>key.startsWith('big-fat-fish:v2-combat-preview:checkpoint')),mode=savedMode??(legacyPractice?'tutorial':null);if(mode&&['tutorial-guide','tutorial','short','expedition'].includes(mode))/** @type {HTMLSelectElement} */(node('mode-select')).value=mode;}catch{}
   function selectCatalog(adventure=false){catalog=adventure?baseCatalog:mods.getCatalog();
     if(!session)for(const [index,id] of ['practice-weapon-a','practice-weapon-b'].entries()){const select=/** @type {HTMLSelectElement} */(node(id)),previous=select.value;select.replaceChildren();for(const weaponId of listRuntimeWeapons(catalog)){const option=document.createElement('option');option.value=weaponId;option.textContent=catalog.definitions[weaponId].displayName;select.append(option);}select.value=listRuntimeWeapons(catalog).includes(previous)?previous:index===0?'mcp_bubble':'mcp_fan';select.disabled=adventure;}
-    if(!session){const select=/** @type {HTMLSelectElement} */(node('skill-select')),previous=select.value;select.replaceChildren();for(const definition of Object.values(catalog.definitions).filter(d=>d.kind==='skill'&&registry.implementedIds.includes(d.id))){const option=document.createElement('option');option.value=definition.id;option.textContent=definition.displayName;select.append(option);}select.value=catalog.definitions[previous]?.kind==='skill'?previous:'skill_cache';}
+    if(!session){const select=/** @type {HTMLSelectElement} */(node('skill-select')),previous=select.value;select.replaceChildren();for(const id of listRuntimeSkills(catalog)){const option=document.createElement('option');option.value=id;option.textContent=catalog.definitions[id].displayName;select.append(option);}select.value=listRuntimeSkills(catalog).includes(previous)?previous:'skill_cache';}
     checkpointKey=catalog.modLock?.length?`big-fat-fish:v2-combat-preview:checkpoint:${catalog.version}`:'big-fat-fish:v2-combat-preview:checkpoint';}
   let offeredRestId='';
   let withdrawalPointerHeld=false;

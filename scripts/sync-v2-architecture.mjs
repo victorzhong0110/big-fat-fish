@@ -11,6 +11,7 @@ manifest.modules=[];
 for(const module of sourceModel){
  const old=previous.get(module.path);const contract={path:module.path,layer:old?.layer??(module.path.startsWith('preview/')?'host':module.path.startsWith('content/')?'content':module.path.startsWith('engine/')?'engine':'domain'),purpose:old?.purpose??module.source.split('\n').find(line=>line.startsWith('/**'))?.replace(/^\/\*\*\s*/,'').replace(/\*\/$/,'')??module.path,dependencies:module.dependencies,functions:[]};
  contract.purpose=contract.purpose.trim();
+ if(module.path==='content/catalog.js')contract.purpose='读取和验证版本化内容目录、原版绑定与受包锁约束的社区配方。';
  if(module.path==='domain/dshCycle.js')contract.purpose='10秒开奖、5分钟有效期与极低概率续期彩蛋。';
  if(module.path==='content/handlers/weapons.js')contract.purpose='六把MCP的真实行为入口，共用经过模板校验的弹体管线。';
  if(module.path==='domain/projectiles.js')contract.purpose='原生/并行弹体工厂、行为快照与一次爆破计划。';
@@ -163,6 +164,29 @@ for(const module of sourceModel){
   };
   if(tutorialDescriptions[fn.name])item.description=tutorialDescriptions[fn.name];
   if(['createTutorialMapPlan','planTutorialAdvance','planTutorialBoss','planTutorialRetry'].includes(fn.name))item.implementationScope='adventure-slice Free引导';
+  const modSkillDescriptions={
+   parseModPackage:'校验SDK1.0–1.3、依赖、补丁、武器和护盾/爆发技能配方；拒绝未知字段及越界参数。',
+   composeModCatalog:'复核并排序启用包，以独立目录合成武器/技能和补丁，验证字段冲突、命名空间、包锁及指纹。',
+   resolveSkillTemplate:'将原版技能或有包锁的社区护盾/爆发配方解析到真实原生行为；未知/未注册返回null。',
+   listRuntimeSkills:'列出当前目录确有原生处理器的技能，供Free练习装配菜单选择。',
+   dispatchSkillsHandler:'先解析技能模板，再调用对应原生处理器；保留社区技能实际ID供事件与存档使用。',
+   planSkillCast:'以装备技能参数和插件准备倍率施放实际模板，设置独立冷却并发布保留真实ID的SkillCast事件。',
+   mountModManager:'提供本地JSON安装、启停与移除；SDK1.0–1.3包只影响下次Free练习。'
+  };
+  if(modSkillDescriptions[fn.name])item.description=modSkillDescriptions[fn.name];
+  const correctedDescriptions={
+   planEnemyAi:'按稳定ID分派各普通敌人真实处理器，跳过死亡、首领及禁用AI的实体。',
+   planBossAi:'按阵营分派Claude、ChatGPT和Grok的真实首领处理器，跳过已死亡实体。',
+   planClaudeBoss:'规划重钳控制、技能与伙伴封禁、半血扫击和难度连招；Free教学首领只使用钳击。',
+   createAdventureMapPlan:'构建短途/API海域：信标、检查点、资源箱、装备、驻守敌人和按难度开放的机制。',
+   planObjectiveAdvance:'在探索阶段处理封锁进度或占领信标；所需进度由目标记录决定，短途默认35秒、远征120秒。',
+   planObjectiveCompletion:'幂等完成信标、封锁或护送，发放一次目标奖励；累计完成两个后开放本区域首领门。',
+   planFlowTransition:'校验探索、首领、成长面板、暂停与终态的允许转移，恢复时保留原面板。',
+   validateContentCatalog:'校验原版目录数量、社区MCP/技能注册与包锁、稳定ID/引用、160点树前置DAG及运行能力声明。'
+  };
+  if(correctedDescriptions[fn.name])item.description=correctedDescriptions[fn.name];
+  if(fn.name==='inspectGameState')item.rule='返回诊断，不修改状态；完整内容目录由独立catalog校验。';
+  if(['resolveSkillTemplate','listRuntimeSkills'].includes(fn.name))item.implementationScope='core-preview + adventure-slice';
   const index=source.indexOf(`export ${fn.async?'async ':''}function ${fn.name}(`);
   const start=source.lastIndexOf('/**',index);
   if(start>=0){let comment=source.slice(start,index).replace(/^ \* @calls.*\n/gm,'').replace(/^ \* @implementationScope.*\n/gm,'');if(fn.implementation==='implemented')comment=comment.replace(/^ \* @throws \{Error\} TODO placeholder until Grok implements this contract\.\n/gm,'');const scopeText=item.implementationScope?` * @implementationScope ${item.implementationScope}\n`:'';const callText=scopeText+(item.calls.map(call=>` * @calls ${call}\n`).join('')||' * @calls 无内部公开函数。\n');

@@ -93,7 +93,7 @@ export interface GameState { expedition?:ExpeditionState|null;
 export interface GameSession { readonly runId: Id; readonly revision: number; }
 export interface Definition { id: Id; kind: string; displayName: string; parameters: Readonly<Record<string, Json>>; version: string; }
 export interface MechanicDefinition extends Definition { unlockAt: number; scope: 'ai' | 'world' | 'objective' | 'event' | 'boss'; appliesTo: readonly Id[]; handlerId: Id; exclusions: readonly Id[]; }
-export interface ContentCatalog { modWeapons?: Readonly<Record<Id, {templateId: WeaponTemplateId; packId:Id}>>; modLock?: readonly ModLockEntry[]; version: string; definitions: Readonly<Record<Id, Definition>>; mechanics: readonly MechanicDefinition[]; }
+export interface ContentCatalog { modWeapons?: Readonly<Record<Id, {templateId: WeaponTemplateId; packId:Id}>>; modSkills?: Readonly<Record<Id, {templateId: ModSkillTemplateId; packId:Id}>>; modLock?: readonly ModLockEntry[]; version: string; definitions: Readonly<Record<Id, Definition>>; mechanics: readonly MechanicDefinition[]; }
 export interface ValidationReport { valid: boolean; diagnostics: readonly Diagnostic[]; }
 export interface EvaluationContext { movementGoal?:Vec2; state: StateSnapshot; catalog: Readonly<ContentCatalog>; event: DomainEvent | null; entityId: Id | null; random: RandomState; }
 export interface AttackContext extends EvaluationContext { skillPower?:number;skillDuration?:number;skillPush?:number;temperatureBoost?:boolean; aim: Vec2; weapon: WeaponState | null; }
@@ -148,13 +148,16 @@ export interface RecordedStep { domain:'world'|'ui'; advanceClock:boolean; comma
 export interface Recording { versions: Versions; initial: GameState; initialDigest:string; commands: readonly Command[]; digests: readonly { tick: Tick; digest: string }[]; steps:readonly RecordedStep[]; }
 export interface TickResult { next: GameState; events: readonly DomainEvent[]; persistence: readonly PersistenceIntent[]; diagnostics: readonly Diagnostic[]; }
 
-/** Community SDK 1.0–1.2: local, declarative packs; never executed JavaScript. */
+/** Community SDK 1.0–1.3: local, declarative packs; never executed JavaScript. */
 export interface ModPatch { id: Id; displayName?: string; parameters?: Readonly<Record<string, number>>; }
-export interface ModPackage { formatVersion: 1; apiVersion: '1.0'|'1.1'|'1.2'; id: Id; version: string; name: string; author: string; description: string; gameVersion: string; dependencies: Readonly<Record<Id, string>>; conflicts: readonly Id[]; patches: readonly ModPatch[]; weapons?:readonly ModWeaponRecipe[]; }
+export interface ModPackage { formatVersion: 1; apiVersion: '1.0'|'1.1'|'1.2'|'1.3'; id: Id; version: string; name: string; author: string; description: string; gameVersion: string; dependencies: Readonly<Record<Id, string>>; conflicts: readonly Id[]; patches: readonly ModPatch[]; weapons?:readonly ModWeaponRecipe[]; skills?:readonly ModSkillRecipe[]; }
 export interface ModLockEntry { id: Id; version: string; digest: string; }
 export type NestAction = { type:'buyTree' | 'build' | 'unlock' | 'rescue'; id:Id } | { type:'respec' } | { type:'equipDsh'; slots:readonly DshSlot[] };
 
 export interface ModWeaponRecipe { id:string; templateId:WeaponTemplateId; displayName:string; parameters:Readonly<Record<string,number>>; }
+export interface ModSkillRecipe { id:string; templateId:ModSkillTemplateId; displayName:string; parameters:Readonly<{cooldown?:number;powerMultiplier?:number}>; }
 
 export type WeaponTemplateId = 'mcp_bubble'|'mcp_fan'|'mcp_vector'|'mcp_stream'|'mcp_return'|'mcp_batch';
+export type ModSkillTemplateId = 'skill_cache'|'skill_batch';
+export type SkillTemplateId = ModSkillTemplateId|'skill_disconnect'|'skill_redirect'|'skill_sandbox'|'skill_fork'|'skill_rollback'|'skill_overclock';
 export type ScheduledAction = {kind:'heal';amount:number} | {kind:'shield';amount:number;duration:number;sourceId:string} | {kind:'area';point:Vec2;radius:number;amount:number} | {kind:'zone';point:Vec2;radius:number;duration:number} | {kind:'extend';entityId:string;duration:number} | {kind:'shots';entities:readonly EntityState[];multiplier:number};

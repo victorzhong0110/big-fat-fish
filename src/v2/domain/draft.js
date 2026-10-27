@@ -6,6 +6,7 @@
  */
 import {planLifeChange} from './damage.js';
 import{resolveWeaponTemplate}from'../content/weaponCapabilities.js';
+import{resolveSkillTemplate}from'../content/skillCapabilities.js';
 import { createEmptyPlan, createStateChange } from './plans.js';
 import { createHandlerRegistry } from '../content/registry.js';
 import { advanceDistillTrack } from './distill.js';
@@ -17,6 +18,7 @@ import * as dependency2 from './random.js';
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @implementationScope core-preview
  * @calls content/registry.js#createHandlerRegistry
+ * @calls content/skillCapabilities.js#resolveSkillTemplate
  * @calls content/weaponCapabilities.js#resolveWeaponTemplate
  * @calls domain/random.js#chooseWeightedIndex
  * @param {import('../contracts.d.ts').EvaluationContext} context
@@ -27,7 +29,7 @@ export function createPluginChoice(context, reward) {
   const state = context.state;
   if (!['core-preview', 'adventure-slice'].includes(String(state.start.runtimeProfile))) throw new Error('Full draft pool is unfinished');
   let pool = createHandlerRegistry().implementedIds.filter(id=>context.catalog.definitions[id]?.kind==='plugin').filter(id => !state.plugins.some(plugin => plugin.id === id && plugin.rank === 2));
-  pool=pool.filter(id=>id!=='plugin_moe'||state.player.loadout.weapons.length>1).filter(id=>!['plugin_agent','plugin_mirror'].includes(id)||state.player.loadout.companionId!==null).filter(id=>id!=='plugin_recursion'||state.player.loadout.skillId!=='skill_disconnect').filter(id=>id!=='plugin_redirect'||state.player.loadout.weapons.some(w=>!['mcp_vector','mcp_return'].includes(String(resolveWeaponTemplate(context.catalog,w.definitionId)))&&Number(context.catalog.definitions[w.definitionId].parameters.maxHits)===1));
+  pool=pool.filter(id=>id!=='plugin_moe'||state.player.loadout.weapons.length>1).filter(id=>!['plugin_agent','plugin_mirror'].includes(id)||state.player.loadout.companionId!==null).filter(id=>id!=='plugin_recursion'||resolveSkillTemplate(context.catalog,state.player.loadout.skillId)!=='skill_disconnect').filter(id=>id!=='plugin_redirect'||state.player.loadout.weapons.some(w=>!['mcp_vector','mcp_return'].includes(String(resolveWeaponTemplate(context.catalog,w.definitionId)))&&Number(context.catalog.definitions[w.definitionId].parameters.maxHits)===1));
   const previous = state.flow.choice;
   const fresh = pool.filter(id => !previous?.candidates.some(candidate => candidate.id === id));
   let random = state.random.reward;

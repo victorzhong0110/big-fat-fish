@@ -45,11 +45,11 @@ export function renderPreviewFrame(ctx,view,width,height,pixelRatio,popups=[]) {
   ctx.setTransform(pixelRatio,0,0,pixelRatio,0,0);ctx.clearRect(0,0,width,height);ctx.imageSmoothingEnabled=false;
   const gradient=ctx.createLinearGradient(0,0,width,height);gradient.addColorStop(0,'#163d46');gradient.addColorStop(1,'#092630');ctx.fillStyle=gradient;ctx.fillRect(0,0,width,height);
   ctx.save();ctx.scale(camera.scale,camera.scale);ctx.translate(-camera.x,-camera.y);
-  const hud=/** @type {{map:{width:number;height:number};invulnerable:boolean;aim:{x:number;y:number};rice:number;skillId?:string;skillCooldown?:number;aimDistance?:number;overclock?:boolean}} */ (view.hud);
+  const hud=/** @type {{map:{width:number;height:number};invulnerable:boolean;aim:{x:number;y:number};rice:number;skillId?:string;skillTemplateId?:string;skillCooldown?:number;aimDistance?:number;overclock?:boolean}} */ (view.hud);
   const x0=Math.floor(camera.x/80)*80,y0=Math.floor(camera.y/80)*80;
   for(let x=x0;x<camera.x+width/camera.scale+80;x+=80)for(let y=y0;y<camera.y+height/camera.scale+80;y+=80){ctx.fillStyle='#2a5157';ctx.fillRect(x,y,2,2);if(((x/80)*7+(y/80)*3)%11===0){ctx.strokeStyle='#315a5a';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+18,y+28);ctx.quadraticCurveTo(x+10,y+15,x+19,y+3);ctx.stroke();}}
   ctx.strokeStyle='#3b6267';ctx.lineWidth=3;ctx.strokeRect(1,1,hud.map.width-2,hud.map.height-2);
-  const fish=view.entities.find(e=>e.kind==='player');if(fish&&['skill_batch','skill_sandbox'].includes(hud.skillId??'')&&Number(hud.skillCooldown??0)<=0&&['exploring','boss'].includes(view.phase)){const distance=hud.aimDistance??400,cx=Math.max(0,Math.min(hud.map.width,fish.position.x+hud.aim.x*distance)),cy=Math.max(0,Math.min(hud.map.height,fish.position.y+hud.aim.y*distance));ctx.strokeStyle='#e1ddbc55';ctx.setLineDash([5,7]);ctx.beginPath();ctx.arc(cx,cy,hud.skillId==='skill_batch'?130:160,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
+  const fish=view.entities.find(e=>e.kind==='player'),skillTemplate=hud.skillTemplateId??hud.skillId??'';if(fish&&['skill_batch','skill_sandbox'].includes(skillTemplate)&&Number(hud.skillCooldown??0)<=0&&['exploring','boss'].includes(view.phase)){const distance=hud.aimDistance??400,cx=Math.max(0,Math.min(hud.map.width,fish.position.x+hud.aim.x*distance)),cy=Math.max(0,Math.min(hud.map.height,fish.position.y+hud.aim.y*distance));ctx.strokeStyle='#e1ddbc55';ctx.setLineDash([5,7]);ctx.beginPath();ctx.arc(cx,cy,skillTemplate==='skill_batch'?130:160,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
   const sorted=[...view.entities].sort((a,b)=>a.position.y-b.position.y||(a.id<b.id?-1:a.id>b.id?1:0));
   for(const entity of sorted){
     const {x,y}=entity.position;

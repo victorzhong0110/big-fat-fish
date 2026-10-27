@@ -5,6 +5,7 @@
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
 import * as dependency1 from '../content/handlers/skills.js';
+import {resolveSkillTemplate} from '../content/skillCapabilities.js';
 
 /**
  * 按合法稳定id和已实现绑定只调用一个对应处理器。
@@ -20,11 +21,13 @@ import * as dependency1 from '../content/handlers/skills.js';
  * @calls content/handlers/skills.js#planSkillRedirect
  * @calls content/handlers/skills.js#planSkillRollback
  * @calls content/handlers/skills.js#planSkillSandbox
+ * @calls content/skillCapabilities.js#resolveSkillTemplate
  * @param {import('../contracts.d.ts').AttackContext} context
  * @param {import('../contracts.d.ts').Id} definitionId
  * @returns {import('../contracts.d.ts').EffectPlan}
  */
 export function dispatchSkillsHandler(context, definitionId) {
+  definitionId=resolveSkillTemplate(context.catalog,definitionId)??'';
   if (definitionId === 'skill_cache') return dependency1.planSkillCache(context);
   if (definitionId === 'skill_disconnect') return dependency1.planSkillDisconnect(context);
   if(definitionId==='skill_batch')return dependency1.planSkillBatch(context);
