@@ -136,7 +136,7 @@ export function applySystemPlan(working, plan) {
       case 'setPlayerModifiers': next.player.modifiers = /** @type {import('../contracts.d.ts').StatModifier[]} */ (JSON.parse(serializeCanonical(p.modifiers))); break;
       case 'setDshCycle':
         if (p.lastAdvancedTick !== next.tick) throw new Error('DSH tick mismatch');
-        next.dshCycle = { remaining: Number(p.remaining), pendingOutcome: p.pendingOutcome === 'update' ? 'update' : p.pendingOutcome === 'reset' ? 'reset' : null, triggerSeq: Number(p.triggerSeq), lastAdvancedTick: Number(p.lastAdvancedTick) }; break;
+        next.dshCycle = { ...(p.activeRemaining!==undefined?{activeRemaining:Number(p.activeRemaining)}:{}),...(p.durationResets!==undefined?{durationResets:Number(p.durationResets)}:{}),remaining: Number(p.remaining), pendingOutcome: p.pendingOutcome === 'update' ? 'update' : p.pendingOutcome === 'reset' ? 'reset' : null, triggerSeq: Number(p.triggerSeq), lastAdvancedTick: Number(p.lastAdvancedTick) }; break;
       case 'setHp':
         if (Number(p.hp) > entity.maxHp) throw new Error('HP exceeds maximum');
         entity.hp = Number(p.hp); break;

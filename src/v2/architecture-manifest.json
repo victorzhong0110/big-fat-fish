@@ -1685,7 +1685,7 @@
             }
           ],
           "result": "EffectPlan",
-          "description": "dsh_gpt_branch / “更新”还是“重置”？：难度10及以上首次击败ChatGPT；每28秒等概率触发更新/重置；更新当前MCP品质28秒（最高品质改武器伤害+20%），或清零装备技能/冲刺/伙伴冷却；详细边界见下",
+          "description": "更新还是重置的DSH入口：仅装配生效；10秒开奖、300秒触发期，独立0.1%概率将剩余有效期重置为300秒。",
           "calls": [
             "domain/dshCycle.js#planDshCycleEvent"
           ],
@@ -5911,11 +5911,28 @@
     {
       "path": "domain/dshCycle.js",
       "layer": "domain",
-      "purpose": "28秒更新或重置的随机事件及边界。",
+      "purpose": "10秒开奖、5分钟有效期与极低概率续期彩蛋。",
       "dependencies": [
         "domain/random.js"
       ],
       "functions": [
+        {
+          "description": "读取10秒开奖与300秒有效期；缺失新增字段的旧存档按已过世界时间推导，读档不续期。",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "readDshCycleTimers",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            }
+          ],
+          "result": "{remaining:number;activeRemaining:number;durationResets:number}",
+          "implementation": "implemented",
+          "calls": []
+        },
         {
           "name": "planDshCycleEvent",
           "args": [
@@ -5929,10 +5946,11 @@
             }
           ],
           "result": "EffectPlan",
-          "description": "在有效世界时间推进开奖，暂停/训练不走；结束态取消。",
+          "description": "仅有效世界步推进10秒开奖/300秒有效期；50%更新或重置，独立0.1%重置有效期为300秒，原子保存随机游标和续期次数。",
           "calls": [
             "domain/dshCycle.js#planCooldownReset",
             "domain/dshCycle.js#planTemporaryWeaponUpdate",
+            "domain/dshCycle.js#readDshCycleTimers",
             "domain/random.js#drawRandom"
           ],
           "rule": "",
@@ -10403,6 +10421,7 @@
         "domain/checkpoint.js",
         "domain/clock.js",
         "domain/difficulty.js",
+        "domain/dshCycle.js",
         "domain/settlement.js",
         "engine/session.js",
         "preview/modManager.js",
@@ -10442,6 +10461,7 @@
             "domain/clock.js#resumeClock",
             "domain/clock.js#scheduleFrame",
             "domain/difficulty.js#resolveDifficultySnapshot",
+            "domain/dshCycle.js#readDshCycleTimers",
             "domain/settlement.js#createSettlement",
             "engine/session.js#createGameSession",
             "engine/session.js#disposeGameSession",
@@ -11554,8 +11574,8 @@
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
     "modules": 103,
-    "functions": 382,
-    "implemented": 341,
+    "functions": 383,
+    "implemented": 342,
     "placeholders": 41
   }
 }

@@ -63,7 +63,7 @@ describe('V2 exact checkpoint continuation', () => {
   });
 });
 
-describe('V2 28-second update/reset cycle', () => {
+describe('V2 ten-second update/reset cycle with five-minute lifetime', () => {
   it('updates only the current weapon instance from its ORIGINAL quality, refreshes without stacking and expires at exactly 28s', () => {
     let game = state(); game.player.loadout.weapons.push({ ...game.player.loadout.weapons[0], instanceId: 'second', originalQuality: 2 });
     game = applySystemPlan(game, planTemporaryWeaponUpdate(context(game))); expect(game.player.loadout.weapons[0].temporaryQuality).toBe(1); expect(game.player.loadout.weapons[1].temporaryQuality).toBeNull();
@@ -82,18 +82,18 @@ describe('V2 28-second update/reset cycle', () => {
     const game = state(); expect(planDshCycleEvent(context(game), tickEvent(game)).changes).toEqual([]);
     game.start.dsh = [{ id: 'dsh_gpt_branch', options: {} }]; game.flow.phase = 'loraTraining'; expect(planDshCycleEvent(context(game), tickEvent(game)).changes).toEqual([]);
     game.flow.phase = 'exploring'; const plan = planDshCycleEvent(context(freeze(game)), tickEvent(game)); const next = applySystemPlan(game, plan);
-    expect(next.dshCycle.remaining).toBeCloseTo(28 - 1 / 60); expect(planDshCycleEvent(context(next), tickEvent(next)).changes).toEqual([]);
+    expect(next.dshCycle.remaining).toBeCloseTo(10 - 1 / 60); expect(planDshCycleEvent(context(next), tickEvent(next)).changes).toEqual([]);
   });
-  it('fires after exactly 1680 effective ticks and reproduces the same outcome after checkpoint continuation', () => {
+  it('fires after exactly 600 effective ticks and reproduces the same outcome after checkpoint continuation', () => {
     function play(save) {
       let game = safeState(); game.start.dsh = [{ id: 'dsh_gpt_branch', options: {} }]; const events = [];
-      for (let tick = 0; tick < 1680; tick++) {
+      for (let tick = 0; tick < 600; tick++) {
         game.tick = tick; const plan = planDshCycleEvent(context(game), tickEvent(game)); events.push(...plan.events); game = applySystemPlan(game, plan);
-        if (save && tick === 1000) { game = restoreCheckpointState(createCheckpoint(game), catalog()).value; game.flow.phase = 'exploring'; game.flow.resumePhase = null; }
+        if (save && tick === 300) { game = restoreCheckpointState(createCheckpoint(game), catalog()).value; game.flow.phase = 'exploring'; game.flow.resumePhase = null; }
       }
       return { game, events };
     }
-    const first = play(false), second = play(true); expect(first.events).toHaveLength(1); expect(second.events).toEqual(first.events); expect(first.game.dshCycle.triggerSeq).toBe(1); expect(first.game.random.dsh.cursor).toBe(1); expect(createStateDigest(second.game)).toBe(createStateDigest(first.game));
+    const first = play(false), second = play(true); expect(first.events).toHaveLength(1); expect(second.events).toEqual(first.events); expect(first.game.dshCycle.triggerSeq).toBe(1); expect(first.game.random.dsh.cursor).toBe(2); expect(createStateDigest(second.game)).toBe(createStateDigest(first.game));
   });
   it('can draw both outcomes across explicit seeds', () => {
     const outcomes = new Set();

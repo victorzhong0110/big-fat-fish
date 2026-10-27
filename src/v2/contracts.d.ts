@@ -73,7 +73,7 @@ export interface LevelReward { id: Id; level: number; loraRequired: boolean; plu
 export interface LoraTrial { id: Id; level: number; target: 'maxHp' | 'damageMultiplier' | 'moveSpeed' | 'armor'; phase: 'ready' | 'running' | 'resolved'; uiTick: Tick; result: 'perfect' | 'underfit' | 'overfit' | null; }
 export interface LoraTrialCreation { trial: LoraTrial; nextRandom: RandomState; }
 export interface LoraState { inputHeld?: boolean; active: LoraTrial | null; pendingLevels: readonly number[]; modifiers: readonly StatModifier[]; underfitRemaining: number; overfitRemaining: number; resolvedTrialIds: readonly Id[]; }
-export interface DshCycleState { remaining: number; pendingOutcome: 'update' | 'reset' | null; triggerSeq: number; lastAdvancedTick: Tick | null; }
+export interface DshCycleState { activeRemaining?: number; durationResets?: number; remaining: number; pendingOutcome: 'update' | 'reset' | null; triggerSeq: number; lastAdvancedTick: Tick | null; }
 export interface BossState { entityId: Id; faction: Faction; phase: number; telegraph: Json; resetNodes: readonly { id: Id; hp: number; consumed: boolean; position: Vec2 }[]; resetRemaining: number; resetCooldown: number; spawnGroupSeq: number; }
 export interface ApiState { elapsedTicks: Tick; bossIndex: number; materialMinute: number; fragmentsThisMinute: number; partsThisMinute: number; }
 export interface DifficultySnapshot { level: number | 'api'; mode: Mode; mechanicIds: readonly Id[]; difficultyPerkIds: readonly Id[]; modelProfileIds: Readonly<Record<Faction, Id>>; hpMultiplier: number; damageMultiplier: number; spawnBudgetMultiplier: number; }

@@ -11,6 +11,7 @@ manifest.modules=[];
 for(const module of sourceModel){
  const old=previous.get(module.path);const contract={path:module.path,layer:old?.layer??(module.path.startsWith('preview/')?'host':module.path.startsWith('content/')?'content':module.path.startsWith('engine/')?'engine':'domain'),purpose:old?.purpose??module.source.split('\n').find(line=>line.startsWith('/**'))?.replace(/^\/\*\*\s*/,'').replace(/\*\/$/,'')??module.path,dependencies:module.dependencies,functions:[]};
  contract.purpose=contract.purpose.trim();
+ if(module.path==='domain/dshCycle.js')contract.purpose='10秒开奖、5分钟有效期与极低概率续期彩蛋。';
  if(module.path==='content/handlers/weapons.js')contract.purpose='六把MCP的真实行为入口，共用经过模板校验的弹体管线。';
  if(module.path==='domain/projectiles.js')contract.purpose='原生/并行弹体工厂、行为快照与一次爆破计划。';
  if(module.path==='domain/equipment.js')contract.purpose='探索中MCP交互、满槽预览与实例保留交换。';
@@ -98,6 +99,9 @@ for(const module of sourceModel){
   if(fn.name==='validateContentCatalog')item.description='校验原版目录数量、社区MCP注册与锁、稳定ID/引用、160点树前置DAG及运行能力声明。';
   if(fn.name==='mountCombatPreview')item.ownership='宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState';
   const finalDescriptions={
+   planDshGptBranch:'更新还是重置的DSH入口：仅装配生效；10秒开奖、300秒触发期，独立0.1%概率将剩余有效期重置为300秒。',
+   readDshCycleTimers:'读取10秒开奖与300秒有效期；缺失新增字段的旧存档按已过世界时间推导，读档不续期。',
+   planDshCycleEvent:'仅有效世界步推进10秒开奖/300秒有效期；50%更新或重置，独立0.1%重置有效期为300秒，原子保存随机游标和续期次数。',
    advanceWorldTick:'唯一正式固定世界流水线：按阶段读取最新工作副本，执行战斗/探索/压力/成长后只提交一次；未实现运行模式仍拒绝。',
    advanceUiTick:'唯一UI固定步：按参数推进LoRA或只处理菜单命令，保持世界时间不变。',
    advancePreviewWorldTick:'兼容旧纵切调用者，委托唯一engine/tick世界流水线；没有第二套模拟。',

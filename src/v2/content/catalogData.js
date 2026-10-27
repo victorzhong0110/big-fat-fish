@@ -743,12 +743,12 @@ export const CATALOG_DATA = {
       "kind": "dsh",
       "displayName": "“更新”还是“重置”？",
       "parameters": {
-        "description": "dsh_gpt_branch / “更新”还是“重置”？：难度10及以上首次击败ChatGPT；每28秒等概率触发更新/重置；更新当前MCP品质28秒（最高品质改武器伤害+20%），或清零装备技能/冲刺/伙伴冷却；详细边界见下",
+        "description": "dsh_gpt_branch / “更新”还是“重置”？：难度10及以上首次击败ChatGPT；出发后5分钟内每10秒等概率触发更新/重置；更新当前MCP品质28秒（最高品质武器伤害+20%），或清零装备技能/冲刺/伙伴冷却；每次开奖0.1%概率重置有效期为5分钟",
         "source": "07-dsh.md",
         "handler": "content/handlers/dsh.js#planDshGptBranch",
         "sourceRow": [
           "难度10及以上首次击败ChatGPT",
-          "每28秒等概率触发更新/重置；更新当前MCP品质28秒（最高品质改武器伤害+20%），或清零装备技能/冲刺/伙伴冷却；详细边界见下"
+          "出发后5分钟内每10秒等概率触发更新/重置；更新当前MCP品质28秒（最高品质武器伤害+20%），或清零装备技能/冲刺/伙伴冷却；每次开奖0.1%概率重置有效期为5分钟"
         ],
         "previewAvailable": true
       },

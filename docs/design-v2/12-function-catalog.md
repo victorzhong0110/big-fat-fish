@@ -1,6 +1,6 @@
 # 12 · 全部函数目录与调用契约
 
-当前103个JS模块、382个公开函数：341个有实现，41个明确TODO。core-preview为Free练习，adventure-slice为1–15级短途；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
+当前103个JS模块、383个公开函数：342个有实现，41个明确TODO。core-preview为Free练习，adventure-slice为1–15级短途；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
 
 调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。
 
@@ -408,7 +408,7 @@ dsh逐项占位处理器；实际参数仍以玩法规格为准。
 | `planDshGptPreview(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | dsh_gpt_preview / 分支预览：难度1及以上首次击败ChatGPT；本局第一次插件选择由3张变4张；首选仍保证含蒸馏，另外3张正常抽；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planDshGrokLicense(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | dsh_grok_license / 发射许可：难度1及以上首次击败Grok；每海域开始获得1枚储备火箭；下一次成功装备技能施放时发射，直击30、爆炸20、半径100；每海域只能消耗1次；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planDshClaudeAllowlist(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | dsh_claude_allowlist / 白名单：难度10及以上首次击败Claude；出发前选择“保护技能”或“保护伙伴”，每海域免疫第一次该类封禁；不免疫禁锢；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
-| `planDshGptBranch(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | dsh_gpt_branch / “更新”还是“重置”？：难度10及以上首次击败ChatGPT；每28秒等概率触发更新/重置；更新当前MCP品质28秒（最高品质改武器伤害+20%），或清零装备技能/冲刺/伙伴冷却；详细边界见下；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `planDshGptBranch(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | 更新还是重置的DSH入口：仅装配生效；10秒开奖、300秒触发期，独立0.1%概率将剩余有效期重置为300秒。；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planDshGrokSalvage(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | dsh_grok_salvage / 清场回收：难度10及以上首次击败Grok；每12次有正常奖励的真实敌人击杀，装填1枚储备火箭，最多存1枚；下次基础射击后发射，直击20、爆炸15、半径90，触发内置冷却8秒；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planDshSleep(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | dsh_sleep / DeepSleep：彩蛋“深度摸鱼”：任一地图隐藏躺椅交互，连续坐满8秒有效时间；连续2秒不移动且不攻击时获得8护盾持续4秒，内置冷却20秒；暂停/面板不累计坐着或不动时间；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planDshRice(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | dsh_rice / 开饭协议：彩蛋“饭点”：同一局找到3份不同地点的留言，打开隐藏饭盒并交互；实际治疗的溢出量50%转护盾，上限10、持续5秒；同名盾不叠加，护盾不触发治疗；仅处理此内容自身的合法事件；按context状态返回变化/效果请求，不直接伤害、存储或再次派发钩子。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
@@ -1474,7 +1474,7 @@ Current drift uses effective ticks and the normal body solver; native dash/root/
 
 ## domain/dshCycle.js
 
-28秒更新或重置的随机事件及边界。
+10秒开奖、5分钟有效期与极低概率续期彩蛋。
 
 [源码](../../src/v2/domain/dshCycle.js)；层：`domain`。
 
@@ -1482,18 +1482,21 @@ Current drift uses effective ticks and the normal body solver; native dash/root/
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `planDshCycleEvent(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | 在有效世界时间推进开奖，暂停/训练不走；结束态取消。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `readDshCycleTimers(state: untyped)` | `{remaining:number;activeRemaining:number;durationResets:number}` | 已实现 | 读取10秒开奖与300秒有效期；缺失新增字段的旧存档按已过世界时间推导，读档不续期。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `planDshCycleEvent(context: untyped, event: untyped)` | `EffectPlan` | 已实现 | 仅有效世界步推进10秒开奖/300秒有效期；50%更新或重置，独立0.1%重置有效期为300秒，原子保存随机游标和续期次数。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planTemporaryWeaponUpdate(context: untyped)` | `EffectPlan` | 已实现 | 仅当前武器实例临时品质+1或最高品质+20%，持续28秒，刷新不叠。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planCooldownReset(context: untyped)` | `EffectPlan` | 已实现 | 仅装备技能、冲刺、伙伴原生冷却置0，封禁/5h/插件冷却不清。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
-- `planDshCycleEvent` → `domain/dshCycle.js#planCooldownReset`、`domain/dshCycle.js#planTemporaryWeaponUpdate`、`domain/random.js#drawRandom`。
+- `readDshCycleTimers` → 无内部公开函数。
+- `planDshCycleEvent` → `domain/dshCycle.js#planCooldownReset`、`domain/dshCycle.js#planTemporaryWeaponUpdate`、`domain/dshCycle.js#readDshCycleTimers`、`domain/random.js#drawRandom`。
 - `planTemporaryWeaponUpdate` → 无内部公开函数。
 - `planCooldownReset` → 无内部公开函数。
 
 公开函数上游：
 
+- `readDshCycleTimers` ← `domain/dshCycle.js#planDshCycleEvent`、`preview/host.js#mountCombatPreview`。
 - `planDshCycleEvent` ← `content/handlers/dsh.js#planDshGptBranch`、`engine/tick.js#advanceWorldTick`。
 - `planTemporaryWeaponUpdate` ← `domain/dshCycle.js#planDshCycleEvent`。
 - `planCooldownReset` ← `domain/dshCycle.js#planDshCycleEvent`。
@@ -2807,7 +2810,7 @@ Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,
 
 [源码](../../src/v2/preview/host.js)；层：`host`。
 
-直接依赖：`adapters/storage.js`、`application/nest.js`、`application/repository.js`、`content/catalog.js`、`content/registry.js`、`content/weaponCapabilities.js`、`domain/checkpoint.js`、`domain/clock.js`、`domain/difficulty.js`、`domain/settlement.js`、`engine/session.js`、`preview/modManager.js`、`preview/nestManager.js`、`preview/view.js`。
+直接依赖：`adapters/storage.js`、`application/nest.js`、`application/repository.js`、`content/catalog.js`、`content/registry.js`、`content/weaponCapabilities.js`、`domain/checkpoint.js`、`domain/clock.js`、`domain/difficulty.js`、`domain/dshCycle.js`、`domain/settlement.js`、`engine/session.js`、`preview/modManager.js`、`preview/nestManager.js`、`preview/view.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -2815,7 +2818,7 @@ Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,
 
 公开函数下游：
 
-- `mountCombatPreview` → `adapters/storage.js#createStoragePort`、`application/nest.js#prepareAdventureStart`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`application/repository.js#readProfileRepository`、`content/catalog.js#loadContentCatalog`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`content/weaponCapabilities.js#listRuntimeWeapons`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/checkpoint.js#canCreateCheckpoint`、`domain/checkpoint.js#createCheckpoint`、`domain/clock.js#createClockState`、`domain/clock.js#resumeClock`、`domain/clock.js#scheduleFrame`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/settlement.js#createSettlement`、`engine/session.js#createGameSession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#readSessionView`、`engine/session.js#restoreGameSession`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`preview/modManager.js#mountModManager`、`preview/nestManager.js#mountNestManager`、`preview/view.js#getPreviewCamera`、`preview/view.js#renderPreviewFrame`。
+- `mountCombatPreview` → `adapters/storage.js#createStoragePort`、`application/nest.js#prepareAdventureStart`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`application/repository.js#readProfileRepository`、`content/catalog.js#loadContentCatalog`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`content/weaponCapabilities.js#listRuntimeWeapons`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/checkpoint.js#canCreateCheckpoint`、`domain/checkpoint.js#createCheckpoint`、`domain/clock.js#createClockState`、`domain/clock.js#resumeClock`、`domain/clock.js#scheduleFrame`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/dshCycle.js#readDshCycleTimers`、`domain/settlement.js#createSettlement`、`engine/session.js#createGameSession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#readSessionView`、`engine/session.js#restoreGameSession`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`preview/modManager.js#mountModManager`、`preview/nestManager.js#mountNestManager`、`preview/view.js#getPreviewCamera`、`preview/view.js#renderPreviewFrame`。
 
 公开函数上游：
 

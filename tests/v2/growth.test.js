@@ -118,8 +118,8 @@ describe('connected LoRA order and independent UI time',()=>{
  it('pauses and resumes a training pointer while retaining its original boss return phase',()=>{
   let s=trainingGame();s.flow.resumePhase='boss';s=startTrial(s);s=advance(s,30);s=advancePreviewUiCommands(s,[ui(s,'Pause')],catalog).next;expect(s.flow.phase).toBe('paused');expect(s.flow.resumePhase).toBe('loraTraining');expect(s.flow.suspendedResumePhase).toBe('boss');expect(advance(s,120)).toEqual(s);s=advancePreviewUiCommands(s,[ui(s,'Resume')],catalog).next;expect(s.flow.phase).toBe('loraTraining');expect(s.flow.resumePhase).toBe('boss');expect(s.lora.active.uiTick).toBe(30);expect(s.lora.inputHeld).toBe(false);
  });
- it('keeps independent UI pointer and 28-second DSH clock frozen in modal states',()=>{
-  let s=game();s.start.dsh=[{id:'dsh_gpt_branch',options:{}}];s.dshCycle.remaining=1/60;s.player.loadout.skillCooldown=8;s.player.loadout.dashCooldown=3;const result=advancePreviewWorldTick(s,[],catalog);expect(result.events.some(e=>e.type==='DshCycleResolved')).toBe(true);expect(result.next.random.dsh.cursor).toBe(1);expect(result.next.dshCycle.triggerSeq).toBe(1);s=advancePreviewUiCommands(result.next,[ui(result.next,'Pause')],catalog).next;const remaining=s.dshCycle.remaining;expect(advancePreviewWorldTick(s,[],catalog).next.dshCycle.remaining).toBe(remaining);
+ it('keeps independent UI pointer and ten-second DSH clock frozen in modal states',()=>{
+  let s=game();s.start.dsh=[{id:'dsh_gpt_branch',options:{}}];s.dshCycle.remaining=1/60;s.player.loadout.skillCooldown=8;s.player.loadout.dashCooldown=3;const result=advancePreviewWorldTick(s,[],catalog);expect(result.events.some(e=>e.type==='DshCycleResolved')).toBe(true);expect(result.next.random.dsh.cursor).toBe(2);expect(result.next.dshCycle.triggerSeq).toBe(1);s=advancePreviewUiCommands(result.next,[ui(result.next,'Pause')],catalog).next;const remaining=s.dshCycle.remaining;expect(advancePreviewWorldTick(s,[],catalog).next.dshCycle.remaining).toBe(remaining);
  });
 });
 

@@ -108,7 +108,7 @@ export function validateSystemPlan(plan) {
       case 'resetEquipmentCooldowns': valid = change.target === 'player' && Object.keys(p).length === 0; break;
       case 'setDshRuntime': valid = change.target === 'runtime' && !!p.runtime && typeof p.runtime === 'object' && !Array.isArray(p.runtime); break;
       case 'setPlayerModifiers': valid = change.target === 'player' && Array.isArray(p.modifiers); break;
-      case 'setDshCycle': valid = change.target === 'runtime' && change.id === 'dsh_gpt_branch' && nonnegative('remaining') && Number(p.remaining) <= 28 && (p.pendingOutcome === null || p.pendingOutcome === 'update' || p.pendingOutcome === 'reset') && Number.isSafeInteger(p.triggerSeq) && Number(p.triggerSeq) >= 0 && Number.isSafeInteger(p.lastAdvancedTick) && Number(p.lastAdvancedTick) >= 0; break;
+      case 'setDshCycle': valid = change.target === 'runtime' && change.id === 'dsh_gpt_branch' && nonnegative('remaining') && Number(p.remaining) <= 10 && nonnegative('activeRemaining') && Number(p.activeRemaining)<=300 && Number.isSafeInteger(p.durationResets) && Number(p.durationResets)>=0 && (p.pendingOutcome === null || p.pendingOutcome === 'update' || p.pendingOutcome === 'reset') && Number.isSafeInteger(p.triggerSeq) && Number(p.triggerSeq) >= 0 && Number.isSafeInteger(p.lastAdvancedTick) && Number(p.lastAdvancedTick) >= 0; break;
       case 'setHp': valid = change.target === 'entity' && nonnegative('hp'); break;
       case 'setDeath': valid = change.target === 'entity' && p.dying === true && p.dead === true; break;
       case 'setDamageCredit': valid = change.target === 'entity' && typeof p.sourceId === 'string' && ['player', 'enemy', 'none'].includes(String(p.creditOwner)); break;
