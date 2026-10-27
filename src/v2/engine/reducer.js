@@ -22,7 +22,7 @@ export function applySystemPlan(working, plan) {
   return applyPlan(working,plan,false);
 }
 
-/** Apply a plan to an unpublished tick-owned state. Unchanged entities and suspended expedition archives may be shared between transient copies; callers must never mutate them and must publish through commitWorkingState, which detaches the result. External/public callers use applySystemPlan instead.
+/** Apply a plan to an unpublished tick-owned state. Unchanged entities and suspended expedition archives may be shared between transient copies; callers must never mutate them. Tick-owned states must originate in a full detached clone and publish via commitOwnedTickState; external callers use applySystemPlan and commitWorkingState.
  * @calls domain/plans.js#validateSystemPlan
  * @calls domain/serialization.js#serializeCanonical
  * @param {import('../contracts.d.ts').GameState} working
@@ -41,7 +41,7 @@ function applyPlan(working,plan,tickOwned) {
   if(copyOnWrite)next.world.entities={...working.world.entities};
   const copiedEntities=new Set();
   /** @param {string} id */
-  const copyEntity=(id)=>{if(!copyOnWrite||copiedEntities.has(id)||!next.world.entities[id])return;next.world.entities={...next.world.entities,[id]:structuredClone(next.world.entities[id])};copiedEntities.add(id);};
+  const copyEntity=(id)=>{if(!copyOnWrite||copiedEntities.has(id)||!next.world.entities[id])return;/** @type {Record<string,import('../contracts.d.ts').EntityState>} */(next.world.entities)[id]=structuredClone(next.world.entities[id]);copiedEntities.add(id);};
   next.attackHits = next.attackHits.filter(hit => hit.expiresAt >= next.tick);
   const ownedChanges = structuredClone(plan.changes);
   for (const change of ownedChanges) {
@@ -224,6 +224,26 @@ export function validateStateInvariants(state, catalog) {
  * @returns {import('../contracts.d.ts').TickResult}
  */
 export function commitWorkingState(previous, working, catalog, outbox = { events: [], persistence: [], diagnostics: [] }) {
+  return commitState(previous,working,catalog,outbox,false);
+}
+
+/** Publish an already detached tick-owned working state. Only tick.js may use this after cloning the caller's entire state; externally held working states must use commitWorkingState.
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/plans.js#validateSystemPlan
+ * @calls engine/reducer.js#validateStateInvariants
+ * @param {import('../contracts.d.ts').StateSnapshot} previous
+ * @param {import('../contracts.d.ts').GameState} working
+ * @param {Readonly<import('../contracts.d.ts').ContentCatalog>} catalog
+ * @param {Pick<import('../contracts.d.ts').TickResult, 'events' | 'persistence' | 'diagnostics'>} outbox
+ * @returns {import('../contracts.d.ts').TickResult}
+ */
+export function commitOwnedTickState(previous,working,catalog,outbox){
+  if(previous===working)throw new Error('Tick-owned state must be detached');
+  return commitState(previous,working,catalog,outbox,true);
+}
+
+/** @param {import('../contracts.d.ts').StateSnapshot} previous @param {import('../contracts.d.ts').GameState} working @param {Readonly<import('../contracts.d.ts').ContentCatalog>} catalog @param {Pick<import('../contracts.d.ts').TickResult, 'events' | 'persistence' | 'diagnostics'>} outbox @param {boolean} adopt @returns {import('../contracts.d.ts').TickResult} */
+function commitState(previous, working, catalog, outbox, adopt) {
   const outboxReport = dependency1.validateSystemPlan({ changes: [], effects: [], ...outbox });
   if (!outboxReport.valid) throw new Error('Invalid commit outbox');
   const report = validateStateInvariants(working, catalog);
@@ -232,9 +252,10 @@ export function commitWorkingState(previous, working, catalog, outbox = { events
   const worldAdvanced = working.tick > previous.tick, uiAdvanced = working.uiTick > previous.uiTick;
   if (worldAdvanced && uiAdvanced || worldAdvanced && !['exploring', 'boss'].includes(previous.flow.phase) || uiAdvanced && previous.flow.phase !== 'loraTraining') throw new Error('Wrong clock domain at commit');
   if (previous.revision >= Number.MAX_SAFE_INTEGER) throw new Error('Revision overflow');
-  const next = structuredClone(working);
-  next.revision = previous.revision + 1;
   const events = outbox.events.map((event, seq) => ({ ...structuredClone(event), seq }));
-  if (new Set(events.map(event => event.id)).size !== events.length || events.some(event => event.runId !== next.runId)) throw new Error('Duplicate event or wrong run');
-  return { next, events, persistence: structuredClone(outbox.persistence), diagnostics: structuredClone(outbox.diagnostics) };
+  if (new Set(events.map(event => event.id)).size !== events.length || events.some(event => event.runId !== working.runId)) throw new Error('Duplicate event or wrong run');
+  const persistence=structuredClone(outbox.persistence),diagnostics=structuredClone(outbox.diagnostics);
+  const next = adopt ? working : structuredClone(working);
+  next.revision = previous.revision + 1;
+  return { next, events, persistence, diagnostics };
 }

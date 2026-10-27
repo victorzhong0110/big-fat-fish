@@ -10918,7 +10918,7 @@
             }
           ],
           "result": "TickResult",
-          "description": "校验后原子提交一版新状态；显式接收outbox，统一事件seq，拒绝重复事件/跨局提交。",
+          "description": "验证完整状态、时钟及输出后复制外部工作状态并提交一个revision，保持输入隔离。",
           "calls": [
             "domain/plans.js#validateSystemPlan",
             "engine/reducer.js#validateStateInvariants"
@@ -10928,6 +10928,39 @@
           "phase": "commit",
           "callMode": "sequence",
           "implementation": "implemented"
+        },
+        {
+          "description": "仅接收tick从完整输入副本独占得到的工作状态；验证状态/输出后移交所有权，避免额外复制；失败不发布。",
+          "rule": "",
+          "ownership": "仅tick私有副本；成功后转移所有权，不可再被调用方修改",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "commitOwnedTickState",
+          "args": [
+            {
+              "name": "previous",
+              "type": "untyped"
+            },
+            {
+              "name": "working",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            },
+            {
+              "name": "outbox",
+              "type": "untyped"
+            }
+          ],
+          "result": "TickResult",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#validateSystemPlan",
+            "engine/reducer.js#validateStateInvariants"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
         }
       ]
     },
@@ -11326,7 +11359,7 @@
             "engine/flow.js#planProgressionPanels",
             "engine/hooks.js#planEventHooks",
             "engine/reducer.js#applyOwnedTickPlan",
-            "engine/reducer.js#commitWorkingState"
+            "engine/reducer.js#commitOwnedTickState"
           ],
           "rule": "@calls是阶段依赖，不是忽略参数全部无条件执行；每阶段apply后下阶段读新工作副本。胜负优先于升级，API首领不胜利。",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -11365,7 +11398,7 @@
             "engine/commands.js#planGameCommand",
             "engine/flow.js#planProgressionPanels",
             "engine/reducer.js#applyOwnedTickPlan",
-            "engine/reducer.js#commitWorkingState"
+            "engine/reducer.js#commitOwnedTickState"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -12551,8 +12584,8 @@
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
     "modules": 116,
-    "functions": 415,
-    "implemented": 375,
+    "functions": 416,
+    "implemented": 376,
     "placeholders": 40
   }
 }

@@ -1,7 +1,7 @@
 import { it, expect } from 'vitest';
 import { state, catalog, context, damage } from './fixtures.js';
 import { createEmptyPlan, validateSystemPlan } from '../../src/v2/domain/plans.js';
-import { commitWorkingState } from '../../src/v2/engine/reducer.js';
+import { commitWorkingState, commitOwnedTickState } from '../../src/v2/engine/reducer.js';
 import { planQuotaAllowance } from '../../src/v2/domain/quotas.js';
 it('returns a diagnostic for null effects instead of crashing the validator', () => {
   expect(validateSystemPlan({ ...createEmptyPlan(), effects: [null] }).valid).toBe(false);
@@ -21,6 +21,10 @@ it('rejects non-finite or duplicate outbox events without publishing a revision'
   expect(() => commitWorkingState(game, game, catalog(), { events: [event], persistence: [], diagnostics: [] })).toThrow();
   event.payload = null;
   expect(() => commitWorkingState(game, game, catalog(), { events: [event, event], persistence: [], diagnostics: [] })).toThrow(); expect(game.revision).toBe(0);
+  const working=structuredClone(game),before=structuredClone(working);
+  expect(() => commitOwnedTickState(game,working,catalog(),{events:[event,event],persistence:[],diagnostics:[]})).toThrow();
+  expect(working).toEqual(before);expect(game.revision).toBe(0);
+  expect(() => commitOwnedTickState(game,game,catalog(),{events:[],persistence:[],diagnostics:[]})).toThrow('detached');
 });
 it('rejects simultaneous world/UI steps and world progression during a pause', () => {
   const before = state(), after = structuredClone(before); after.tick++; after.uiTick++;

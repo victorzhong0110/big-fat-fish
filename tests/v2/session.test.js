@@ -40,6 +40,7 @@ describe('private V2 Session and command boundaries',()=>{
   initial.loadout.weapons[0].definitionId='missing';data.definitions.mcp_bubble.parameters.damage=999;
   const snapshot=readSessionState(session);snapshot.world.entities.fish.hp=1;expect(readSessionState(session).world.entities.fish.hp).toBe(100);
   const view=readSessionView(session);view.entities[0].position.x=9999;expect(readSessionState(session).world.entities.fish.position.x).toBe(230);
+  const result=stepSessionWorld(session),hp=readSessionState(session).world.entities.fish.hp;result.next.world.entities.fish.hp=1;expect(readSessionState(session).world.entities.fish.hp).toBe(hp);
   disposeGameSession(session);disposeGameSession(session);expect(()=>stepSessionWorld(session)).toThrow(/disposed/);
  });
  it('preserves future commands, rejects duplicate/unsupported input and acknowledges monotonic sequences',()=>{

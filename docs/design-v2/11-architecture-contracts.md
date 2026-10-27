@@ -1,6 +1,6 @@
 # 11 · V2架构骨架、状态权限与调用规则
 
-状态：**独立战斗试作v2.html已可操作，完整冒险仍未完成**。用户已授权先由Codex编码。375个函数有实现，40个显式TODO；core-preview和adventure-slice的具体范围按函数标注。实际范围见[开发进度](13-development-status.md)。旧src/main.js保持独立。
+状态：**独立战斗试作v2.html已可操作，完整冒险仍未完成**。用户已授权先由Codex编码。376个函数有实现，40个显式TODO；core-preview和adventure-slice的具体范围按函数标注。实际范围见[开发进度](13-development-status.md)。旧src/main.js保持独立。
 
 入口文档：[全部函数目录](12-function-catalog.md)；入口源码：[bootstrap.js](../../src/v2/bootstrap.js)；类型契约：[contracts.d.ts](../../src/v2/contracts.d.ts)；机器可读依赖与绑定：[architecture-manifest.json](../../src/v2/architecture-manifest.json)。函数目录和manifest列出全部跨模块接口以及逐内容处理器，Grok填写函数体时应保留接口/约束，新增公共函数要同步契约。
 
@@ -72,8 +72,8 @@ flowchart TD
 5. 规划玩家移动/实体运动/武器开火/大白饭运动，保存扫掠起终点；技能命令只在步骤1成功施放一次，不能此处再施放。
 6. 碰撞只产生请求→`drainEffectQueue`有界执行伤害/控制/治疗/护盾/拾取；每次应用到私有工作状态，先标dying再发死亡钩子，再将子效果排队。
 7. 接纳效果循环返回的`nextWorking`和死亡/事件输出，**不能把已应用计划再apply一遍**。按唯一死亡记录规划奖励/样本/解锁，再处理地图探索、目标、API阶段和经验升级队列。
-8. 先判终局：玩家与最终Boss同tick死亡判失败；API Boss死亡仅阶段事件。终局清理未展示的升级交互，不发最终胜利资源；真实Boss死亡的永久解锁仍保留。
-9. 无终局时逐级处理成长面板。校验全部状态不变量→`commitWorkingState`仅一次revision→发布只读投影、领域事件与持久化意图。
+8. 先判终局：普通冒险中玩家与最终Boss同tick死亡判失败，Free引导同帧死亡则重试；API Boss死亡仅阶段事件。终局清理未展示的升级交互，不发最终胜利资源；真实Boss死亡的永久解锁仍保留。
+9. 无终局时逐级处理成长面板。校验全部状态不变量→`commitOwnedTickState`仅一次revision→发布只读投影、领域事件与持久化意图。
 
 12中的下游列表表示这条流水线用到的函数；同一函数可在多个子阶段使用，例如`applySystemPlan`不是只能调用一次。每次读取context都指向最新私有工作状态，不许全程沿用帧开头旧状态。
 
@@ -161,4 +161,4 @@ Session私有step/getRecord不导出；AST工具展开它们转达的真实公�
 
 护送`planEscortStart`处理一次近距启动；`planEscortAdvance`在战斗死亡之后基于附近玩家与敌人推进机器人，复用`findNavigationPath`与压力仲裁，末站调用共享目标完成函数。路径、目标、波次预算和绝对期限保存在区域状态，冻结归档时重置期限基准；暂停不推进。
 
-tick内部的`applyOwnedTickPlan`使用实体写时复制；远征另外复用只读海域归档，前提是工作状态由该tick或效果队列私有持有；外部使用完整隔离的`applySystemPlan`。出错时私有副本不发布，统一commit完整校验并复制结果。根状态的JSON完整性已覆盖全部归档，嵌套业务校验不重复编码同一数据。
+tick内部的`applyOwnedTickPlan`使用实体写时复制；远征另外复用只读海域归档，前提是工作状态由该tick或效果队列私有持有；外部使用完整隔离的`applySystemPlan`。tick从完整隔离副本开始；`commitOwnedTickState`通过完整校验后接管私有副本，避免再次复制，出错时不发布。对外`commitWorkingState`仍完整复制。根状态的JSON完整性已覆盖全部归档，嵌套业务校验不重复编码同一数据。

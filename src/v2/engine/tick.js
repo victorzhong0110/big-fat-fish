@@ -32,7 +32,7 @@ import { detectCollisions } from '../domain/collision.js';
 import { planDeathRewards } from '../domain/rewards.js';
 import { resolveTerminalOutcome } from '../domain/deaths.js';
 import { orderPendingCommands, planGameCommand } from './commands.js';
-import { applyOwnedTickPlan, commitWorkingState } from './reducer.js';
+import { applyOwnedTickPlan, commitOwnedTickState } from './reducer.js';
 import { drainEffectQueue } from './effectLoop.js';
 /** Canonical fixed-step pipeline shared by live Sessions and replay. Only implemented runtime profiles are accepted.
  * @implementationScope core-preview + adventure-slice
@@ -82,7 +82,7 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls engine/flow.js#planProgressionPanels
  * @calls engine/hooks.js#planEventHooks
  * @calls engine/reducer.js#applyOwnedTickPlan
- * @calls engine/reducer.js#commitWorkingState
+ * @calls engine/reducer.js#commitOwnedTickState
  * @param {import('../contracts.d.ts').StateSnapshot} state
  * @param {readonly import('../contracts.d.ts').Command[]} commands
  * @param {Readonly<import('../contracts.d.ts').ContentCatalog>} catalog
@@ -142,7 +142,7 @@ export function advanceWorldTick(state, commands, catalog) {
   if(working.api?.withdrawal&&working.flow.phase!=='exploring')apply({...createEmptyPlan(),changes:[createStateChange('runtime','api','setApiState',{...working.api,withdrawal:null})]});
   if(working.api)apply(planApiMaintenance(context()));
   if(working.expedition)apply(planExpeditionMaintenance(context()));
-  return commitWorkingState(state, working, catalog, outbox);
+  return commitOwnedTickState(state, working, catalog, outbox);
 }
 /** Process pause/resume immediately without advancing the stopped UI/world clock.
  * @implementationScope core-preview + adventure-slice
@@ -152,7 +152,7 @@ export function advanceWorldTick(state, commands, catalog) {
  * @calls engine/commands.js#planGameCommand
  * @calls engine/flow.js#planProgressionPanels
  * @calls engine/reducer.js#applyOwnedTickPlan
- * @calls engine/reducer.js#commitWorkingState
+ * @calls engine/reducer.js#commitOwnedTickState
  * @param {import('../contracts.d.ts').StateSnapshot} state
  * @param {readonly import('../contracts.d.ts').Command[]} commands
  * @param {Readonly<import('../contracts.d.ts').ContentCatalog>} catalog
@@ -170,5 +170,5 @@ export function advanceUiTick(state, commands, catalog, advanceClock = false) {
   for(const event of events.filter(e=>e.type==='LifeRestored'))working=applyOwnedTickPlan(working,planDshEffects({state:working,catalog,event:null,entityId:null,random:working.random.combat},event));
   if (shouldAdvance && working.flow.phase === 'loraTraining' && working.lora.active?.id === state.lora.active?.id && working.lora.active?.phase === 'running') { working.uiTick++; const plan = planLoraUiStep({ state: working, catalog, random: working.random.lora, event: null, entityId: null }); working = applyOwnedTickPlan(working, plan); events.push(...plan.events); }
   for (let i = 0; i < 128; i++) { const plan = planProgressionPanels({ state: working, catalog, event: null, entityId: null, random: working.random.reward }); if (!plan.changes.length) break; working = applyOwnedTickPlan(working, plan); events.push(...plan.events); if (i === 127) throw new Error('Growth queue did not settle'); }
-  return commitWorkingState(state, working, catalog, { events, persistence: [], diagnostics });
+  return commitOwnedTickState(state, working, catalog, { events, persistence: [], diagnostics });
 }

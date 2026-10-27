@@ -182,10 +182,13 @@ for(const module of sourceModel){
    planObjectiveAdvance:'在探索阶段处理封锁进度或占领信标；所需进度由目标记录决定，短途默认35秒、远征120秒。',
    planObjectiveCompletion:'幂等完成信标、封锁或护送，发放一次目标奖励；累计完成两个后开放本区域首领门。',
    planFlowTransition:'校验探索、首领、成长面板、暂停与终态的允许转移，恢复时保留原面板。',
-   validateContentCatalog:'校验原版目录数量、社区MCP/技能注册与包锁、稳定ID/引用、160点树前置DAG及运行能力声明。'
+   validateContentCatalog:'校验原版目录数量、社区MCP/技能注册与包锁、稳定ID/引用、160点树前置DAG及运行能力声明。',
+   commitWorkingState:'验证完整状态、时钟及输出后复制外部工作状态并提交一个revision，保持输入隔离。',
+   commitOwnedTickState:'仅接收tick从完整输入副本独占得到的工作状态；验证状态/输出后移交所有权，避免额外复制；失败不发布。'
   };
   if(correctedDescriptions[fn.name])item.description=correctedDescriptions[fn.name];
   if(fn.name==='inspectGameState')item.rule='返回诊断，不修改状态；完整内容目录由独立catalog校验。';
+  if(fn.name==='commitOwnedTickState'){item.implementationScope='core-preview + adventure-slice';item.ownership='仅tick私有副本；成功后转移所有权，不可再被调用方修改';}
   if(['resolveSkillTemplate','listRuntimeSkills'].includes(fn.name))item.implementationScope='core-preview + adventure-slice';
   const index=source.indexOf(`export ${fn.async?'async ':''}function ${fn.name}(`);
   const start=source.lastIndexOf('/**',index);

@@ -1,6 +1,6 @@
 # V2 开发源码
 
-当前116个JS模块、415个公开函数：375个真实实现、40个明确TODO。正式Free引导、Free练习、正式短途1–15、三海域远征与通关15后开放的API调用可操作，完整游戏仍未完成。
+当前116个JS模块、416个公开函数：376个真实实现、40个明确TODO。正式Free引导、Free练习、正式短途1–15、三海域远征与通关15后开放的API调用可操作，完整游戏仍未完成。
 
 运行`npm run dev`后打开`/v2.html`。构建同时生成旧index与新v2，旧玩法入口独立保留。世界/UI共用`engine/tick`，Session唯一持有状态；previewTick仅兼容委托，宿主仍是preview/host。通用application/bootstrap及剩余适配器不伪装为已完成。
 
