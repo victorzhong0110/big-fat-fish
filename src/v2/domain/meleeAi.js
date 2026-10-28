@@ -1,4 +1,5 @@
 // @ts-check
+import {resolveEnemyMovementGoal,resolveEnemyVelocity} from './locomotion.js';
 import { selectAbilityTarget,resolveAbilityMoveScale } from './abilities.js';
 import { createEmptyPlan, createStateChange } from './plans.js';
 import { distanceSquared, normalizeVector } from './geometry.js';
@@ -9,6 +10,8 @@ import { toJson } from './serialization.js';
  * @calls domain/abilities.js#selectAbilityTarget
  * @calls domain/geometry.js#distanceSquared
  * @calls domain/geometry.js#normalizeVector
+ * @calls domain/locomotion.js#resolveEnemyMovementGoal
+ * @calls domain/locomotion.js#resolveEnemyVelocity
  * @calls domain/navigation.js#findNavigationPath
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
@@ -20,10 +23,10 @@ import { toJson } from './serialization.js';
 export function planMeleeEnemy(context, heavyClaw) {
   const state = context.state, entity = context.entityId ? state.world.entities[context.entityId] : null, player = entity?selectAbilityTarget(state,entity):state.world.entities[state.player.entityId];
   if (!entity || entity.dead || entity.dying || entity.hp <= 0 || player.hp <= 0) return createEmptyPlan();
-  const goal=context.movementGoal??player.position,goalId=context.movementGoal?`goal:${Math.round(goal.x)}:${Math.round(goal.y)}`:player.id;
+  const tactic=resolveEnemyMovementGoal(context,entity,player),goal=context.movementGoal??tactic.goal,goalId=context.movementGoal?`goal:${Math.round(goal.x)}:${Math.round(goal.y)}`:player.id;
   let clawResolved=false;
   const distance = Math.sqrt(distanceSquared(entity.position, player.position));
-  const runtime = { ...entity.runtime };
+  let runtime = { ...tactic.runtime };
   if (distance > 650 && runtime.engaged !== true && entity.hp === entity.maxHp) return createEmptyPlan();
   runtime.engaged = true;
   let velocity = { x: 0, y: 0 }, facing = entity.facingRadians, attackDamage = 0;
@@ -51,6 +54,7 @@ export function planMeleeEnemy(context, heavyClaw) {
       facing += Math.max(-Math.PI / 90, Math.min(Math.PI / 90, difference));
     }
   }
+  if(!stunned){const motion=resolveEnemyVelocity(context,entity,player,velocity,runtime);velocity=motion.velocity;runtime=motion.runtime;}
   if (!stunned && distance <= entity.radius + player.radius + 2 && state.tick >= Number(runtime.nextContactAt ?? 0)) attackDamage = Math.max(attackDamage, Number(runtime.contactDamage ?? 0));
   const effects = /** @type {import('../contracts.d.ts').EffectRequest[]} */ ([]);
   if (attackDamage > 0 && player.kind!=='decoy') {

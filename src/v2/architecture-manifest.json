@@ -5055,6 +5055,7 @@
       "dependencies": [
         "domain/entities.js",
         "domain/geometry.js",
+        "domain/locomotion.js",
         "domain/plans.js",
         "domain/serialization.js"
       ],
@@ -5078,6 +5079,7 @@
             "domain/entities.js#createEntityState",
             "domain/geometry.js#distanceSquared",
             "domain/geometry.js#normalizeVector",
+            "domain/locomotion.js#resolveEnemyVelocity",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange"
           ],
@@ -6833,6 +6835,80 @@
       ]
     },
     {
+      "path": "domain/locomotion.js",
+      "layer": "domain",
+      "purpose": "@typedef {import('../contracts.d.ts').DeepReadonly<import('../contracts.d.ts').EntityState>} Body",
+      "dependencies": [
+        "domain/geometry.js"
+      ],
+      "functions": [
+        {
+          "description": "resolveEnemyMovementGoal",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolveEnemyMovementGoal",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "entity",
+              "type": "untyped"
+            },
+            {
+              "name": "target",
+              "type": "untyped"
+            }
+          ],
+          "result": "{goal:Vec2;runtime:Runtime}",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared",
+            "domain/geometry.js#normalizeVector"
+          ]
+        },
+        {
+          "description": "resolveEnemyVelocity",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolveEnemyVelocity",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "entity",
+              "type": "untyped"
+            },
+            {
+              "name": "target",
+              "type": "untyped"
+            },
+            {
+              "name": "desired",
+              "type": "untyped"
+            },
+            {
+              "name": "prior",
+              "type": "untyped"
+            }
+          ],
+          "result": "{velocity:Vec2;runtime:Runtime}",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared",
+            "domain/geometry.js#normalizeVector"
+          ]
+        }
+      ]
+    },
+    {
       "path": "domain/lora.js",
       "layer": "domain",
       "purpose": "每次升级的独立UI计时与一次训练判定。",
@@ -7043,6 +7119,7 @@
       "dependencies": [
         "domain/abilities.js",
         "domain/geometry.js",
+        "domain/locomotion.js",
         "domain/navigation.js",
         "domain/plans.js",
         "domain/serialization.js"
@@ -7072,6 +7149,8 @@
             "domain/abilities.js#selectAbilityTarget",
             "domain/geometry.js#distanceSquared",
             "domain/geometry.js#normalizeVector",
+            "domain/locomotion.js#resolveEnemyMovementGoal",
+            "domain/locomotion.js#resolveEnemyVelocity",
             "domain/navigation.js#findNavigationPath",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
@@ -12906,9 +12985,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 119,
-    "functions": 427,
-    "implemented": 387,
+    "modules": 120,
+    "functions": 429,
+    "implemented": 389,
     "placeholders": 40
   }
 }

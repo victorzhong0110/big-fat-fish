@@ -56,7 +56,7 @@ export function planCompanionFollow(context){
  const current=state.world.entities['companion:equipped'],desired={x:Math.max(12,Math.min(state.world.map.width-12,player.position.x-46)),y:Math.max(12,Math.min(state.world.map.height-12,player.position.y+26))};
  if(!current)return {...createEmptyPlan(),changes:[createStateChange('world','companion:equipped','putEntity',createEntityState('companion:equipped',id,'companion','player',desired,{radius:12,runtime:{nonblocking:true}}))]};
  const d=normalizeVector({x:desired.x-current.position.x,y:desired.y-current.position.y}),distance=Math.sqrt(distanceSquared(desired,current.position)),step=Math.min(distance,320/60),position=distance>240?desired:{x:current.position.x+d.x*step,y:current.position.y+d.y*step};
- return {...createEmptyPlan(),changes:[createStateChange('entity',current.id,'setEntityKinematics',{position,previousPosition:position,velocity:{x:0,y:0},facingRadians:Math.atan2(d.y,d.x)})]};
+ return {...createEmptyPlan(),changes:[createStateChange('entity',current.id,'setEntityRuntime',{runtime:{...current.runtime,visualFacing:Math.abs(position.x-current.position.x)>.01?Math.sign(position.x-current.position.x):Number(current.runtime.visualFacing??1)}}),createStateChange('entity',current.id,'setEntityKinematics',{position,previousPosition:current.position,velocity:{x:0,y:0},facingRadians:Math.atan2(d.y,d.x)})]};
 }
 
 /** Partner ban bullets can be shot down before contact; successful contact requests the normal control pipeline.

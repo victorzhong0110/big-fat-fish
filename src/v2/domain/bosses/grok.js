@@ -1,4 +1,5 @@
 // @ts-check
+import {resolveEnemyVelocity} from '../locomotion.js';
 import {createEmptyPlan,createStateChange} from '../plans.js';
 import {createEntityState} from '../entities.js';
 import {normalizeVector,distanceSquared,intersectSweptCircles} from '../geometry.js';
@@ -9,6 +10,7 @@ import {toJson} from '../serialization.js';
  * @calls domain/entities.js#createEntityState
  * @calls domain/geometry.js#distanceSquared
  * @calls domain/geometry.js#normalizeVector
+ * @calls domain/locomotion.js#resolveEnemyVelocity
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @param {import('../../contracts.d.ts').EvaluationContext} context
@@ -22,7 +24,8 @@ export function planGrokBoss(context,boss){
  if(cast&&state.tick>=cast.executeAt){const id=`rocket:${entity.id}:${state.tick}`,d=normalizeVector({x:cast.point.x-entity.position.x,y:cast.point.y-entity.position.y});changes.push(createStateChange('world',id,'putEntity',createEntityState(id,'grok_rocket','enemy','enemy',entity.position,{sourceId:entity.id,hp:8,maxHp:8,radius:10,velocity:{x:d.x*170,y:d.y*170},expiresAt:state.tick+360,runtime:{noAi:true,noRewardTarget:true,enemyRocket:true,damage:12*Number(rt.damageMultiplier??1)}})));rt.rocketCast=null;rt.rocketReadyAt=cast.startedAt+480;}
  else if(!cast&&state.tick>=Number(rt.rocketReadyAt??180))rt.rocketCast={point:{...player.position},startedAt:state.tick,executeAt:state.tick+84};
  const d=normalizeVector({x:player.position.x-entity.position.x,y:player.position.y-entity.position.y}),moving=!rt.rocketCast&&distanceSquared(entity.position,player.position)>300**2;
- changes.push(createStateChange('entity',entity.id,'setEntityRuntime',{runtime:rt}),createStateChange('entity',entity.id,'setEntityKinematics',{position:entity.position,previousPosition:entity.previousPosition,velocity:moving?{x:d.x*65,y:d.y*65}:{x:0,y:0},facingRadians:Math.atan2(d.y,d.x)}));
+ const motion=resolveEnemyVelocity(context,entity,player,moving?{x:d.x*65,y:d.y*65}:{x:0,y:0},{...rt,movementMode:'hop'});
+ changes.push(createStateChange('entity',entity.id,'setEntityRuntime',{runtime:motion.runtime}),createStateChange('entity',entity.id,'setEntityKinematics',{position:entity.position,previousPosition:entity.previousPosition,velocity:motion.velocity,facingRadians:Math.atan2(d.y,d.x)}));
  return {...createEmptyPlan(),changes};
 }
 /** Queue sixteen basic Bots over two seconds. At most one group is pending; every wave has only three eligible samples and no XP/materials.

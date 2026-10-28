@@ -11,7 +11,8 @@ import { intersectSweptCircles, normalizeVector } from './geometry.js';
  * @returns {import('../contracts.d.ts').Vec2}
  */
 export function resolveBodyDestination(context, entity, destination) {
-  const map = context.state.world.map;
+  const map = context.state.world.map,home=/** @type {import('../contracts.d.ts').Vec2|undefined} */(entity.runtime.movementHome),leash=Number(entity.runtime.leashRadius??0);
+  if(home&&leash>0){const dx=destination.x-home.x,dy=destination.y-home.y,length=Math.hypot(dx,dy);if(length>leash)destination={x:home.x+dx/length*leash,y:home.y+dy/length*leash};}
   let from = { ...entity.position }, to = { ...destination };
   const obstacles = Object.values(context.state.world.entities).filter(obstacle => obstacle.kind === 'obstacle' && !canTraverseObstacle(entity, obstacle, context.catalog)).sort((a, b) => a.id < b.id ? -1 : 1);
   for (let pass = 0; pass < 3; pass++) {
@@ -29,5 +30,6 @@ export function resolveBodyDestination(context, entity, destination) {
     to = { x: contact.x + remaining.x - inward * normal.x, y: contact.y + remaining.y - inward * normal.y };
     from = contact;
   }
+  if(home&&leash>0&&Math.hypot(entity.position.x-home.x,entity.position.y-home.y)<=leash+1e-6&&Math.hypot(from.x-home.x,from.y-home.y)>leash+1e-6)return {...entity.position};
   return { x: Math.max(entity.radius, Math.min(map.width - entity.radius, from.x)), y: Math.max(entity.radius, Math.min(map.height - entity.radius, from.y)) };
 }

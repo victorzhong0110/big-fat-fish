@@ -29,7 +29,7 @@ try{
  await page.locator('#mode-expedition').click();check(await page.locator('#mode-expedition').getAttribute('aria-pressed')==='true'&&(await page.locator('#expedition-route').textContent()).includes('→'),'Expedition selects and previews its route');
  await page.locator('#back-home').click();check(await page.locator('#home-screen').isVisible(),'Return goes back to home');
  await page.locator('#open-departure').click();await page.locator('#mode-guide').click();await page.locator('#start').click();await page.locator('#hud').waitFor({state:'visible'});
- await page.waitForFunction(()=>performance.getEntriesByType('resource').some(e=>e.name.includes('/art/characters/fish.png')));
+ await page.waitForFunction(()=>performance.getEntriesByType('resource').some(e=>e.name.includes('/art/characters/deepseek.png')));
  check(await page.locator('.growth-track').getAttribute('aria-valuenow')==='0','Experience progress exposes the real initial value');
  check(await page.locator('.growth-label .rice-icon').evaluate(i=>i.complete&&i.naturalWidth>0&&i.alt==='大白饭'),'Rice icon loads without relying on a system emoji font');
  check(!overlaps(await page.locator('.hud-details summary').boundingBox(),await page.locator('#pause').boundingBox()),'Status and pause buttons do not overlap on desktop');

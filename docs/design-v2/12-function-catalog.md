@@ -1,6 +1,6 @@
 # 12 · 全部函数目录与调用契约
 
-当前119个JS模块、427个公开函数：387个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途/远征与已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
+当前120个JS模块、429个公开函数：389个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途/远征与已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
 
 调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。
 
@@ -1232,7 +1232,7 @@ Grok首领只有简单火箭和召集人海。
 
 [源码](../../src/v2/domain/bosses/grok.js)；层：`domain`。
 
-直接依赖：`domain/entities.js`、`domain/geometry.js`、`domain/plans.js`、`domain/serialization.js`。
+直接依赖：`domain/entities.js`、`domain/geometry.js`、`domain/locomotion.js`、`domain/plans.js`、`domain/serialization.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -1242,7 +1242,7 @@ Grok首领只有简单火箭和召集人海。
 
 公开函数下游：
 
-- `planGrokBoss` → `domain/bosses/grok.js#planGrokBossReinforcements`、`domain/entities.js#createEntityState`、`domain/geometry.js#distanceSquared`、`domain/geometry.js#normalizeVector`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
+- `planGrokBoss` → `domain/bosses/grok.js#planGrokBossReinforcements`、`domain/entities.js#createEntityState`、`domain/geometry.js#distanceSquared`、`domain/geometry.js#normalizeVector`、`domain/locomotion.js#resolveEnemyVelocity`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
 - `planGrokBossReinforcements` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
 - `planGrokProjectiles` → `domain/entities.js#createEntityState`、`domain/geometry.js#distanceSquared`、`domain/geometry.js#intersectSweptCircles`、`domain/geometry.js#normalizeVector`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#toJson`。
 
@@ -1688,10 +1688,10 @@ Canonical entity constructor; callers provide stable identity and source snapsho
 
 公开函数上游：
 
-- `normalizeVector` ← `adapters/input.js#normalizeInputSamples`、`content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#planAbilityDamage`、`domain/abilities.js#planAbilityFields`、`domain/attacks.js#planDash`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/claude.js#planClaudeBan`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/collision.js#detectCollisions`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/companions.js#planCompanionFollow`、`domain/gptPets.js#planGptPet`、`domain/meleeAi.js#planMeleeEnemy`、`domain/motionSolver.js#resolveBodyDestination`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`engine/commands.js#planGameCommand`。
+- `normalizeVector` ← `adapters/input.js#normalizeInputSamples`、`content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#planAbilityDamage`、`domain/abilities.js#planAbilityFields`、`domain/attacks.js#planDash`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/claude.js#planClaudeBan`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/collision.js#detectCollisions`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/companions.js#planCompanionFollow`、`domain/gptPets.js#planGptPet`、`domain/locomotion.js#resolveEnemyMovementGoal`、`domain/locomotion.js#resolveEnemyVelocity`、`domain/meleeAi.js#planMeleeEnemy`、`domain/motionSolver.js#resolveBodyDestination`、`domain/movement.js#planPlayerMovement`、`domain/movement.js#planEntityMotion`、`domain/movement.js#planPickupMotion`、`engine/commands.js#planGameCommand`。
 - `intersectSweptCircles` ← `domain/abilities.js#planAbilityFields`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/collision.js#detectCollisions`、`domain/companions.js#planPartnerBanContact`、`domain/motionSolver.js#resolveBodyDestination`、`domain/movement.js#planEntityMotion`、`domain/navigation.js#findNavigationPath`。
 - `isContactWithinArc` ← `domain/shells.js#resolveShellContact`。
-- `distanceSquared` ← `content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#findAbilityPlacement`、`domain/abilities.js#planAbilityDamage`、`domain/abilities.js#resolveAbilityMoveScale`、`domain/abilities.js#selectAbilityTarget`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/collision.js#validateSpawnLocation`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/currents.js#resolveTideVelocity`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/mechanics.js#planMechanicEvent`、`domain/meleeAi.js#planMeleeEnemy`、`domain/movement.js#planPickupMotion`、`domain/navigation.js#findNavigationPath`、`domain/navigation.js#canCloseMapPassage`、`domain/navigation.js#chooseRetreatPoint`、`domain/status.js#resolveControlRequest`、`domain/world/api.js#canApiWithdraw`、`domain/world/api.js#planApiWorldAdvance`、`domain/world/escort.js#planEscortStart`、`domain/world/escort.js#planEscortAdvance`、`domain/world/expedition.js#planExpeditionTravel`、`domain/world/expedition.js#planExpeditionRest`、`domain/world/lateMechanics.js#planChallengeInteraction`、`domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#planMapExploration`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/pressureRules.js#validatePressureReservation`、`domain/world/safety.js#isWorldSafe`、`domain/world/tutorial.js#planTutorialAdvance`、`domain/world/tutorial.js#planTutorialBoss`。
+- `distanceSquared` ← `content/handlers/skills.js#planSkillDisconnect`、`domain/abilities.js#findAbilityPlacement`、`domain/abilities.js#planAbilityDamage`、`domain/abilities.js#resolveAbilityMoveScale`、`domain/abilities.js#selectAbilityTarget`、`domain/bosses/claude.js#planClaudeBoss`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/collision.js#validateSpawnLocation`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/currents.js#resolveTideVelocity`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/locomotion.js#resolveEnemyMovementGoal`、`domain/locomotion.js#resolveEnemyVelocity`、`domain/mechanics.js#planMechanicEvent`、`domain/meleeAi.js#planMeleeEnemy`、`domain/movement.js#planPickupMotion`、`domain/navigation.js#findNavigationPath`、`domain/navigation.js#canCloseMapPassage`、`domain/navigation.js#chooseRetreatPoint`、`domain/status.js#resolveControlRequest`、`domain/world/api.js#canApiWithdraw`、`domain/world/api.js#planApiWorldAdvance`、`domain/world/escort.js#planEscortStart`、`domain/world/escort.js#planEscortAdvance`、`domain/world/expedition.js#planExpeditionTravel`、`domain/world/expedition.js#planExpeditionRest`、`domain/world/lateMechanics.js#planChallengeInteraction`、`domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#planMapExploration`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveAdvance`、`domain/world/pressureRules.js#validatePressureReservation`、`domain/world/safety.js#isWorldSafe`、`domain/world/tutorial.js#planTutorialAdvance`、`domain/world/tutorial.js#planTutorialBoss`。
 - `computeCameraBounds` ← `domain/collision.js#validateSpawnLocation`、`preview/view.js#getPreviewCamera`。
 
 ## domain/gptPets.js
@@ -1766,6 +1766,29 @@ Create an unpublished initial state. Map plans are applied before Session publis
 - `planNextLevelReward` ← `engine/flow.js#planProgressionPanels`。
 - `isPluginMilestone` ← `domain/levels.js#planLevelProgression`。
 
+## domain/locomotion.js
+
+@typedef {import('../contracts.d.ts').DeepReadonly<import('../contracts.d.ts').EntityState>} Body
+
+[源码](../../src/v2/domain/locomotion.js)；层：`domain`。
+
+直接依赖：`domain/geometry.js`。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `resolveEnemyMovementGoal(context: untyped, entity: untyped, target: untyped)` | `{goal:Vec2;runtime:Runtime}` | 已实现 | resolveEnemyMovementGoal；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `resolveEnemyVelocity(context: untyped, entity: untyped, target: untyped, desired: untyped, prior: untyped)` | `{velocity:Vec2;runtime:Runtime}` | 已实现 | resolveEnemyVelocity；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `resolveEnemyMovementGoal` → `domain/geometry.js#distanceSquared`、`domain/geometry.js#normalizeVector`。
+- `resolveEnemyVelocity` → `domain/geometry.js#distanceSquared`、`domain/geometry.js#normalizeVector`。
+
+公开函数上游：
+
+- `resolveEnemyMovementGoal` ← `domain/meleeAi.js#planMeleeEnemy`。
+- `resolveEnemyVelocity` ← `domain/bosses/grok.js#planGrokBoss`、`domain/meleeAi.js#planMeleeEnemy`。
+
 ## domain/lora.js
 
 每次升级的独立UI计时与一次训练判定。
@@ -1830,7 +1853,7 @@ Shared navigation/contact logic; only the brown crab has a telegraphed heavy cla
 
 [源码](../../src/v2/domain/meleeAi.js)；层：`domain`。
 
-直接依赖：`domain/abilities.js`、`domain/geometry.js`、`domain/navigation.js`、`domain/plans.js`、`domain/serialization.js`。
+直接依赖：`domain/abilities.js`、`domain/geometry.js`、`domain/locomotion.js`、`domain/navigation.js`、`domain/plans.js`、`domain/serialization.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -1838,7 +1861,7 @@ Shared navigation/contact logic; only the brown crab has a telegraphed heavy cla
 
 公开函数下游：
 
-- `planMeleeEnemy` → `domain/abilities.js#resolveAbilityMoveScale`、`domain/abilities.js#selectAbilityTarget`、`domain/geometry.js#distanceSquared`、`domain/geometry.js#normalizeVector`、`domain/navigation.js#findNavigationPath`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#toJson`。
+- `planMeleeEnemy` → `domain/abilities.js#resolveAbilityMoveScale`、`domain/abilities.js#selectAbilityTarget`、`domain/geometry.js#distanceSquared`、`domain/geometry.js#normalizeVector`、`domain/locomotion.js#resolveEnemyMovementGoal`、`domain/locomotion.js#resolveEnemyVelocity`、`domain/navigation.js#findNavigationPath`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/serialization.js#toJson`。
 
 公开函数上游：
 

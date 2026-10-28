@@ -1,12 +1,5 @@
 [
   {
-    "name": "fish",
-    "file": "fish.png",
-    "reference": "docs/design-v2/art-drafts/fish-basin-draft.png",
-    "blobSha": "6f31296c648955bb9b1879757d777bd060ae0a22",
-    "size": 974119
-  },
-  {
     "name": "deepseek",
     "file": "deepseek.png",
     "reference": "docs/design-v2/art-drafts/deepseek-no-basin-draft.png",
