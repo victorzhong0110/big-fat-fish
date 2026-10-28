@@ -1,11 +1,11 @@
 # 素材还原 · 试稿核对
 
-用户要求先逐个查看角色效果，再做游戏界面。这里保存的是试稿，不会自动替换现有游戏角色；实际界面暂未修改。
+用户要求先逐个查看角色效果，再做游戏界面。这里保留角色试稿与参考记录。用户确认角色方向后，大肥鱼、Claude及当前游戏使用的七种GPT角色已接入V2静态画面。
 
 - [Claude 像素螃蟹](art-drafts/claude-preview.png)：按参考手工还原。用户明确要求去掉上方的绿色框，当前图只保留螃蟹；[透明 SVG](art-drafts/claude-pixel-reconstruction.svg)。
 - [大肥鱼](art-drafts/fish-basin-draft.png)和[绿色圆形图案](art-drafts/green-icon-draft.png)：从截图生成的透明试稿。
 - [DeepSeek 无盆版](art-drafts/deepseek-no-basin-draft.png)：按用户要求去除蓝色加号和铁盆；被铁盆遮挡的身体由生成式编辑补画。该图作为独立试稿保留，原先拿盆的大肥鱼试稿未覆盖。
-- GPT Pets 九张透明试稿：[Codex](art-drafts/codex-close-draft.png)、[Dewey](art-drafts/dewey-draft.png)、[Fireball](art-drafts/fireball-draft.png)、[Hoots](art-drafts/hoots-draft.png)、[Rocky](art-drafts/rocky-draft.png)、[Seedy](art-drafts/seedy-draft.png)、[Stacky](art-drafts/stacky-draft.png)、[BSOD](art-drafts/bsod-draft.png)、[Null Signal](art-drafts/null-signal-draft.png)。此前因环境中断遗漏的四张试稿已补回；这些图片尚未接入游戏。
+- GPT Pets 九张透明试稿：[Codex](art-drafts/codex-close-draft.png)、[Dewey](art-drafts/dewey-draft.png)、[Fireball](art-drafts/fireball-draft.png)、[Hoots](art-drafts/hoots-draft.png)、[Rocky](art-drafts/rocky-draft.png)、[Seedy](art-drafts/seedy-draft.png)、[Stacky](art-drafts/stacky-draft.png)、[BSOD](art-drafts/bsod-draft.png)、[Null Signal](art-drafts/null-signal-draft.png)。目前七种游戏内GPT敌人已使用对应试稿；BSOD和Null Signal暂未成为游戏内敌人。
 
 除了 Claude 的手工像素稿，其余图使用内置图像编辑工具生成，造型、像素边缘和细节可能与参考图不同。它们仅供对照，不应标称逐像素复刻。原参考图除[绿色圆形图案](../../public/art/references/green-icon.png)外，环境中断后尚未保存到仓库。
 

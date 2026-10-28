@@ -1,3 +1,4 @@
+import { selectMode } from './v2-browser-ui-helpers.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -25,7 +26,7 @@ try{
  for(const kind of ['integration','signal']){
   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/v2.html`);
   const saved=await page.evaluate(async cp=>{const{createStoragePort}=await import('/src/v2/adapters/storage.js');const{readProfileRepository}=await import('/src/v2/application/repository.js');const{loadContentCatalog}=await import('/src/v2/content/catalog.js');const p=createStoragePort('big-fat-fish:v2:profile'),r=await readProfileRepository(p,loadContentCatalog());if(!r.ok)return r;const v=r.value;return p.compareAndSwap(v.revision,{revision:v.revision+1,profile:{...v.profile,revision:v.revision+1,highestDifficulty:14,apiUnlocked:false,checkpoint:cp}});},fixture(kind));assert(saved.ok);
-  await page.reload();await page.locator('#mode-select').selectOption('short');
+  await page.reload();await selectMode(page,'short');
   await page.waitForFunction(()=>document.querySelector('#difficulty-select').options.length===15);
   if(kind==='integration')check(await page.locator('#difficulty-select option').count()===15,'Progression unlock exposes all fifteen formal difficulties');
   await page.locator('#continue').click();await page.locator('#resume').click();
@@ -50,4 +51,4 @@ try{
  }
  check(errors.length===0,`No page errors: ${errors.join(';')}`);
  console.log(JSON.stringify({checks:checks.length,passed:checks,scope:'Controlled unlocked Profile and exploratory checkpoints; actual F, pause, timed spawning and manual aimed shooting'},null,2));
-}finally{await browser.close();await server.close();}
+}catch(error){for(const context of browser.contexts())for(const page of context.pages())console.error(await page.evaluate(()=>({toast:document.querySelector('#toast')?.textContent,pressure:document.querySelector('#pressure-label')?.textContent,enemies:document.querySelector('#enemies')?.textContent,pause:document.querySelector('#pause-title')?.textContent,shown:document.querySelector('#pause-menu')?.className})));throw error;}finally{await browser.close();await server.close();}

@@ -1,3 +1,4 @@
+import { selectMode } from './v2-browser-ui-helpers.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -23,13 +24,13 @@ try{
  await page.locator('[data-tab=gear]').click();await page.locator('[data-gear-id=mcp_fan] button').click();await page.waitForFunction(()=>document.querySelector('[data-gear-id=mcp_fan] button').textContent==='已解锁');check((await page.locator('.nest-balance').textContent()).includes('零件 18'),'Discovered fan MCP becomes a permanent departure choice for six parts');
  await page.locator('[data-loadout=weapon-0]').selectOption('mcp_fan');await page.locator('[data-loadout=weapon-1]').selectOption('mcp_bubble');
  await page.locator('[data-tab=dsh]').click();await page.locator('[data-dsh-id=dsh_claude_appeal] button').click();await page.waitForFunction(()=>document.querySelector('[data-dsh-id=dsh_claude_appeal] button').textContent==='卸下');check((await page.locator('#nest-manager').textContent()).includes('已装 1 件'),'A real unlocked DSH equips into a purchased slot');
- await page.screenshot({path:path.join(output,'nest-dsh.png'),fullPage:true});await page.locator('#nest-panel summary').click();await page.locator('#mode-select').selectOption('short');await page.locator('#start').click();
+ await page.screenshot({path:path.join(output,'nest-dsh.png'),fullPage:true});await page.locator('#nest-panel summary').click();await selectMode(page,'short');await page.locator('#start').click();
  await page.waitForFunction(()=>document.querySelector('#hp-label').textContent==='110 / 110');check((await page.locator('#weapon-label').textContent()).includes('扇面'),'Departure actually uses the selected permanent MCP and tree HP');
  check(await page.locator('#nest-panel').isHidden(),'Permanent purchases are inaccessible during the active adventure');
  const checkpoint=await page.evaluate(async()=>{const {createStoragePort}=await import('/src/v2/adapters/storage.js');return (await createStoragePort('big-fat-fish:v2:profile').read()).value.profile.checkpoint;});
  check(checkpoint.state.start.treeNodeIds.length===6&&checkpoint.state.player.baseStats.armor===6,'The real initial checkpoint locks the six purchased nodes and derived armor');
  check(checkpoint.state.start.dsh[0].id==='dsh_claude_appeal'&&checkpoint.state.player.loadout.weapons.map(w=>w.definitionId).join(',')==='mcp_fan,mcp_bubble','The run locks DSH and the second-MCP departure loadout');
- await page.reload();await page.locator('#mode-select').selectOption('short');await page.locator('#continue').click();await page.locator('#pause-menu').waitFor({state:'visible'});check((await page.locator('#hp-label').textContent())==='110 / 110','Reload restores tree-enhanced life without reapplying the initial bonus');
+ await page.reload();await selectMode(page,'short');await page.locator('#continue').click();await page.locator('#pause-menu').waitFor({state:'visible'});check((await page.locator('#hp-label').textContent())==='110 / 110','Reload restores tree-enhanced life without reapplying the initial bonus');
  await page.locator('#resume').click();await page.locator('#pause').click();await page.locator('#abandon').click();await page.locator('#restart:not([disabled])').waitFor();await page.locator('#restart').click();await page.locator('#nest-panel summary').click();await page.locator('[data-action=respec]').click();await page.waitForFunction(()=>document.querySelector('.nest-balance').textContent.includes('算力卡 50'));
  check((await page.locator('[data-tree-id] button').filter({hasText:'已点亮'}).count())===0,'Full respec refunds all 17 spent cards and clears the tree');
  await page.locator('[data-tab=dsh]').click();check((await page.locator('#nest-manager').textContent()).includes('已开放 0 / 3 槽，已装 0 件'),'Respec closes DSH slots and unequips while keeping the collection');

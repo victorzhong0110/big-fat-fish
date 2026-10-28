@@ -33,7 +33,10 @@ export function planSpawnSchedule(context) {
   const due=[...state.world.spawnQueue].filter(request=>request.at<=state.tick&&(state.api!==null||state.flow.phase!=='boss'||!!request.bossOwner&&state.bosses.some(b=>b.entityId===request.bossOwner&&!state.world.entities[b.entityId]?.dead))).sort((a,b)=>(state.api?Number(!!b.bossOwner)-Number(!!a.bossOwner):0)||a.at-b.at||(a.id<b.id?-1:1))[0];
   if(due){
     const player=state.world.entities[state.player.entityId];
-    const candidates=[due.position,...Array.from({length:16},(_,i)=>({x:player.position.x+Math.cos((i+Number(due.id.split(':').at(-1)||0))*Math.PI/8)*800,y:player.position.y+Math.sin((i+Number(due.id.split(':').at(-1)||0))*Math.PI/8)*800}))];
+    // Preserve the normal 800-unit entrances first. A larger visible area can
+    // cover that entire ring near a map edge, so search farther before deferring.
+    const viewport=state.input.viewport,far=viewport?Math.ceil(Math.hypot(viewport.width/2+180,viewport.height/2+180)):1400;
+    const candidates=[due.position,...[800,1000,1200,Math.max(1400,far)].flatMap(distance=>Array.from({length:16},(_,i)=>({x:player.position.x+Math.cos((i+Number(due.id.split(':').at(-1)||0))*Math.PI/8)*distance,y:player.position.y+Math.sin((i+Number(due.id.split(':').at(-1)||0))*Math.PI/8)*distance})))];
     for(const position of candidates){if(state.start.difficulty.mechanicIds.includes('mech_08_grok_flanks')&&due.enemyId==='enemy_grok_bot'&&(due.position.x<player.position.x?position.x>player.position.x-420:position.x<player.position.x+420))continue;const request={...due,position};if(dependency2.validateSpawnLocation(context,request).ok)return planEnemySpawn(context,request);}
     return createEmptyPlan();
   }

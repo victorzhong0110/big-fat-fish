@@ -1,3 +1,4 @@
+import { selectMode } from './v2-browser-ui-helpers.mjs';
 import assert from'node:assert/strict';
 import path from'node:path';
 import fs from'node:fs/promises';
@@ -15,7 +16,7 @@ const server=await createServer({root,server:{host:'127.0.0.1',port:0,watch:null
 const browser=await chromium.launch({executablePath,headless:true,args:['--no-sandbox','--single-process','--no-zygote','--disable-gpu','--disable-gpu-compositing','--disable-webgl','--use-gl=angle','--use-angle=swiftshader']}),checks=[],errors=[];
 function check(value,label){assert(value,label);checks.push(label);}
 try{
-const context=await browser.newContext({viewport:{width:1280,height:800}}),page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/v2.html`);await page.locator('#mode-select').selectOption('tutorial');
+const context=await browser.newContext({viewport:{width:1280,height:800}}),page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/v2.html`);await selectMode(page,'tutorial');
 check(await page.locator('#skill-select option').count()===8,'All eight active skills have real Free selectors');check(await page.locator('#companion-select option').count()===7,'All six companions plus solo are selectable');
 async function load(checkpoint){await page.evaluate(cp=>localStorage.setItem('big-fat-fish:v2-combat-preview:checkpoint',JSON.stringify(cp)),checkpoint);await page.reload();await page.locator('#continue').click();await page.locator('#resume').click();}
 await load(cp);await page.keyboard.press('e');await page.waitForFunction(()=>parseFloat(document.querySelector('#skill-cd').textContent)>0);check(true,'Batch processing casts through the actual keyboard and starts native cooldown');await page.waitForTimeout(700);await page.keyboard.press('r');await page.waitForFunction(()=>JSON.parse(localStorage.getItem('big-fat-fish:v2-combat-preview:checkpoint')).state.tick>30);let saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('big-fat-fish:v2-combat-preview:checkpoint')));check(saved.state.world.entities['companion:equipped']?.definitionId==='companion_cache','Companion follows as an actual saved actor');check(Object.values(saved.state.world.shields).some(s=>s.sourceId==='companion_cache'),'Automatic companion grants its actual source shield');
