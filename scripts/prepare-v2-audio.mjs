@@ -1,0 +1,10 @@
+import fs from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+const root=new URL('../',import.meta.url);
+const expected='8d32f1a0ed25035584a6bc804ea6fc22488bcff99e691f33b87e360d4cb8e15f';
+const parts=await Promise.all(Array.from({length:7},(_,i)=>fs.readFile(new URL(`assets/audio/let-me-go.part${String(i+1).padStart(2,'0')}`,root))));
+const bytes=Buffer.concat(parts);
+if(createHash('sha256').update(bytes).digest('hex')!==expected)throw new Error('Let Me Go source checksum mismatch');
+await fs.mkdir(new URL('public/audio/',root),{recursive:true});
+await fs.writeFile(new URL('public/audio/let-me-go.mp3',root),bytes);
+console.log('Let Me Go restored: original MP3 checksum verified.');
