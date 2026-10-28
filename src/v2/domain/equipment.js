@@ -1,0 +1,61 @@
+// @ts-check
+import { planTreeWeaponSwitch } from './treeRuntime.js';
+import { createEmptyPlan,createStateChange } from './plans.js';
+import { resolveWeaponTemplate } from '../content/weaponCapabilities.js';
+import { resolveSkillTemplate } from '../content/skillCapabilities.js';
+import { toJson } from './serialization.js';
+
+/** F interacts with the closest weapon; fill an empty slot or emit a reviewable replacement offer.
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/equipment.js#planWeaponPickup
+ * @calls domain/plans.js#createEmptyPlan
+ * @param {import('../contracts.d.ts').EvaluationContext} context
+ * @returns {import('../contracts.d.ts').SystemPlan|null}
+ */
+export function planEquipmentInteraction(context){
+ const state=context.state,player=state.world.entities[state.player.entityId];if(state.flow.phase!=='exploring')return null;
+ const pickup=Object.values(state.world.pickups).filter(p=>['weapon','skill'].includes(p.kind)&&!p.collected&&(p.weapon||p.skill)&&Math.hypot(p.position.x-player.position.x,p.position.y-player.position.y)<=96).sort((a,b)=>Math.hypot(a.position.x-player.position.x,a.position.y-player.position.y)-Math.hypot(b.position.x-player.position.x,b.position.y-player.position.y)||(a.id<b.id?-1:1))[0];
+ if(!pickup)return null;
+ if(pickup.kind==='weapon'&&state.player.loadout.weapons.length<2)return planWeaponPickup(context,pickup.id,state.player.loadout.weapons.length);
+ return {...createEmptyPlan(),events:[{id:`offer:${pickup.id}:${state.tick}`,runId:state.runId,tick:state.tick,seq:0,type:'EquipmentOffered',sourceId:player.id,targetId:pickup.id,payload:{pickupId:pickup.id}}]};
+}
+
+/** Swap actual instances atomically. The displaced weapon stays on the ground with its own quality/update/CD.
+ * @implementationScope core-preview + adventure-slice
+ * @calls content/weaponCapabilities.js#resolveWeaponTemplate
+ * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/plans.js#createStateChange
+ * @calls domain/serialization.js#toJson
+ * @calls domain/treeRuntime.js#planTreeWeaponSwitch
+ * @param {import('../contracts.d.ts').EvaluationContext} context
+ * @param {string} pickupId
+ * @param {number} slotIndex
+ * @returns {import('../contracts.d.ts').SystemPlan}
+ */
+export function planWeaponPickup(context,pickupId,slotIndex){
+ const state=context.state,player=state.world.entities[state.player.entityId],pickup=state.world.pickups[pickupId],weapons=[...state.player.loadout.weapons];
+ if(state.flow.phase!=='exploring'||!pickup||pickup.collected||pickup.kind!=='weapon'||!pickup.weapon||!resolveWeaponTemplate(context.catalog,pickup.weapon.definitionId)||!Number.isInteger(slotIndex)||slotIndex<0||slotIndex>1||slotIndex>weapons.length||Math.hypot(pickup.position.x-player.position.x,pickup.position.y-player.position.y)>96)return createEmptyPlan();
+ const changes=Object.values(state.world.pickups).filter(p=>p.id===pickup.id||pickup.exclusiveGroup&&p.exclusiveGroup===pickup.exclusiveGroup).map(p=>createStateChange('world',p.id,'removePickup',{})),displaced=weapons[slotIndex];
+ if(displaced){const id=`drop:${displaced.instanceId}`;changes.push(createStateChange('world',id,'putPickup',{id,kind:'weapon',amount:1,position:pickup.position,instanceId:displaced.instanceId,collected:false,weapon:{...displaced}}));}
+ weapons[slotIndex]=structuredClone(pickup.weapon);
+ changes.push(createStateChange('player',player.id,'setLoadout',{...state.player.loadout,weapons}));
+ if(displaced&&slotIndex===state.player.loadout.activeWeaponIndex)changes.push(...planTreeWeaponSwitch(context).changes);
+ const discovery={id:`discovery:${state.runId}:${pickup.weapon.definitionId}`,runId:state.runId,tick:state.tick,seq:0,type:'ContentDiscovered',sourceId:player.id,targetId:pickup.id,payload:{definitionId:pickup.weapon.definitionId}};
+ return {...createEmptyPlan(),changes,events:[discovery,{...discovery,id:`equip:${pickup.id}:${state.tick}`,type:'EquipmentEquipped',payload:{definitionId:pickup.weapon.definitionId,slotIndex}}],persistence:[{id:discovery.id,kind:'discovery',payload:toJson(discovery)}]};
+}
+
+/** Exchange the single active-skill instance; cooldown is max(old, new half-base, stored ground cooldown).
+ * @calls content/skillCapabilities.js#resolveSkillTemplate
+ * @calls domain/plans.js#createEmptyPlan
+ * @calls domain/plans.js#createStateChange
+ * @calls domain/serialization.js#toJson
+ * @param {import('../contracts.d.ts').EvaluationContext} context
+ * @param {string} pickupId
+ * @returns {import('../contracts.d.ts').SystemPlan}
+ */
+export function planSkillPickup(context,pickupId){
+ const state=context.state,player=state.world.entities[state.player.entityId],pickup=state.world.pickups[pickupId],skill=pickup?.skill;
+ if(state.flow.phase!=='exploring'||!pickup||pickup.collected||pickup.kind!=='skill'||!skill||!resolveSkillTemplate(context.catalog,skill.definitionId)||Math.hypot(pickup.position.x-player.position.x,pickup.position.y-player.position.y)>96)return createEmptyPlan();
+ const current=state.player.loadout,oldId=current.skillInstanceId??`${state.runId}:initial:${current.skillId}`,dropId=`drop:${oldId}`,cooldown=Math.max(current.skillCooldown,Number(context.catalog.definitions[skill.definitionId].parameters.cooldown)*.5,skill.cooldown),discovery={id:`discovery:${state.runId}:${skill.definitionId}`,runId:state.runId,tick:state.tick,seq:0,type:'ContentDiscovered',sourceId:player.id,targetId:pickup.id,payload:{definitionId:skill.definitionId}};
+ return {...createEmptyPlan(),changes:[createStateChange('world',pickup.id,'removePickup',{}),createStateChange('world',dropId,'putPickup',{id:dropId,kind:'skill',amount:1,position:pickup.position,instanceId:oldId,collected:false,skill:{instanceId:oldId,definitionId:current.skillId,cooldown:current.skillCooldown}}),createStateChange('player',player.id,'setLoadout',{...current,skillInstanceId:skill.instanceId,skillId:skill.definitionId,skillCooldown:cooldown})],events:[discovery,{...discovery,id:`equip:${pickupId}:${state.tick}`,type:'EquipmentEquipped',payload:{definitionId:skill.definitionId,slotIndex:0}}],persistence:[{id:discovery.id,kind:'discovery',payload:toJson(discovery)}]};
+}
