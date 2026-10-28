@@ -3189,23 +3189,23 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
-| `createCharacterPixels(name: untyped, pose: untyped = {})` | `PixelRect[]` | 已实现 | createCharacterPixels；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
-| `drawCharacter(ctx: untyped, name: untyped, x: untyped, y: untyped, size: untyped, pose: untyped = {})` | `void` | 已实现 | drawCharacter；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
-| `characterSvg(name: untyped, pose: untyped = {})` | `string` | 已实现 | characterSvg；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `characterSource(name: untyped)` | `string\|null` | 已实现 | characterSource；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `loadCharacterArt(name: untyped)` | `Promise<HTMLImageElement>` | 已实现 | loadCharacterArt；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `drawCharacter(ctx: untyped, name: untyped, x: untyped, y: untyped, size: untyped, pose: untyped = {})` | `boolean` | 已实现 | drawCharacter；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 | `resolveCharacterModel(id: untyped)` | `string\|null` | 已实现 | resolveCharacterModel；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
-- `createCharacterPixels` → 无内部公开函数。
-- `drawCharacter` → `preview/characters.js#createCharacterPixels`。
-- `characterSvg` → `preview/characters.js#createCharacterPixels`。
+- `characterSource` → 无内部公开函数。
+- `loadCharacterArt` → `preview/characters.js#characterSource`。
+- `drawCharacter` → `preview/characters.js#characterSource`、`preview/characters.js#loadCharacterArt`。
 - `resolveCharacterModel` → 无内部公开函数。
 
 公开函数上游：
 
-- `createCharacterPixels` ← `preview/characters.js#drawCharacter`、`preview/characters.js#characterSvg`。
+- `characterSource` ← `preview/characters.js#loadCharacterArt`、`preview/characters.js#drawCharacter`。
+- `loadCharacterArt` ← `preview/characters.js#drawCharacter`。
 - `drawCharacter` ← `preview/view.js#renderPreviewFrame`。
-- `characterSvg` ← 宿主/工具入口或待编排。
 - `resolveCharacterModel` ← `preview/view.js#renderPreviewFrame`。
 
 ## preview/host.js

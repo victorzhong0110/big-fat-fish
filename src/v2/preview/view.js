@@ -65,7 +65,7 @@ export function renderPreviewFrame(ctx,view,width,height,pixelRatio,popups=[]) {
     const stage=/mythos|fable|luna/i.test(entity.modelLabel??'')?3:/opus|terra/i.test(entity.modelLabel??'')?2:/sonnet|sol/i.test(entity.modelLabel??'')?1:0;
     const pose={tick:view.tick,moving:entity.moving,attacking:entity.attacking||entity.telegraphRemaining>0,facing:entity.facingRadians,stage,hurt:popups.some(p=>Math.hypot(p.x-x,p.y-y)<entity.radius&&view.tick-p.tick>=0&&view.tick-p.tick<5),controlled:entity.statusLabels?.some(s=>['root','stun','companionBan'].includes(s))};
     if(entity.kind==='companion'){
-      const banned=entity.statusLabels.includes('companionBan');ctx.globalAlpha=banned?.35:1;drawCharacter(ctx,model??'cache',x,y,40,pose);ctx.globalAlpha=1;
+      const banned=entity.statusLabels.includes('companionBan');ctx.globalAlpha=banned?.35:1;if(!drawCharacter(ctx,model??'',x,y,40,pose)){ctx.fillStyle=entity.spriteId==='companion_rice'?'#eee8cf':entity.spriteId==='companion_patch'?'#a1d6a0':entity.spriteId==='companion_rocket'?'#e4a278':'#a8bde0';ctx.fillRect(x-10,y-9,20,18);ctx.fillStyle='#31505b';ctx.fillRect(x-6,y-4,3,4);ctx.fillRect(x+3,y-4,3,4);}ctx.globalAlpha=1;
       ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillStyle='#d5e1d0';ctx.fillText(`${entity.modelLabel??'伙伴'}${model==='deepseek'?' · DeepSeek':''}`,x,y+27);if(banned){ctx.strokeStyle='#d8947d';ctx.strokeRect(x-17,y-17,34,34);}continue;
     }
     if(entity.spriteId.startsWith('enemy_gpt_')){

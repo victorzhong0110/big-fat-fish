@@ -29,7 +29,6 @@
     "test:v2:tutorial": "node scripts/test-v2-tutorial-browser.mjs",
     "test:v2:mod-adventure": "node scripts/test-v2-mod-adventure-browser.mjs",
     "test:v2:interface": "node scripts/test-v2-interface-browser.mjs",
-    "generate:characters": "node scripts/generate-character-assets.mjs",
     "prepare:audio": "node scripts/prepare-v2-audio.mjs",
     "predev": "npm run prepare:audio",
     "prebuild": "npm run prepare:audio",

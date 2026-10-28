@@ -1,6 +1,6 @@
-# 当前游戏模型
+# 当前角色复刻版本
 
-运行时已替换以下旧试稿贴图，改用src/v2/preview/characters.js的18种手工整数网格模型。查看[模型总览](art-drafts/models-v2-overview.png)，或打开首页“角色图鉴”切换动作和朝向。DeepSeek不带盆和加号，接入替身进程伙伴外观，技能不变；Claude不带绿框。BSOD与Null Signal仅提供展示，尚无敌人行为。新模型不声称与原参考逐像素一致。
+已撤下重新绘制的40×40简化造型，恢复下列此前生成并经用户确认的版本。public/art/characters内的文件与历史生成文件逐字节一致；approved-art.json记录来源和校验值。查看[恢复后的角色总览](art-drafts/models-v2-overview.png)或首页角色图鉴。DeepSeek保留去盆去加号结果，Claude保留无绿框结果，九种GPT Pets不重新设计。游戏绘制保持原图比例和细节；当前移动和攻击仅为整图位移反馈，完整逐帧动作仍待制作。
 
 # 素材还原 · 试稿核对
 
@@ -11,7 +11,7 @@
 - [DeepSeek 无盆版](art-drafts/deepseek-no-basin-draft.png)：按用户要求去除蓝色加号和铁盆；被铁盆遮挡的身体由生成式编辑补画。该图作为独立试稿保留，原先拿盆的大肥鱼试稿未覆盖。
 - GPT Pets 九张透明试稿：[Codex](art-drafts/codex-close-draft.png)、[Dewey](art-drafts/dewey-draft.png)、[Fireball](art-drafts/fireball-draft.png)、[Hoots](art-drafts/hoots-draft.png)、[Rocky](art-drafts/rocky-draft.png)、[Seedy](art-drafts/seedy-draft.png)、[Stacky](art-drafts/stacky-draft.png)、[BSOD](art-drafts/bsod-draft.png)、[Null Signal](art-drafts/null-signal-draft.png)。旧版本七种游戏内GPT敌人曾使用对应试稿；BSOD和Null Signal暂未成为游戏内敌人。
 
-除了 Claude 的手工像素稿，其余图使用内置图像编辑工具生成，造型、像素边缘和细节可能与参考图不同。它们仅供对照，不应标称逐像素复刻。原参考图除[绿色圆形图案](../../public/art/references/green-icon.png)外，环境中断后尚未保存到仓库。
+当前直接沿用这些已经确认的生成结果，不再重绘、简化或覆盖原文件。
 
 ## 透明试稿提示词
 

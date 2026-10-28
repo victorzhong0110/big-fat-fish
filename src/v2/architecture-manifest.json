@@ -11625,26 +11625,40 @@
       "dependencies": [],
       "functions": [
         {
-          "description": "createCharacterPixels",
+          "description": "characterSource",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
           "callMode": "sequence",
-          "name": "createCharacterPixels",
+          "name": "characterSource",
           "args": [
             {
               "name": "name",
               "type": "untyped"
-            },
+            }
+          ],
+          "result": "string|null",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "loadCharacterArt",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "loadCharacterArt",
+          "args": [
             {
-              "name": "pose",
-              "default": "{}",
+              "name": "name",
               "type": "untyped"
             }
           ],
-          "result": "PixelRect[]",
+          "result": "Promise<HTMLImageElement>",
           "implementation": "implemented",
-          "calls": []
+          "calls": [
+            "preview/characters.js#characterSource"
+          ]
         },
         {
           "description": "drawCharacter",
@@ -11680,34 +11694,11 @@
               "type": "untyped"
             }
           ],
-          "result": "void",
+          "result": "boolean",
           "implementation": "implemented",
           "calls": [
-            "preview/characters.js#createCharacterPixels"
-          ]
-        },
-        {
-          "description": "characterSvg",
-          "rule": "",
-          "ownership": "只读输入、返回值/计划；不得写调用者状态",
-          "phase": "query",
-          "callMode": "sequence",
-          "name": "characterSvg",
-          "args": [
-            {
-              "name": "name",
-              "type": "untyped"
-            },
-            {
-              "name": "pose",
-              "default": "{}",
-              "type": "untyped"
-            }
-          ],
-          "result": "string",
-          "implementation": "implemented",
-          "calls": [
-            "preview/characters.js#createCharacterPixels"
+            "preview/characters.js#characterSource",
+            "preview/characters.js#loadCharacterArt"
           ]
         },
         {
