@@ -18,7 +18,7 @@ try{
  const page=await browser.newPage({viewport:{width:1280,height:800}});page.on('pageerror',e=>errors.push(e.message));await page.goto(url);
  await page.waitForFunction(()=>document.querySelector('#wallet').textContent!=='小窝档案读取中');
  check(await page.locator('#home-screen').isVisible()&&await page.locator('#departure-screen').isHidden(),'Home is the first screen');
- check(await page.locator('.home-art img').evaluate(i=>i.complete&&i.naturalWidth>0),'Approved fish image loads on the home screen');
+ check(await page.locator('.home-art img').evaluate(i=>i.complete&&i.naturalWidth>0),'Authored pixel fish model loads on the home screen');
  await page.screenshot({path:path.join(output,'home.png')});
  await page.locator('#settings-panel summary').click();await page.locator('#home-escape-assist').check();await page.locator('#settings-panel summary').click();
  await page.reload();await page.locator('#settings-panel summary').click();check(await page.locator('#home-escape-assist').isChecked()&&await page.locator('#escape-assist').isChecked(),'Control assistance persists and matches the in-game setting');await page.locator('#settings-panel summary').click();
@@ -29,7 +29,7 @@ try{
  await page.locator('#mode-expedition').click();check(await page.locator('#mode-expedition').getAttribute('aria-pressed')==='true'&&(await page.locator('#expedition-route').textContent()).includes('→'),'Expedition selects and previews its route');
  await page.locator('#back-home').click();check(await page.locator('#home-screen').isVisible(),'Return goes back to home');
  await page.locator('#open-departure').click();await page.locator('#mode-guide').click();await page.locator('#start').click();await page.locator('#hud').waitFor({state:'visible'});
- await page.waitForFunction(()=>performance.getEntriesByType('resource').some(e=>e.name.includes('/art/sprites/fish.png')));
+ await page.waitForFunction(()=>performance.getEntriesByType('resource').some(e=>e.name.includes('/art/models/fish.svg')));
  check(await page.locator('.growth-track').getAttribute('aria-valuenow')==='0','Experience progress exposes the real initial value');
  check(await page.locator('.growth-label .rice-icon').evaluate(i=>i.complete&&i.naturalWidth>0&&i.alt==='大白饭'),'Rice icon loads without relying on a system emoji font');
  check(!overlaps(await page.locator('.hud-details summary').boundingBox(),await page.locator('#pause').boundingBox()),'Status and pause buttons do not overlap on desktop');

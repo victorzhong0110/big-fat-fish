@@ -11619,6 +11619,117 @@
       ]
     },
     {
+      "path": "preview/characters.js",
+      "layer": "host",
+      "purpose": "@typedef {{x:number;y:number;w:number;h:number;color:string}} PixelRect",
+      "dependencies": [],
+      "functions": [
+        {
+          "description": "createCharacterPixels",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createCharacterPixels",
+          "args": [
+            {
+              "name": "name",
+              "type": "untyped"
+            },
+            {
+              "name": "pose",
+              "default": "{}",
+              "type": "untyped"
+            }
+          ],
+          "result": "PixelRect[]",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "drawCharacter",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "drawCharacter",
+          "args": [
+            {
+              "name": "ctx",
+              "type": "untyped"
+            },
+            {
+              "name": "name",
+              "type": "untyped"
+            },
+            {
+              "name": "x",
+              "type": "untyped"
+            },
+            {
+              "name": "y",
+              "type": "untyped"
+            },
+            {
+              "name": "size",
+              "type": "untyped"
+            },
+            {
+              "name": "pose",
+              "default": "{}",
+              "type": "untyped"
+            }
+          ],
+          "result": "void",
+          "implementation": "implemented",
+          "calls": [
+            "preview/characters.js#createCharacterPixels"
+          ]
+        },
+        {
+          "description": "characterSvg",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "characterSvg",
+          "args": [
+            {
+              "name": "name",
+              "type": "untyped"
+            },
+            {
+              "name": "pose",
+              "default": "{}",
+              "type": "untyped"
+            }
+          ],
+          "result": "string",
+          "implementation": "implemented",
+          "calls": [
+            "preview/characters.js#createCharacterPixels"
+          ]
+        },
+        {
+          "description": "resolveCharacterModel",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolveCharacterModel",
+          "args": [
+            {
+              "name": "id",
+              "type": "untyped"
+            }
+          ],
+          "result": "string|null",
+          "implementation": "implemented",
+          "calls": []
+        }
+      ]
+    },
+    {
       "path": "preview/host.js",
       "layer": "host",
       "purpose": "Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,",
@@ -11801,7 +11912,8 @@
       "layer": "host",
       "purpose": "Canvas presentation for the combat preview. Never mutates or simulates game state.",
       "dependencies": [
-        "domain/geometry.js"
+        "domain/geometry.js",
+        "preview/characters.js"
       ],
       "functions": [
         {
@@ -11869,6 +11981,8 @@
           "result": "void",
           "implementation": "implemented",
           "calls": [
+            "preview/characters.js#drawCharacter",
+            "preview/characters.js#resolveCharacterModel",
             "preview/view.js#getPreviewCamera"
           ],
           "implementationScope": "core-preview"
@@ -12801,9 +12915,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 118,
-    "functions": 423,
-    "implemented": 383,
+    "modules": 119,
+    "functions": 427,
+    "implemented": 387,
     "placeholders": 40
   }
 }

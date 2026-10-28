@@ -1,6 +1,6 @@
 # 12 · 全部函数目录与调用契约
 
-当前118个JS模块、423个公开函数：383个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途/远征与已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
+当前119个JS模块、427个公开函数：387个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途/远征与已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
 
 调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。
 
@@ -3179,6 +3179,35 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 - `advanceWorldTick` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/session.js#stepSessionWorld`、`engine/session.js#stepSessionUi`。
 - `advanceUiTick` ← `engine/previewTick.js#advancePreviewUiCommands`、`engine/session.js#stepSessionWorld`、`engine/session.js#stepSessionUi`。
 
+## preview/characters.js
+
+@typedef {{x:number;y:number;w:number;h:number;color:string}} PixelRect
+
+[源码](../../src/v2/preview/characters.js)；层：`host`。
+
+直接依赖：无。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `createCharacterPixels(name: untyped, pose: untyped = {})` | `PixelRect[]` | 已实现 | createCharacterPixels；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `drawCharacter(ctx: untyped, name: untyped, x: untyped, y: untyped, size: untyped, pose: untyped = {})` | `void` | 已实现 | drawCharacter；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `characterSvg(name: untyped, pose: untyped = {})` | `string` | 已实现 | characterSvg；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `resolveCharacterModel(id: untyped)` | `string\|null` | 已实现 | resolveCharacterModel；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `createCharacterPixels` → 无内部公开函数。
+- `drawCharacter` → `preview/characters.js#createCharacterPixels`。
+- `characterSvg` → `preview/characters.js#createCharacterPixels`。
+- `resolveCharacterModel` → 无内部公开函数。
+
+公开函数上游：
+
+- `createCharacterPixels` ← `preview/characters.js#drawCharacter`、`preview/characters.js#characterSvg`。
+- `drawCharacter` ← `preview/view.js#renderPreviewFrame`。
+- `characterSvg` ← 宿主/工具入口或待编排。
+- `resolveCharacterModel` ← `preview/view.js#renderPreviewFrame`。
+
 ## preview/host.js
 
 Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,
@@ -3245,7 +3274,7 @@ Canvas presentation for the combat preview. Never mutates or simulates game stat
 
 [源码](../../src/v2/preview/view.js)；层：`host`。
 
-直接依赖：`domain/geometry.js`。
+直接依赖：`domain/geometry.js`、`preview/characters.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -3255,7 +3284,7 @@ Canvas presentation for the combat preview. Never mutates or simulates game stat
 公开函数下游：
 
 - `getPreviewCamera` → `domain/geometry.js#computeCameraBounds`。
-- `renderPreviewFrame` → `preview/view.js#getPreviewCamera`。
+- `renderPreviewFrame` → `preview/characters.js#drawCharacter`、`preview/characters.js#resolveCharacterModel`、`preview/view.js#getPreviewCamera`。
 
 公开函数上游：
 
