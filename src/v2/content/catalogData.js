@@ -70,6 +70,51 @@ export const CATALOG_DATA = {
       },
       "version": "2.0.0-preview.5"
     },
+    "plugin_local_deploy": {
+      "id": "plugin_local_deploy",
+      "kind": "plugin",
+      "displayName": "本地部署 · 零延迟",
+      "parameters": {
+        "description": "射速 +35%→+55%，移速 +25%→+40%，弹速 +40%→+65%。没有前置。",
+        "source": "ROADMAP-FUN-GAME.md",
+        "handler": "content/handlers/plugins.js#planPluginLocalDeploy",
+        "sourceRow": ["射速、移速、弹速一起加", "没有停火或站桩条件"],
+        "previewAvailable": true,
+        "rarity": "common",
+        "rankDescriptions": ["射速+35%，移速+25%，弹速+40%。", "射速+55%，移速+40%，弹速+65%。"]
+      },
+      "version": "2.0.0-preview.5"
+    },
+    "plugin_quant_int4": {
+      "id": "plugin_quant_int4",
+      "kind": "plugin",
+      "displayName": "INT4 量化",
+      "parameters": {
+        "description": "单发伤害 -25%，射击间隔 ×0.55→×0.45，额外 +2 发弹道。",
+        "source": "ROADMAP-FUN-GAME.md",
+        "handler": "content/handlers/plugins.js#planPluginQuantInt4",
+        "sourceRow": ["单发变轻，射速和弹数变多", "没有武器限制"],
+        "previewAvailable": true,
+        "rarity": "advanced",
+        "rankDescriptions": ["伤害-25%，间隔×0.55，额外两发。", "伤害-25%，间隔×0.45，额外两发。"]
+      },
+      "version": "2.0.0-preview.5"
+    },
+    "plugin_rollback_emergency": {
+      "id": "plugin_rollback_emergency",
+      "kind": "plugin",
+      "displayName": "紧急回滚",
+      "parameters": {
+        "description": "致命伤或生命跌破 15% 时回到 2 秒前的位置和生命，震开周围敌人并清掉附近敌方弹幕。冷却 45→30 秒。",
+        "source": "ROADMAP-FUN-GAME.md",
+        "handler": "content/handlers/plugins.js#planPluginRollbackEmergency",
+        "sourceRow": ["低血或致命伤倒回两秒", "震开小怪并清弹幕"],
+        "previewAvailable": true,
+        "rarity": "advanced",
+        "rankDescriptions": ["触发后 45 秒才能再来一次。", "触发后 30 秒才能再来一次。"]
+      },
+      "version": "2.0.0-preview.5"
+    },
     "plugin_batch": {
       "id": "plugin_batch",
       "kind": "plugin",
@@ -2818,6 +2863,27 @@ export const CONTENT_BINDINGS = [
     "module": "content/handlers/plugins.js",
     "function": "planPluginParallel",
     "source": "04-plugins.md"
+  },
+  {
+    "kind": "plugins",
+    "id": "plugin_local_deploy",
+    "module": "content/handlers/plugins.js",
+    "function": "planPluginLocalDeploy",
+    "source": "ROADMAP-FUN-GAME.md"
+  },
+  {
+    "kind": "plugins",
+    "id": "plugin_quant_int4",
+    "module": "content/handlers/plugins.js",
+    "function": "planPluginQuantInt4",
+    "source": "ROADMAP-FUN-GAME.md"
+  },
+  {
+    "kind": "plugins",
+    "id": "plugin_rollback_emergency",
+    "module": "content/handlers/plugins.js",
+    "function": "planPluginRollbackEmergency",
+    "source": "ROADMAP-FUN-GAME.md"
   },
   {
     "kind": "plugins",

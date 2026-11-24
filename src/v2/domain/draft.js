@@ -75,7 +75,7 @@ export function planPluginSelection(context, command) {
   }
   plugins = existing ? plugins.map(plugin => plugin.id === candidate.id ? { ...plugin, rank: candidate.rank } : plugin) : [...plugins, { id: candidate.id, rank: candidate.rank, origin: /** @type {const} */ ('run'), runtime: {} }];
   const changes = [createStateChange('progression', candidate.id, 'setPlugins', { plugins })];
-  if (candidate.id === 'plugin_distill') for (const faction of /** @type {const} */ (['claude', 'gpt', 'grok'])) changes.push(createStateChange('progression', faction, 'setDistillTrack', advanceDistillTrack(state.distill[faction], 0, faction === 'grok' ? candidate.rank === 1 ? 10 : 7 : candidate.rank === 1 ? 6 : 4)));
+  if (candidate.id === 'plugin_distill') for (const faction of /** @type {const} */ (['claude', 'gpt', 'grok'])) changes.push(createStateChange('progression', faction, 'setDistillTrack', advanceDistillTrack(state.distill[faction], 0, candidate.rank === 1 ? 3 : 2)));
   return { ...completeChoice(context), changes: [...changes, ...completeChoice(context).changes] };
 }
 

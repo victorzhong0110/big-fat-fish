@@ -8,7 +8,7 @@ export default defineConfig({
   },
   build: {
     target: 'es2020',
-    rollupOptions: { input: { main: fileURLToPath(new URL('./index.html', import.meta.url)), v2: fileURLToPath(new URL('./v2.html', import.meta.url)) } },
+    rollupOptions: { input: { v2: fileURLToPath(new URL('./v2.html', import.meta.url)) } },
     outDir: 'dist',
     assetsDir: 'assets',
     chunkSizeWarningLimit: 2000,

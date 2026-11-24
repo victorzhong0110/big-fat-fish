@@ -2,7 +2,7 @@ import {CHARACTER_NAMES,drawCharacter,loadCharacterArt} from './v2/preview/chara
 /** Inspect the same rigs as combat, without advancing the world. */
 export function mountCharacterGallery(){
  const root=document.querySelector('#character-gallery'),panel=document.querySelector('#characters-panel');if(!root||!panel)return;
- const labels={fish:'大肥鱼',deepseek:'大肥鱼 · DeepSeek',claude:'Claude',grok:'Grok Bot',codex:'Codex',dewey:'Dewey',fireball:'Fireball',hoots:'Hoots',rocky:'Rocky',seedy:'Seedy',stacky:'Stacky',bsod:'BSOD','null-signal':'Null Signal',rice:'饭团',patch:'补丁',cache:'小缓存',router:'路由员',rocket:'小火箭'};
+ const labels={fish:'大肥鱼',deepseek:'大肥鱼 · DeepSeek',claude:'Claude',grok:'Grok Bot',codex:'Codex',dewey:'Dewey',fireball:'Fireball',hoots:'Hoots',rocky:'Rocky',seedy:'Seedy',stacky:'Stacky',bsod:'BSOD','null-signal':'Null Signal',chatgpt:'ChatGPT',rice:'饭团',patch:'补丁',cache:'小缓存',router:'路由员',rocket:'小火箭'};
  const controls=document.createElement('div');controls.className='model-controls';const label=document.createElement('label');label.textContent='展示效果 ';const select=document.createElement('select');select.id='model-pose';
  for(const [value,text] of [['idle','原图'],['move','移动反馈'],['attack','攻击反馈'],['control','受控'],['hurt','受击']]){const option=document.createElement('option');option.value=value;option.textContent=text;select.append(option);}label.append(select);controls.append(label);
  let facing=0;const turn=document.createElement('button');turn.type='button';turn.textContent='转向';turn.onclick=()=>{facing=facing?0:Math.PI;};controls.append(turn);root.append(controls);

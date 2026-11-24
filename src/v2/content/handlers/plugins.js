@@ -26,13 +26,14 @@ import * as dependency2 from '../../domain/plans.js';
  */
 export function planPluginParallel(context, event) {
   const state=context.state,plugin=state.plugins.find(item=>item.id==='plugin_parallel'),weapon=state.player.loadout.weapons[state.player.loadout.activeWeaponIndex];
-  if(!plugin||event.type!=='WeaponFired'||event.sourceId!==state.player.entityId||Number(plugin.runtime.readyAt??0)>state.tick)return dependency2.createEmptyPlan();
+  if(!plugin||event.type!=='WeaponFired'||event.sourceId!==state.player.entityId)return dependency2.createEmptyPlan();
   const p=context.catalog.definitions[weapon.definitionId].parameters,player=state.world.entities[state.player.entityId];
   const quality=weapon.updateExpiresAt!==null&&weapon.updateExpiresAt>state.tick&&weapon.temporaryQuality!==null?weapon.temporaryQuality:weapon.originalQuality;
-  const damage=Number(p.damage)*[1,1.15,1.3][quality]*(plugin.rank===1?0.4:0.6)*derivePlayerStats(state,context.catalog).damageMultiplier;
-  const changes=[dependency2.createStateChange('progression',plugin.id,'setPlugins',{plugins:state.plugins.map(item=>item.id===plugin.id?{...item,runtime:{...item.runtime,readyAt:state.tick+24}}:item)})];
-  const stats={damage,interval:Number(p.interval),projectileSpeed:Number(p.projectileSpeed),projectileRadius:Number(p.projectileRadius),pellets:1,spreadRadians:0,range:Number(p.range),maxHits:Number(p.maxHits),damageMultiplierApplied:true};
-  for(const side of [-1,1]){const angle=Math.atan2(state.input.aim.y,state.input.aim.x)+side*Math.PI/15,id=`parallel:${event.id}:${side}`;changes.push(dependency2.createStateChange('world',id,'putEntity',createWeaponProjectile(context,weapon,stats,angle,id,event.id,'plugin_secondary',damage)));}
+  const damage=Number(p.damage)*[1,1.15,1.3][quality]*.55*derivePlayerStats(state,context.catalog).damageMultiplier;
+  const interval=Number(p.interval),extra=Math.max(0,Math.min(4,Math.floor((.32-interval)/.05))),count=(plugin.rank===1?4:6)+extra;
+  const changes=[],stats={damage,interval,projectileSpeed:Number(p.projectileSpeed),projectileRadius:Number(p.projectileRadius),pellets:1,spreadRadians:0,range:Number(p.range),maxHits:Number(p.maxHits),damageMultiplierApplied:true};
+  const aim=Math.atan2(state.input.aim.y,state.input.aim.x);
+  for(let n=0;n<count;n++){const angle=aim+Math.PI/2+(count===1?Math.PI/2:n/(count-1)*Math.PI),id=`parallel:${event.id}:${n}`;changes.push(dependency2.createStateChange('world',id,'putEntity',createWeaponProjectile(context,weapon,stats,angle,id,event.id,'plugin_secondary',damage)));}
   return {...dependency2.createEmptyPlan(),changes};
 }
 
@@ -444,4 +445,34 @@ export function planPluginAgent(context, event) {
  */
 export function planPluginBreaker(context, event) {
   return planCombatPluginEvent(context,event,'plugin_breaker');
+}
+
+/** plugin_local_deploy / 本地部署 · 零延迟：射速、移速、弹速直接加成，由属性派生消费。
+ * @calls domain/plans.js#createEmptyPlan
+ * @param {import('../../contracts.d.ts').EvaluationContext} context
+ * @param {import('../../contracts.d.ts').DomainEvent} event
+ * @returns {import('../../contracts.d.ts').EffectPlan}
+ */
+export function planPluginLocalDeploy(context, event) {
+  return dependency2.createEmptyPlan();
+}
+
+/** plugin_quant_int4 / INT4 量化：降单发、砍间隔、多两发，由属性派生消费。
+ * @calls domain/plans.js#createEmptyPlan
+ * @param {import('../../contracts.d.ts').EvaluationContext} context
+ * @param {import('../../contracts.d.ts').DomainEvent} event
+ * @returns {import('../../contracts.d.ts').EffectPlan}
+ */
+export function planPluginQuantInt4(context, event) {
+  return dependency2.createEmptyPlan();
+}
+
+/** plugin_rollback_emergency / 紧急回滚：致命伤或低血时由伤害结算倒回两秒前。
+ * @calls domain/plans.js#createEmptyPlan
+ * @param {import('../../contracts.d.ts').EvaluationContext} context
+ * @param {import('../../contracts.d.ts').DomainEvent} event
+ * @returns {import('../../contracts.d.ts').EffectPlan}
+ */
+export function planPluginRollbackEmergency(context, event) {
+  return dependency2.createEmptyPlan();
 }

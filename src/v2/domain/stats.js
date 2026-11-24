@@ -25,9 +25,11 @@ export function derivePlayerStats(state, catalog) {
     modifiers.push({ id: 'distill:armor', sourceId: 'plugin_distill', stat: 'armor', operation: 'add', value: state.distill.claude.stage * 6, expiresAt: null });
     modifiers.push({ id: 'distill:speed', sourceId: 'plugin_distill', stat: 'moveSpeed', operation: 'add', value: base.moveSpeed * state.distill.grok.stage * 0.03, expiresAt: null });
   }
+  const local=state.plugins.find(plugin=>plugin.id==='plugin_local_deploy');
+  if(local)modifiers.push({id:'local:speed',sourceId:'plugin_local_deploy',stat:'moveSpeed',operation:'add',value:base.moveSpeed*(local.rank===1?.25:.4),expiresAt:null});
   return {
     maxHp: resolveStatModifier(base.maxHp, modifiers.filter(m => m.stat === 'maxHp'), 1, Number.MAX_SAFE_INTEGER),
-    moveSpeed: resolveStatModifier(base.moveSpeed, modifiers.filter(m => m.stat === 'moveSpeed'), 1, base.moveSpeed * 1.8),
+    moveSpeed: resolveStatModifier(base.moveSpeed, modifiers.filter(m => m.stat === 'moveSpeed'), 1, base.moveSpeed * 2.5),
     armor: resolveStatModifier(base.armor, modifiers.filter(m => m.stat === 'armor'), 0, 60),
     damageMultiplier: resolveStatModifier(base.damageMultiplier, modifiers.filter(m => m.stat === 'damageMultiplier'), 0, Number.MAX_SAFE_INTEGER),
     critChance: resolveStatModifier(base.critChance, modifiers.filter(m => m.stat === 'critChance'), 0, 0.75),
@@ -65,9 +67,14 @@ export function deriveWeaponStats(state, weapon, catalog) {
   const tree = state.start.treeNodeIds, switchBonus = state.world.entities[state.player.entityId].runtime.treeSwitchShot === true ? 1.25 : 1;
   const treeDamage = 1 + (tree.includes('tree_mcp_a') ? 0.05 : 0) + (tree.includes('tree_mcp_e') ? 0.07 : 0);
   const compress=state.plugins.find(plugin=>plugin.id==='plugin_compress');
-  return { damage: (compress?compress.rank===1?1.3:1.45:1)*Number(p.damage) * resolveContextWeaponFactor(state) * treeDamage * switchBonus * qualityMultiplier * player.damageMultiplier * topUpdate * underfit,
-    interval: resolveStatModifier(Number(p.interval) * (tree.includes('tree_mcp_c') ? 0.95 : 1), modifiers.filter(modifier => modifier.stat === 'weaponInterval'), 0.05, Number.MAX_SAFE_INTEGER),
-    projectileSpeed: Number(p.projectileSpeed), projectileRadius: Number(p.projectileRadius), pellets: Number(p.pellets), spreadRadians: Number(p.spreadRadians), range: Number(p.range)*(compress?0.75:1), maxHits: Number(p.maxHits), damageMultiplierApplied: true,
+  const local=state.plugins.find(plugin=>plugin.id==='plugin_local_deploy');
+  const quant=state.plugins.find(plugin=>plugin.id==='plugin_quant_int4');
+  const temperature=state.plugins.find(plugin=>plugin.id==='plugin_temperature');
+  const overflow=state.plugins.find(plugin=>plugin.id==='plugin_window');
+  const fireRate=(local?local.rank===1?1.35:1.55:1)*(temperature?temperature.rank===1?1.5:1.75:1)*(1+Number(overflow?.runtime.fireStacks??0)*(overflow?.rank===1?.01:.015));
+  return { damage: (compress?compress.rank===1?1.3:1.45:1)*(quant?.75:1)*Number(p.damage) * resolveContextWeaponFactor(state) * treeDamage * switchBonus * qualityMultiplier * player.damageMultiplier * topUpdate * underfit,
+    interval: resolveStatModifier(Number(p.interval) * (tree.includes('tree_mcp_c') ? 0.95 : 1) * (quant?quant.rank===1?.55:.45:1) / fireRate, modifiers.filter(modifier => modifier.stat === 'weaponInterval'), 0.025, Number.MAX_SAFE_INTEGER),
+    projectileSpeed: Number(p.projectileSpeed)*(local?local.rank===1?1.4:1.65:1), projectileRadius: Number(p.projectileRadius), pellets: Number(p.pellets)+(quant?2:0), spreadRadians: Number(p.spreadRadians)+(temperature?temperature.rank===1?.55:.9:0), range: Number(p.range), maxHits: Number(p.maxHits), damageMultiplierApplied: true,
   };
 }
 

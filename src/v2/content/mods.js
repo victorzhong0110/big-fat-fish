@@ -48,7 +48,7 @@ export function parseModPackage(text, base) {
       object(recipe);keys(recipe,['id','templateId','displayName','parameters']);
       if(typeof recipe.id!=='string'||!/^[a-z][a-z0-9_-]{0,47}$/.test(recipe.id)||ids.has(recipe.id)||!['skill_cache','skill_batch'].includes(recipe.templateId)||typeof recipe.displayName!=='string'||!recipe.displayName.trim()||recipe.displayName.length>80)throw new Error('新技能的ID、显示名或行为模板无效');
       ids.add(recipe.id);object(recipe.parameters);keys(recipe.parameters,['cooldown','powerMultiplier']);
-      for(const [key,value] of Object.entries(recipe.parameters)){const bound=key==='cooldown'?[3,60]:[.25,3];if(typeof value!=='number'||!Number.isFinite(value)||value<bound[0]||value>bound[1])throw new Error(`新技能参数越界：${key}`);}
+      for(const [key,value] of Object.entries(recipe.parameters)){const bound=key==='cooldown'?[1,60]:[.25,3];if(typeof value!=='number'||!Number.isFinite(value)||value<bound[0]||value>bound[1])throw new Error(`新技能参数越界：${key}`);}
     }
   }
   const seen = new Set();

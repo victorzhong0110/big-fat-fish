@@ -31,8 +31,8 @@ export function planDistillEvent(context, event) {
     const rewardId = `distill:${event.id}`;
     if (!entity || entity.kind !== 'enemy' || !entity.dead || !faction || !record.distillEligible || record.creditOwner !== 'player' || record.rewardPolicy === 'none'&&entity.runtime.bossGrokSample!==true || state.processedRewardIds.includes(rewardId)) return createEmptyPlan();
     const boss = state.bosses.some(item => item.entityId === entity.id);
-    const samples = boss ? 6 : faction === 'claude' ? record.rewardPolicy === 'elite' ? 6 : 3 : faction === 'gpt' && record.rewardPolicy === 'elite' ? 3 : 1;
-    const track = advanceDistillTrack(state.distill[faction], samples, faction === 'grok' ? plugin.rank === 1 ? 10 : 7 : plugin.rank === 1 ? 6 : 4);
+    const samples = boss ? 3 : record.rewardPolicy === 'elite' ? 2 : 1;
+    const track = advanceDistillTrack(state.distill[faction], samples, plugin.rank === 1 ? 3 : 2);
     return { ...createEmptyPlan(), changes: [createStateChange('progression', faction, 'setDistillTrack', track), createStateChange('runtime', rewardId, 'recordReward', {})] };
   }
   const player = state.world.entities[state.player.entityId];
@@ -84,13 +84,23 @@ export function advanceDistillTrack(track, samples, required) {
 export function planDistilledAbilities(context) {
   const state = context.state, plugin = state.plugins.find(item => item.id === 'plugin_distill');
   if (!plugin || !['exploring', 'boss'].includes(state.flow.phase)) return createEmptyPlan();
+  const player = state.world.entities[state.player.entityId], changes=/** @type {import('../contracts.d.ts').StateChange[]} */([]);
   const stage = state.distill.gpt.stage;
-  if (!stage || Number((state.distillRuntime ?? {}).bubbleReadyAt ?? 0) > state.tick) return createEmptyPlan();
-  const player = state.world.entities[state.player.entityId];
-  const targets = Object.values(state.world.entities).filter(entity => entity.kind === 'enemy' && !entity.dead && (entity.position.x - player.position.x) ** 2 + (entity.position.y - player.position.y) ** 2 <= 500 ** 2).sort((a, b) => ((a.position.x - player.position.x) ** 2 + (a.position.y - player.position.y) ** 2) - ((b.position.x - player.position.x) ** 2 + (b.position.y - player.position.y) ** 2) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-  if (!targets.length) return createEmptyPlan();
-  const target = targets[0], angle = Math.atan2(target.position.y - player.position.y, target.position.x - player.position.x);
-  return { ...createEmptyPlan(), changes: [...runtimePlan(context, { bubbleReadyAt: state.tick + 300 }).changes, ...Array.from({ length: stage === 1 ? 1 : 2 }, (_, i) => spawnDistilled(context, `distillBubble:${state.tick}:${i}`, stage === 3 ? 12 : 8, 320, 150, angle + i * 0.1, false, target.id))] };
+  if (stage && Number((state.distillRuntime ?? {}).bubbleReadyAt ?? 0) <= state.tick) {
+    const targets = Object.values(state.world.entities).filter(entity => entity.kind === 'enemy' && !entity.dead && (entity.position.x - player.position.x) ** 2 + (entity.position.y - player.position.y) ** 2 <= 500 ** 2).sort((a, b) => ((a.position.x - player.position.x) ** 2 + (a.position.y - player.position.y) ** 2) - ((b.position.x - player.position.x) ** 2 + (b.position.y - player.position.y) ** 2) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    if (targets.length) {
+      const target = targets[0], angle = Math.atan2(target.position.y - player.position.y, target.position.x - player.position.x);
+      changes.push(...runtimePlan(context, { bubbleReadyAt: state.tick + 300 }).changes, ...Array.from({ length: stage === 1 ? 1 : 2 }, (_, i) => spawnDistilled(context, `distillBubble:${state.tick}:${i}`, stage === 3 ? 12 : 8, 320, 150, angle + i * 0.2, false, target.id)));
+    }
+  }
+  if(state.distill.claude.stage>0&&Number((state.distillRuntime??{}).clawReadyAt??0)<=state.tick){
+    const aim=Math.atan2(state.input.aim.y,state.input.aim.x);
+    changes.push(...runtimePlan(context,{clawReadyAt:state.tick+180}).changes, spawnDistilled(context,`distillClaw:${state.tick}`,18+state.distill.claude.stage*6,260,40,aim,false,null));
+  }
+  if(state.distill.grok.stage>0&&Number(player.runtime.dashUntil??0)===state.tick+11){
+    changes.push(createStateChange('world',`distillRocket:${state.tick}`,'putEntity',createEntityState(`distillRocket:${state.tick}`,'world_blast','objective','neutral',player.position,{radius:70+state.distill.grok.stage*10,expiresAt:state.tick+12,runtime:{visualOnly:true,blastRadius:70}})));
+  }
+  return changes.length?{...createEmptyPlan(),changes}:createEmptyPlan();
 }
 
 /** @param {import('../contracts.d.ts').EvaluationContext} context @param {Record<string,import('../contracts.d.ts').Json>} patch */

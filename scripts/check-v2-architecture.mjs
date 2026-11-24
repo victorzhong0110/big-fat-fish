@@ -81,8 +81,8 @@ for (const [file, dependencies] of moduleGraph) {
   if (file.startsWith('engine/')) assert(!dependencies.some(dependency => /^(application|adapters)\//.test(dependency)), `Engine accesses host: ${file}`);
   if (file.startsWith('application/')) assert(!dependencies.some(dependency => dependency.startsWith('adapters/')), `Application bypasses ports: ${file}`);
 }
-assert.equal(manifest.bindings.length, 95);
-assert.equal(new Set(manifest.bindings.map(binding => binding.id)).size, 95);
+assert.equal(manifest.bindings.length, 98);
+assert.equal(new Set(manifest.bindings.map(binding => binding.id)).size, 98);
 for (const binding of manifest.bindings) assert(exports.has(`${binding.module}#${binding.function}`), `Missing binding: ${binding.id}`);
 const { createHandlerRegistry } = await import(pathToFileURL(path.join(sourceRoot, 'content/registry.js')).href);
 for (const id of createHandlerRegistry().implementedIds) {

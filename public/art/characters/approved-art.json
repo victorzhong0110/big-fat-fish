@@ -82,5 +82,61 @@
     "reference": "docs/design-v2/art-drafts/null-signal-draft.png",
     "blobSha": "ef47fbf865cfe16721dd6b9fe29db7334808de28",
     "size": 498031
+  },
+  {
+    "name": "chatgpt",
+    "file": "chatgpt.png",
+    "reference": "public/art/characters/chatgpt.png",
+    "blobSha": "25937e1ea0881d079853c5118108565fd3ec7223",
+    "size": 979430
+  },
+  {
+    "name": "chatgpt-attack",
+    "file": "chatgpt-attack.png",
+    "reference": "public/art/characters/chatgpt-attack.png",
+    "blobSha": "a89e42297ea2a9d3fd5999c8ed00b92758f9a6fb",
+    "size": 985051
+  },
+  {
+    "name": "chatgpt-hurt",
+    "file": "chatgpt-hurt.png",
+    "reference": "public/art/characters/chatgpt-hurt.png",
+    "blobSha": "fd5aef02412a6e5294ab234e26ca3be100236729",
+    "size": 885667
+  },
+  {
+    "name": "deepseek-hurt",
+    "file": "deepseek-hurt.png",
+    "reference": "public/art/characters/deepseek-hurt.png",
+    "blobSha": "6f85d414581fb1b4544a9d141e057a0f8ad000e6",
+    "size": 968113
+  },
+  {
+    "name": "claude-attack",
+    "file": "claude-attack.png",
+    "reference": "public/art/characters/claude-attack.png",
+    "blobSha": "6c3af8adc98316f978a634a614dd72faee3f2af3",
+    "size": 437423
+  },
+  {
+    "name": "claude-hurt",
+    "file": "claude-hurt.png",
+    "reference": "public/art/characters/claude-hurt.png",
+    "blobSha": "1875c7e7d6f44925940e17f5eb1eb4d1cbdade28",
+    "size": 316264
+  },
+  {
+    "name": "grok-attack",
+    "file": "grok-attack.png",
+    "reference": "public/art/characters/grok-attack.png",
+    "blobSha": "c1fac035218ebf62090154de4165d7910e47138d",
+    "size": 515524
+  },
+  {
+    "name": "grok-hurt",
+    "file": "grok-hurt.png",
+    "reference": "public/art/characters/grok-hurt.png",
+    "blobSha": "23f6bc4b28d6b9c0ca043df9402b36bac7bcb497",
+    "size": 499637
   }
 ]

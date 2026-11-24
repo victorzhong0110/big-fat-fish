@@ -4,7 +4,6 @@ import {createEntityState} from './entities.js';
 import {derivePlayerStats} from './stats.js';
 import {normalizeVector,distanceSquared,intersectSweptCircles} from './geometry.js';
 import {planShieldGrant} from './shields.js';
-import {toJson} from './serialization.js';
 
 /** One conditionally triggered automatic ability. No cast means no cooldown consumption.
  * @calls domain/entities.js#createEntityState
@@ -76,10 +75,10 @@ export function planPartnerBanContact(context){
  return {...createEmptyPlan(),changes,effects};
 }
 
-/** Emit stable, reward-free rescue facts for actual quest evidence.
+/** 条件满足时在身旁放下虚弱伙伴，分一口大白饭后才记救助。
+ * @calls domain/entities.js#createEntityState
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
- * @calls domain/serialization.js#toJson
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').DomainEvent} event
  * @returns {import('../contracts.d.ts').SystemPlan}
@@ -96,6 +95,7 @@ export function planCompanionMilestones(context,event){
  if(event.type==='CacheOpened'){
   const p=/** @type {{cacheId:string;secret:boolean}} */(event.payload);if(p.secret){const ids=[...new Set([.../** @type {readonly string[]} */(player.runtime.secretCacheIds??[]),p.cacheId])];changes.push(createStateChange('entity',player.id,'setEntityRuntime',{runtime:{...player.runtime,secretCacheIds:ids}}));if(ids.length>=2)rescued.push('companion_cache');}
  }
- const events=rescued.map(companionId=>({id:`rescue:${companionId}`,runId:state.runId,tick:state.tick,seq:0,type:'CompanionRescued',sourceId:player.id,targetId:null,payload:{companionId}}));
- return {...createEmptyPlan(),changes,events,persistence:events.map(e=>({id:e.id,kind:'discovery',payload:toJson(e)}))};
+ const fed=new Set(/** @type {readonly string[]} */(player.runtime.fedCompanionIds??[]));
+ for(const companionId of rescued){const id=`rescue:${companionId}`;if(fed.has(companionId)||state.world.entities[id])continue;changes.push(createStateChange('world',id,'putEntity',createEntityState(id,companionId,'objective','neutral',{x:player.position.x+46,y:player.position.y-12},{radius:14,hp:1,maxHp:1,runtime:{interaction:'companionRescue',rescueCompanion:companionId}})));}
+ return {...createEmptyPlan(),changes};
 }

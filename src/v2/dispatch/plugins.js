@@ -28,14 +28,17 @@ import * as dependency1 from '../content/handlers/plugins.js';
  * @calls content/handlers/plugins.js#planPluginHallucination
  * @calls content/handlers/plugins.js#planPluginHotplug
  * @calls content/handlers/plugins.js#planPluginKeepalive
+ * @calls content/handlers/plugins.js#planPluginLocalDeploy
  * @calls content/handlers/plugins.js#planPluginMirror
  * @calls content/handlers/plugins.js#planPluginMoe
  * @calls content/handlers/plugins.js#planPluginOffload
  * @calls content/handlers/plugins.js#planPluginParallel
  * @calls content/handlers/plugins.js#planPluginPrefill
+ * @calls content/handlers/plugins.js#planPluginQuantInt4
  * @calls content/handlers/plugins.js#planPluginRecursion
  * @calls content/handlers/plugins.js#planPluginRedirect
  * @calls content/handlers/plugins.js#planPluginRetry
+ * @calls content/handlers/plugins.js#planPluginRollbackEmergency
  * @calls content/handlers/plugins.js#planPluginSandbox
  * @calls content/handlers/plugins.js#planPluginSpeculate
  * @calls content/handlers/plugins.js#planPluginTemperature
@@ -77,5 +80,8 @@ export function dispatchPluginsHandler(context, definitionId, event) {
   if(definitionId==='plugin_window')return dependency1.planPluginWindow(context,event);
   if(definitionId==='plugin_agent')return dependency1.planPluginAgent(context,event);
   if(definitionId==='plugin_breaker')return dependency1.planPluginBreaker(context,event);
+  if(definitionId==='plugin_local_deploy')return dependency1.planPluginLocalDeploy(context,event);
+  if(definitionId==='plugin_quant_int4')return dependency1.planPluginQuantInt4(context,event);
+  if(definitionId==='plugin_rollback_emergency')return dependency1.planPluginRollbackEmergency(context,event);
   throw new Error('Unknown plugin');
 }

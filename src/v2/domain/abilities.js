@@ -136,5 +136,7 @@ export function selectAbilityTarget(state,entity){
 export function planAbilityHistory(context){
  const state=context.state,player=state.world.entities[state.player.entityId],history=/** @type {readonly (readonly number[])[]} */(player.runtime.rollbackHistory??[[0,player.position.x,player.position.y,0]]);
  const samples=[...history.filter(sample=>sample[0]>=state.tick-120&&sample[0]<state.tick).map(sample=>[...sample]),[state.tick,player.position.x,player.position.y,Number(player.runtime.hpDamageTotal??0)]];
- return {...createEmptyPlan(),changes:[createStateChange('entity',player.id,'setEntityRuntime',{runtime:{...player.runtime,rollbackHistory:samples}})]};
+ const vitals=/** @type {readonly (readonly number[])[]} */(player.runtime.rollbackVitals??[]);
+ const rollbackVitals=[...vitals.filter(sample=>sample[0]>=state.tick-120&&sample[0]<state.tick),[state.tick,player.hp]];
+ return {...createEmptyPlan(),changes:[createStateChange('entity',player.id,'setEntityRuntime',{runtime:{...player.runtime,rollbackHistory:samples,rollbackVitals}})]};
 }

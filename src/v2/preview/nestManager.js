@@ -63,15 +63,18 @@ export function mountNestManager(root, catalog, storage, onProfile, notify) {
     title.textContent=`算力卡 ${profile.gpuCards} · 碎片 ${profile.gpuFragments}/5 · 零件 ${profile.parts}${profile.checkpoint?' · 冒险进行中，成长与配装已锁定':''}`;
     if(tab==='tree'){
       const respec=button('免费重置整棵树');respec.disabled=locked||!profile.purchasedTree.length;respec.dataset.action='respec';respec.onclick=()=>{void act({type:'respec'});};body.append(respec);
-      for(const [prefix,name] of [['tree_body_','干饭体魄'],['tree_mcp_','MCP熟练'],['tree_skill_','技能调度'],['tree_explore_','探索与伙伴'],['tree_dsh_','DSH槽位']]){
+      const intro=document.createElement('p');intro.textContent='三条短分枝，每条先点开头，再从两条里选一条。长线先不用点。';body.append(intro);
+      /** @param {string} id @param {ParentNode} [parent] */
+      const place=(id,parent=body)=>{const definition=catalog.definitions[id];if(!definition)return;const owned=profile.purchasedTree.includes(id),p=definition.parameters,parents=Array.isArray(p.prerequisites)?p.prerequisites.map(parentId=>catalog.definitions[String(parentId)]?.displayName??String(parentId)):[];const node=card(definition.displayName,`${p.effect} · ${p.cost}算力卡${parents.length?` · 前置：${parents.join('、')}`:''}`);if(parent!==body)parent.append(node);node.dataset.treeId=id;const buy=button(owned?'已点亮':'点亮节点');buy.disabled=locked||owned||!validateTreePurchase(profile,id,catalog).valid;buy.onclick=()=>{void act({type:'buyTree',id});};node.append(buy);};
+      for(const [name,start,choice] of /** @type {const} */([['干饭',['tree_body_a','tree_body_b'],['tree_body_c','tree_body_d']],['射击',['tree_mcp_a','tree_mcp_b'],['tree_mcp_c','tree_mcp_d']],['技能',['tree_skill_a','tree_skill_b'],['tree_skill_c','tree_skill_d']]])){
         const heading=document.createElement('h3');heading.textContent=name;body.append(heading);
-        for(const definition of Object.values(catalog.definitions).filter(item=>item.kind==='tree'&&item.id.startsWith(prefix))){
-          const owned=profile.purchasedTree.includes(definition.id),p=definition.parameters,parents=Array.isArray(p.prerequisites)?p.prerequisites.map(id=>catalog.definitions[String(id)]?.displayName??String(id)):[];
-          const pending='';
-          const node=card(definition.displayName,`${p.effect}${pending} · ${p.cost}算力卡${parents.length?` · 前置：${parents.join('、')}`:''}${p.baseSpendRequired?` · 基础树消费至少${p.baseSpendRequired}卡`:''}${p.requiresAnyDsh?' · 先发现任一DSH':''}`);
-          node.dataset.treeId=definition.id;const buy=button(owned?'已点亮':'点亮节点');buy.disabled=locked||owned||!validateTreePurchase(profile,definition.id,catalog).valid;buy.onclick=()=>{void act({type:'buyTree',id:definition.id});};node.append(buy);
-        }
+        for(const id of start)place(id);
+        const fork=document.createElement('p');fork.textContent='这两条抢的是手感，先点一条就够玩。';body.append(fork);
+        for(const id of choice)place(id);
       }
+      const later=document.createElement('details');const summary=document.createElement('summary');summary.textContent='先不用点的长线';later.append(summary);body.append(later);
+      const tail=document.createElement('div');later.append(tail);
+      for(const id of ['tree_body_e','tree_body_f','tree_mcp_e','tree_mcp_f','tree_skill_e','tree_skill_f',...Object.values(catalog.definitions).filter(item=>item.kind==='tree'&&(item.id.startsWith('tree_explore_')||item.id.startsWith('tree_dsh_'))).map(item=>item.id)])place(id,tail);
     }else if(tab==='facilities'){
       for(const definition of Object.values(catalog.definitions).filter(item=>item.kind==='facility')){const owned=profile.facilities.includes(definition.id),cost=Number(definition.parameters.partCost);const node=card(definition.displayName,`${definition.parameters.effect} · ${cost}零件`),buy=button(owned?'已建成':'建设');buy.disabled=locked||owned||profile.parts<cost;buy.onclick=()=>{void act({type:'build',id:definition.id});};node.dataset.facilityId=definition.id;node.append(buy);}
     }else if(tab==='gear'){
@@ -89,7 +92,7 @@ export function mountNestManager(root, catalog, storage, onProfile, notify) {
       if(profile.bestApi){const r=profile.bestApi;card('API调用 · 个人记录',`最长${Math.floor(r.survivedTicks/3600)}分${Math.floor(r.survivedTicks/60)%60}秒 · 最多首领${r.bossKills} · 最高有效击杀${r.kills} · 最高等级${r.maxLevel}`);}
       const achievement=RESET_ACHIEVEMENT,achievementCard=card(achievement.name,`${profile.unlockLedger.includes(achievement.ledgerId)?'成就已解锁':'成就未解锁'} · ${achievement.description}`);achievementCard.dataset.achievementId=achievement.id;
       card('我去吃饭，测完告诉我就行',`已经发现 ${profile.discovered.length} 件内容，收藏 ${profile.unlockedDsh.length} 件DSH。收获来自实际探索与结算，小窝不自动生产资源。`);
-      const tasks={companion_rice:'最初的小伙伴。',companion_patch:'破坏一处Claude封禁装置。',companion_cache:'打开两个不同地点的秘密箱。',companion_router:'同一局发现两种MCP。',companion_decoy:'破解一次ChatGPT重置。',companion_rocket:'击败Grok首领后在这里接回。'};
+      const tasks={companion_rice:'最初的小伙伴。',companion_patch:'海里遇到虚弱的补丁，分一口大白饭。',companion_cache:'海里遇到虚弱的小缓存，分一口大白饭。',companion_router:'海里遇到虚弱的路由员，分一口大白饭。',companion_decoy:'海里遇到虚弱的替身，分一口大白饭。',companion_rocket:'击败Grok首领后在这里接回。'};
       for(const [id,task]of Object.entries(tasks)){const owned=profile.unlockedCompanions.includes(id),node=card(catalog.definitions[id].displayName,`${owned?'已入住':'尚未救助'} · ${task}`),interact=button(owned?'聊聊':'接回伙伴');interact.disabled=locked||!owned&&(id!=='companion_rocket'||!profile.unlockLedger.includes('milestone:grok-defeated'));interact.onclick=()=>{if(owned)notify(`${catalog.definitions[id].displayName}：${id==='companion_rice'?'出门别忘了带饭，饿了就回来。':id==='companion_router'?'两把MCP各有用处，试试切换打法。':'一起出门吧，我会跟紧你的铁盆。'}`);else void act({type:'rescue',id});};node.dataset.residentId=id;node.append(interact);}
       for(const id of profile.discovered)card(catalog.definitions[id]?.displayName??id,catalog.definitions[id]?.kind==='companion'?'已入住 · 可在出发配装中选择随行。':'已记录发现。');
     }

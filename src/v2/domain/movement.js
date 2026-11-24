@@ -71,7 +71,7 @@ export function planEntityMotion(context) {
     else if(typeof runtime.homingTargetId==='string'){const target=context.state.world.entities[runtime.homingTargetId];if(target&&!target.dead){const d=dependency2.normalizeVector({x:target.position.x-entity.position.x,y:target.position.y-entity.position.y});velocity={x:d.x*Number(runtime.speed),y:d.y*Number(runtime.speed)};}}
     if(!velocity.x&&!velocity.y&&entity.previousPosition.x===entity.position.x&&entity.previousPosition.y===entity.position.y)continue;
     velocity=resolveTideVelocity(context.state,entity,velocity,context.catalog);
-    if(entity.kind!=='projectile'&&Math.abs(velocity.x)>.1&&runtime.visualFacing!==Math.sign(velocity.x)){runtime={...runtime,visualFacing:Math.sign(velocity.x)};changes.push(createStateChange('entity',entity.id,'setEntityRuntime',{runtime}));}
+    if(entity.kind!=='projectile'){const hasFacing=typeof runtime.visualFacing==='number';if(!hasFacing){runtime={...runtime,visualFacing:velocity.x<0?-1:1};changes.push(createStateChange('entity',entity.id,'setEntityRuntime',{runtime}));}else if(Math.abs(velocity.x)>12&&runtime.visualFacing!==Math.sign(velocity.x)){runtime={...runtime,visualFacing:Math.sign(velocity.x)};changes.push(createStateChange('entity',entity.id,'setEntityRuntime',{runtime}));}}
     let desired={x:entity.position.x+velocity.x/60,y:entity.position.y+velocity.y/60};
     if(origin&&!returning){const distance=Math.hypot(desired.x-origin.x,desired.y-origin.y),limit=Number(runtime.returnDistance);if(distance>limit){const d=dependency2.normalizeVector({x:desired.x-origin.x,y:desired.y-origin.y});desired={x:origin.x+d.x*limit,y:origin.y+d.y*limit};}}
     if(origin&&returning&&owner){const time=dependency2.intersectSweptCircles(entity.position,desired,entity.radius,owner.position,owner.radius);if(time!==null){desired={x:entity.position.x+(desired.x-entity.position.x)*time,y:entity.position.y+(desired.y-entity.position.y)*time};runtime={...runtime,returnCaught:true};changes.push(createStateChange('entity',entity.id,'setEntityRuntime',{runtime}));}}
@@ -97,7 +97,7 @@ export function planEntityMotion(context) {
 export function planPickupMotion(context) {
   const state = context.state, player = state.world.entities[state.player.entityId];
   const collect = state.plugins.find(plugin => plugin.id === 'plugin_collect');
-  const radius = 100 + (state.start.treeNodeIds.includes('tree_explore_a') ? 25 : 0) + (collect ? collect.rank === 1 ? 80 : 140 : 0);
+  const radius = 100 + (state.start.treeNodeIds.includes('tree_explore_a') ? 25 : 0) + (collect ? collect.rank === 1 ? 160 : 260 : 0);
   const changes = /** @type {import('../contracts.d.ts').StateChange[]} */ ([]), effects = /** @type {import('../contracts.d.ts').EffectRequest[]} */ ([]);
   for (const pickup of Object.values(state.world.pickups).sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)) {
     if (pickup.collected || ['weapon','skill'].includes(pickup.kind)) continue;

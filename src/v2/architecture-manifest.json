@@ -3497,6 +3497,75 @@
           "phase": "content-handler",
           "callMode": "sequence",
           "implementation": "implemented"
+        },
+        {
+          "description": "planPluginLocalDeploy",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planPluginLocalDeploy",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            }
+          ],
+          "result": "EffectPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan"
+          ]
+        },
+        {
+          "description": "planPluginQuantInt4",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planPluginQuantInt4",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            }
+          ],
+          "result": "EffectPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan"
+          ]
+        },
+        {
+          "description": "planPluginRollbackEmergency",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planPluginRollbackEmergency",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            }
+          ],
+          "result": "EffectPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/plans.js#createEmptyPlan"
+          ]
         }
       ]
     },
@@ -4287,14 +4356,17 @@
             "content/handlers/plugins.js#planPluginHallucination",
             "content/handlers/plugins.js#planPluginHotplug",
             "content/handlers/plugins.js#planPluginKeepalive",
+            "content/handlers/plugins.js#planPluginLocalDeploy",
             "content/handlers/plugins.js#planPluginMirror",
             "content/handlers/plugins.js#planPluginMoe",
             "content/handlers/plugins.js#planPluginOffload",
             "content/handlers/plugins.js#planPluginParallel",
             "content/handlers/plugins.js#planPluginPrefill",
+            "content/handlers/plugins.js#planPluginQuantInt4",
             "content/handlers/plugins.js#planPluginRecursion",
             "content/handlers/plugins.js#planPluginRedirect",
             "content/handlers/plugins.js#planPluginRetry",
+            "content/handlers/plugins.js#planPluginRollbackEmergency",
             "content/handlers/plugins.js#planPluginSandbox",
             "content/handlers/plugins.js#planPluginSpeculate",
             "content/handlers/plugins.js#planPluginTemperature",
@@ -4708,7 +4780,6 @@
         "domain/plans.js",
         "domain/pluginStats.js",
         "domain/projectiles.js",
-        "domain/random.js",
         "domain/serialization.js",
         "domain/stats.js",
         "domain/treeRuntime.js"
@@ -4728,7 +4799,6 @@
             "dispatch/weapons.js#dispatchWeaponsHandler",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
-            "domain/random.js#drawRandom",
             "domain/stats.js#deriveWeaponStats"
           ],
           "rule": "",
@@ -5450,6 +5520,7 @@
             "domain/pluginStats.js#deriveRawWeaponStats",
             "domain/projectiles.js#createWeaponProjectile",
             "domain/scheduled.js#scheduleAbilityActions",
+            "domain/serialization.js#toJson",
             "domain/stats.js#derivePlayerStats"
           ]
         },
@@ -5490,7 +5561,6 @@
         "domain/entities.js",
         "domain/geometry.js",
         "domain/plans.js",
-        "domain/serialization.js",
         "domain/shields.js",
         "domain/stats.js"
       ],
@@ -5587,9 +5657,9 @@
           "result": "SystemPlan",
           "implementation": "implemented",
           "calls": [
+            "domain/entities.js#createEntityState",
             "domain/plans.js#createEmptyPlan",
-            "domain/plans.js#createStateChange",
-            "domain/serialization.js#toJson"
+            "domain/plans.js#createStateChange"
           ]
         }
       ]
@@ -9027,6 +9097,7 @@
           "calls": [
             "domain/entities.js#createEntityState",
             "domain/geometry.js#distanceSquared",
+            "domain/geometry.js#normalizeVector",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
             "domain/serialization.js#toJson",
@@ -12077,6 +12148,27 @@
     },
     {
       "kind": "plugins",
+      "id": "plugin_local_deploy",
+      "module": "content/handlers/plugins.js",
+      "function": "planPluginLocalDeploy",
+      "source": "ROADMAP-FUN-GAME.md"
+    },
+    {
+      "kind": "plugins",
+      "id": "plugin_quant_int4",
+      "module": "content/handlers/plugins.js",
+      "function": "planPluginQuantInt4",
+      "source": "ROADMAP-FUN-GAME.md"
+    },
+    {
+      "kind": "plugins",
+      "id": "plugin_rollback_emergency",
+      "module": "content/handlers/plugins.js",
+      "function": "planPluginRollbackEmergency",
+      "source": "ROADMAP-FUN-GAME.md"
+    },
+    {
+      "kind": "plugins",
       "id": "plugin_batch",
       "module": "content/handlers/plugins.js",
       "function": "planPluginBatch",
@@ -12986,8 +13078,8 @@
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
     "modules": 120,
-    "functions": 429,
-    "implemented": 389,
+    "functions": 432,
+    "implemented": 392,
     "placeholders": 40
   }
 }

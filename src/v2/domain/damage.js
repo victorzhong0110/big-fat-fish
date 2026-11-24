@@ -47,6 +47,7 @@ export function resolveDamageRequest(context, request) {
     incoming = quota.allowedDamage; plans.push(quota.plan);
   }
   if(target.runtime.gptReset)incoming*=.7;
+  if(Number(target.runtime.vulnerableUntil??0)>state.tick)incoming*=1.45;
   incoming*=resolvePetLinkFactor(state,target.id);
   const guard=resolvePetGuard(context,{...request,baseDamage:incoming});
   const shell=guard.blocked?{blocked:true,damage:guard.damage,plan:guard.plan}:dependency2.resolveShellContact(context,{...request,baseDamage:incoming});
@@ -69,6 +70,25 @@ export function resolveDamageRequest(context, request) {
     const shield = dependency3.resolveShieldAbsorption(context, target.id, damage);
     plans.push(shield.plan); shieldDamage = shield.absorbed;
     hpDamage = Math.min(target.hp, shield.remainingDamage);
+    if (hpDamage > 0 && target.id === state.player.entityId) {
+      const emergency=state.plugins.find(plugin=>plugin.id==='plugin_rollback_emergency');
+      const history=/** @type {readonly (readonly number[])[]} */(target.runtime.rollbackHistory??[]);
+      const vitals=/** @type {readonly (readonly number[])[]} */(target.runtime.rollbackVitals??[]);
+      const sample=history.find(row=>row[0]<=state.tick-120)??history[0];
+      const vital=vitals.find(row=>row[0]<=state.tick-120)??vitals[0];
+      const nextHp=target.hp-hpDamage;
+      if(emergency&&Number(emergency.runtime.readyAt??0)<=state.tick&&sample&&(hpDamage>=target.hp||nextHp<=target.maxHp*.15)){
+        const restored=typeof vital?.[1]==='number'?vital[1]:target.hp;
+        hpDamage=0;
+        changes.push({target:'entity',id:target.id,operation:'setHp',payload:{hp:Math.max(1,Math.min(target.maxHp,restored))}});
+        changes.push({target:'entity',id:target.id,operation:'setEntityKinematics',payload:{position:{x:sample[1],y:sample[2]},previousPosition:{x:sample[1],y:sample[2]},velocity:{x:0,y:0},facingRadians:target.facingRadians}});
+        changes.push({target:'progression',id:emergency.id,operation:'setPlugins',payload:{plugins:state.plugins.map(plugin=>plugin.id===emergency.id?{...plugin,runtime:{...plugin.runtime,readyAt:state.tick+(emergency.rank===1?2700:1800)}}:plugin)}});
+        for(const enemy of Object.values(state.world.entities)){
+          if(enemy.kind==='projectile'&&enemy.team==='enemy'&&(enemy.position.x-target.position.x)**2+(enemy.position.y-target.position.y)**2<=220**2)changes.push({target:'world',id:enemy.id,operation:'removeEntity',payload:{}});
+          if(enemy.kind==='enemy'&&!enemy.dead&&enemy.runtime.noAi!==true&&!state.bosses.some(boss=>boss.entityId===enemy.id)&&(enemy.position.x-sample[1])**2+(enemy.position.y-sample[2])**2<=180**2){const stepX=enemy.position.x-sample[1],stepY=enemy.position.y-sample[2],length=Math.hypot(stepX,stepY)||1;changes.push({target:'entity',id:enemy.id,operation:'setEntityKinematics',payload:{position:{x:enemy.position.x+stepX/length*80,y:enemy.position.y+stepY/length*80},previousPosition:{x:enemy.position.x,y:enemy.position.y},velocity:enemy.velocity,facingRadians:enemy.facingRadians}});}
+        }
+      }
+    }
     if (hpDamage > 0) {
       const survival = target.id === state.player.entityId ? resolveTreeSurvival(state, hpDamage) : null;
       if (survival) hpDamage = survival.hpDamage;
@@ -81,9 +101,11 @@ export function resolveDamageRequest(context, request) {
       }
     }
   }
+  const healShot=request.projectileId?state.world.entities[request.projectileId]:null;
+  const heal=healShot&&Number(healShot.runtime.healOnHit)>0&&hpDamage>0&&target.team==='enemy'?[{id:`heal:${request.id}`,chainId:request.chainId,generation:request.generation,sourceId:state.player.entityId,kind:'heal',payload:{targetId:state.player.entityId,amount:Number(healShot.runtime.healOnHit)}}]:[];
   const event = { id: `damage:${request.id}`, runId: state.runId, tick: state.tick, seq: 0, type: 'DamageResolved', sourceId: request.sourceId, targetId: target.id, payload: { hpDamage, shieldDamage, shellDamage: shell.damage, attackId: request.attackId, sourceKind: request.sourceKind } };
   return { accepted: true, allowedBeforeDefense: incoming, shellDamage: shell.damage, shieldDamage, hpDamage, plan: {
-    changes: [...plans.flatMap(plan => plan.changes), ...changes], effects: plans.flatMap(plan => plan.effects), events: [...plans.flatMap(plan => plan.events), ...treeEvents, event], persistence: [], diagnostics: plans.flatMap(plan => plan.diagnostics),
+    changes: [...plans.flatMap(plan => plan.changes), ...changes], effects: [...plans.flatMap(plan => plan.effects), ...heal], events: [...plans.flatMap(plan => plan.events), ...treeEvents, event], persistence: [], diagnostics: plans.flatMap(plan => plan.diagnostics),
   } };
 }
 

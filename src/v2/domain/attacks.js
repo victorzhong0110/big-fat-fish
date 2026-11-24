@@ -1,6 +1,5 @@
 // @ts-check
 import{resolveSkillPreparation}from'./pluginStats.js';
-import{drawRandom}from'./random.js';
 import { planWeaponPickup,planSkillPickup } from './equipment.js';
 import { planProjectileBurst } from './projectiles.js';
 import { planTreeWeaponSwitch } from './treeRuntime.js';
@@ -24,7 +23,6 @@ import * as dependency4 from './stats.js';
  * @calls dispatch/weapons.js#dispatchWeaponsHandler
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
- * @calls domain/random.js#drawRandom
  * @calls domain/stats.js#deriveWeaponStats
  * @param {import('../contracts.d.ts').AttackContext} context
  * @returns {import('../contracts.d.ts').SystemPlan}
@@ -33,9 +31,9 @@ export function planWeaponFire(context) {
   const state = context.state, weapon = context.weapon;
   if (!state.input.firing || !weapon || weapon.cooldown > 1e-9 || !['exploring', 'boss'].includes(state.flow.phase)) return createEmptyPlan();
   const stats = dependency4.deriveWeaponStats(state, weapon, context.catalog);
-  const temperature=state.plugins.find(p=>p.id==='plugin_temperature'),roll=temperature?drawRandom(state.random.combat):null;
-  const plan = dependency2.dispatchWeaponsHandler({...context,temperatureBoost:!!roll&&roll.value<(temperature?.rank===1?.15:.25)}, weapon.definitionId);
-  if(roll)plan.changes=[...plan.changes,createStateChange('random','combat','setRandomStream',roll.next)];
+  const temperature=state.plugins.find(p=>p.id==='plugin_temperature');
+  const plan = dependency2.dispatchWeaponsHandler(context, weapon.definitionId);
+  if(temperature)for(const change of plan.changes){if(change.operation!=='putEntity')continue;const shot=/** @type {{kind?:string;id?:string;radius?:number;runtime?:Record<string,import('../contracts.d.ts').Json>}} */(change.payload);if(shot.kind!=='projectile'||!shot.runtime)continue;let n=2166136261;for(const c of String(shot.id))n=Math.imul(n^c.charCodeAt(0),16777619)>>>0;if((n%1000)/1000>=(temperature.rank===1?.3:.45))continue;const kind=n%4;if(kind===0){shot.runtime.damage=Number(shot.runtime.damage)*1.8;shot.radius=Number(shot.radius)*1.6;}else if(kind===1){const foe=Object.values(state.world.entities).filter(e=>e.kind==='enemy'&&!e.dead).sort((a,b)=>a.id<b.id?-1:1)[0];if(foe){shot.runtime.homingTargetId=foe.id;shot.runtime.speed=480;}}else if(kind===2){shot.runtime.returnPhase='outbound';shot.runtime.returnOrigin={...state.world.entities[state.player.entityId].position};shot.runtime.returnDistance=280;shot.runtime.returnMaxDistance=420;shot.runtime.speed=420;}else shot.runtime.healOnHit=temperature.rank===1?2:4;}
   const player = state.world.entities[state.player.entityId];
   const consumed = player.runtime.treeSwitchShot === true ? [createStateChange('entity', player.id, 'setEntityRuntime', { runtime: { ...player.runtime, treeSwitchShot: false } })] : [];
   return { ...plan, changes: [...plan.changes, ...consumed, createStateChange('player', state.player.entityId, 'setLoadout', { ...state.player.loadout, weapons: state.player.loadout.weapons.map(item => item.instanceId === weapon.instanceId ? { ...item, cooldown: stats.interval } : item) })] };
@@ -60,7 +58,7 @@ export function planSkillCast(context) {
   const preparation=resolveSkillPreparation(state),power=preparation.power*Number(context.catalog.definitions[state.player.loadout.skillId]?.parameters.powerMultiplier??1);
   const plan = dependency1.dispatchSkillsHandler({...context,skillPower:power,skillDuration:preparation.duration,skillPush:preparation.push}, state.player.loadout.skillId);
   const cooldown = Number(context.catalog.definitions[state.player.loadout.skillId]?.parameters.cooldown);
-  if (!Number.isFinite(cooldown) || cooldown < 3) throw new Error('Invalid equipped skill cooldown');
+  if (!Number.isFinite(cooldown) || cooldown < 1) throw new Error('Invalid equipped skill cooldown');
   return { ...plan, changes: [...plan.changes,createStateChange('entity',player.id,'setEntityRuntime',{runtime:{...player.runtime,skillReadySince:null,lastSkillCastAt:state.tick}}), createStateChange('player', player.id, 'setLoadout', { ...state.player.loadout, skillCooldown: cooldown * (state.start.treeNodeIds.includes('tree_skill_a') ? 0.96 : 1) * (state.start.treeNodeIds.includes('tree_skill_e') ? 0.94 : 1) })], events: [...plan.events, { id: `skill:${state.tick}`, runId: state.runId, tick: state.tick, seq: 0, type: 'SkillCast', sourceId: player.id, targetId: null, payload: { skillId: state.player.loadout.skillId,effects:toJson(plan.effects),power,duration:preparation.duration } }] };
 }
 

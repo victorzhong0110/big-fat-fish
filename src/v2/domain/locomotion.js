@@ -4,6 +4,8 @@ import {normalizeVector,distanceSquared} from './geometry.js';
 /** @typedef {Record<string,import('../contracts.d.ts').Json>} Runtime */
 /** Stable stagger/handedness without consuming combat RNG. @param {string} id */
 function offset(id){let n=0;for(const c of id)n=(n*31+c.charCodeAt(0))>>>0;return n;}
+/** Spread sequential spawn ids across the hop cycle. The polynomial offset clusters them. @param {string} id */
+function hopHash(id){let n=2166136261;for(const c of id)n=Math.imul(n^c.charCodeAt(0),16777619)>>>0;n^=n>>>16;n=Math.imul(n,2246822519);n^=n>>>13;n=Math.imul(n,3266489917);n^=n>>>16;return n>>>0;}
 /** Choose a tactical goal independently of attacks. Homes/ranges are stored in
  * runtime so pursuit cannot drag sentries away and checkpoints keep territory.
  * @calls domain/geometry.js#distanceSquared
@@ -39,8 +41,9 @@ export function resolveEnemyMovementGoal(context,entity,target){
 export function resolveEnemyVelocity(context,entity,target,desired,prior){
  const runtime={...prior},tick=context.state.tick,mode=String(runtime.movementMode??''),speed=Math.hypot(desired.x,desired.y);let velocity={...desired};
  if(mode==='hop'){
-  const clock=tick+offset(entity.id)%48,cycle=Math.floor(clock/48),phase=clock%48;
-  if(speed>0&&phase<16){if(runtime.hopCycle!==cycle){runtime.hopCycle=cycle;runtime.hopDirection=normalizeVector(desired);}const d=/** @type {import('../contracts.d.ts').Vec2} */(runtime.hopDirection??normalizeVector(desired));velocity={x:d.x*speed*3,y:d.y*speed*3};runtime.hopPhase=phase;}
+  const h=hopHash(entity.id),period=44+(h%15),phaseOffset=(h>>>8)%period,air=16;
+  const clock=tick+phaseOffset,cycle=Math.floor(clock/period),phase=clock%period;
+  if(speed>0&&phase<air){if(runtime.hopCycle!==cycle){runtime.hopCycle=cycle;runtime.hopDirection=normalizeVector(desired);}const d=/** @type {import('../contracts.d.ts').Vec2} */(runtime.hopDirection??normalizeVector(desired));const boost=period/air;velocity={x:d.x*speed*boost,y:d.y*speed*boost};runtime.hopPhase=phase;}
   else{velocity={x:0,y:0};runtime.hopPhase=16;}
  }else if(mode==='dash'){
   const distance=Math.sqrt(distanceSquared(entity.position,target.position));

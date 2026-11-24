@@ -2,7 +2,7 @@
 import { createEmptyPlan, createStateChange, mergeSystemPlans } from './plans.js';
 import { createEntityState } from './entities.js';
 import { derivePlayerStats } from './stats.js';
-import { distanceSquared } from './geometry.js';
+import { distanceSquared, normalizeVector } from './geometry.js';
 import { toJson } from './serialization.js';
 /**
  * 控制/封禁请求与拦截优先级。
@@ -16,6 +16,7 @@ import { toJson } from './serialization.js';
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @calls domain/entities.js#createEntityState
  * @calls domain/geometry.js#distanceSquared
+ * @calls domain/geometry.js#normalizeVector
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @calls domain/serialization.js#toJson
@@ -45,7 +46,7 @@ export function resolveControlRequest(context, request) {
       const plugin = state.plugins.find(item => item.id === interceptor); if (!plugin) throw new Error('Missing selected interceptor');
       const seconds = interceptor === 'plugin_failover' ? plugin.rank === 1 ? 18 : 12 : plugin.rank === 1 ? 20 : 14;
       changes.push(createStateChange('progression', interceptor, 'setPlugins', { plugins: state.plugins.map(item => item.id === interceptor ? { ...item, runtime: { ...item.runtime, readyAt: state.tick + seconds * 60 } } : item) }));
-      if (interceptor === 'plugin_breaker') changes.push(createStateChange('player', player.id, 'setPlayerModifiers', { modifiers: [...state.player.modifiers.filter(modifier => modifier.id !== 'breaker:output'), { id: 'breaker:output', sourceId: interceptor, stat: 'damageMultiplier', operation: 'multiply', value: 1.25, expiresAt: state.tick + 180 }] }));
+      if (interceptor === 'plugin_breaker') {const plugin=state.plugins.find(item=>item.id==='plugin_breaker'),amount=(plugin?.rank===1?25:45)*derivePlayerStats(state,context.catalog).damageMultiplier;changes.push(createStateChange('player', player.id, 'setPlayerModifiers', { modifiers: [...state.player.modifiers.filter(modifier => !String(modifier.id).startsWith('breaker:')), { id: 'breaker:interval', sourceId: interceptor, stat: 'weaponInterval', operation: 'multiply', value: 0.5, expiresAt: state.tick + 300 }, { id: 'breaker:speed', sourceId: interceptor, stat: 'moveSpeed', operation: 'add', value: state.player.baseStats.moveSpeed * 0.5, expiresAt: state.tick + 300 }] }));for(const enemy of Object.values(state.world.entities).filter(entity=>entity.kind==='enemy'&&!entity.dead&&entity.runtime.noAi!==true&&!state.bosses.some(boss=>boss.entityId===entity.id)&&distanceSquared(entity.position,player.position)<=160**2)){const hit=`${request.id}:dan:${enemy.id}`;effects.push({id:hit,chainId:request.id,generation:0,sourceId:player.id,kind:'damage',payload:toJson({id:hit,sourceId:player.id,creditOwner:'player',sourceKind:'plugin_secondary',attackId:hit,projectileId:null,targetId:enemy.id,baseDamage:amount,contact:enemy.position,incomingDirection:{x:enemy.position.x-player.position.x,y:enemy.position.y-player.position.y},generation:0,chainId:request.id,critEligible:false,expiresAt:state.tick})});const step=normalizeVector({x:enemy.position.x-player.position.x,y:enemy.position.y-player.position.y}),position={x:enemy.position.x+step.x*70,y:enemy.position.y+step.y*70};changes.push(createStateChange('entity',enemy.id,'setEntityKinematics',{position,previousPosition:position,velocity:enemy.velocity,facingRadians:enemy.facingRadians}));}}
       else for (const enemy of Object.values(state.world.entities).filter(entity => entity.kind === 'enemy' && !entity.dead && distanceSquared(entity.position, player.position) <= 180 ** 2).sort((a, b) => a.id < b.id ? -1 : 1)) {
         const id = `${request.id}:failover:${enemy.id}`;
         effects.push({ id, chainId: request.id, generation: 0, sourceId: player.id, kind: 'damage', payload: toJson({ id, sourceId: player.id, creditOwner: 'player', sourceKind: 'plugin_secondary', attackId: id, projectileId: null, targetId: enemy.id, baseDamage: 20 * derivePlayerStats(state, context.catalog).damageMultiplier, contact: player.position, incomingDirection: { x: 1, y: 0 }, generation: 0, chainId: request.id, critEligible: false, expiresAt: state.tick }) });
@@ -102,6 +103,7 @@ export function selectControlInterceptor(context, request) {
   const ready = (/** @type {string} */ id) => { const plugin = state.plugins.find(plugin => plugin.id === id); return plugin && Number(plugin.runtime.readyAt ?? 0) <= state.tick; };
   if (request.kind === 'root') {
     if (state.start.treeNodeIds.includes('tree_skill_f') && player.runtime.treeEmergencyUsed !== true) return 'tree_skill_f';
+    if (state.plugins.some(plugin=>plugin.id==='plugin_breaker')) return 'plugin_breaker';
     if (ready('plugin_failover')) return 'plugin_failover';
   }
   if (['root', 'slow'].includes(request.kind) && state.player.loadout.companionId === 'companion_patch' && state.player.loadout.companionCooldown <= 0 && !player.statusIds.some(id => state.world.statuses[id]?.kind === 'companionBan')) return 'companion_patch';
@@ -109,7 +111,7 @@ export function selectControlInterceptor(context, request) {
     const allow = state.start.dsh.find(slot => slot.id === 'dsh_claude_allowlist');
     const used = /** @type {readonly number[]} */ (/** @type {Record<string, import('../contracts.d.ts').Json>} */ (state.dshRuntime.dsh_claude_allowlist ?? {}).usedBiomes ?? []);
     if (allow?.options.protect === request.kind && !used.includes(state.world.map.biomeIndex)) return 'dsh_claude_allowlist';
-    if (ready('plugin_breaker')) return 'plugin_breaker';
+    if (state.plugins.some(plugin=>plugin.id==='plugin_breaker')) return 'plugin_breaker';
   }
   return null;
 }
