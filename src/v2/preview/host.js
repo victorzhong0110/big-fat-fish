@@ -166,12 +166,58 @@ export function mountCombatPreview(mountElementId) {
     const mode=selectedMode(),level=Number(difficultySelect.value),hint=node('benchmark-hint');
     const record=profileRecord?.profile.bestEndless?.[level];
     node('boss-select').toggleAttribute('disabled',['api','expedition','exploration','endless'].includes(mode)||modeSelect.value==='tutorial-guide');
-    node('start').toggleAttribute('disabled',beginWorking||scopeLoading||!difficultySelect.value
+    const picked=difficultySelect.selectedOptions[0];
+    node('start').toggleAttribute('disabled',beginWorking||scopeLoading||!difficultySelect.value||picked?.disabled===true
       ||isModMode()&&(scopeUnavailable||!profileRecord));
+    renderBenchmarkBoard();
     hint.textContent=mode==='exploration'?(difficultySelect.value?'在撤离点长按 F 三秒，才会带回背包里的材料。':'先在无尽模式击败首领，解锁对应的探索难度。')
       :mode==='endless'?(record?`Benchmark ${level} 个人纪录 · 首领 ${record.bossKills} · 击杀 ${record.kills} · 生存 ${Math.floor(record.survivedTicks/60)} 秒`:'击败第一位首领即可通关本档，此后可继续爬层。'):'';
     hint.toggleAttribute('hidden',!hint.textContent);
     syncModeCards();
+  }
+  function paintLobbyLogo(){
+    const canvas=/** @type {HTMLCanvasElement} */(node('pixel-logo'));
+    const small=document.createElement('canvas');small.width=310;small.height=52;
+    const pen=small.getContext('2d');if(!pen)return;
+    pen.font='900 34px "PingFang SC","Microsoft YaHei",sans-serif';pen.textBaseline='middle';
+    for(const [dx,dy] of [[-2,0],[2,0],[0,-2],[0,2],[-2,-2],[2,-2],[-2,2],[2,2]]){pen.fillStyle='#111';pen.fillText('大肥鱼历险记',64+dx,28+dy);}
+    pen.fillStyle='#75D7ED';pen.fillText('大肥鱼历险记',64,28);
+    pen.fillStyle='#111';pen.fillRect(2,20,8,14);pen.fillRect(8,14,30,22);pen.fillRect(18,8,8,8);
+    pen.fillStyle='#5B7CFF';pen.fillRect(4,22,4,10);pen.fillRect(10,16,26,18);pen.fillRect(20,10,4,6);
+    pen.fillStyle='#F4EFE0';pen.fillRect(28,20,4,4);pen.fillStyle='#111';pen.fillRect(30,22,2,2);pen.fillRect(34,26,4,2);
+    canvas.width=small.width*3;canvas.height=small.height*3;
+    const out=canvas.getContext('2d');if(!out)return;
+    out.imageSmoothingEnabled=false;out.drawImage(small,0,0,canvas.width,canvas.height);
+  }
+  function renderBenchmarkBoard(){
+    const list=node('benchmark-list');list.replaceChildren();
+    const raw=difficultySelect.value,level=Number(raw);
+    const ranks=/** @type {const} */([['Luna','Haiku'],['Sol','Sonnet'],['Astra','Opus']]);
+    const tier=!Number.isInteger(level)||level<1?0:level<=5?0:level<=10?1:2;
+    if(modeSelect.value==='tutorial-guide'||raw==='0'){
+      node('bench-current').textContent='Free 教学';node('bench-title').textContent='第一次出门';node('bench-models').textContent='跟着提示把第一局打完';node('bench-affixes').replaceChildren();node('bench-reward').textContent='教学局不记 Benchmark';return;
+    }
+    node('bench-current').textContent=`当前选择 · Benchmark ${level||'—'}`;
+    node('bench-title').textContent=`Benchmark ${level||''}`;
+    node('bench-models').textContent=`GPT ${ranks[tier][0]} · Claude ${ranks[tier][1]}`;
+    const affixes=node('bench-affixes');affixes.replaceChildren();
+    for(const mechanic of catalog.mechanics.filter(item=>item.unlockAt===level)){const line=document.createElement('li');line.textContent=mechanic.displayName;affixes.append(line);}
+    if(!affixes.childElementCount){const line=document.createElement('li');line.textContent='这一档沿用前面的词缀。';affixes.append(line);}
+    const mode=selectedMode();
+    const snap=resolveDifficultySnapshot(/** @type {import('../contracts.d.ts').StartRequest} */({mode:mode==='api'?'api':mode==='tutorial'?'short':mode,difficulty:mode==='api'?'api':level,seed:1,weaponIds:['mcp_bubble'],skillId:'skill_disconnect',companionId:null}),catalog);
+    node('bench-reward').textContent=`奖励 ${Math.round((snap.ok?snap.value.hpMultiplier:1)*100)}% · 强度 +${Math.max(0,(level||1)-1)}`;
+    for(const option of difficultySelect.options){
+      if(!/^[1-9]$|^1[0-5]$/.test(option.value))continue;
+      const n=Number(option.value),rowTier=n<=5?0:n<=10?1:2,button=document.createElement('button');
+      button.type='button';button.className=`bench-row tier-${rowTier+1}`;button.dataset.benchmark=String(n);
+      button.setAttribute('aria-pressed',String(option.value===raw));button.disabled=option.disabled;
+      const badge=document.createElement('span');badge.className='bench-badge';badge.textContent=ranks[rowTier][0];
+      const num=document.createElement('strong');num.textContent=String(n);button.append(badge,num);
+      const note=document.createElement('small');note.textContent=option.disabled?'锁':option.value===raw?'当前选择':'';button.append(note);
+      button.onclick=()=>{if(button.disabled)return;difficultySelect.value=option.value;difficultySelect.dispatchEvent(new Event('change'));};
+      list.append(button);
+    }
+    list.querySelector('[aria-pressed=true]')?.scrollIntoView({block:'nearest'});
   }
   function updateWallet(){
     if (disposed) return;
@@ -187,16 +233,14 @@ export function mountCombatPreview(mountElementId) {
     if (mode==='tutorial-guide') {
       addDifficulty('0','Free 0 · 引导教学');
     } else {
-      const benchmarkMode=mode==='exploration'||mode==='endless';
       for (let level=1;level<=15;level++) {
         const locked=mode==='exploration'? !profile||!isDifficultyUnlocked(profile,'exploration',level)
           :level>Math.min(15,(profile?.highestDifficulty??0)+1);
-        if (!benchmarkMode&&locked) break;
-        const label=benchmarkMode?`Benchmark ${level}`:`${level<=5?'Pro':level<=10?'Max5x':'Max20x'} ${level} · ${catalog.mechanics.filter(m=>m.unlockAt<=level).length}项累计机制`;
-        addDifficulty(String(level),label+(locked?' · 未解锁':''),locked);
+        addDifficulty(String(level),`Benchmark ${level}${locked?' · 未解锁':''}`,locked);
       }
-      if (!benchmarkMode&&profile?.apiUnlocked) addDifficulty('api','API调用 · 持续生存 / 三阵营轮换');
-      if (preferApi&&!benchmarkMode&&profile?.apiUnlocked) difficultySelect.value='api';
+      const numericLadder=mode!=='exploration'&&mode!=='endless';
+      if (numericLadder&&profile?.apiUnlocked) addDifficulty('api','API调用 · 持续生存 / 三阵营轮换');
+      if (preferApi&&numericLadder&&profile?.apiUnlocked) difficultySelect.value='api';
       else {
         const available=Array.from(difficultySelect.options).filter(option=>!option.disabled);
         difficultySelect.value=available.find(option=>option.value===previous)?.value??available[0]?.value??'';
@@ -205,7 +249,9 @@ export function mountCombatPreview(mountElementId) {
     difficultySelect.disabled=mode==='tutorial-guide';
     const taught=!!profile?.unlockLedger.includes('tutorialReward:free');
     node('mode-guide').classList.toggle('guide-retired',taught);node('mode-guide-more').classList.toggle('hidden',!taught);
-    node('wallet').textContent=profile?`${isModMode()?'模组小窝':'小窝'} · 算力卡 ${profile.gpuCards} · 碎片 ${profile.gpuFragments}/5 · 零件 ${profile.parts}`
+    const achievements=profile?.unlockLedger.filter(id=>id.startsWith('achievement')||id.startsWith('tutorialReward')).length??0;
+    node('achievement-chip').textContent=`成就 ${achievements}`;
+    node('wallet').textContent=profile?`算力卡 ${profile.gpuCards} · 零件 ${profile.parts}`
       :scopeUnavailable&&isModMode()?'请先启用至少一个模组':modProfileMissing?'请先创建这组模组的小窝':scopeLoading?'小窝档案读取中':'小窝档案暂不可用';
     node('mod-profile-setup').classList.toggle('hidden',!(isModMode()&&modProfileMissing));
     node('mod-profile-create').toggleAttribute('disabled',scopeLoading||beginWorking);
@@ -317,6 +363,7 @@ export function mountCombatPreview(mountElementId) {
   on(simpleHome,'change',()=>{simplePause.checked=simpleHome.checked;saveSimple();});
   on(simplePause,'change',()=>{simpleHome.checked=simplePause.checked;saveSimple();canvas.focus();});
   on(node('open-departure'),'click',()=>showDeparture());on(node('back-home'),'click',()=>showHome());
+  on(node('open-tree'),'click',()=>{const panel=/** @type {HTMLDetailsElement} */(node('nest-panel'));panel.open=true;panel.querySelector('[data-tab="tree"]')?.dispatchEvent(new MouseEvent('click',{bubbles:true}));});
   for (const [mode,id] of Object.entries(modeCards)) on(node(id),'click',()=>{
     preferApi=false;
     modeSelect.value=isModMode()&&['short','expedition'].includes(mode)?`mod-${mode}`:mode;
@@ -443,7 +490,7 @@ export function mountCombatPreview(mountElementId) {
     }catch(error){pause();toast(`试作已暂停：${error instanceof Error?error.message:String(error)}`);}
     lastTime=now;frameId=requestAnimationFrame(frame);
   }
-  const routeHint=document.createElement('p');routeHint.id='expedition-route';routeHint.className='scope-note';node('difficulty-select').closest('.setup')?.after(routeHint);function updateRouteHint(){const mode=/** @type {HTMLSelectElement} */(node('mode-select')).value,seed=Number(/** @type {HTMLInputElement} */(node('seed')).value);routeHint.textContent=mode.endsWith('expedition')?`本局海域顺序：${resolveExpeditionRoute(seed).map(f=>catalog.definitions[`boss_${f}`].displayName).join(' → ')}。可往返，第三位首领结束远征。`:'';}on(node('mode-select'),'change',updateRouteHint);on(node('seed'),'input',updateRouteHint);updateRouteHint();
+  const routeHint=node('expedition-route');function updateRouteHint(){const mode=/** @type {HTMLSelectElement} */(node('mode-select')).value,seed=Number(/** @type {HTMLInputElement} */(node('seed')).value);routeHint.textContent=mode.endsWith('expedition')?`本局首领顺序：${resolveExpeditionRoute(seed).map(f=>catalog.definitions[`boss_${f}`].displayName).join(' → ')}。可往返，第三位首领结束这一趟。`:'';}on(node('mode-select'),'change',updateRouteHint);on(node('seed'),'input',updateRouteHint);updateRouteHint();paintLobbyLogo();
   node('mode-select').dispatchEvent(new Event('change'));refreshContinue();frameId=requestAnimationFrame(frame);
   return ()=>{if(disposed)return;disposed=true;cancelAnimationFrame(frameId);for(const remove of removers)remove();if(session)disposeGameSession(session);clearInput();};
 }
