@@ -14,7 +14,9 @@ npm run build      # 构建产出到 dist/
 
 ## 文档导航
 
-* [后续开发规划与 AI 协作指南](docs/ROADMAP-FUN-GAME.md)（**新接手 AI 优先阅读**）
+* [AI 协作总纲（必读红线）](AGENT.md)
+* [品牌与美术界面指南（BRAND_GUIDE）](docs/BRAND_GUIDE.md)
+* [后续开发规划与 AI 协作指南](docs/ROADMAP-FUN-GAME.md)
 * [设计总览与统一术语](docs/design-v2/00-README.md)
 * [实际开发进度](docs/design-v2/13-development-status.md)
 * [架构契约与调用规则](docs/design-v2/11-architecture-contracts.md)
