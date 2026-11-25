@@ -140,6 +140,9 @@ export function mountCombatPreview(mountElementId) {
     const towerOpen=!!profileRecord?.profile.apiUnlocked;
     node('mode-tower').dataset.locked=String(!towerOpen);
     node('tower-access').textContent=towerOpen?'在安全处可随时返航':'通关难度 15 后开放';
+    const routeKey=api?'api':mode.replace('mod-','');
+    node('departure-screen').dataset.route=routeKey;
+    node('route-name').textContent=routeKey==='api'?'通宵值班':routeKey==='expedition'?'沿海送信':routeKey==='tutorial'?'自由练习':routeKey==='tutorial-guide'?'码头试音':'晚饭呼叫';
     node('route-brief').textContent=routeBrief(api?'api':mode, /** @type {HTMLSelectElement} */(node('boss-select')).value);
   }
   /** @param {string} message */

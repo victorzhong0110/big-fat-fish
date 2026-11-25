@@ -13,7 +13,9 @@ export function mountSound(){
   const m=settings.music,s=settings.sfx;music.muted=m.muted;if(musicGain){music.volume=1;musicGain.gain.value=m.muted?0:m.volume/100;}else music.volume=m.volume/100;
   if(sfxGain)sfxGain.gain.value=s.muted?0:s.volume/100;
   if(s.muted||!s.volume){for(const source of sources){try{source.stop();}catch{}}sources.clear();for(const audio of media){audio.pause();audio.currentTime=0;}media.clear();}
-  document.querySelector('.radio-desk')?.style.setProperty('--volume',String(m.muted?0:m.volume));
+  const desk=document.querySelector('.radio-desk');
+  if(desk){desk.style.setProperty('--volume',String(m.muted?0:m.volume));desk.dataset.muted=String(m.muted||!m.volume||music.paused);}
+  const dial=document.querySelector('#dial-value');if(dial)dial.textContent=m.muted?'静音':m.volume+'%';
   for(const row of ui){const state=settings[row.kind];row.slider.value=String(state.volume);row.value.textContent=`${state.volume}%`;row.mute.checked=state.muted;row.status.textContent=row.kind==='music'?(failed?'音乐加载失败':state.muted?'已静音':!unlocked?'点击或按键后播放':music.paused?'等待播放':'正在播放 Let Me Go'):state.muted?'已静音':'战斗与菜单音效';}
  }
  function ensureGraph(){

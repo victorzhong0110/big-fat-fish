@@ -3,7 +3,7 @@ import {BUOY_OFFSETS, BUOY_SECONDS, STATION_RADIUS, tuneStation} from './v2/doma
 
 const byId = id => document.getElementById(id);
 const images = {
-  harbor:'harbor/night-canteen.webp', seabed:'harbor/seabed.webp', fish:'characters/deepseek.png',
+  harbor:'harbor/moonbreaker.webp', seabed:'harbor/seabed.webp', fish:'characters/deepseek.png',
   crab:'characters/claude-attack.png', bot:'characters/grok.png', cannon:'weapons/bubble-cannon.png',
   mast:'harbor/props/beacon.png', chip:'harbor/props/cartridge.png', radio:'harbor/props/console.png',
   gear:'harbor/props/gear.png', bowl:'sprites/rice-bowl.svg',
@@ -28,7 +28,7 @@ const sampleRoutes=[
 function renderPageStudy(scene) {
   if (version==='port') {
     const key=conceptPage+'-wide';
-    scene.innerHTML='<img class="study-capture" alt="夜港食堂的正式游戏界面">';
+    scene.innerHTML='<img class="study-capture" alt="月潮电台的正式游戏界面">';
     scene.firstElementChild.src=window.fishScreenPhotos?.[key] ?? './guide/screens/'+key+'.webp';
     return;
   }
@@ -50,7 +50,7 @@ function renderPageStudy(scene) {
 const stops=['盐风修船厂','浮标邮局','海沟气象站'];
 const gear=[['冲刺尾流','甩开追兵，让它从尾流里走过。','gear','wake'],['浮标调频','穿过副浮标，把跑位变成调频进度。','mast','beacon'],['蟹壳弱侧','迎面打不动？看看它转身的那一刻。','chip','shell']];
 const versionCaptions={
-  port:'夜港食堂把第一个选择留给故事。玩家先认识出发和回来的地方。这是本次游戏采用的方向。',
+  port:'月潮电台沿用主角原画的靛蓝与海沫白，标题、模式与设置可逐页对照。',
   chart:'领航海图把路线放在正中央。选任意电台，查看接近方式，再看领航简报。适合以探索选择为主的版本。',
   deck:'口袋街机把第一屏交给配装。切换装备即可看打法，再一键观看实战。适合碎片时间和重复挑战。',
 };
@@ -190,9 +190,10 @@ function show(id){
 }
 function openLesson(id){lesson=id;variant=0;show('demos');}
 const screens = [
-  ['title','标题界面','在港灯亮着的地方开始航行。已有存档时，标题下会出现继续航程。'],
-  ['modes','模式选择','四张航票对应教学、短途、远征和生存。选票会更新下方的任务，航程难度可单独调整。'],
-  ['audio','设置 · 声音','音乐与音效可以分别调节或静音。电台左侧的表针跟随背景音乐音量。'],
+  ['title','标题界面','在月浪下开始航行。已有存档时，标题下会出现继续航程。'],
+  ['modes','模式选择','切换航程，查看电台位置与岛链。点航程难度可以试探更深的海层。'],
+  ['depth','海沟测深','在游戏里拖探针、点海床或使用方向键，即可预览十五层敌情。解锁后的海层才可用于出航。'],
+  ['audio','设置 · 声音','音乐与音效可以分别调节或静音。唱片中央的标记随音乐音量变化，静音时唱片停转。'],
   ['controls','设置 · 操作与画面','需要时打开按住挣脱或简化特效。修改即时保存。'],
   ['nest','小窝配装','选好下趟要带的武器、主动技能和随行伙伴。'],
   ['gallery','角色图鉴','翻看角色原画，切换移动、攻击、受控和受击姿态。'],
@@ -255,6 +256,6 @@ byId('play').onclick=()=>play(!running);byId('replay').onclick=()=>{time=0;draw(
 byId('scrub').oninput=e=>{play(false);time=Number(e.target.value)*lessons[lesson].duration/1000;draw();};
 for(const im of Object.values(sprites))im.addEventListener('load',()=>{if(panel==='demos')draw();});
 document.addEventListener('visibilitychange',()=>{lastTime=0;});
-const requested=new URLSearchParams(location.search).get('lesson');
+const requested=new URLSearchParams(location.search).get('lesson') ?? new URLSearchParams(location.hash.slice(1)).get('lesson');
 if(requested&&Object.hasOwn(lessons,requested))lesson=requested;
-show(studioEnabled?'screens':'demos');
+show(requested&&Object.hasOwn(lessons,requested)?'demos':location.hash==='#handbook'?'rules':studioEnabled?'screens':'demos');
