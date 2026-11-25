@@ -141,3 +141,164 @@ footer{display:none}
 .sound-settings{border:1px solid #69838a66;border-radius:8px;padding:12px;margin-top:16px;text-align:left;min-width:0}.sound-settings legend{font-size:14px;color:#dce3db}.sound-row{display:grid;grid-template-columns:72px minmax(60px,1fr) 40px 68px;align-items:center;gap:8px}.sound-row input[type=range]{min-height:44px;width:100%;padding:0;accent-color:#bcd3bb;touch-action:pan-y}.sound-row label{font-size:13px;display:flex;align-items:center;white-space:nowrap}.sound-row input[type=checkbox]{width:18px;min-height:18px}.sound-row output{font-size:12px}.sound-status{grid-column:1/-1;color:#a6b9bc;font-size:11px;margin-bottom:8px}@media(max-width:480px){.sound-row{grid-template-columns:60px minmax(40px,1fr) 34px 60px;gap:5px}}
 @media(pointer:coarse){.battle-controls{left:auto;right:max(16px,4vw);width:132px;flex-direction:column;align-items:stretch}.battle-controls .actions{flex-direction:column;max-width:none}}
 @media(pointer:coarse) and (max-height:540px){.stick{display:block;width:88px;height:88px;bottom:12px}.stick.left{left:12px}.stick.right{right:12px}.stick span{top:21px;left:21px}.battle-controls{left:auto;right:12px;bottom:108px;width:112px;flex-direction:column;align-items:stretch}.battle-controls .weapon,.battle-controls .actions{position:static;bottom:auto;left:auto;right:auto;max-width:none}}
+
+/* Night harbor. The plate and the actor share the same dock line at every crop. */
+:root {
+  --ink: #142436;
+  --cream: #fff0cf;
+  --amber: #ffcb83;
+  --panel: #172b3cf7;
+  --edge: #63757c;
+  --display: "Songti SC","Noto Serif CJK SC","Source Han Serif SC",SimSun,serif;
+}
+.home-menu {
+  --plate-height: max(100dvh, 66.6667vw);
+  background: #223a59;
+  isolation: isolate;
+}
+.home-menu::before,.home-menu::after,.homecoming::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+}
+.home-menu::before,.homecoming::before {
+  background: url('/art/harbor/night-canteen.webp') center center / cover no-repeat;
+  image-rendering: pixelated;
+}
+.home-menu::after {
+  background: linear-gradient(90deg,#101f38db 0%,#14274098 29%,transparent 66%),linear-gradient(0deg,#0d1b34c9,transparent 26%);
+}
+.home-menu:has(.departure-screen:not(.hidden))::after { background: #101e35ae; }
+.home-menu .menu-layout { width: min(1280px,88%); display: block; }
+.home-screen { display: block; }
+.home-copy { position: relative; z-index: 1; width: min(440px,51%); max-width: none; padding-bottom: 3vh; }
+.home-kicker { display: flex; align-items: center; gap: 12px; font: bold 13px/1.2 ui-monospace,monospace; letter-spacing: .23em; color: var(--amber); }
+.home-kicker::before { content: ""; width: 34px; height: 5px; background: repeating-linear-gradient(90deg,var(--amber) 0 4px,transparent 4px 7px); }
+.home-copy h1 { font-family: var(--display); font-size: clamp(66px,7.7vw,116px); font-weight: 900; letter-spacing: -.055em; line-height: 1.18; margin: 12px 0 24px; color: #fff2d3; text-shadow: 3px 4px 0 #182f4c; }
+.home-copy h1 span { display: block; width: fit-content; margin: 9px 0 0 4px; font: 750 clamp(16px,1.6vw,24px)/1.1 system-ui,sans-serif; letter-spacing: .34em; color: #f0c58f; }
+.home-copy p { color: #f4e8d4; font: 500 clamp(14px,1.2vw,18px)/1.85 system-ui,sans-serif; margin: 0 0 27px; text-shadow: 0 1px 5px #061627; }
+.home-art { position: absolute; z-index: 0; min-height: 0; top: calc(50% + var(--plate-height)*.182); left: 63%; width: clamp(86px,8vw,145px); height: auto; transform: translate(-50%,-100%); display: block; }
+.home-art::before { content: ""; position: absolute; inset: auto 8% 1% 10%; height: 10%; background: #14223ba8; border-radius: 50%; }
+.home-art img { position: relative; display: block; width: 100%; height: auto; max-height: none; filter: drop-shadow(2px 2px 0 #1b2439); }
+.home-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.primary,.home-start { background: var(--amber); color: #302b2b; border: 1px solid #ffe1aa; border-bottom: 3px solid #ac7e52; border-radius: 4px; }
+.primary:hover { background: #ffdc9e; }
+.home-start { width: auto; min-width: 173px; min-height: 49px; gap: 25px; padding-inline: 20px; }
+.home-actions .secondary { width: auto; min-height: 49px; background: #162b42de; border-color: #8b9b9d; border-radius: 4px; }
+.home-actions .secondary:disabled { opacity: .65; background: #142334ae; color:#d2d5cf; }
+.home-drawer { left: 6%; bottom: max(18px,4vh); right: auto; width: fit-content; background: #17283cec; border-color:#a39b84; border-radius:4px; }
+.home-drawer > summary { gap: 13px; font-size: 14px; min-height: 44px; }
+.home-drawer > summary::before { content: "≡"; color: var(--amber); font: 21px/1 monospace; }
+.home-drawer > summary span { font-weight:400; font-size:12px; color:#becac9; }
+.home-drawer[open] { width: min(580px,88vw); }
+.home-drawer[open] > summary { color: var(--amber); }
+
+.departure-screen,.menu-card { border: 1px solid #96a19a; border-top: 3px solid var(--amber); background: var(--panel); border-radius: 5px; box-shadow: 0 10px 50px #09182866; }
+.departure-screen { padding: clamp(18px,3vw,38px); width: min(900px,100%); }
+.eyebrow { color: #e5bd8a; letter-spacing:.16em; }
+.departure-heading h1,.menu-card h1 { font-family: var(--display); color:var(--cream); }
+.departure-heading h1 { font-size: clamp(26px,3vw,41px); }
+.departure-heading p { line-height:1.65; color:#d6ded8; min-height:1.65em; }
+.adventure-modes { grid-template-columns: repeat(auto-fit,minmax(135px,1fr)); gap:9px; }
+.adventure-modes button { position:relative; border:1px solid #576d78; border-radius:3px; background:#203749; padding:12px; }
+.adventure-modes button::before { content:""; display:block; width:64px; height:44px; margin-bottom:9px; background-image:url('/art/harbor/routes.svg'); background-repeat:no-repeat; }
+#mode-short::before { background-position:-64px 0; } #mode-expedition::before { background-position:-128px 0; } #mode-tower::before { background-position:-192px 0; }
+.adventure-modes button[aria-pressed=true] { padding:12px; background:#3b4144; border:1px solid var(--amber); box-shadow:inset 0 -3px var(--amber); }
+.adventure-modes button[aria-pressed=true] strong { color:var(--amber); }
+.adventure-modes button[data-locked=true] { background:#1b2d3d; color:#c6ced0; }
+.adventure-modes small { line-height:1.5; color:#c6d3d6; }
+.health,.growth,.hud-details summary,.battle-controls button,.topbar button,.objective-label,.counters { background:#172a3dec; border-color:#708287; border-radius:4px; }
+.health-track,.growth-track,.health-track i,.growth-track i { border-radius:1px; }
+.growth-track i { background:#9fcdb9; }
+.objective-label { color:#ffe3b1; }
+.menu-card .growth-actions button,.menu-card .secondary { border-color:#6f8089; }
+.plugin-options button[data-rarity] { --grade:#b9d5dc; border-radius:4px; border:1px solid #667985; border-top:3px solid var(--grade); background:#23384a; }
+.plugin-options button[data-rarity=advanced] { --grade:#f5c781; background:#3b393b; }
+.plugin-options button[data-rarity=legendary] { --grade:#dcb8fa; background:#39334b; }
+.plugin-options button:hover { outline:2px solid var(--grade); outline-offset:1px; }
+.plugin-grade { color:var(--grade); font-size:11px; letter-spacing:.15em; font-weight:700; }
+.plugin-symbol { align-self:flex-start; color:var(--grade); background:#12243855; }
+.radio-call { pointer-events:none; position:absolute; bottom:90px; left:18px; display:grid; gap:4px; max-width:min(370px,47vw); border-left:3px solid var(--amber); background:#112639ec; padding:10px 14px; color:var(--cream); font-size:13px; line-height:1.6; }
+.radio-call strong,.radio-log dt { color:var(--amber); font:700 11px/1.5 system-ui,sans-serif; letter-spacing:.08em; }
+.radio-log { border-top:1px solid #64747a88; border-bottom:1px solid #64747a88; color:#c7d7d8; margin:14px 0; }
+.radio-log summary { padding:12px 2px; cursor:pointer; font-size:13px; }
+.radio-log dl { margin:0; max-height:26dvh; overflow:auto; padding:0 8px 8px; }
+.radio-log dd { margin:2px 0 11px; font-size:13px; line-height:1.55; }
+.homecoming { isolation:isolate; background:#15263d; }
+.homecoming::before { opacity:.5; }
+.homecoming .menu-card { margin:auto; }
+.menu-card .ending-line { margin:16px 0; padding-left:14px; border-left:2px solid var(--amber); color:var(--cream); font:600 17px/1.8 var(--display); }
+
+@media (max-width:700px) {
+  .home-menu .menu-layout { width:94%; }
+  .home-copy { width:80%; }
+  .home-art { left:77%; }
+  .home-drawer { left:5%; }
+  .adventure-modes { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .adventure-modes button::before { margin-bottom:2px; }
+  .hud { grid-template-columns:minmax(76px,1fr) minmax(74px,1fr) 48px; right:100px; gap:5px; }
+  .hud-details summary { justify-content:center; }
+  .objective-label,.pressure-label { grid-column:1 / -1; justify-self:start; }
+  .radio-call { bottom:calc(max(24px,8vh) + 124px); left:12px; max-width:calc(100% - 175px); }
+}
+@media (max-width:560px) and (min-height:541px) {
+  .home-menu::before { background-position:71% center; }
+  .home-menu::after { background:linear-gradient(0deg,#102039 4%,#14263edc 24%,#162b438a 49%,#182a4012 75%); }
+  .home-menu:has(.home-screen:not(.hidden)) .menu-layout { align-self:end; margin:auto auto max(85px,12dvh); }
+  .home-art { top:calc(50% + var(--plate-height)*.18); left:86%; width:76px; }
+  .home-copy { width:100%; padding:0; }
+  .home-copy h1 { font-size:64px; margin:10px 0 16px; }
+  .home-copy p { font-size:14px; margin:0 0 18px; }
+  .home-drawer { bottom:max(14px,3dvh); }
+  .adventure-modes { margin:12px 0; }.adventure-modes button,.adventure-modes button[aria-pressed=true] { padding:8px 9px; }
+  .plugin-options button[data-rarity] { grid-template-columns:42px 1fr; gap:2px 10px; }
+  .plugin-symbol { grid-row:1 / span 3; align-self:center; }
+  .plugin-grade,.plugin-options strong { grid-column:2; }
+}
+@media (max-height:540px) {
+  .home-copy { width:60%; padding:0; }
+  .home-copy h1 { font-size:45px; margin:4px 0 8px; }
+  .home-copy h1 span { font-size:14px; margin-top:2px; }
+  .home-copy p { font-size:12px; margin:0 0 9px; }
+  .home-drawer { bottom:8px; }
+  .departure-screen { padding:13px 18px; }
+  .adventure-modes { grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); margin:8px 0; }
+  .adventure-modes button::before { display:none; }
+  .radio-call { bottom:110px; left:12px; max-width:245px; font-size:11px; padding:5px 9px; }
+}
+.departure-actions #continue:disabled { display:none; }
+@media (max-width:480px) {
+  .departure-actions { flex-wrap:wrap; }
+  .departure-actions button { min-width:85px; padding-inline:10px; }
+}
+.port-link,.home-tools>button {display:flex;align-items:center;min-height:46px;padding:10px 15px;border:1px solid #547e94;border-radius:6px;color:#edf5ef;text-decoration:none;background:#0d3046;font-weight:650;font-size:14px}
+.guide-link,#workshop a {color:#a8dccb;text-underline-offset:4px}
+.guide-link {font-size:13px}
+#workshop {max-width:none;max-height:none;width:100vw;height:100dvh;margin:0;border:0;background:#142739;color:#e2eeea;padding:clamp(20px,6vw,76px);overflow:auto}
+#workshop::backdrop {background:#101e30}
+#mods-panel {max-width:880px;margin:auto}
+#mods-panel header {display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #6b797d}
+#mods-panel h1 {font-family:var(--display);font-size:36px;margin:.2em 0 .5em}
+#mods-panel>details {margin:20px 0;color:#c1d2d0}
+#mods-panel nav {display:flex;flex-wrap:wrap;gap:15px;margin:12px 0}
+#mods-panel summary {cursor:pointer;min-height:44px}
+@media (max-width:700px){.topbar {right:8px;top:10px}.topbar kbd{display:none}.topbar button{width:48px;padding:5px}.hud{right:65px;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px}.hud-details{min-width:44px}.hud-details summary{width:44px}.health-label,.growth-label{gap:2px}}
+/* Touch actions stay available while passing loot. The save key only takes space beside a berth. */
+@media(pointer:coarse){
+  .preview-shell.can-interact .battle-controls .weapon,.preview-shell.can-interact #skill,.preview-shell.can-interact #dash{display:block}
+  .preview-shell.can-save-here #checkpoint{display:block}
+  .preview-shell:not(.can-save-here) #checkpoint{display:none}
+  .battle-controls{width:140px;gap:3px}
+  .battle-controls .actions{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+  .battle-controls button{font-size:11px;line-height:1.15}
+  .battle-controls .actions small{font-size:10px}
+}
+@media(pointer:coarse) and (max-height:540px){
+  .battle-controls{left:50%;right:auto;bottom:10px;transform:translateX(-50%);width:min(53vw,470px);flex-direction:row;align-items:flex-end}
+  .battle-controls .actions{display:flex;flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:flex-end}
+  .battle-controls .weapon{width:auto;min-width:65px}
+  .radio-call{bottom:68px;left:116px;max-width:min(44vw,300px)}
+}
+
+.homecoming .sound-settings,.homecoming .assist-setting,.homecoming .guide-link,.preview-shell:has(.homecoming:not(.hidden)) .topbar {display:none}
+.preview-shell.stopped .battle-controls {visibility:hidden}
+.homecoming .ending-line {font-size:clamp(19px,2vw,24px)}
+.plugin-symbol .plugin-art{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}.growth-card>.guide-link{display:inline-block;padding:10px 0 0}

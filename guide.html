@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>大肥鱼 · 航海手册</title><link rel="stylesheet" href="./src/guide.css"></head>
+<body><main class="book">
+<header class="mast"><div><small>BIG FAT FISH</small><h1 id="book-title">航海手册</h1></div><nav aria-label="手册导航"><button id="screens-tab" hidden>游戏界面</button><button id="studio-tab" hidden>风格备选</button><button id="demo-tab">实战演示</button><button id="rules-tab">航海须知</button></nav></header>
+<section id="screens" hidden>
+<div class="section-head"><div><h2>从标题到返港</h2><p>点左侧索引直达任一画面，也可以从标题点「开始航行」或「设置」走一遍。</p></div><div id="screen-formats" class="switcher" aria-label="画幅"><button data-format="wide">桌面</button><button data-format="phone">手机</button></div></div>
+<div class="screen-gallery"><nav id="screen-index" aria-label="画面索引"></nav><figure class="screen-display"><div class="screen-frame"><div class="photo-surface"><img id="screen-photo" alt=""><div id="screen-links" aria-label="画面内导航"></div></div></div><figcaption><div><h3 id="screen-name"></h3><p id="screen-description"></p></div><button id="screen-next" type="button">下一页 →</button></figcaption></figure></div></section>
+<section id="studio" hidden><div class="section-head"><div><h2>三种界面方向</h2><p>选一种风格，再切换标题、模式或设置比较。</p></div><div class="switcher" id="versions"><button data-version="port">月潮电台</button><button data-version="chart">领航海图</button><button data-version="deck">口袋街机</button></div></div>
+<div id="concept-pages" class="switcher concept-pages" aria-label="对照页面"><button data-page="entry">出航概念</button><button data-page="title">标题</button><button data-page="modes">模式选择</button><button data-page="audio">设置</button></div><div id="scene" class="scene" aria-live="polite"></div><p class="caption" id="concept-caption"></p></section>
+<section id="demos" hidden><div class="section-head"><div><h2>看一遍就会</h2><p>换一种走法，对照同一个场景的结果。</p></div><div class="switcher" id="lessons"><button data-lesson="beacon">穿标调频</button><button data-lesson="wake">冲刺尾流</button><button data-lesson="shell">绕后破壳</button></div></div>
+<div class="theater"><div class="projection"><canvas id="drill" width="680" height="420" aria-label="战术演示动画"></canvas><div class="overlay"><b id="clock"></b><b id="readout"></b></div></div>
+<aside class="lesson-copy"><small>港口训练场</small><h3 id="lesson-title"></h3><p id="lesson-desc"></p><h4>对照打法</h4><div id="variants" class="tactics"></div><p id="comment" aria-live="polite"></p></aside></div>
+<div class="transport"><button id="play">暂停</button><button id="replay">重播</button><label>进度<input id="scrub" type="range" min="0" max="1000" value="0"></label><output id="elapsed"></output></div></section>
+<section id="rules" hidden><div class="section-head"><div><h2>出海前翻一页</h2><p>需要时再查。战斗和存档按游戏内时间计算。</p></div></div>
+<div class="chapters">
+<article><h3>第一次下水</h3><p>电脑用 WASD 移动，按住鼠标左键射击。Space 冲刺，E 放技能，Q 换武器。手机左摇杆移动，右摇杆瞄准并开火。</p></article>
+<article><h3>怎样开闸</h3><p>短途有三座电台，接通任意两座即可去闸口交互。信号圈内每秒积累一秒。三盏副浮标各可加快五秒，离圈保留进度。新远征的电台需要四十五秒，封锁和护送也算目标。</p><button data-jump="beacon">看调频演示 →</button></article>
+<article><h3>升级选什么</h3><p>收饭升级。白银改善基础能力，黄金常改变打法，棱彩可能改变整套构筑。看卡面选当前最合适的效果；同名升到二级时，以新卡面为准。</p><button data-jump="wake">看尾流演示 →</button></article>
+<article><h3>蟹壳怎么打</h3><p>浅色弧线是弱侧。普通螃蟹正面挡弹，先绕到背面把壳打破，再追打本体。</p><button data-jump="shell">看破壳演示 →</button></article>
+<article><h3>保存和返港</h3><p>在安全存档台停下，按 R 或点保存。战败通常带回四成材料。API 模式可在安全检查点长按交互三秒，带回收获。教学和自由练习各有自己的规则。</p></article>
+<article><h3>改装和训练</h3><p>MCP 是武器。DSH 是在小窝装好的全局插件。LoRA 训练时按一次开始，松开后在绿区再按一次；太早会短暂降低伤害，太晚会拖慢技能与冲刺恢复。训练期间战斗暂停。</p></article>
+<article><h3>社区模组</h3><p>从港口小窝进入模组工坊，安装 JSON 文件并启用。用「带模组出海」创建或打开对应的小窝；也可在自由练习试用。每组模组各自存档。</p></article>
+</div></section>
+</main><script type="module" src="./src/voyage-guide.js"></script></body></html>

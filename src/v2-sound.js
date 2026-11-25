@@ -13,6 +13,9 @@ export function mountSound(){
   const m=settings.music,s=settings.sfx;music.muted=m.muted;if(musicGain){music.volume=1;musicGain.gain.value=m.muted?0:m.volume/100;}else music.volume=m.volume/100;
   if(sfxGain)sfxGain.gain.value=s.muted?0:s.volume/100;
   if(s.muted||!s.volume){for(const source of sources){try{source.stop();}catch{}}sources.clear();for(const audio of media){audio.pause();audio.currentTime=0;}media.clear();}
+  const desk=document.querySelector('.radio-desk');
+  if(desk){desk.style.setProperty('--volume',String(m.muted?0:m.volume));desk.dataset.muted=String(m.muted||!m.volume||music.paused);}
+  const dial=document.querySelector('#dial-value');if(dial)dial.textContent=m.muted?'静音':m.volume+'%';
   for(const row of ui){const state=settings[row.kind];row.slider.value=String(state.volume);row.value.textContent=`${state.volume}%`;row.mute.checked=state.muted;row.status.textContent=row.kind==='music'?(failed?'音乐加载失败':state.muted?'已静音':!unlocked?'点击或按键后播放':music.paused?'等待播放':'正在播放 Let Me Go'):state.muted?'已静音':'战斗与菜单音效';}
  }
  function ensureGraph(){
@@ -29,10 +32,11 @@ export function mountSound(){
   if(context&&loading){decode().then(()=>{if(buffers.has(kind)){last.delete(kind);effect(kind);}});return;}
   const audio=new Audio(`./audio/sfx/${kind==='action'?'message_sent':'message_received'}.wav`);audio.volume=s.volume/100;media.add(audio);audio.onended=()=>media.delete(audio);audio.play().catch(()=>media.delete(audio));
  }
- for(const target of [document.querySelector('#settings-panel'),document.querySelector('#pause-menu .menu-card')]){
-  if(!target)continue;const box=document.createElement('fieldset');box.className='sound-settings';const legend=document.createElement('legend');legend.textContent='声音设置';box.append(legend);
+ const target=document.querySelector('#audio-settings');
+ if(target){
+  const box=document.createElement('fieldset');box.className='sound-settings';const legend=document.createElement('legend');legend.textContent='声音设置';box.append(legend);
   for(const kind of ['music','sfx']){const row=document.createElement('div');row.className='sound-row';const label=document.createElement('label'),slider=document.createElement('input'),value=document.createElement('output'),muteLabel=document.createElement('label'),mute=document.createElement('input'),status=document.createElement('small');
-   const prefix=target.id==='settings-panel'?'home':'pause';slider.id=`${prefix}-${kind}-volume`;slider.type='range';slider.min='0';slider.max='100';slider.step='1';label.htmlFor=slider.id;label.textContent=kind==='music'?'背景音乐':'音效';mute.type='checkbox';mute.id=`${prefix}-${kind}-muted`;muteLabel.append(mute,' 静音');status.className='sound-status';row.append(label,slider,value,muteLabel,status);box.append(row);ui.push({kind,slider,value,mute,status});
+   slider.id=`home-${kind}-volume`;slider.type='range';slider.min='0';slider.max='100';slider.step='1';label.htmlFor=slider.id;label.textContent=kind==='music'?'背景音乐':'音效';mute.type='checkbox';mute.id=`home-${kind}-muted`;muteLabel.append(mute,' 静音');status.className='sound-status';row.append(label,slider,value,muteLabel,status);box.append(row);ui.push({kind,slider,value,mute,status});
    slider.oninput=()=>{settings[kind].volume=volume(Number(slider.value));persist();sync();};mute.onchange=()=>{settings[kind].muted=mute.checked;persist();sync();};
   }target.append(box);
  }

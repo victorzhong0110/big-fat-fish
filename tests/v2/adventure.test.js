@@ -50,3 +50,17 @@ describe('shared camera geometry',()=>{
 describe('adventure checkpoint invariants',()=>{
  it('rejects corrupt objective progress, mismatched spawn reservations and unsupported slice enemies',()=>{const a=game();a.world.objectives[0].progress=2101;expect(validateStateInvariants(a,catalog).valid).toBe(false);const b=game();b.world.budgets[0].reserved=1;expect(validateStateInvariants(b,catalog).valid).toBe(false);const c=game();c.world.entities['resident:0:0'].definitionId='boss_gpt';expect(validateStateInvariants(c,catalog).valid).toBe(false);});
 });
+
+it('lets players dodge across the signal area and collect each relay only once, including after a save',()=>{
+  let s=game();const id='beacon:0', origin=s.world.entities[id].position;
+  const step=(dx,dy)=>{s.world.entities.fish.position={x:origin.x+dx,y:origin.y+dy};s=apply(s,planObjectiveAdvance(ctx(s)));return s.world.objectives.find(o=>o.id===id);};
+  expect(step(220,0).progress).toBe(1);
+  expect(step(250,0).progress).toBe(1);
+  expect(step(0,-148)).toMatchObject({progress:302,buoyMask:1});
+  s=JSON.parse(JSON.stringify(s));
+  expect(step(0,-148)).toMatchObject({progress:303,buoyMask:1});
+  expect(step(136,78)).toMatchObject({progress:604,buoyMask:3});
+  s.world.objectives.find(o=>o.id===id).progress=2050;
+  expect(step(-136,78)).toMatchObject({progress:2100,buoyMask:7,completed:true});
+  expect(step(-136,78).progress).toBe(2100);
+});

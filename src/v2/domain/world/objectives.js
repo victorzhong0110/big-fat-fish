@@ -1,3 +1,4 @@
+import {STATION_RADIUS,tuneStation} from './beacon.js';
 import {localWorldId} from './regionRules.js';
 import {planApiWorldAdvance} from './api.js';
 // @ts-check
@@ -19,6 +20,7 @@ import * as dependency1 from '../rewards.js';
  * @calls domain/geometry.js#distanceSquared
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
+ * @calls domain/world/beacon.js#tuneStation
  * @calls domain/world/lateMechanics.js#planObjectiveSignal
  * @calls domain/world/objectives.js#planObjectiveCompletion
  * @param {import('../../contracts.d.ts').EvaluationContext} context
@@ -29,12 +31,15 @@ export function planObjectiveAdvance(context) {
   const player=state.world.entities[state.player.entityId],next=state.world.objectives.map(objective=>({...objective}));
   const blockade=next.find(o=>o.kind==='blockade'&&o.active&&!o.completed&&o.requiredEntityIds.some(id=>state.world.entities[id]?.hp<state.world.entities[id]?.maxHp));
   if(blockade){const signal=planObjectiveSignal(context,blockade.id);if(signal.changes.length)return signal;const progress=blockade.requiredEntityIds.filter(id=>state.world.entities[id]?.dead).length;if(progress>=blockade.requiredEntityIds.length)return planObjectiveCompletion({...context,state:{...state,world:{...state.world,objectives:next.map(o=>o.id===blockade.id?{...o,progress}:o)}}},blockade.id);if(progress!==blockade.progress){blockade.progress=progress;return {...createEmptyPlan(),changes:[createStateChange('world','objectives','setObjectives',{objectives:next})]};}}
-  const completing=next.find(objective=>objective.kind==='beacon'&&objective.active&&!objective.completed&&state.world.entities[objective.id]&&distanceSquared(player.position,state.world.entities[objective.id].position)<=120**2);
+  const completing=next.find(objective=>objective.kind==='beacon'&&objective.active&&!objective.completed&&state.world.entities[objective.id]&&distanceSquared(player.position,state.world.entities[objective.id].position)<=STATION_RADIUS**2);
   if(!completing)return createEmptyPlan();
   const signal=planObjectiveSignal(context,completing.id);if(signal.changes.length)return signal;
-  if(completing.progress>=Number(completing.requiredProgress??2100)-1)return planObjectiveCompletion(context,completing.id);
-  completing.progress++;
-  return {...createEmptyPlan(),changes:[createStateChange('world','objectives','setObjectives',{objectives:next})]};
+  const tuned=tuneStation(completing,state.world.entities[completing.id].position,player.position);
+  const objectives=next.map(o=>o.id===tuned.id?tuned:o);
+  if(tuned.progress===(tuned.requiredProgress??2100)){
+    return planObjectiveCompletion({...context,state:{...state,world:{...state.world,objectives}}},tuned.id);
+  }
+  return {...createEmptyPlan(),changes:[createStateChange('world','objectives','setObjectives',{objectives})]};
 }
 
 /**

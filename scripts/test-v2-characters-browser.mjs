@@ -13,7 +13,7 @@ const browser=await chromium.launch({executablePath:process.env.V2_CHROMIUM_EXEC
 const errors=[],requests=[];
 try{
  const page=await browser.newPage({viewport:{width:1280,height:1000}});page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));const url=`http://127.0.0.1:${server.httpServer.address().port}/v2.html`;await page.goto(url);await page.waitForFunction(()=>document.querySelector('#wallet').textContent!=='小窝档案读取中');
- await page.locator('#characters-panel summary').click();await page.waitForFunction(count=>document.querySelectorAll('[data-model]').length===count,CHARACTER_NAMES.length);
+ await page.locator('#home-drawer > summary').click();await page.locator('#characters-panel summary').click();await page.waitForFunction(count=>document.querySelectorAll('[data-model]').length===count,CHARACTER_NAMES.length);
  const faithful=await page.evaluate(async()=>{
   const {CHARACTER_NAMES,loadCharacterArt,drawCharacter}=await import('/src/v2/preview/characters.js');const results=[];
   for(const name of CHARACTER_NAMES){const image=await loadCharacterArt(name),actual=document.createElement('canvas'),expected=document.createElement('canvas');actual.width=expected.width=200;actual.height=expected.height=200;const a=actual.getContext('2d'),e=expected.getContext('2d');drawCharacter(a,name,100,100,160,{tick:0});e.imageSmoothingEnabled=false;const crop=name==='claude'?{x:16,y:176,w:384,h:240}:{x:0,y:0,w:image.naturalWidth,h:image.naturalHeight};const scale=160/Math.max(crop.w,crop.h),w=crop.w*scale,h=crop.h*scale;e.drawImage(image,crop.x,crop.y,crop.w,crop.h,Math.round(100-w/2),Math.round(100-h/2),w,h);results.push({name,equal:actual.toDataURL()===expected.toDataURL()});}

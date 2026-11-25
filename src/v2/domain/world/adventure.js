@@ -1,4 +1,5 @@
 // @ts-check
+import {STATION_RADIUS} from './beacon.js';
 import {createEasterObjectives} from '../easter.js';
 import { createEmptyPlan, createStateChange } from '../plans.js';
 import { createEntityState } from '../entities.js';
@@ -23,7 +24,7 @@ export function createAdventureMapPlan(start, catalog) {
  const objectives = /** @type {import('../../contracts.d.ts').ObjectiveState[]} */ ([]);
  const beacons=[{x:850,y:650},{x:2100,y:500},{x:1500,y:1700}];
  for(let i=0;i<3;i++){
-  const id=`beacon:${i}`,position=beacons[i];put(createEntityState(id,'world_beacon','objective','neutral',position,{radius:120,runtime:{interaction:'beacon',reinforcementPending:staged,campIndex:i,campPrefix:''}}));
+  const id=`beacon:${i}`,position=beacons[i];put(createEntityState(id,'world_beacon','objective','neutral',position,{radius:STATION_RADIUS,runtime:{interaction:'beacon',reinforcementPending:staged,campIndex:i,campPrefix:''}}));
   objectives.push({id,kind:'beacon',active:true,completed:false,progress:0,requiredEntityIds:[],rewardId:`objective:${id}`});
   if(staged)campBudgets.push({id:`camp:${i}`,total:10,reserved:0,spawned:4,maxAlive:10});
   for(let member=0;member<(staged?4:10);member++){
