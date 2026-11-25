@@ -1,5 +1,8 @@
 // @ts-check
 import { drawCharacter, resolveCharacterModel } from './characters.js';
+import { drawHarborLandmark, drawHarborWater } from './harbor.js';
+import { BUOY_OFFSETS, BUOY_SECONDS } from '../domain/world/beacon.js';
+import { stationName } from './radio.js';
 import { computeCameraBounds } from '../domain/geometry.js';
 /** Canvas presentation for the combat preview. Never mutates or simulates game state. */
 
@@ -129,6 +132,9 @@ export function getPreviewCamera(view, width, height) {
  * @implementationScope core-preview
  * @calls preview/characters.js#drawCharacter
  * @calls preview/characters.js#resolveCharacterModel
+ * @calls preview/harbor.js#drawHarborLandmark
+ * @calls preview/harbor.js#drawHarborWater
+ * @calls preview/radio.js#stationName
  * @calls preview/view.js#getPreviewCamera
  * @param {CanvasRenderingContext2D} ctx
  * @param {import('../contracts.d.ts').RenderSnapshot} view
@@ -144,10 +150,9 @@ export function renderPreviewFrame(ctx,view,width,height,pixelRatio,popups=[]) {
   if(resetWave){resetWave=false;const fish=view.entities.find(entity=>entity.kind==='player');if(fish){const slot=fx.shocks[fx.shockCursor%SHOCK_LIMIT];fx.shockCursor++;Object.assign(slot,{alive:true,x:fish.position.x,y:fish.position.y,born:view.tick,life:18,radius:150});fx.shakeBorn=view.tick;fx.shakeAmp=5;}}
   const shake=presentationShake();
   ctx.setTransform(pixelRatio,0,0,pixelRatio,0,0);ctx.clearRect(0,0,width,height);ctx.imageSmoothingEnabled=false;
-  const gradient=ctx.createLinearGradient(0,0,width,height);gradient.addColorStop(0,'#163d46');gradient.addColorStop(1,'#092630');ctx.fillStyle=gradient;ctx.fillRect(0,0,width,height);
   ctx.save();if(shake.x||shake.y)ctx.translate(shake.x,shake.y);ctx.scale(camera.scale,camera.scale);ctx.translate(-camera.x,-camera.y);
   const hud=/** @type {{map:{width:number;height:number};invulnerable:boolean;aim:{x:number;y:number};rice:number;skillId?:string;skillTemplateId?:string;skillCooldown?:number;aimDistance?:number;overclock?:boolean}} */ (view.hud);
-  // Keep the floor clear so enemies, pickups and combat warnings read first.
+  drawHarborWater(ctx, camera, width, height, view);
   ctx.strokeStyle='#3b6267';ctx.lineWidth=3;ctx.strokeRect(1,1,hud.map.width-2,hud.map.height-2);
   drawPresentationEffects(ctx,false);
   const fish=view.entities.find(e=>e.kind==='player'),skillTemplate=hud.skillTemplateId??hud.skillId??'';if(fish&&['skill_batch','skill_sandbox'].includes(skillTemplate)&&Number(hud.skillCooldown??0)<=0&&['exploring','boss'].includes(view.phase)){const distance=hud.aimDistance??400,cx=Math.max(0,Math.min(hud.map.width,fish.position.x+hud.aim.x*distance)),cy=Math.max(0,Math.min(hud.map.height,fish.position.y+hud.aim.y*distance));ctx.strokeStyle='#e1ddbc55';ctx.setLineDash([5,7]);ctx.beginPath();ctx.arc(cx,cy,skillTemplate==='skill_batch'?130:160,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
@@ -156,20 +161,26 @@ export function renderPreviewFrame(ctx,view,width,height,pixelRatio,popups=[]) {
     const {x,y}=entity.position;
     if(x<camera.x-100||y<camera.y-100||x>camera.x+width/camera.scale+100||y>camera.y+height/camera.scale+100)continue;
     ctx.fillStyle='#061d2855';ctx.beginPath();ctx.ellipse(x,y+entity.radius*.8,entity.radius*1.15,entity.radius*.38,0,0,Math.PI*2);ctx.fill();
-    if(entity.kind==='pickup'&&['gpuFragment','part'].includes(entity.spriteId)){ctx.fillStyle=entity.spriteId==='gpuFragment'?'#92cddf':'#b6bcb3';ctx.fillRect(x-7,y-5,14,10);ctx.strokeStyle='#f2ead1';ctx.strokeRect(x-5,y-3,10,6);continue;}
-    if(entity.kind==='pickup'&&entity.spriteId==='skill'){ctx.fillStyle='#bbabde';ctx.beginPath();ctx.moveTo(x,y-15);ctx.lineTo(x+15,y);ctx.lineTo(x,y+15);ctx.lineTo(x-15,y);ctx.closePath();ctx.fill();ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#ece6f6';ctx.fillText(`${entity.modelLabel??'技能'} · F`,x,y+31);continue;}
+    if(entity.kind==='pickup'&&['gpuFragment','part'].includes(entity.spriteId)){drawHarborLandmark(ctx,entity);continue;}
+    if(entity.kind==='pickup'&&entity.spriteId==='skill'){drawHarborLandmark(ctx,entity);ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#ece6f6';ctx.fillText(`${entity.modelLabel??'技能'} · F`,x,y+31);continue;}
     if(entity.spriteId==='world_escort'){ctx.fillStyle='#a9d9c9';ctx.fillRect(x-22,y-17,44,32);ctx.fillStyle='#dbe9c6';ctx.fillRect(x-16,y-25,32,10);ctx.fillStyle='#315961';ctx.fillRect(x-12,y-8,6,6);ctx.fillRect(x+6,y-8,6,6);ctx.fillRect(x-12,y+16,8,5);ctx.fillRect(x+4,y+16,8,5);ctx.strokeStyle='#dfe8c3';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+Math.cos(entity.facingRadians)*29,y+Math.sin(entity.facingRadians)*29);ctx.lineTo(x+Math.cos(entity.facingRadians)*39,y+Math.sin(entity.facingRadians)*39);ctx.stroke();ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#e9edd4';ctx.fillText(entity.modelLabel??'补给机器人',x,y+42);continue;}
-    if(entity.spriteId==='world_blockade_core'||entity.spriteId==='world_blockade_relay'){const relay=entity.spriteId==='world_blockade_relay';ctx.fillStyle=relay?'#d2b278':'#a69cc5';ctx.fillRect(x-entity.radius,y-entity.radius,entity.radius*2,entity.radius*2);ctx.strokeStyle='#e6d7aa';ctx.lineWidth=3;ctx.strokeRect(x-entity.radius-4,y-entity.radius-4,entity.radius*2+8,entity.radius*2+8);ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#efe9cc';ctx.fillText(`${relay?'供能柱':entity.modelLabel} · ${Math.ceil(entity.hp)}`,x,y+entity.radius+24);continue;}
+    if(entity.spriteId==='world_blockade_core'||entity.spriteId==='world_blockade_relay'){const relay=entity.spriteId==='world_blockade_relay';drawHarborLandmark(ctx,entity);ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#efe9cc';ctx.fillText(`${relay?'供能柱':entity.modelLabel} · ${Math.ceil(entity.hp)}`,x,y+entity.radius+24);continue;}
     if(entity.spriteId==='world_blockade'){ctx.font='13px system-ui';ctx.textAlign='center';ctx.fillStyle='#cdb5db';ctx.fillText(entity.opened?'封锁已解除':`解除封锁 ${entity.objectiveProgress??0}/4`,x,y-65);continue;}
     if(entity.spriteId==='world_rest'){ctx.strokeStyle='#c2d4cc';ctx.lineWidth=5;ctx.beginPath();ctx.arc(x,y,25,0,Math.PI);ctx.stroke();ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#eee3ba';ctx.fillText(entity.modelLabel??'独立休整',x,y+42);continue;}
-    if(entity.spriteId==='world_signal'){ctx.strokeStyle='#e3bc7e';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x,y+20);ctx.lineTo(x,y-25);ctx.stroke();ctx.fillStyle='#d2a879';ctx.fillRect(x-14,y-28,28,20);ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillStyle='#f1e5bd';ctx.fillText(`援军信号 · ${Math.ceil(entity.hp)}`,x,y+38);continue;}
-    if(entity.spriteId==='world_challenge'){ctx.fillStyle=entity.opened?'#789b86':'#b69e88';ctx.fillRect(x-24,y-20,48,40);ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#ebdcb8';ctx.fillText(entity.opened?'挑战完成':`${entity.modelLabel??'挑战'}${entity.unlocked?' · F':' · 已启动'}`,x,y+40);continue;}
+    if(entity.spriteId==='world_signal'){drawHarborLandmark(ctx,entity);ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillStyle='#f1e5bd';ctx.fillText(`援军信号 · ${Math.ceil(entity.hp)}`,x,y+38);continue;}
+    if(entity.spriteId==='world_challenge'){drawHarborLandmark(ctx,entity);ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#ebdcb8';ctx.fillText(entity.opened?'挑战完成':`${entity.modelLabel??'挑战'}${entity.unlocked?' · F':' · 已启动'}`,x,y+40);continue;}
     if(entity.spriteId==='terrain_shortcut'){ctx.strokeStyle=entity.unlocked?'#82baa8':'#bc9278';ctx.lineWidth=4;ctx.setLineDash(entity.unlocked?[5,8]:[]);ctx.strokeRect(x-40,y-40,80,80);ctx.setLineDash([]);ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillStyle='#e5dbb7';ctx.fillText(entity.unlocked?'捷径开放':'捷径暂闭',x,y+58);continue;}
     if(entity.spriteId==='world_current'){ctx.strokeStyle=entity.currentWarning?'#f0cf8a':'#78b8c5';ctx.setLineDash([7,8]);ctx.beginPath();ctx.arc(x,y,entity.radius,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#a7d6d5';ctx.font='24px system-ui';ctx.textAlign='center';ctx.fillText(entity.currentDirection===1?'→ → →':'← ← ←',x,y);ctx.font='11px system-ui';ctx.fillText(entity.currentWarning?'3秒内转向':'水流 +60',x,y+22);continue;}
-    if(entity.spriteId==='world_alarm'){ctx.fillStyle=entity.opened?'#657e72':'#ce9e75';ctx.fillRect(x-24,y-20,48,40);ctx.fillStyle='#f0d4ad';ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillText(entity.opened?'已开启':entity.alarmArmed?'再次F确认 · 会引来增援':'警报箱 · F查看风险',x,y+42);continue;}
-    if(entity.spriteId==='terrain_breakable'){ctx.fillStyle='#9d8265';ctx.fillRect(x-30,y-25,60,50);ctx.fillStyle='#f0dfbe';ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillText(`引重钳破坏 · ${Math.ceil(entity.hp)}`,x,y+40);continue;}
+    if(entity.spriteId==='world_alarm'){drawHarborLandmark(ctx,entity);ctx.fillStyle='#f0d4ad';ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillText(entity.opened?'已开启':entity.alarmArmed?'再次F确认 · 会引来增援':'警报箱 · F查看风险',x,y+42);continue;}
+    if(entity.spriteId==='terrain_breakable'){drawHarborLandmark(ctx,entity);ctx.fillStyle='#f0dfbe';ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillText(`引重钳破坏 · ${Math.ceil(entity.hp)}`,x,y+40);continue;}
     if(entity.petZone){const draft=entity.id.includes(':draft:'),r=entity.effectRadius??70;ctx.strokeStyle=entity.petZone==='answerDanger'?'#ee977b':entity.petZone==='answerSafe'?'#8ecbd9':entity.petZone==='answerUnknown'?'#c6b3dc':entity.petZone==='fire'?'#e5996c':'#a5ce86';ctx.fillStyle=entity.petZone==='answerDanger'?'#ed8d6b66':entity.petZone==='answerSafe'?'#83b7c51a':entity.telegraphRemaining>0?'#ddc89718':entity.petZone==='fire'?'#d5765f55':'#92ba7544';ctx.setLineDash(entity.telegraphRemaining>0?[7,5]:[]);ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.setLineDash([]);if(entity.linkEnd){ctx.strokeStyle='#a3ce84';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(entity.linkEnd.x,entity.linkEnd.y);ctx.stroke();}if(entity.spriteId==='gpt_core'){ctx.fillStyle='#d8dfb4';ctx.fillRect(x-6,y-8,12,16);}if(draft){ctx.fillStyle='#f4efe0';ctx.font='13px system-ui';ctx.textAlign='center';ctx.fillText(entity.id.endsWith(':0')?'草稿 A':'草稿 B',x,y+4);}continue;}
     if(entity.petCast&&typeof entity.petCast==='object'&&!Array.isArray(entity.petCast)){const cast=/** @type {{point:import('../contracts.d.ts').Vec2;executeAt:number}} */(entity.petCast);ctx.strokeStyle='#e9c995';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(cast.point.x,cast.point.y);ctx.stroke();ctx.setLineDash([]);}
+    if(entity.abilityKind==='trail'){
+      const age=view.tick/12, r=entity.radius;
+      ctx.save();ctx.translate(x,y);ctx.lineWidth=2;
+      for(let i=0;i<5;i++){const wave=(age+i*.2)%1;ctx.strokeStyle='rgba(165,228,229,'+((1-wave)*.65)+')';ctx.beginPath();ctx.ellipse(0,0,r*(.35+wave*.65),r*(.28+wave*.65),-.35,i*1.4,i*1.4+2.1);ctx.stroke();}
+      ctx.restore();continue;
+    }
     if(entity.abilityKind&&entity.kind!=='decoy'){const kind=entity.abilityKind;ctx.strokeStyle=kind==='batch'?'#e7c68a':kind==='sandbox'?'#a9d997':'#bddaf5';ctx.fillStyle=kind==='sandbox'?'#a4d38b22':kind==='batch'?'#e2c28c22':'#afd8f311';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,entity.radius,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#e9ead5';ctx.fillText(kind==='batch'?`批量处理 ${entity.telegraphRemaining.toFixed(1)}`:kind==='redirect'?`反射 ${entity.reflected??0}/12`:kind==='queued'?'延迟调用':kind==='trail'?'尾流':'沙箱',x,y-entity.radius-8);continue;}
     if(entity.kind==='decoy'){ctx.globalAlpha=.45;drawActor(ctx,'deepseek',x,y,80,{tick:view.tick,moving:entity.moving,attacking:entity.attacking,facing:entity.facingRadians,horizontal:entity.horizontalFacing,hopPhase:entity.hopPhase,controlled:entity.statusLabels?.includes('root')},entity);ctx.globalAlpha=1;if(entity.hp>1){const quips=['正在为您重新编译太平洋…','已自动为您订阅 99 个上下文…','根据我的理解，海是一种蓝色的模型…','这个问题很好，让我先生成三个错误答案…'];ctx.fillStyle='#0c2530';ctx.fillRect(x-18,y-52,36,4);ctx.fillStyle='#8fd0ff';ctx.fillRect(x-18,y-52,36*Math.max(0,entity.hpFraction),4);ctx.fillStyle='#d7ecff';ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillText(quips[Math.floor(view.tick/120+entity.id.length)%quips.length]??quips[0],x,y-58);}else{ctx.fillStyle='#c7d8cd';ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillText('诱饵',x,y+30);}continue;}
     if(entity.dashWarning&&typeof entity.dashWarning==='object'&&!Array.isArray(entity.dashWarning)){const warning=/** @type {{point:import('../contracts.d.ts').Vec2;remaining:number}} */(entity.dashWarning);ctx.strokeStyle='#f4b77f';ctx.lineWidth=4;ctx.setLineDash([8,6]);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(warning.point.x,warning.point.y);ctx.stroke();ctx.setLineDash([]);}
@@ -186,19 +197,49 @@ export function renderPreviewFrame(ctx,view,width,height,pixelRatio,popups=[]) {
       ctx.fillStyle='#eee2c8';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText(`${kind} · ${entity.modelLabel??'Astra'}`,x,y-r-12);ctx.fillStyle='#533f3d';ctx.fillRect(x-18,y+r+6,36,4);ctx.fillStyle='#cebd95';ctx.fillRect(x-18,y+r+6,36*entity.hpFraction,4);continue;
     }
     if(entity.spriteId==='claude_ban_projectile'){ctx.strokeStyle='#e0a188';ctx.lineWidth=3;ctx.strokeRect(x-12,y-12,24,24);ctx.fillStyle='#edc4a0';ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillText(String(Math.ceil(entity.hp)),x,y+4);continue;}
-    if(entity.kind==='pickup'&&entity.spriteId==='weapon'){ctx.fillStyle=(entity.quality??0)>0?'#d8b679':'#a9d4c6';ctx.fillRect(x-15,y-8,30,16);ctx.strokeStyle='#e6eee0';ctx.lineWidth=2;ctx.strokeRect(x-15,y-8,30,16);ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#e4e7d4';ctx.fillText(`${entity.modelLabel??'MCP'} · F`,x,y+30);continue;}
+    if(entity.kind==='pickup'&&entity.spriteId==='weapon'){drawHarborLandmark(ctx,entity);ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#e4e7d4';ctx.fillText(`${entity.modelLabel??'MCP'} · F`,x,y+30);continue;}
     if(entity.kind==='pickup'){drawRiceBowl(ctx,x,y);continue;}
-    if(entity.spriteId==='terrain_clutter'){ctx.fillStyle='#5b776c';ctx.fillRect(x-24,y-16,48,32);ctx.strokeStyle='#8ca18b';ctx.lineWidth=2;ctx.strokeRect(x-20,y-12,40,24);ctx.fillStyle='#b3c7ac';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('Bot ↔',x,y+4);continue;}
+    if(entity.spriteId==='terrain_clutter'){drawHarborLandmark(ctx,entity);ctx.fillStyle='#b3c7ac';ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('Bot ↔',x,y+4);continue;}
+    if(entity.spriteId==='terrain_rock'){drawHarborLandmark(ctx,entity);continue;}
     if(entity.kind==='obstacle'){
       ctx.fillStyle='#254e54';ctx.beginPath();for(let corner=0;corner<7;corner++){const theta=corner*Math.PI*2/7;const r=entity.radius*(corner%2===0?1:.92);if(corner===0)ctx.moveTo(x+Math.cos(theta)*r,y+Math.sin(theta)*r);else ctx.lineTo(x+Math.cos(theta)*r,y+Math.sin(theta)*r);}ctx.closePath();ctx.fill();ctx.strokeStyle='#43656a';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#3d6264';ctx.fillRect(x-20,y-16,22,5);continue;
     }
-    if(entity.spriteId==='world_beacon'){const progress=(entity.objectiveProgress??0)/(entity.objectiveRequired??2100);ctx.strokeStyle=progress>=1?'#a8d997':'#799da2';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,120,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#d9dc9e';ctx.lineWidth=5;ctx.beginPath();ctx.arc(x,y,120,-Math.PI/2,-Math.PI/2+Math.PI*2*progress);ctx.stroke();ctx.fillStyle=progress>=1?'#c7e3aa':'#749d99';ctx.fillRect(x-14,y-22,28,45);ctx.font='14px system-ui';ctx.textAlign='center';ctx.fillStyle='#dce9d6';const working=fish&&Math.hypot(fish.position.x-x,fish.position.y-y)<=120&&progress<1;ctx.fillText(progress>=1?'工作区已点亮':working?`工作中 ${Math.floor(progress*(entity.objectiveRequired??2100)/60)} / ${Math.round((entity.objectiveRequired??2100)/60)}秒`:`工作区 ${Math.floor(progress*(entity.objectiveRequired??2100)/60)} / ${Math.round((entity.objectiveRequired??2100)/60)}秒`,x,y+48);continue;}
-    if(entity.spriteId==='world_gate'){ctx.strokeStyle=entity.unlocked?'#c6dfa4':'#9a8c84';ctx.lineWidth=8;ctx.strokeRect(x-42,y-50,84,90);ctx.font='14px system-ui';ctx.fillStyle='#e3dfc8';ctx.textAlign='center';ctx.fillText(entity.modelLabel??(entity.unlocked?'首领入口 · F':'完成任意两个目标'),x,y+66);continue;}
-    if(entity.spriteId.startsWith('easter_')){ctx.fillStyle=entity.opened?'#769984':'#a5a9db';ctx.fillRect(x-16,y-16,32,32);ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#f2e6cb';const labels=/** @type {Record<string,string>} */({easter_chair:'躺椅 · F坐下8秒',easter_note:'留言 · F阅读',easter_lunchbox:'饭盒 · 找齐三张留言',easter_console:'接口拼图 · 三武器后F',easter_interface:entity.modelLabel??'射击接口'});ctx.fillText(entity.opened?'已发现':labels[entity.spriteId]??'秘密',x,y+36);continue;}
-    if(entity.spriteId==='world_cache'){ctx.fillStyle=entity.opened?'#677a6e':'#d5c59b';ctx.fillRect(x-19,y-13,38,26);ctx.fillStyle='#8b926a';ctx.fillRect(x-4,y-13,8,26);ctx.font='13px system-ui';ctx.textAlign='center';ctx.fillStyle='#e8e3c9';ctx.fillText(entity.opened?'已打开':'补给箱 · F',x,y+42);continue;}
+    if(entity.spriteId==='world_beacon'){
+      const required=entity.objectiveRequired || 2100, elapsed=entity.objectiveProgress || 0;
+      const progress=Math.min(1,elapsed/required), radius=entity.radius;
+      ctx.lineWidth=2;ctx.strokeStyle=entity.opened?'#a2c8a9':'#83a5b0';ctx.setLineDash([9,6]);
+      ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+      ctx.strokeStyle='#ffd184';ctx.lineWidth=4;ctx.beginPath();ctx.arc(x,y,radius,-Math.PI/2,-Math.PI/2+Math.PI*2*progress);ctx.stroke();
+      if(!entity.opened)for(const [index,delta] of BUOY_OFFSETS.entries()){
+        const bx=x+delta.x, by=y+delta.y, lit=((entity.buoyMask??0)&(1<<index))!==0;
+        const bob=Math.round(Math.sin(view.tick/21+index)*2);
+        ctx.fillStyle='#93c3bd66';ctx.fillRect(bx-14,by+8,28,2);ctx.fillRect(bx-10,by+12,18,1);
+        ctx.fillStyle='#26374d';ctx.fillRect(bx-8,by-7+bob,16,14);ctx.fillStyle=lit?'#87beb1':'#ffcb7c';
+        ctx.fillRect(bx-6,by-4+bob,12,6);ctx.fillRect(bx-2,by-14+bob,4,8);
+        ctx.fillStyle='#f5f0cc';ctx.fillRect(bx-5,by+2+bob,10,2);
+        if(fish&&!lit&&Math.hypot(fish.position.x-bx,fish.position.y-by)<120){
+          ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillText(`碰浮标 +${BUOY_SECONDS}秒`,bx,by-21);
+        }
+      }
+      drawHarborLandmark(ctx,entity);
+      ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillStyle='#fff0ce';ctx.fillText(stationName(entity.id),x,y+42);
+      ctx.font='12px system-ui';ctx.fillStyle='#d6e6e3';ctx.fillText(entity.opened?'信标已接通':`圈内调频 ${Math.floor(elapsed/60)} / ${Math.ceil(required/60)}秒`,x,y+60);continue;
+    }
+    if(entity.spriteId==='world_gate'){
+      drawHarborLandmark(ctx,entity);ctx.font='14px system-ui';ctx.fillStyle='#f1e4c7';ctx.textAlign='center';
+      const locked=entity.id==='tutorial:gate'?'跟随教学，试音后开闸':'完成任意两个目标';
+      ctx.fillText(entity.modelLabel??(entity.unlocked?'首领入口 · F':locked),x,y+56);continue;
+    }
+    if(entity.spriteId.startsWith('easter_')){drawHarborLandmark(ctx,entity);ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#f2e6cb';const labels=/** @type {Record<string,string>} */({easter_chair:'躺椅 · F坐下8秒',easter_note:'留言 · F阅读',easter_lunchbox:'饭盒 · 找齐三张留言',easter_console:'接口拼图 · 三武器后F',easter_interface:entity.modelLabel??'射击接口'});ctx.fillText(entity.opened?'已发现':labels[entity.spriteId]??'秘密',x,y+36);continue;}
+    if(entity.spriteId==='world_cache'){drawHarborLandmark(ctx,entity);ctx.font='13px system-ui';ctx.textAlign='center';ctx.fillStyle='#e8e3c9';ctx.fillText(entity.opened?'已打开':'补给箱 · F',x,y+42);continue;}
     if(entity.spriteId==='claude_seal'){ctx.strokeStyle='#db967c';ctx.lineWidth=3;ctx.strokeRect(x-17,y-17,34,34);ctx.fillStyle='#e8c6a3';ctx.font='14px system-ui';ctx.textAlign='center';ctx.fillText(`${Math.ceil(entity.hp)}击`,x,y+5);continue;}
     if(entity.spriteId==='world_blast'){ctx.strokeStyle='#eebd82';ctx.fillStyle='#f8c47622';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,entity.radius,0,Math.PI*2);ctx.fill();ctx.stroke();continue;}
     if(entity.id.startsWith('rescue:')){const lines={'companion_patch':['封禁装置把我卡在这里了。','分我一口大白饭，我跟你走。'],'companion_cache':['两个箱子我都看见了。','分我一口，我帮你记路。'],'companion_router':['你已经摸到两把接口了。','分我一口，我帮你换着打。'],'companion_decoy':['刚才那次重置被你拆穿了。','分我一口，我留个替身给你。']};const pair=entity.spriteId==='companion_patch'?lines.companion_patch:entity.spriteId==='companion_cache'?lines.companion_cache:entity.spriteId==='companion_router'?lines.companion_router:entity.spriteId==='companion_decoy'?lines.companion_decoy:['我有点虚。','分我一口大白饭。'];const riceHud=Number(/** @type {{rice?:number}|null} */(view.hud&&typeof view.hud==='object'&&!Array.isArray(view.hud)?view.hud:null)?.rice??0);const line=riceHud<1&&!view.entities.some(other=>other.spriteId==='riceXp'&&Math.hypot(other.position.x-x,other.position.y-y)<=96)?'先去捡一口大白饭。':pair[Math.floor(view.tick/120)%2];ctx.globalAlpha=.6;drawActor(ctx,entity.spriteId==='companion_patch'?'claude':entity.spriteId==='companion_router'?'grok':'deepseek',x,y,52,{tick:view.tick,moving:false,attacking:false,facing:0,horizontal:1,hopPhase:16},entity);ctx.globalAlpha=1;ctx.fillStyle='#0c2530ee';ctx.fillRect(x-78,y-58,156,22);ctx.fillStyle='#f4efe0';ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillText(line,x,y-43);continue;}
+    if(entity.spriteId==='world_checkpoint'){
+      drawHarborLandmark(ctx,entity);
+      ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#e7e6cf';
+      ctx.fillText('港口存档台 · R',x,y+34);continue;
+    }
     if(entity.kind==='objective'){
       const pulse=2+Math.sin(view.tick/35)*2;ctx.strokeStyle='#b5dbba44';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,38+pulse,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#8dbbb0';ctx.fillRect(x-17,y-8,34,20);ctx.fillStyle='#d7e7ca';ctx.fillRect(x-12,y-13,24,8);ctx.fillStyle='#446b65';ctx.fillRect(x-8,y-3,16,5);ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillStyle='#c8e6d4';ctx.fillText('检查点 · F',x,y+49);continue;
     }
@@ -225,7 +266,14 @@ export function renderPreviewFrame(ctx,view,width,height,pixelRatio,popups=[]) {
       ctx.strokeStyle='#d9e7df99';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x+hud.aim.x*29,y+hud.aim.y*29);ctx.lineTo(x+hud.aim.x*42,y+hud.aim.y*42);ctx.stroke();continue;
     }
     if(['boss_gpt','boss_grok'].includes(entity.spriteId)){const warning=/** @type {{point?:import('../contracts.d.ts').Vec2;executeAt?:number}|null} */(entity.bossTelegraph);if(warning?.point){ctx.strokeStyle='#ecc4a2';ctx.lineWidth=3;ctx.setLineDash([8,5]);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(warning.point.x,warning.point.y);ctx.stroke();ctx.setLineDash([]);}drawActor(ctx,model??'grok',x,y,120,{...pose,stage:entity.spriteId==='boss_grok'?4:stage},entity);continue;}
-    if(entity.spriteId==='grok_rocket'){ctx.fillStyle='#e0ae7d';ctx.save();ctx.translate(x,y);ctx.rotate(entity.facingRadians);ctx.fillRect(-15,-7,30,14);ctx.fillStyle='#ecce9c';ctx.fillRect(-21,-4,6,8);ctx.restore();continue;}
+    if(entity.spriteId==='grok_rocket'){
+      ctx.save();ctx.translate(x,y);ctx.rotate(entity.facingRadians);
+      const flame=8+Math.sin(view.tick*1.2)*4;
+      ctx.fillStyle='#ffa263';ctx.beginPath();ctx.moveTo(-10,-4);ctx.lineTo(-17-flame,0);ctx.lineTo(-10,4);ctx.fill();
+      ctx.fillStyle='#e9cfab';ctx.beginPath();ctx.moveTo(19,0);ctx.lineTo(6,-6);ctx.lineTo(-13,-5);ctx.lineTo(-13,5);ctx.lineTo(6,6);ctx.fill();
+      ctx.fillStyle='#d77661';ctx.fillRect(-12,-9,7,4);ctx.fillRect(-12,5,7,4);ctx.fillRect(5,-4,5,8);
+      ctx.fillStyle='#667d90';ctx.fillRect(-1,-3,4,4);ctx.restore();continue;
+    }
     if(entity.spriteId==='gpt_reset_node'||entity.spriteId==='gpt_node_marker'){ctx.strokeStyle=entity.spriteId==='gpt_reset_node'?'#f4d48d':'#a49abc';ctx.lineWidth=3;ctx.strokeRect(x-18,y-18,36,36);if(entity.spriteId==='gpt_reset_node'){ctx.fillStyle='#d2b482';ctx.fillRect(x-12,y-12,24,24);ctx.fillStyle='#f5e5c8';ctx.font='12px system-ui';ctx.textAlign='center';ctx.fillText(String(Math.ceil(entity.hp)),x,y+35);}continue;}
     if(entity.spriteId==='boss_claude'){drawBossWarning(ctx,entity,view.tick);ctx.save();ctx.translate(x,y);ctx.scale(2,2);drawActor(ctx,'claude',0,0,80,pose,entity);ctx.restore();}
     else if(entity.spriteId==='enemy_claude_guard'){
@@ -268,6 +316,13 @@ function drawBossWarning(ctx,entity,tick){
 /** @param {CanvasRenderingContext2D} ctx @param {import('../contracts.d.ts').RenderSnapshot} view @param {number} width */
 function drawMinimap(ctx,view,width){
  const hud=/** @type {{map:{width:number;height:number;exploredCells:readonly string[]};treeHints:boolean}} */(view.hud),scale=150/hud.map.width,x=width-174,y=130,seen=new Set(hud.map.exploredCells);
- ctx.save();ctx.translate(x,y);ctx.fillStyle='#071e29df';ctx.fillRect(-5,-5,160,hud.map.height*scale+10);ctx.strokeStyle='#85a19a55';ctx.strokeRect(-5,-5,160,hud.map.height*scale+10);ctx.fillStyle='#32565a';for(const id of seen){const[cx,cy]=id.split(':').map(Number);ctx.fillRect(cx*160*scale,cy*160*scale,160*scale,160*scale);}
+ const h=hud.map.height*scale;
+ ctx.save();ctx.translate(x,y);ctx.fillStyle='#17283ce8';ctx.fillRect(-6,-18,162,h+24);
+ ctx.strokeStyle='#8b9e9e';ctx.lineWidth=1;ctx.strokeRect(-6,-18,162,h+24);
+ ctx.fillStyle='#c6d8cc';ctx.font='10px system-ui';ctx.textAlign='left';ctx.fillText('航迹',1,-5);
+ ctx.strokeStyle='#55707850';ctx.beginPath();
+ for(let gx=0;gx<=150;gx+=25){ctx.moveTo(gx,0);ctx.lineTo(gx,h);}
+ for(let gy=0;gy<=h;gy+=25){ctx.moveTo(0,gy);ctx.lineTo(150,gy);}ctx.stroke();
+ ctx.fillStyle='#40616c';for(const id of seen){const[cx,cy]=id.split(':').map(Number);ctx.fillRect(cx*160*scale,cy*160*scale,160*scale,160*scale);}
  const player=view.entities.find(entity=>entity.kind==='player');for(const entity of view.entities){const interaction=['world_checkpoint','world_cache'].includes(entity.spriteId);if(interaction&&(!hud.treeHints||!player||Math.hypot(entity.position.x-player.position.x,entity.position.y-player.position.y)>300||entity.opened))continue;if(!['world_beacon','world_blockade','world_escort','world_gate','world_rest','world_checkpoint','world_cache'].includes(entity.spriteId)&&entity.kind!=='player')continue;const visible=seen.has(`${Math.floor(entity.position.x/160)}:${Math.floor(entity.position.y/160)}`);if(!visible&&!(entity.spriteId==='world_gate'&&entity.unlocked))continue;ctx.fillStyle=entity.kind==='player'?'#fff2cb':['world_beacon','world_blockade','world_escort'].includes(entity.spriteId)?'#acd295':'#d7a180';ctx.fillRect(entity.position.x*scale-2,entity.position.y*scale-2,4,4);}ctx.restore();
 }

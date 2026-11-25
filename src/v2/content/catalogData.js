@@ -63,10 +63,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": true,
         "rarity": "common",
-        "rankDescriptions": [
-          "基础射击额外分出两枚0.4W泡泡。",
-          "额外泡泡提高至0.6W。"
-        ]
+        "rankDescriptions": ["每次开火往两侧和身后多射至少 4 发，每发造成 55% 武器基础伤害。", "每次多射至少 6 发，每发造成 55% 武器基础伤害。"]
       },
       "version": "2.0.0-preview.5"
     },
@@ -96,7 +93,7 @@ export const CATALOG_DATA = {
         "sourceRow": ["单发变轻，射速和弹数变多", "没有武器限制"],
         "previewAvailable": true,
         "rarity": "advanced",
-        "rankDescriptions": ["伤害-25%，间隔×0.55，额外两发。", "伤害-25%，间隔×0.45，额外两发。"]
+        "rankDescriptions": ["每次多射 2 发，单发伤害降低 25%，射击间隔缩短 45%。", "每次多射 2 发，单发伤害降低 25%，射击间隔缩短 55%。"]
       },
       "version": "2.0.0-preview.5"
     },
@@ -111,7 +108,7 @@ export const CATALOG_DATA = {
         "sourceRow": ["低血或致命伤倒回两秒", "震开小怪并清弹幕"],
         "previewAvailable": true,
         "rarity": "advanced",
-        "rankDescriptions": ["触发后 45 秒才能再来一次。", "触发后 30 秒才能再来一次。"]
+        "rankDescriptions": ["生命跌至 15% 或遭受致命一击时，退回约 2 秒前的状态。每 45 秒一次。", "危急时回退，每 30 秒可用一次。"]
       },
       "version": "2.0.0-preview.5"
     },
@@ -150,10 +147,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": true,
         "rarity": "common",
-        "rankDescriptions": [
-          "主武器射程缩短25%，伤害提高30%。贴近一点，泡泡更重。",
-          "主武器射程缩短25%，伤害提高45%。替换一级加成，不重复叠加。"
-        ]
+        "rankDescriptions": ["主武器伤害提高 30%。", "主武器伤害提高 45%。"]
       },
       "version": "2.0.0-preview.5"
     },
@@ -192,10 +186,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": true,
         "rarity": "common",
-        "rankDescriptions": [
-          "完全落空的主弹到期后补一发半伤追踪泡。",
-          "重试泡泡伤害提高至0.8W。"
-        ]
+        "rankDescriptions": ["打空后会补射一发追踪泡，造成 50% 武器基础伤害。", "补射的追踪泡造成 80% 武器基础伤害。"]
       },
       "version": "2.0.0-preview.5"
     },
@@ -213,10 +204,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": true,
         "rarity": "common",
-        "rankDescriptions": [
-          "每次射击有15%概率变成更大、更重的泡泡。",
-          "大泡概率提高至25%。"
-        ]
+        "rankDescriptions": ["射速提高 50%。弹道变散，30% 的泡泡会变招。", "射速提高 75%。弹道更散，45% 的泡泡会变招。"]
       },
       "version": "2.0.0-preview.5"
     },
@@ -233,10 +221,7 @@ export const CATALOG_DATA = {
           "吸附范围与颗粒拖尾"
         ],
         "previewAvailable": true,
-        "rankDescriptions": [
-          "大白饭吸附半径增加80。只让收饭更方便，不增加经验或收入。",
-          "大白饭吸附半径增加140，替换一级的80。经验与收入不变。"
-        ],
+        "rankDescriptions": ["更远就能吸到饭。每捡一碗，回复 1 点生命。", "吸饭距离再扩大，每碗回复 2 点生命。"],
         "rarity": "common"
       },
       "version": "2.0.0-preview.5"
@@ -255,10 +240,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": true,
         "rarity": "common",
-        "rankDescriptions": [
-          "3秒未射击时，技能额外恢复每秒0.5秒。",
-          "额外恢复提高至每秒0.8秒。"
-        ]
+        "rankDescriptions": ["每过 1 秒，主动技能额外恢复 0.5 秒冷却。", "每过 1 秒，主动技能额外恢复 0.8 秒冷却。"]
       },
       "version": "2.0.0-preview.5"
     },
@@ -276,10 +258,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": true,
         "rarity": "common",
-        "rankDescriptions": [
-          "冲刺结束留下伤害尾流，每跳5伤。",
-          "尾流每跳8伤。"
-        ]
+        "rankDescriptions": ["冲刺时向四周射出 6 发泡泡。停下留下 2 秒尾流，每秒造成 10 点基础伤害。", "冲刺射出 10 发泡泡。尾流持续 2 秒，每秒造成 16 点基础伤害。"]
       },
       "version": "2.0.0-preview.5"
     },
@@ -318,10 +297,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": true,
         "rarity": "common",
-        "rankDescriptions": [
-          "主弹首次命中后转发半伤泡泡，跳距180。",
-          "转发跳距提高至260。"
-        ]
+        "rankDescriptions": ["单发主弹命中后会弹向附近另一名敌人，造成半伤。", "泡泡能弹到更远的敌人，伤害仍为一半。"]
       },
       "version": "2.0.0-preview.5"
     },
@@ -359,10 +335,7 @@ export const CATALOG_DATA = {
           "样本吸收、三条来源进度"
         ],
         "previewAvailable": true,
-        "rankDescriptions": [
-          "击杀积累样本：蟹变护甲/受伤盾，GPT变追击泡，Bot变移速/虚影。每阶6/6/10样本，最多3阶。",
-          "每阶样本降至蟹4 / GPT4 / Bot7，已有样本立即结算。能力仍最多3阶。"
-        ],
+        "rankDescriptions": ["击败敌人偷学它的本领。同阵营每 3 份样本升一阶。", "同阵营每 2 份样本升一阶。"],
         "rarity": "advanced"
       },
       "version": "2.0.0-preview.5"
@@ -380,10 +353,7 @@ export const CATALOG_DATA = {
           "敌人额度条与“已限流”印章"
         ],
         "previewAvailable": true,
-        "rankDescriptions": [
-          "每个敌人在滚动10秒内，最多对你造成18点防御前伤害。护盾吸收也计入额度。",
-          "每个敌人的10秒伤害额度降至12。沿用最近10秒记录，不会重新发放额度。"
-        ],
+        "rankDescriptions": ["同一敌人每 10 秒最多对你打出 18 点基础伤害。", "同一敌人每 10 秒最多打出 12 点基础伤害。"],
         "rarity": "advanced"
       },
       "version": "2.0.0-preview.5"
@@ -444,10 +414,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": true,
         "rarity": "advanced",
-        "rankDescriptions": [
-          "主动技能生成3秒诱饵。",
-          "诱饵持续5秒。"
-        ]
+        "rankDescriptions": ["每 5 秒留下一个会开火的分身，最多 2 个。", "每 5 秒留下一个会开火的分身，最多 3 个。"]
       },
       "version": "2.0.0-preview.5"
     },
@@ -527,10 +494,7 @@ export const CATALOG_DATA = {
           "大伤害护甲闪光"
         ],
         "previewAvailable": true,
-        "rankDescriptions": [
-          "单次防御前伤害达到20时，该次伤害额外降低20%。小额攻击不变。",
-          "单次防御前伤害达到20时，该次伤害额外降低30%。小额攻击不变。"
-        ],
+        "rankDescriptions": ["受到至少 20 点基础伤害时，这一击减伤 20%。", "受到至少 20 点基础伤害时，这一击减伤 30%。"],
         "rarity": "advanced"
       },
       "version": "2.0.0-preview.5"
@@ -654,10 +618,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": true,
         "rarity": "legendary",
-        "rankDescriptions": [
-          "冲刺后下一发追加三枚穿透影泡，各0.6W。",
-          "影泡伤害提高至0.9W。"
-        ]
+        "rankDescriptions": ["冲刺后 1 秒内开火，追加 3 发穿透泡，每发造成 60% 武器基础伤害。", "追加 3 发穿透泡，每发造成 90% 武器基础伤害。"]
       },
       "version": "2.0.0-preview.5"
     },
@@ -675,10 +636,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": true,
         "rarity": "legendary",
-        "rankDescriptions": [
-          "每120大白饭减技能CD并发追踪泡。",
-          "每90大白饭触发。"
-        ]
+        "rankDescriptions": ["捡饭向外射 4 发泡泡，本局射速提高 1%，可叠加。升级时重创全场小怪。", "每碗射 6 发，射速提高 1.5%，可叠加。升级时重创全场小怪。"]
       },
       "version": "2.0.0-preview.5"
     },
@@ -717,10 +675,7 @@ export const CATALOG_DATA = {
         ],
         "previewAvailable": true,
         "rarity": "legendary",
-        "rankDescriptions": [
-          "拦截技能/伙伴封禁，获得3秒输出强化，冷却20秒。",
-          "封禁拦截冷却缩短至14秒。"
-        ]
+        "rankDescriptions": ["挡住禁锢或封禁，获得 5 秒双倍射速和 50% 移速，并震击近敌。", "同样能挡控制，震击基础伤害从 25 提高至 45。"]
       },
       "version": "2.0.0-preview.5"
     },
@@ -1045,6 +1000,7 @@ export const CATALOG_DATA = {
       "kind": "skill",
       "displayName": "断开连接",
       "parameters": {
+        "summary": "挣脱禁锢与减速，把身边的小怪推开",
         "description": "skill_disconnect / 断开连接：清除自身禁锢/减速，沿瞄准方向推开 180 范围普通敌人 120 距离；不解除技能封禁，也不能在被封禁时施放；12；初始",
         "source": "03-loadout.md",
         "handler": "content/handlers/skills.js#planSkillDisconnect",
@@ -1064,6 +1020,7 @@ export const CATALOG_DATA = {
       "kind": "skill",
       "displayName": "缓存护盾",
       "parameters": {
+        "summary": "得到 25 点护盾，持续 5 秒",
         "description": "skill_cache / 缓存护盾：获得 25 护盾持续 5 秒；护盾不叠加，刷新取较大剩余值；16；6 零件",
         "source": "03-loadout.md",
         "handler": "content/handlers/skills.js#planSkillCache",
@@ -1083,6 +1040,7 @@ export const CATALOG_DATA = {
       "kind": "skill",
       "displayName": "仿佛看到原子弹爆炸（批量处理）",
       "parameters": {
+        "summary": "瞄准一片水域，0.6 秒后炸出 65 点基础伤害",
         "description": "skill_batch / 仿佛看到原子弹爆炸（批量处理）：瞄准方向 400 内、半径 130 的区域在 0.6 秒后爆发 65 伤；有清晰预警；12；8 零件",
         "source": "03-loadout.md",
         "handler": "content/handlers/skills.js#planSkillBatch",
@@ -1102,6 +1060,7 @@ export const CATALOG_DATA = {
       "kind": "skill",
       "displayName": "重定向",
       "parameters": {
+        "summary": "把迎面而来的子弹反射回去，持续 1.2 秒",
         "description": "skill_redirect / 重定向：1.2 秒内将触及半径 90 的可反射敌弹转为朝瞄准方向的己方弹，每枚 15 伤，最多 12 枚；火箭/光束不可反射；15；10 零件",
         "source": "03-loadout.md",
         "handler": "content/handlers/skills.js#planSkillRedirect",
@@ -1121,6 +1080,7 @@ export const CATALOG_DATA = {
       "kind": "skill",
       "displayName": "沙箱",
       "parameters": {
+        "summary": "放一片持续 4 秒的减速区，小怪减速一半",
         "description": "skill_sandbox / 沙箱：瞄准位置放置半径 160、持续 4 秒的区域，普通敌人移速 -50%，Boss -20%；14；8 零件",
         "source": "03-loadout.md",
         "handler": "content/handlers/skills.js#planSkillSandbox",
@@ -1140,6 +1100,7 @@ export const CATALOG_DATA = {
       "kind": "skill",
       "displayName": "分叉进程",
       "parameters": {
+        "summary": "留下替身吸引小怪，4 秒后爆开",
         "description": "skill_fork / 分叉进程：生成持续 4 秒的鱼形诱饵，吸引 450 内非 Boss 普通敌人；结束在 100 范围爆发 25 伤；18；10 零件",
         "source": "03-loadout.md",
         "handler": "content/handlers/skills.js#planSkillFork",
@@ -1159,6 +1120,7 @@ export const CATALOG_DATA = {
       "kind": "skill",
       "displayName": "回滚",
       "parameters": {
+        "summary": "回到约 2 秒前的位置，补回期间损失生命的四成，最多 15 点",
         "description": "skill_rollback / 回滚：回到 2 秒前的合法位置，恢复这 2 秒实际失去生命的 40%，上限 15；不恢复资源/护盾/冷却，不复活；目标不合法则就近找点；20；12 零件",
         "source": "03-loadout.md",
         "handler": "content/handlers/skills.js#planSkillRollback",
@@ -1178,6 +1140,7 @@ export const CATALOG_DATA = {
       "kind": "skill",
       "displayName": "用户彻底怒了（超频）",
       "parameters": {
+        "summary": "加快开火和游动，持续 4 秒",
         "description": "skill_overclock / 用户彻底怒了（超频）：4 秒内基础射击间隔 ×0.65、移速 +10%；不影响插件/伙伴内置冷却；18；12 零件",
         "source": "03-loadout.md",
         "handler": "content/handlers/skills.js#planSkillOverclock",

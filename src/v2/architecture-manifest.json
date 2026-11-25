@@ -9318,7 +9318,8 @@
       "dependencies": [
         "domain/easter.js",
         "domain/entities.js",
-        "domain/plans.js"
+        "domain/plans.js",
+        "domain/world/beacon.js"
       ],
       "functions": [
         {
@@ -9599,6 +9600,39 @@
             "domain/plans.js#createStateChange"
           ],
           "implementationScope": "adventure-slice API"
+        }
+      ]
+    },
+    {
+      "path": "domain/world/beacon.js",
+      "layer": "domain",
+      "purpose": "Occupation area and the three one-use relay buoys, in world units.",
+      "dependencies": [],
+      "functions": [
+        {
+          "description": "tuneStation",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "tuneStation",
+          "args": [
+            {
+              "name": "objective",
+              "type": "untyped"
+            },
+            {
+              "name": "center",
+              "type": "untyped"
+            },
+            {
+              "name": "player",
+              "type": "untyped"
+            }
+          ],
+          "result": "ObjectiveState",
+          "implementation": "implemented",
+          "calls": []
         }
       ]
     },
@@ -10180,6 +10214,7 @@
         "domain/plans.js",
         "domain/rewards.js",
         "domain/world/api.js",
+        "domain/world/beacon.js",
         "domain/world/lateMechanics.js",
         "domain/world/regionRules.js"
       ],
@@ -10193,11 +10228,12 @@
             }
           ],
           "result": "SystemPlan",
-          "description": "在探索阶段处理封锁进度或占领信标；所需进度由目标记录决定，短途默认35秒、远征120秒。",
+          "description": "在探索阶段处理封锁进度或占领信标；所需进度由目标记录决定，短途默认35秒、新远征45秒，接力浮标每盏增加5秒。",
           "calls": [
             "domain/geometry.js#distanceSquared",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
+            "domain/world/beacon.js#tuneStation",
             "domain/world/lateMechanics.js#planObjectiveSignal",
             "domain/world/objectives.js#planObjectiveCompletion"
           ],
@@ -11559,6 +11595,7 @@
       "dependencies": [
         "content/skillCapabilities.js",
         "domain/serialization.js",
+        "domain/world/beacon.js",
         "domain/world/regionRules.js"
       ],
       "functions": [
@@ -11871,6 +11908,68 @@
       ]
     },
     {
+      "path": "preview/harbor.js",
+      "layer": "host",
+      "purpose": "港口海床和航标。全部装饰使用世界坐标；交互半径、开启状态和进度来自渲染快照。",
+      "dependencies": [],
+      "functions": [
+        {
+          "description": "drawHarborWater",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "drawHarborWater",
+          "args": [
+            {
+              "name": "ctx",
+              "type": "untyped"
+            },
+            {
+              "name": "camera",
+              "type": "untyped"
+            },
+            {
+              "name": "width",
+              "type": "untyped"
+            },
+            {
+              "name": "height",
+              "type": "untyped"
+            },
+            {
+              "name": "view",
+              "type": "untyped"
+            }
+          ],
+          "result": "void",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "drawHarborLandmark",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "drawHarborLandmark",
+          "args": [
+            {
+              "name": "ctx",
+              "type": "untyped"
+            },
+            {
+              "name": "entity",
+              "type": "untyped"
+            }
+          ],
+          "result": "void",
+          "implementation": "implemented",
+          "calls": []
+        }
+      ]
+    },
+    {
       "path": "preview/host.js",
       "layer": "host",
       "purpose": "Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,",
@@ -11894,6 +11993,7 @@
         "engine/session.js",
         "preview/modManager.js",
         "preview/nestManager.js",
+        "preview/radio.js",
         "preview/view.js"
       ],
       "functions": [
@@ -11948,6 +12048,9 @@
             "engine/session.js#stepSessionWorld",
             "preview/modManager.js#mountModManager",
             "preview/nestManager.js#mountNestManager",
+            "preview/radio.js#routeBrief",
+            "preview/radio.js#stationName",
+            "preview/radio.js#voyageLog",
             "preview/view.js#getPreviewCamera",
             "preview/view.js#renderPreviewFrame"
           ],
@@ -12049,12 +12152,78 @@
       ]
     },
     {
+      "path": "preview/radio.js",
+      "layer": "host",
+      "purpose": "深夜食堂电台。所有台词从当前航次与已完成的目标还原，读档不需要额外记录。",
+      "dependencies": [],
+      "functions": [
+        {
+          "description": "stationName",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "stationName",
+          "args": [
+            {
+              "name": "id",
+              "type": "untyped"
+            }
+          ],
+          "result": "string",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "routeBrief",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "routeBrief",
+          "args": [
+            {
+              "name": "mode",
+              "type": "untyped"
+            },
+            {
+              "name": "faction",
+              "type": "untyped"
+            }
+          ],
+          "result": "string",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "voyageLog",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "voyageLog",
+          "args": [
+            {
+              "name": "state",
+              "type": "untyped"
+            }
+          ],
+          "result": "{speaker:string, text:string}[]",
+          "implementation": "implemented",
+          "calls": []
+        }
+      ]
+    },
+    {
       "path": "preview/view.js",
       "layer": "host",
       "purpose": "Canvas presentation for the combat preview. Never mutates or simulates game state.",
       "dependencies": [
         "domain/geometry.js",
-        "preview/characters.js"
+        "domain/world/beacon.js",
+        "preview/characters.js",
+        "preview/harbor.js",
+        "preview/radio.js"
       ],
       "functions": [
         {
@@ -12124,6 +12293,9 @@
           "calls": [
             "preview/characters.js#drawCharacter",
             "preview/characters.js#resolveCharacterModel",
+            "preview/harbor.js#drawHarborLandmark",
+            "preview/harbor.js#drawHarborWater",
+            "preview/radio.js#stationName",
             "preview/view.js#getPreviewCamera"
           ],
           "implementationScope": "core-preview"
@@ -13077,9 +13249,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 120,
-    "functions": 432,
-    "implemented": 392,
+    "modules": 123,
+    "functions": 438,
+    "implemented": 398,
     "placeholders": 40
   }
 }

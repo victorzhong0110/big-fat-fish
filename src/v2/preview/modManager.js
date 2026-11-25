@@ -15,7 +15,7 @@ export function mountModManager(root, base, notify) {
   let installed = /** @type {{pack:import('../contracts.d.ts').ModPackage; enabled:boolean}[]} */([]), loading = false, disposed = false;
   const listeners = /** @type {(() => void)[]} */([]);
   const input = document.createElement('input'); input.type = 'file'; input.accept = '.json,application/json'; input.hidden = true;
-  const button = document.createElement('button'); button.type = 'button'; button.textContent = '安装本地模组 (.json)';
+  const button = document.createElement('button'); button.type = 'button'; button.textContent = '安装模组文件';
   const list = document.createElement('div'); list.className = 'mod-list'; list.setAttribute('aria-live', 'polite');
   const status = document.createElement('p'); status.className = 'scope-note';
   root.append(button, input, list, status);

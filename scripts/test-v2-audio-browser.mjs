@@ -1,3 +1,4 @@
+import { ensureDeparture, setDrawer } from './v2-browser-ui-helpers.mjs';
 import assert from 'node:assert/strict';
 import {createServer} from 'vite';
 import {chromium} from 'playwright-core';
@@ -10,7 +11,7 @@ try{
  const page=await browser.newPage({viewport:{width:1280,height:800}});page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(instrument);await page.goto(url);
  await page.waitForFunction(()=>document.querySelector('#background-music').readyState>0);
  check(await page.locator('#background-music').evaluate(a=>a.paused&&a.duration>120&&a.loop),'Original MP3 decodes, loops, and waits for a gesture');
- await page.locator('#settings-panel summary').click();await page.waitForFunction(()=>!document.querySelector('#background-music').paused);await page.waitForTimeout(250);
+ await setDrawer(page, 'settings-panel', true);await page.waitForFunction(()=>!document.querySelector('#background-music').paused);await page.waitForTimeout(250);
  check(await page.locator('#background-music').evaluate(a=>a.currentTime>0),'Real music playback advances');
  await page.locator('#home-music-volume').fill('23');check(await page.evaluate(()=>Math.abs(window.__gains[0].gain.value-.23)<.001),'Music volume controls a real Web Audio gain');
  check(await page.locator('#pause-music-volume').inputValue()==='23','Home and pause controls remain synchronized');
@@ -20,11 +21,11 @@ try{
  await page.locator('#home-sfx-volume').fill('31');check(await page.evaluate(()=>Math.abs(window.__gains[1].gain.value-.31)<.001),'SFX use an independent gain');
  await page.evaluate(()=>{window.__before=window.__starts;});await page.locator('#home-sfx-muted').check();await page.waitForTimeout(150);await page.evaluate(()=>window.dispatchEvent(new CustomEvent('fish:game-sound',{detail:{type:'LevelGained'}})));
  check(await page.evaluate(()=>window.__gains[1].gain.value===0&&window.__starts===window.__before),'SFX mute suppresses new sound sources');
- await page.reload();await page.locator('#settings-panel summary').click();check(await page.locator('#home-sfx-muted').isChecked()&&await page.locator('#home-music-volume').inputValue()==='23','Sound settings survive reload');
- await page.locator('#settings-panel summary').click();await page.locator('#open-departure').click();await page.locator('#mode-guide').click();await page.locator('#start').click();await page.locator('#hud').waitFor({state:'visible'});await page.locator('#pause').click();check(await page.locator('#pause-music-volume').isVisible(),'Sound settings are available while paused');
- const mobile=await browser.newContext({viewport:{width:844,height:390},isMobile:true,hasTouch:true});const phone=await mobile.newPage();phone.on('pageerror',e=>errors.push(e.message));await phone.addInitScript(instrument);await phone.goto(url);await phone.locator('#settings-panel summary').tap();
- const slider=phone.locator('#home-music-volume'),box=await slider.boundingBox();check(box.height>=44,'Volume slider has a 44px touch target');await phone.touchscreen.tap(box.x+box.width*.75,box.y+box.height/2);check(Number(await slider.inputValue())>60,'Native touch changes music volume');
+ await page.reload();await setDrawer(page, 'settings-panel', true);check(await page.locator('#home-sfx-muted').isChecked()&&await page.locator('#home-music-volume').inputValue()==='23','Sound settings survive reload');
+ await setDrawer(page, 'settings-panel', false);await ensureDeparture(page);await page.locator('#mode-guide').click();await page.locator('#start').click();await page.locator('#hud').waitFor({state:'visible'});await page.locator('#pause').click();check(await page.locator('#pause-music-volume').isVisible(),'Sound settings are available while paused');
+ const mobile=await browser.newContext({viewport:{width:844,height:390},isMobile:true,hasTouch:true});const phone=await mobile.newPage();phone.on('pageerror',e=>errors.push(e.message));await phone.addInitScript(instrument);await phone.goto(url);await phone.locator('#home-drawer > summary').tap();await phone.locator('#settings-panel > summary').tap();
+ const slider=phone.locator('#home-music-volume');await slider.scrollIntoViewIfNeeded();const box=await slider.boundingBox();check(box.height>=44,'Volume slider has a 44px touch target');await phone.touchscreen.tap(box.x+box.width*.75,box.y+box.height/2);check(Number(await slider.inputValue())>60,'Native touch changes music volume');
  check(await phone.evaluate(()=>Math.abs(window.__gains[0].gain.value-Number(document.querySelector('#home-music-volume').value)/100)<.001),'Mobile touch updates the actual audio gain');
- const fallback=await browser.newPage();fallback.on('pageerror',e=>errors.push(e.message));await fallback.addInitScript(()=>{window.AudioContext=undefined;window.webkitAudioContext=undefined;});await fallback.goto(url);await fallback.locator('#settings-panel summary').click();await fallback.waitForFunction(()=>!document.querySelector('#background-music').paused);check(await fallback.locator('#background-music').evaluate(a=>a.duration>120),'Media playback works when Web Audio is unavailable');
+ const fallback=await browser.newPage();fallback.on('pageerror',e=>errors.push(e.message));await fallback.addInitScript(()=>{window.AudioContext=undefined;window.webkitAudioContext=undefined;});await fallback.goto(url);await setDrawer(fallback, 'settings-panel', true);await fallback.waitForFunction(()=>!document.querySelector('#background-music').paused);check(await fallback.locator('#background-music').evaluate(a=>a.duration>120),'Media playback works when Web Audio is unavailable');
  check(errors.length===0,`No browser errors: ${errors.join(', ')}`);console.log(`PASS ${checks.length} audio checks`);
 }finally{await browser.close();await server.close();}

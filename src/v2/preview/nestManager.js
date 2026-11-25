@@ -26,7 +26,7 @@ export function mountNestManager(root, catalog, storage, onProfile, notify) {
   title.className = 'nest-balance'; tabs.className = 'nest-tabs'; tabs.setAttribute('aria-label','小窝设施'); body.className = 'nest-content'; root.append(title,tabs,body);
   /** @param {string} text @returns {HTMLButtonElement} */
   function button(text) { const node = document.createElement('button'); node.type = 'button'; node.textContent = text; return node; }
-  for (const [id,label] of [['tree','饭碗 · 技能树'],['facilities','设施'],['gear','MCP与技能'],['dsh','DSH'],['collection','发现与伙伴']]) {
+  for (const [id,label] of [['tree','饭碗 · 技能树'],['facilities','设施'],['gear','武器与技能'],['dsh','全局插件'],['collection','发现与伙伴']]) {
     const item=button(label);item.dataset.tab=id;item.onclick=()=>{tab=id;render();};tabs.append(item);
   }
   /** @param {import('../contracts.d.ts').NestAction} action */
@@ -44,46 +44,47 @@ export function mountNestManager(root, catalog, storage, onProfile, notify) {
     if(!profile.unlockedSkills.includes(skillId)||!available.includes(skillId))skillId='skill_disconnect';
     const slots=profile.purchasedTree.includes('tree_mcp_d')?2:1;
     for(let index=0;index<slots+1;index++){
-      const isSkill=index===slots,label=document.createElement('label'),select=document.createElement('select');label.textContent=isSkill?'主动技能':`出发MCP ${index+1}`;select.dataset.loadout=isSkill?'skill':`weapon-${index}`;
+      const isSkill=index===slots,label=document.createElement('label'),select=document.createElement('select');label.textContent=isSkill?'主动技能':`武器 ${index+1}`;select.dataset.loadout=isSkill?'skill':`weapon-${index}`;
       const ids=(isSkill?profile.unlockedSkills:profile.unlockedWeapons).filter(id=>available.includes(id));
       if(!isSkill&&index===1){const option=document.createElement('option');option.value='';option.textContent='不携带第二把';select.append(option);}
       for(const id of ids){const option=document.createElement('option');option.value=id;option.textContent=catalog.definitions[id].displayName;select.append(option);}
       select.value=isSkill?skillId:weaponIds[index]??'';select.disabled=busy||!!profile.checkpoint;
-      select.onchange=()=>{if(isSkill)skillId=select.value;else {const next=[...weaponIds];next[index]=select.value;weaponIds=next.filter(Boolean);if(new Set(weaponIds).size!==weaponIds.length){weaponIds=weaponIds.slice(0,1);notify('第二把请选择不同的MCP。');render();}}};label.append(select);body.append(label);
+      select.onchange=()=>{if(isSkill)skillId=select.value;else {const next=[...weaponIds];next[index]=select.value;weaponIds=next.filter(Boolean);if(new Set(weaponIds).size!==weaponIds.length){weaponIds=weaponIds.slice(0,1);notify('这把已经装上了，换一把吧。');render();}}};label.append(select);body.append(label);
     }
     const companionLabel=document.createElement('label'),companionSelect=document.createElement('select');companionLabel.textContent='随行伙伴';companionSelect.dataset.loadout='companion';const empty=document.createElement('option');empty.value='';empty.textContent='独自出门';companionSelect.append(empty);
     const companionIds=profile.unlockedCompanions.filter(id=>available.includes(id)&&(id==='companion_rice'||profile.facilities.includes('home_guest')));for(const id of companionIds){const option=document.createElement('option');option.value=id;option.textContent=catalog.definitions[id].displayName;companionSelect.append(option);}if(!companionIds.includes(companionId))companionId='';companionSelect.value=companionId;companionSelect.disabled=busy||!!profile.checkpoint;companionSelect.onchange=()=>{companionId=companionSelect.value;};companionLabel.append(companionSelect);body.append(companionLabel);
-    const note=document.createElement('p');note.className='scope-note';note.textContent=catalog.modLock?.length?'此配装用于当前模组组合的冒险；社区装备只在本档内可用。':'此配装用于下次正式冒险。每局一位随行伙伴；被封禁时能力、跟随与冷却冻结。Free练习使用出发页试用设置。';body.append(note);
+    const note=document.createElement('p');note.className='scope-note';note.textContent=catalog.modLock?.length?'这套装备用于当前模组航次。':'下次出海就带这套。一趟可以带一位伙伴。';body.append(note);
   }
   function render() {
-    if(disposed)return;body.replaceChildren();
+    if(disposed)return;
+    const advancedTreeOpen = body.querySelector('details')?.open ?? false;
+    body.replaceChildren();
     for(const item of tabs.querySelectorAll('button'))item.setAttribute('aria-pressed',String(item.dataset.tab===tab));
-    if(!record){title.textContent='小窝档案读取中，暂不能消费资源。';return;}
+    if(!record){title.textContent='正在打开小窝…';return;}
     const profile=record.profile,locked=busy||!!profile.checkpoint;
     title.textContent=`算力卡 ${profile.gpuCards} · 碎片 ${profile.gpuFragments}/5 · 零件 ${profile.parts}${profile.checkpoint?' · 冒险进行中，成长与配装已锁定':''}`;
     if(tab==='tree'){
       const respec=button('免费重置整棵树');respec.disabled=locked||!profile.purchasedTree.length;respec.dataset.action='respec';respec.onclick=()=>{void act({type:'respec'});};body.append(respec);
-      const intro=document.createElement('p');intro.textContent='三条短分枝，每条先点开头，再从两条里选一条。长线先不用点。';body.append(intro);
+      const intro=document.createElement('p');intro.textContent='花算力卡学本领。洗点会全额退卡。';body.append(intro);
       /** @param {string} id @param {ParentNode} [parent] */
       const place=(id,parent=body)=>{const definition=catalog.definitions[id];if(!definition)return;const owned=profile.purchasedTree.includes(id),p=definition.parameters,parents=Array.isArray(p.prerequisites)?p.prerequisites.map(parentId=>catalog.definitions[String(parentId)]?.displayName??String(parentId)):[];const node=card(definition.displayName,`${p.effect} · ${p.cost}算力卡${parents.length?` · 前置：${parents.join('、')}`:''}`);if(parent!==body)parent.append(node);node.dataset.treeId=id;const buy=button(owned?'已点亮':'点亮节点');buy.disabled=locked||owned||!validateTreePurchase(profile,id,catalog).valid;buy.onclick=()=>{void act({type:'buyTree',id});};node.append(buy);};
       for(const [name,start,choice] of /** @type {const} */([['干饭',['tree_body_a','tree_body_b'],['tree_body_c','tree_body_d']],['射击',['tree_mcp_a','tree_mcp_b'],['tree_mcp_c','tree_mcp_d']],['技能',['tree_skill_a','tree_skill_b'],['tree_skill_c','tree_skill_d']]])){
         const heading=document.createElement('h3');heading.textContent=name;body.append(heading);
         for(const id of start)place(id);
-        const fork=document.createElement('p');fork.textContent='这两条抢的是手感，先点一条就够玩。';body.append(fork);
         for(const id of choice)place(id);
       }
-      const later=document.createElement('details');const summary=document.createElement('summary');summary.textContent='先不用点的长线';later.append(summary);body.append(later);
+      const later=document.createElement('details');const summary=document.createElement('summary');summary.textContent='进阶本领 · 探索与插件槽';later.open=advancedTreeOpen;later.append(summary);body.append(later);
       const tail=document.createElement('div');later.append(tail);
       for(const id of ['tree_body_e','tree_body_f','tree_mcp_e','tree_mcp_f','tree_skill_e','tree_skill_f',...Object.values(catalog.definitions).filter(item=>item.kind==='tree'&&(item.id.startsWith('tree_explore_')||item.id.startsWith('tree_dsh_'))).map(item=>item.id)])place(id,tail);
     }else if(tab==='facilities'){
       for(const definition of Object.values(catalog.definitions).filter(item=>item.kind==='facility')){const owned=profile.facilities.includes(definition.id),cost=Number(definition.parameters.partCost);const node=card(definition.displayName,`${definition.parameters.effect} · ${cost}零件`),buy=button(owned?'已建成':'建设');buy.disabled=locked||owned||profile.parts<cost;buy.onclick=()=>{void act({type:'build',id:definition.id});};node.dataset.facilityId=definition.id;node.append(buy);}
     }else if(tab==='gear'){
       loadoutControls(profile);
-      for(const definition of Object.values(catalog.definitions).filter(item=>['weapon','skill'].includes(item.kind))){const weapon=definition.kind==='weapon',owned=(weapon?profile.unlockedWeapons:profile.unlockedSkills).includes(definition.id),found=profile.discovered.includes(definition.id),facility=weapon?'home_bench':'home_terminal',cost=Number(definition.parameters.partCost);const node=card(definition.displayName,`${owned?'已解锁':found?'已发现':'尚未发现'} · ${cost}零件 · 需要${catalog.definitions[facility].displayName}${available.includes(definition.id)?'':' · 运行效果待开放'}`),buy=button(owned?'已解锁':'永久解锁');buy.disabled=locked||owned||!found||!profile.facilities.includes(facility)||profile.parts<cost||!available.includes(definition.id);buy.onclick=()=>{void act({type:'unlock',id:definition.id});};node.dataset.gearId=definition.id;node.append(buy);}
+      for(const definition of Object.values(catalog.definitions).filter(item=>['weapon','skill'].includes(item.kind))){const weapon=definition.kind==='weapon',owned=(weapon?profile.unlockedWeapons:profile.unlockedSkills).includes(definition.id),found=profile.discovered.includes(definition.id),facility=weapon?'home_bench':'home_terminal',cost=Number(definition.parameters.partCost);const node=card(definition.displayName,`${owned?'已解锁':found?'已发现':'尚未发现'} · ${cost}零件 · 需要${catalog.definitions[facility].displayName}${available.includes(definition.id)?'':' · 暂未开放'}`),buy=button(owned?'已解锁':'永久解锁');buy.disabled=locked||owned||!found||!profile.facilities.includes(facility)||profile.parts<cost||!available.includes(definition.id);buy.onclick=()=>{void act({type:'unlock',id:definition.id});};node.dataset.gearId=definition.id;node.append(buy);}
     }else if(tab==='dsh'){
       const note=document.createElement('p');note.textContent=`已开放 ${resolveDshSlotCount(profile,catalog)} / 3 槽，已装 ${profile.equippedDsh.length} 件。先击败首领或发现彩蛋，再点亮特殊节点。`;body.append(note);
       for(const definition of Object.values(catalog.definitions).filter(item=>item.kind==='dsh')){
-        const owned=profile.unlockedDsh.includes(definition.id),equipped=profile.equippedDsh.some(slot=>slot.id===definition.id),node=card(definition.displayName,`${String(definition.parameters.description).replace(/^[^/]+ \/ [^：]+：/,'').replace(/；详细边界见下$/,'')} · ${owned?'已收藏':'尚未发现'}${available.includes(definition.id)?'':' · 运行效果待开放'}`),select=document.createElement('select');
+        const owned=profile.unlockedDsh.includes(definition.id),equipped=profile.equippedDsh.some(slot=>slot.id===definition.id),node=card(definition.displayName,`${String(definition.parameters.description).replace(/^[^/]+ \/ [^：]+：/,'').replace(/；详细边界见下$/,'')} · ${owned?'已收藏':'尚未发现'}${available.includes(definition.id)?'':' · 暂未开放'}`),select=document.createElement('select');
         if(definition.id==='dsh_claude_allowlist'){for(const [value,label] of [['skillBan','保护技能'],['companionBan','保护伙伴']]){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}select.value=profile.equippedDsh.find(slot=>slot.id===definition.id)?.options.protect??'skillBan';select.disabled=locked;node.append(select);}
         const toggle=button(equipped?'卸下':'装配');toggle.disabled=locked||!owned||!available.includes(definition.id)||!equipped&&profile.equippedDsh.length>=resolveDshSlotCount(profile,catalog);toggle.onclick=()=>{void act({type:'equipDsh',slots:equipped?profile.equippedDsh.filter(slot=>slot.id!==definition.id):[...profile.equippedDsh,{id:definition.id,options:definition.id==='dsh_claude_allowlist'?{protect:select.value}:{}}]});};
         if(definition.id==='dsh_claude_allowlist')select.onchange=()=>{if(equipped)void act({type:'equipDsh',slots:profile.equippedDsh.map(slot=>slot.id===definition.id?{...slot,options:{protect:select.value}}:slot)});};node.dataset.dshId=definition.id;node.append(toggle);

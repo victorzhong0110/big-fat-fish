@@ -179,7 +179,7 @@ for(const module of sourceModel){
    planBossAi:'按阵营分派Claude、ChatGPT和Grok的真实首领处理器，跳过已死亡实体。',
    planClaudeBoss:'规划重钳控制、技能与伙伴封禁、半血扫击和难度连招；Free教学首领只使用钳击。',
    createAdventureMapPlan:'构建短途/API海域：信标、检查点、资源箱、装备、驻守敌人和按难度开放的机制。',
-   planObjectiveAdvance:'在探索阶段处理封锁进度或占领信标；所需进度由目标记录决定，短途默认35秒、远征120秒。',
+   planObjectiveAdvance:'在探索阶段处理封锁进度或占领信标；所需进度由目标记录决定，短途默认35秒、新远征45秒，接力浮标每盏增加5秒。',
    planObjectiveCompletion:'幂等完成信标、封锁或护送，发放一次目标奖励；累计完成两个后开放本区域首领门。',
    planFlowTransition:'校验探索、首领、成长面板、暂停与终态的允许转移，恢复时保留原面板。',
    validateContentCatalog:'校验原版目录数量、社区MCP/技能注册与包锁、稳定ID/引用、160点树前置DAG及运行能力声明。',
