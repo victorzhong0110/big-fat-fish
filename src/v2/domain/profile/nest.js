@@ -93,7 +93,7 @@ export function validateStartRequest(profile, request, catalog) {
   }
   if (request.weaponIds.length < 1 || request.weaponIds.length > 2 || new Set(request.weaponIds).size !== request.weaponIds.length || request.weaponIds.some(id => !profile.unlockedWeapons.includes(id) || catalog.definitions[id]?.kind !== 'weapon') || request.weaponIds.length === 2 && !profile.purchasedTree.includes('tree_mcp_d')) fail('Invalid owned weapon loadout or second start slot');
   if (!profile.unlockedSkills.includes(request.skillId) || catalog.definitions[request.skillId]?.kind !== 'skill') fail('Skill is not owned');
-  if (request.companionId !== null && (!profile.unlockedCompanions.includes(request.companionId) || request.companionId !== 'companion_rice' && !profile.facilities.includes('home_guest'))) fail('Companion is not available');
+  if (request.companionId !== null && !profile.unlockedCompanions.includes(request.companionId)) fail('Companion is not available');
   if (profile.checkpoint) fail('An active checkpoint exists; explicitly retire it before starting another run');
   return { valid: !diagnostics.length, diagnostics };
 }

@@ -10080,6 +10080,23 @@
       ],
       "functions": [
         {
+          "description": "extractionDuration",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "extractionDuration",
+          "args": [
+            {
+              "name": "nodes",
+              "type": "untyped"
+            }
+          ],
+          "result": "number",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
           "description": "canExtract",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
@@ -10121,7 +10138,8 @@
             "domain/geometry.js#distanceSquared",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
-            "domain/world/extraction.js#canExtract"
+            "domain/world/extraction.js#canExtract",
+            "domain/world/extraction.js#extractionDuration"
           ]
         }
       ]
@@ -11746,6 +11764,49 @@
       ]
     },
     {
+      "path": "engine/shootingRange.js",
+      "layer": "engine",
+      "purpose": "Start an isolated target lane. Only expose render data and discard persistence intents.",
+      "dependencies": [
+        "domain/difficulty.js",
+        "domain/entities.js",
+        "domain/initial.js",
+        "engine/tick.js"
+      ],
+      "functions": [
+        {
+          "description": "createShootingRange",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createShootingRange",
+          "args": [
+            {
+              "name": "catalog",
+              "type": "untyped"
+            },
+            {
+              "name": "profile",
+              "type": "untyped"
+            },
+            {
+              "name": "equipped",
+              "type": "untyped"
+            }
+          ],
+          "result": "{weapon:()=>string,switchWeapon:()=>void,step:(firing:boolean)=>{damage:number,projectiles:{x:number,y:number,radius:number,template:string}[]}}",
+          "implementation": "implemented",
+          "calls": [
+            "domain/difficulty.js#resolveDifficultySnapshot",
+            "domain/entities.js#createEntityState",
+            "domain/initial.js#createInitialGameState",
+            "engine/tick.js#advanceWorldTick"
+          ]
+        }
+      ]
+    },
+    {
       "path": "engine/snapshot.js",
       "layer": "engine",
       "purpose": "表现层只读投影，不把活实体对象交给UI。",
@@ -11775,6 +11836,7 @@
             "content/skillCapabilities.js#resolveSkillTemplate",
             "domain/modelProfiles.js#resolvePetStage",
             "domain/serialization.js#toJson",
+            "domain/world/extraction.js#extractionDuration",
             "domain/world/regionRules.js#regionWorldTick"
           ],
           "rule": "",
@@ -12138,6 +12200,7 @@
             "domain/settlement.js#createSettlement",
             "domain/world/api.js#canApiWithdraw",
             "domain/world/extraction.js#canExtract",
+            "domain/world/extraction.js#extractionDuration",
             "domain/world/regionRules.js#localWorldId",
             "domain/world/regionRules.js#resolveExpeditionRoute",
             "engine/session.js#createGameSession",
@@ -12205,7 +12268,10 @@
         "content/registry.js",
         "content/skillCapabilities.js",
         "content/weaponCapabilities.js",
-        "domain/profile/tree.js"
+        "domain/profile/tree.js",
+        "preview/nestRange.js",
+        "preview/nestRoom.js",
+        "preview/techMap.js"
       ],
       "functions": [
         {
@@ -12245,8 +12311,142 @@
             "content/skillCapabilities.js#listRuntimeSkills",
             "content/weaponCapabilities.js#listRuntimeWeapons",
             "domain/profile/tree.js#resolveDshSlotCount",
-            "domain/profile/tree.js#validateTreePurchase"
+            "domain/profile/tree.js#validateTreePurchase",
+            "preview/nestRange.js#mountNestRange",
+            "preview/nestRoom.js#mountNestRoom",
+            "preview/techMap.js#renderTechMap"
           ]
+        }
+      ]
+    },
+    {
+      "path": "preview/nestRange.js",
+      "layer": "host",
+      "purpose": "Drive an isolated, unsaved shooting lane with the real world clock and native MCP handlers.",
+      "dependencies": [
+        "engine/shootingRange.js"
+      ],
+      "functions": [
+        {
+          "description": "mountNestRange",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "mountNestRange",
+          "args": [
+            {
+              "name": "root",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            },
+            {
+              "name": "profile",
+              "type": "untyped"
+            },
+            {
+              "name": "equipped",
+              "type": "untyped"
+            }
+          ],
+          "result": "()=>void",
+          "implementation": "implemented",
+          "calls": [
+            "engine/shootingRange.js#createShootingRange"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "preview/nestRoom.js",
+      "layer": "host",
+      "purpose": "Swim between placed residents and facilities. Coordinates are room percentages.",
+      "dependencies": [],
+      "functions": [
+        {
+          "description": "mountNestRoom",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "mountNestRoom",
+          "args": [
+            {
+              "name": "root",
+              "type": "untyped"
+            },
+            {
+              "name": "profile",
+              "type": "untyped"
+            },
+            {
+              "name": "open",
+              "type": "untyped"
+            },
+            {
+              "name": "companion",
+              "type": "untyped"
+            },
+            {
+              "name": "equip",
+              "type": "untyped"
+            },
+            {
+              "name": "position",
+              "type": "untyped"
+            }
+          ],
+          "result": "()=>void",
+          "implementation": "implemented",
+          "calls": []
+        }
+      ]
+    },
+    {
+      "path": "preview/techMap.js",
+      "layer": "host",
+      "purpose": "Draw the catalog DAG in route lanes. Every edge keeps its actual prerequisite IDs.",
+      "dependencies": [],
+      "functions": [
+        {
+          "description": "renderTechMap",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "renderTechMap",
+          "args": [
+            {
+              "name": "root",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            },
+            {
+              "name": "profile",
+              "type": "untyped"
+            },
+            {
+              "name": "available",
+              "type": "untyped"
+            },
+            {
+              "name": "buy",
+              "type": "untyped"
+            },
+            {
+              "name": "view",
+              "type": "untyped"
+            }
+          ],
+          "result": "void",
+          "implementation": "implemented",
+          "calls": []
         }
       ]
     },
@@ -13289,13 +13489,34 @@
       "displayName": "航海桌",
       "consumer": "planFacilityPurchase",
       "source": "02-progression.md"
+    },
+    {
+      "kind": "tree",
+      "id": "tree_mcp_heavy",
+      "displayName": "重炮微调",
+      "consumer": "planTreePurchase",
+      "source": "UI-ART-OVERHAUL-SPEC.md"
+    },
+    {
+      "kind": "tree",
+      "id": "tree_body_context",
+      "displayName": "上下文吃撑",
+      "consumer": "planTreePurchase",
+      "source": "UI-ART-OVERHAUL-SPEC.md"
+    },
+    {
+      "kind": "tree",
+      "id": "tree_explore_extract",
+      "displayName": "搜打撤专家",
+      "consumer": "planTreePurchase",
+      "source": "UI-ART-OVERHAUL-SPEC.md"
     }
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 121,
-    "functions": 439,
-    "implemented": 399,
+    "modules": 125,
+    "functions": 444,
+    "implemented": 404,
     "placeholders": 40
   }
 }

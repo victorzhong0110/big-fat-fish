@@ -7,7 +7,7 @@ import { ENDLESS_STAGE_TICKS, resolveDifficultySnapshot } from '../../src/v2/dom
 import { createEntityState } from '../../src/v2/domain/entities.js';
 import { resolvePetStage } from '../../src/v2/domain/modelProfiles.js';
 import { createDefaultProfile, createSettlement } from '../../src/v2/domain/settlement.js';
-import { EXTRACTION_ID, EXTRACTION_TICKS } from '../../src/v2/domain/world/extraction.js';
+import { extractionDuration, EXTRACTION_ID, EXTRACTION_TICKS } from '../../src/v2/domain/world/extraction.js';
 import { createGameSession, disposeGameSession, readSessionState, restoreGameSession } from '../../src/v2/engine/session.js';
 import { advanceWorldTick } from '../../src/v2/engine/tick.js';
 import { resolveCharacterModel } from '../../src/v2/preview/characters.js';
@@ -190,5 +190,20 @@ describe('Exploration guarded caches and extraction', () => {
     const committed = mergePersistenceIntents(profile, [intent('settlement', settlement)], catalog);
     expect(committed.value.next).toMatchObject({ gpuCards: 0, gpuFragments: 0, parts: 0 });
     expect(mergePersistenceIntents(profile, [intent('settlement', {...settlement, mode: 'short', parts: 8})], catalog).ok).toBe(false);
+  });
+});
+
+describe('alignment node effects',()=>{
+  it('awards the extraction bonus only on a successful withdrawal with parts',()=>{
+    const {state}=explore(1);
+    expect(extractionDuration(state.start.treeNodeIds)).toBe(180);
+    state.start.treeNodeIds=['tree_explore_extract'];
+    expect(extractionDuration(state.start.treeNodeIds)).toBe(120);
+    state.flow.phase='withdrawal';
+    expect(createSettlement(state,'withdrawal').parts).toBe(0);
+    state.inventory.parts=4;
+    expect(createSettlement(state,'withdrawal').parts).toBe(5);
+    state.flow.phase='defeat';
+    expect(createSettlement(state,'defeat').parts).toBe(0);
   });
 });

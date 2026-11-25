@@ -65,7 +65,7 @@ export function deriveWeaponStats(state, weapon, catalog) {
   const topUpdate = updated && weapon.originalQuality === 2 ? 1.2 : 1;
   const underfit = state.lora.underfitRemaining > 0 ? 0.8 : 1;
   const tree = state.start.treeNodeIds, switchBonus = state.world.entities[state.player.entityId].runtime.treeSwitchShot === true ? 1.25 : 1;
-  const treeDamage = 1 + (tree.includes('tree_mcp_a') ? 0.05 : 0) + (tree.includes('tree_mcp_e') ? 0.07 : 0);
+  const treeDamage = 1 + (tree.includes('tree_mcp_heavy') ? 0.30 : 0) + (tree.includes('tree_mcp_a') ? 0.05 : 0) + (tree.includes('tree_mcp_e') ? 0.07 : 0);
   const compress=state.plugins.find(plugin=>plugin.id==='plugin_compress');
   const local=state.plugins.find(plugin=>plugin.id==='plugin_local_deploy');
   const quant=state.plugins.find(plugin=>plugin.id==='plugin_quant_int4');
@@ -73,7 +73,7 @@ export function deriveWeaponStats(state, weapon, catalog) {
   const overflow=state.plugins.find(plugin=>plugin.id==='plugin_window');
   const fireRate=(local?local.rank===1?1.35:1.55:1)*(temperature?temperature.rank===1?1.5:1.75:1)*(1+Number(overflow?.runtime.fireStacks??0)*(overflow?.rank===1?.01:.015));
   return { damage: (compress?compress.rank===1?1.3:1.45:1)*(quant?.75:1)*Number(p.damage) * resolveContextWeaponFactor(state) * treeDamage * switchBonus * qualityMultiplier * player.damageMultiplier * topUpdate * underfit,
-    interval: resolveStatModifier(Number(p.interval) * (tree.includes('tree_mcp_c') ? 0.95 : 1) * (quant?quant.rank===1?.55:.45:1) / fireRate, modifiers.filter(modifier => modifier.stat === 'weaponInterval'), 0.025, Number.MAX_SAFE_INTEGER),
+    interval: resolveStatModifier(Number(p.interval) * (tree.includes('tree_mcp_heavy') ? 1.18 : 1) / (Number(state.world.entities[state.player.entityId].runtime.riceBoostUntil ?? 0) > state.tick ? 1.2 : 1) * (tree.includes('tree_mcp_c') ? 0.95 : 1) * (quant?quant.rank===1?.55:.45:1) / fireRate, modifiers.filter(modifier => modifier.stat === 'weaponInterval'), 0.025, Number.MAX_SAFE_INTEGER),
     projectileSpeed: Number(p.projectileSpeed)*(local?local.rank===1?1.4:1.65:1), projectileRadius: Number(p.projectileRadius), pellets: Number(p.pellets)+(quant?2:0), spreadRadians: Number(p.spreadRadians)+(temperature?temperature.rank===1?.55:.9:0), range: Number(p.range), maxHits: Number(p.maxHits), damageMultiplierApplied: true,
   };
 }

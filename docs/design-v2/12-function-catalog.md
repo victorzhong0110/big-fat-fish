@@ -1,6 +1,6 @@
 # 12 · 全部函数目录与调用契约
 
-当前121个JS模块、439个公开函数：399个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途、远征、无尽及同档解锁的探索，以及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
+当前125个JS模块、444个公开函数：404个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途、远征、无尽及同档解锁的探索，以及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
 
 调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。
 
@@ -1496,7 +1496,7 @@ Current drift uses effective ticks and the normal body solver; native dash/root/
 
 公开函数上游：
 
-- `resolveDifficultySnapshot` ← `application/game.js#startAdventure`、`application/nest.js#prepareAdventureStart`、`preview/host.js#mountCombatPreview`。
+- `resolveDifficultySnapshot` ← `application/game.js#startAdventure`、`application/nest.js#prepareAdventureStart`、`engine/shootingRange.js#createShootingRange`、`preview/host.js#mountCombatPreview`。
 - `resolveModelProfileId` ← `domain/world/spawning.js#planEnemySpawn`。
 - `resolveApiSpawnMultipliers` ← `domain/difficulty.js#resolveSurvivalSpawnMultipliers`。
 - `resolveSurvivalSpawnMultipliers` ← `domain/bosses/gpt.js#planGptBoss`、`domain/world/api.js#planApiBossEncounter`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/spawning.js#planReinforcementGroup`。
@@ -1652,7 +1652,7 @@ Canonical entity constructor; callers provide stable identity and source snapsho
 
 公开函数上游：
 
-- `createEntityState` ← `domain/abilities.js#planEquippedAbility`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityBursts`、`domain/bosses/claude.js#planClaudeBan`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/companions.js#planCompanionMilestones`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#createEasterObjectives`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/gptPets.js#planPetModelEvent`、`domain/initial.js#createInitialGameState`、`domain/projectiles.js#createWeaponProjectile`、`domain/projectiles.js#planProjectileBurst`、`domain/scheduled.js#scheduleAbilityActions`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#resolveControlRequest`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/adventure.js#planBossEncounter`、`domain/world/api.js#planApiWorldAdvance`、`domain/world/expeditionMap.js#createExpeditionRegionPlan`、`domain/world/lateMechanics.js#planObjectiveSignal`、`domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#createMapPlan`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/tutorial.js#createTutorialMapPlan`、`domain/world/tutorial.js#planTutorialBoss`。
+- `createEntityState` ← `domain/abilities.js#planEquippedAbility`、`domain/abilities.js#planAbilityFields`、`domain/abilities.js#planAbilityBursts`、`domain/bosses/claude.js#planClaudeBan`、`domain/bosses/gpt.js#planGptBoss`、`domain/bosses/grok.js#planGrokBoss`、`domain/bosses/grok.js#planGrokProjectiles`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/companions.js#planCompanionFollow`、`domain/companions.js#planCompanionMilestones`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/dshEffects.js#planDshEffects`、`domain/easter.js#createEasterObjectives`、`domain/gptPets.js#planGptPet`、`domain/gptPets.js#planGptFields`、`domain/gptPets.js#planPetModelEvent`、`domain/initial.js#createInitialGameState`、`domain/projectiles.js#createWeaponProjectile`、`domain/projectiles.js#planProjectileBurst`、`domain/scheduled.js#scheduleAbilityActions`、`domain/scheduled.js#planScheduledActions`、`domain/status.js#resolveControlRequest`、`domain/world/adventure.js#createAdventureMapPlan`、`domain/world/adventure.js#planClaudeEncounter`、`domain/world/adventure.js#planBossEncounter`、`domain/world/api.js#planApiWorldAdvance`、`domain/world/expeditionMap.js#createExpeditionRegionPlan`、`domain/world/lateMechanics.js#planObjectiveSignal`、`domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#createMapPlan`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/tutorial.js#createTutorialMapPlan`、`domain/world/tutorial.js#planTutorialBoss`、`engine/shootingRange.js#createShootingRange`。
 
 ## domain/equipment.js
 
@@ -1756,7 +1756,7 @@ Create an unpublished initial state. Map plans are applied before Session publis
 
 公开函数上游：
 
-- `createInitialGameState` ← `engine/session.js#createGameSession`。
+- `createInitialGameState` ← `engine/session.js#createGameSession`、`engine/shootingRange.js#createShootingRange`。
 
 ## domain/levels.js
 
@@ -2739,16 +2739,19 @@ A live player must hold position inside the extraction zone without firing.
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
+| `extractionDuration(nodes: untyped)` | `number` | 已实现 | extractionDuration；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 | `canExtract({ state }: untyped)` | `boolean` | 已实现 | canExtract；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 | `planExtraction(context: untyped, action: untyped)` | `SystemPlan` | 已实现 | planExtraction；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
+- `extractionDuration` → 无内部公开函数。
 - `canExtract` → `domain/geometry.js#distanceSquared`。
-- `planExtraction` → `domain/geometry.js#distanceSquared`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/world/extraction.js#canExtract`。
+- `planExtraction` → `domain/geometry.js#distanceSquared`、`domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/world/extraction.js#canExtract`、`domain/world/extraction.js#extractionDuration`。
 
 公开函数上游：
 
+- `extractionDuration` ← `domain/world/extraction.js#planExtraction`、`engine/snapshot.js#createRenderSnapshot`、`preview/host.js#mountCombatPreview`。
 - `canExtract` ← `domain/world/extraction.js#planExtraction`、`preview/host.js#mountCombatPreview`。
 - `planExtraction` ← `engine/commands.js#planGameCommand`、`engine/tick.js#advanceWorldTick`。
 
@@ -3203,6 +3206,26 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 - `disposeGameSession` ← `application/game.js#continueAdventure`、`application/game.js#disposeApplication`、`application/replay.js#replayRecording`、`preview/host.js#mountCombatPreview`。
 - `createReplaySession` ← `application/replay.js#replayRecording`。
 
+## engine/shootingRange.js
+
+Start an isolated target lane. Only expose render data and discard persistence intents.
+
+[源码](../../src/v2/engine/shootingRange.js)；层：`engine`。
+
+直接依赖：`domain/difficulty.js`、`domain/entities.js`、`domain/initial.js`、`engine/tick.js`。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `createShootingRange(catalog: untyped, profile: untyped, equipped: untyped)` | `{weapon:()=>string,switchWeapon:()=>void,step:(firing:boolean)=>{damage:number,projectiles:{x:number,y:number,radius:number,template:string}[]}}` | 已实现 | createShootingRange；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `createShootingRange` → `domain/difficulty.js#resolveDifficultySnapshot`、`domain/entities.js#createEntityState`、`domain/initial.js#createInitialGameState`、`engine/tick.js#advanceWorldTick`。
+
+公开函数上游：
+
+- `createShootingRange` ← `preview/nestRange.js#mountNestRange`。
+
 ## engine/snapshot.js
 
 表现层只读投影，不把活实体对象交给UI。
@@ -3218,7 +3241,7 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 公开函数下游：
 
-- `createRenderSnapshot` → `content/skillCapabilities.js#resolveSkillTemplate`、`domain/modelProfiles.js#resolvePetStage`、`domain/serialization.js#toJson`、`domain/world/regionRules.js#regionWorldTick`。
+- `createRenderSnapshot` → `content/skillCapabilities.js#resolveSkillTemplate`、`domain/modelProfiles.js#resolvePetStage`、`domain/serialization.js#toJson`、`domain/world/extraction.js#extractionDuration`、`domain/world/regionRules.js#regionWorldTick`。
 - `createStateDigest` → `domain/serialization.js#createDataDigest`。
 
 公开函数上游：
@@ -3246,7 +3269,7 @@ A bounded, explicit combat-only slice. Full adventure tick remains separate and 
 
 公开函数上游：
 
-- `advanceWorldTick` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/session.js#stepSessionWorld`、`engine/session.js#stepSessionUi`。
+- `advanceWorldTick` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/session.js#stepSessionWorld`、`engine/session.js#stepSessionUi`、`engine/shootingRange.js#createShootingRange`。
 - `advanceUiTick` ← `engine/previewTick.js#advancePreviewUiCommands`、`engine/session.js#stepSessionWorld`、`engine/session.js#stepSessionUi`。
 
 ## preview/characters.js
@@ -3292,7 +3315,7 @@ Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,
 
 公开函数下游：
 
-- `mountCombatPreview` → `adapters/storage.js#createStoragePort`、`application/modProfile.js#createModProfileNamespace`、`application/modProfile.js#initializeModProfile`、`application/nest.js#prepareAdventureStart`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`application/repository.js#readProfileRepository`、`content/catalog.js#loadContentCatalog`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`content/skillCapabilities.js#listRuntimeSkills`、`content/weaponCapabilities.js#listRuntimeWeapons`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/checkpoint.js#canCreateCheckpoint`、`domain/checkpoint.js#createCheckpoint`、`domain/clock.js#createClockState`、`domain/clock.js#resumeClock`、`domain/clock.js#scheduleFrame`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/dshCycle.js#readDshCycleTimers`、`domain/modScope.js#scopePersistenceIntent`、`domain/profile/nest.js#isDifficultyUnlocked`、`domain/settlement.js#createSettlement`、`domain/world/api.js#canApiWithdraw`、`domain/world/extraction.js#canExtract`、`domain/world/regionRules.js#localWorldId`、`domain/world/regionRules.js#resolveExpeditionRoute`、`engine/session.js#createGameSession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#readSessionView`、`engine/session.js#restoreGameSession`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`preview/modManager.js#mountModManager`、`preview/nestManager.js#mountNestManager`、`preview/view.js#getPreviewCamera`、`preview/view.js#renderPreviewFrame`。
+- `mountCombatPreview` → `adapters/storage.js#createStoragePort`、`application/modProfile.js#createModProfileNamespace`、`application/modProfile.js#initializeModProfile`、`application/nest.js#prepareAdventureStart`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`application/repository.js#readProfileRepository`、`content/catalog.js#loadContentCatalog`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`content/skillCapabilities.js#listRuntimeSkills`、`content/weaponCapabilities.js#listRuntimeWeapons`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/checkpoint.js#canCreateCheckpoint`、`domain/checkpoint.js#createCheckpoint`、`domain/clock.js#createClockState`、`domain/clock.js#resumeClock`、`domain/clock.js#scheduleFrame`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/dshCycle.js#readDshCycleTimers`、`domain/modScope.js#scopePersistenceIntent`、`domain/profile/nest.js#isDifficultyUnlocked`、`domain/settlement.js#createSettlement`、`domain/world/api.js#canApiWithdraw`、`domain/world/extraction.js#canExtract`、`domain/world/extraction.js#extractionDuration`、`domain/world/regionRules.js#localWorldId`、`domain/world/regionRules.js#resolveExpeditionRoute`、`engine/session.js#createGameSession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#readSessionView`、`engine/session.js#restoreGameSession`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`preview/modManager.js#mountModManager`、`preview/nestManager.js#mountNestManager`、`preview/view.js#getPreviewCamera`、`preview/view.js#renderPreviewFrame`。
 
 公开函数上游：
 
@@ -3324,7 +3347,7 @@ Mount the nest dashboard; Profile changes go through the application service and
 
 [源码](../../src/v2/preview/nestManager.js)；层：`host`。
 
-直接依赖：`application/nest.js`、`content/achievements.js`、`content/registry.js`、`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/profile/tree.js`。
+直接依赖：`application/nest.js`、`content/achievements.js`、`content/registry.js`、`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/profile/tree.js`、`preview/nestRange.js`、`preview/nestRoom.js`、`preview/techMap.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -3332,11 +3355,71 @@ Mount the nest dashboard; Profile changes go through the application service and
 
 公开函数下游：
 
-- `mountNestManager` → `application/nest.js#executeNestAction`、`content/registry.js#createHandlerRegistry`、`content/skillCapabilities.js#listRuntimeSkills`、`content/weaponCapabilities.js#listRuntimeWeapons`、`domain/profile/tree.js#resolveDshSlotCount`、`domain/profile/tree.js#validateTreePurchase`。
+- `mountNestManager` → `application/nest.js#executeNestAction`、`content/registry.js#createHandlerRegistry`、`content/skillCapabilities.js#listRuntimeSkills`、`content/weaponCapabilities.js#listRuntimeWeapons`、`domain/profile/tree.js#resolveDshSlotCount`、`domain/profile/tree.js#validateTreePurchase`、`preview/nestRange.js#mountNestRange`、`preview/nestRoom.js#mountNestRoom`、`preview/techMap.js#renderTechMap`。
 
 公开函数上游：
 
 - `mountNestManager` ← `preview/host.js#mountCombatPreview`。
+
+## preview/nestRange.js
+
+Drive an isolated, unsaved shooting lane with the real world clock and native MCP handlers.
+
+[源码](../../src/v2/preview/nestRange.js)；层：`host`。
+
+直接依赖：`engine/shootingRange.js`。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `mountNestRange(root: untyped, catalog: untyped, profile: untyped, equipped: untyped)` | `()=>void` | 已实现 | mountNestRange；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `mountNestRange` → `engine/shootingRange.js#createShootingRange`。
+
+公开函数上游：
+
+- `mountNestRange` ← `preview/nestManager.js#mountNestManager`。
+
+## preview/nestRoom.js
+
+Swim between placed residents and facilities. Coordinates are room percentages.
+
+[源码](../../src/v2/preview/nestRoom.js)；层：`host`。
+
+直接依赖：无。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `mountNestRoom(root: untyped, profile: untyped, open: untyped, companion: untyped, equip: untyped, position: untyped)` | `()=>void` | 已实现 | mountNestRoom；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `mountNestRoom` → 无内部公开函数。
+
+公开函数上游：
+
+- `mountNestRoom` ← `preview/nestManager.js#mountNestManager`。
+
+## preview/techMap.js
+
+Draw the catalog DAG in route lanes. Every edge keeps its actual prerequisite IDs.
+
+[源码](../../src/v2/preview/techMap.js)；层：`host`。
+
+直接依赖：无。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `renderTechMap(root: untyped, catalog: untyped, profile: untyped, available: untyped, buy: untyped, view: untyped)` | `void` | 已实现 | renderTechMap；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `renderTechMap` → 无内部公开函数。
+
+公开函数上游：
+
+- `renderTechMap` ← `preview/nestManager.js#mountNestManager`。
 
 ## preview/view.js
 
@@ -3485,4 +3568,4 @@ Canvas presentation for the combat preview. Never mutates or simulates game stat
 
 ## 声明式数据消费者
 
-27个技能树节点和6项设施列于manifest.dataDefinitions；来源与参数见content/catalogData.js。数值落表不表示树购买、局外应用或全部运行效果已经实现。
+30个技能树节点和6项设施列于manifest.dataDefinitions；来源与参数见content/catalogData.js。数值落表不表示树购买、局外应用或全部运行效果已经实现。

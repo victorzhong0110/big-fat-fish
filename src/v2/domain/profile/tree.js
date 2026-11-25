@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * 27个永久节点、免费整树退款与DSH槽计算。
+ * 30个永久节点、免费整树退款与DSH槽计算。
  * Incremental implementation; unavailable functions remain explicit TODOs.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */

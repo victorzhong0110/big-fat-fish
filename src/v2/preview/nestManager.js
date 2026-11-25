@@ -1,3 +1,6 @@
+import {mountNestRoom} from './nestRoom.js';
+import {mountNestRange} from './nestRange.js';
+import {renderTechMap} from './techMap.js';
 import {RESET_ACHIEVEMENT} from '../content/achievements.js';
 // @ts-check
 import { executeNestAction } from '../application/nest.js';
@@ -13,6 +16,9 @@ import {listRuntimeSkills} from '../content/skillCapabilities.js';
  * @calls content/weaponCapabilities.js#listRuntimeWeapons
  * @calls domain/profile/tree.js#resolveDshSlotCount
  * @calls domain/profile/tree.js#validateTreePurchase
+ * @calls preview/nestRange.js#mountNestRange
+ * @calls preview/nestRoom.js#mountNestRoom
+ * @calls preview/techMap.js#renderTechMap
  * @param {HTMLElement} root
  * @param {Readonly<import('../contracts.d.ts').ContentCatalog>} catalog
  * @param {import('../contracts.d.ts').StoragePort} storage
@@ -21,12 +27,23 @@ import {listRuntimeSkills} from '../content/skillCapabilities.js';
  * @returns {{setProfile:(record:import('../contracts.d.ts').StorageRecord|null)=>void; getLoadout:()=>{weaponIds:string[];skillId:string;companionId:string|null};dispose:()=>void}}
  */
 export function mountNestManager(root, catalog, storage, onProfile, notify) {
-  let record = /** @type {import('../contracts.d.ts').StorageRecord|null} */(null), busy = false, disposed = false, tab = 'tree', weaponIds = ['mcp_bubble'], skillId = 'skill_disconnect', companionId='companion_rice';
+  let record = /** @type {import('../contracts.d.ts').StorageRecord|null} */(null), busy = false, disposed = false, tab = 'room', weaponIds = ['mcp_bubble'], skillId = 'skill_disconnect', companionId='companion_rice';
   const available = [...new Set([...createHandlerRegistry().implementedIds,...listRuntimeWeapons(catalog),...listRuntimeSkills(catalog)])], title = document.createElement('p'), tabs = document.createElement('nav'), body = document.createElement('div');
   title.className = 'nest-balance'; tabs.className = 'nest-tabs'; tabs.setAttribute('aria-label','小窝设施'); body.className = 'nest-content'; root.append(title,tabs,body);
   /** @param {string} text @returns {HTMLButtonElement} */
   function button(text) { const node = document.createElement('button'); node.type = 'button'; node.textContent = text; return node; }
-  for (const [id,label] of [['tree','饭碗 · 技能树'],['facilities','设施'],['gear','MCP与技能'],['dsh','DSH'],['collection','发现与伙伴']]) {
+  const panel=/** @type {HTMLDetailsElement} */(root.closest('details')), position={x:39,y:46}, view={filter:'',selected:'',left:0,top:0};
+  let stop=()=>{};
+  const heading=document.createElement('h2'),back=button('返回大厅');heading.className='nest-heading';back.className='nest-exit';
+  root.prepend(heading,back);back.onclick=()=>{panel.open=false;};
+  function toggle(){if(!panel.open){stop();tab='room';}else render();}
+  panel.addEventListener('toggle',toggle);
+  /** @param {string} id */
+  function open(id){
+    if(id==='mods'||id==='gallery'){panel.open=false;const other=/** @type {HTMLDetailsElement} */(document.getElementById(id==='mods'?'mods-panel':'characters-panel'));other.open=true;return;}
+    tab=id;render();
+  }
+  for (const [id,label] of [['room','返回小窝'],['tree','AI 科技树'],['facilities','设施'],['gear','MCP与技能'],['dsh','DSH'],['collection','发现与伙伴']]) {
     const item=button(label);item.dataset.tab=id;item.onclick=()=>{tab=id;render();};tabs.append(item);
   }
   /** @param {import('../contracts.d.ts').NestAction} action */
@@ -52,30 +69,28 @@ export function mountNestManager(root, catalog, storage, onProfile, notify) {
       select.onchange=()=>{if(isSkill)skillId=select.value;else {const next=[...weaponIds];next[index]=select.value;weaponIds=next.filter(Boolean);if(new Set(weaponIds).size!==weaponIds.length){weaponIds=weaponIds.slice(0,1);notify('第二把请选择不同的MCP。');render();}}};label.append(select);body.append(label);
     }
     const companionLabel=document.createElement('label'),companionSelect=document.createElement('select');companionLabel.textContent='随行伙伴';companionSelect.dataset.loadout='companion';const empty=document.createElement('option');empty.value='';empty.textContent='独自出门';companionSelect.append(empty);
-    const companionIds=profile.unlockedCompanions.filter(id=>available.includes(id)&&(id==='companion_rice'||profile.facilities.includes('home_guest')));for(const id of companionIds){const option=document.createElement('option');option.value=id;option.textContent=catalog.definitions[id].displayName;companionSelect.append(option);}if(!companionIds.includes(companionId))companionId='';companionSelect.value=companionId;companionSelect.disabled=busy||!!profile.checkpoint;companionSelect.onchange=()=>{companionId=companionSelect.value;};companionLabel.append(companionSelect);body.append(companionLabel);
+    const companionIds=profile.unlockedCompanions.filter(id=>available.includes(id));for(const id of companionIds){const option=document.createElement('option');option.value=id;option.textContent=catalog.definitions[id].displayName;companionSelect.append(option);}if(!companionIds.includes(companionId))companionId='';companionSelect.value=companionId;companionSelect.disabled=busy||!!profile.checkpoint;companionSelect.onchange=()=>{companionId=companionSelect.value;};companionLabel.append(companionSelect);body.append(companionLabel);
     const note=document.createElement('p');note.className='scope-note';note.textContent=catalog.modLock?.length?'此配装用于当前模组组合的冒险；社区装备只在本档内可用。':'此配装用于下次正式冒险。每局一位随行伙伴；被封禁时能力、跟随与冷却冻结。Free练习使用出发页试用设置。';body.append(note);
   }
   function render() {
-    if(disposed)return;body.replaceChildren();
+    stop();stop=()=>{};if(disposed)return;body.replaceChildren();
+    root.dataset.screen=tab;heading.textContent=({room:'小窝家园',tree:'AI 科技树',range:'试射靶桩',facilities:'大白饭小餐桌',gear:'出战配装',dsh:'DSH',collection:'图鉴台'})[tab]??'小窝';
+    if(!panel.open)return;
     for(const item of tabs.querySelectorAll('button'))item.setAttribute('aria-pressed',String(item.dataset.tab===tab));
     if(!record){title.textContent='小窝档案读取中，暂不能消费资源。';return;}
     const profile=record.profile,locked=busy||!!profile.checkpoint;
     title.textContent=`算力卡 ${profile.gpuCards} · 碎片 ${profile.gpuFragments}/5 · 零件 ${profile.parts}${profile.checkpoint?' · 冒险进行中，成长与配装已锁定':''}`;
-    if(tab==='tree'){
+    if(tab==='room'){
+      stop=mountNestRoom(body,profile,open,()=>companionId,id=>{companionId=id;},position);
+    }else if(tab==='range'){
+      stop=mountNestRange(body,catalog,profile,weaponIds.filter(id=>profile.unlockedWeapons.includes(id)));
+    }else if(tab==='tree'){
       const respec=button('免费重置整棵树');respec.disabled=locked||!profile.purchasedTree.length;respec.dataset.action='respec';respec.onclick=()=>{void act({type:'respec'});};body.append(respec);
-      const intro=document.createElement('p');intro.textContent='三条短分枝，每条先点开头，再从两条里选一条。长线先不用点。';body.append(intro);
-      /** @param {string} id @param {ParentNode} [parent] */
-      const place=(id,parent=body)=>{const definition=catalog.definitions[id];if(!definition)return;const owned=profile.purchasedTree.includes(id),p=definition.parameters,parents=Array.isArray(p.prerequisites)?p.prerequisites.map(parentId=>catalog.definitions[String(parentId)]?.displayName??String(parentId)):[];const node=card(definition.displayName,`${p.effect} · ${p.cost}算力卡${parents.length?` · 前置：${parents.join('、')}`:''}`);if(parent!==body)parent.append(node);node.dataset.treeId=id;const buy=button(owned?'已点亮':'点亮节点');buy.disabled=locked||owned||!validateTreePurchase(profile,id,catalog).valid;buy.onclick=()=>{void act({type:'buyTree',id});};node.append(buy);};
-      for(const [name,start,choice] of /** @type {const} */([['干饭',['tree_body_a','tree_body_b'],['tree_body_c','tree_body_d']],['射击',['tree_mcp_a','tree_mcp_b'],['tree_mcp_c','tree_mcp_d']],['技能',['tree_skill_a','tree_skill_b'],['tree_skill_c','tree_skill_d']]])){
-        const heading=document.createElement('h3');heading.textContent=name;body.append(heading);
-        for(const id of start)place(id);
-        const fork=document.createElement('p');fork.textContent='这两条抢的是手感，先点一条就够玩。';body.append(fork);
-        for(const id of choice)place(id);
-      }
-      const later=document.createElement('details');const summary=document.createElement('summary');summary.textContent='先不用点的长线';later.append(summary);body.append(later);
-      const tail=document.createElement('div');later.append(tail);
-      for(const id of ['tree_body_e','tree_body_f','tree_mcp_e','tree_mcp_f','tree_skill_e','tree_skill_f',...Object.values(catalog.definitions).filter(item=>item.kind==='tree'&&(item.id.startsWith('tree_explore_')||item.id.startsWith('tree_dsh_'))).map(item=>item.id)])place(id,tail);
+      renderTechMap(body,catalog,profile,id=>!locked&&validateTreePurchase(profile,id,catalog).valid,id=>{view.selected=id;void act({type:'buyTree',id});},view);
     }else if(tab==='facilities'){
+      card('我的饭桌',`算力卡 ${profile.gpuCards} · 零件 ${profile.parts}。大白饭在冒险中提供经验。`);
+      card('已生效的家园加成',profile.facilities.map(id=>catalog.definitions[id]).filter(Boolean).map(item=>item.displayName+'：'+item.parameters.effect).join('　/　'));
+
       for(const definition of Object.values(catalog.definitions).filter(item=>item.kind==='facility')){const owned=profile.facilities.includes(definition.id),cost=Number(definition.parameters.partCost);const node=card(definition.displayName,`${definition.parameters.effect} · ${cost}零件`),buy=button(owned?'已建成':'建设');buy.disabled=locked||owned||profile.parts<cost;buy.onclick=()=>{void act({type:'build',id:definition.id});};node.dataset.facilityId=definition.id;node.append(buy);}
     }else if(tab==='gear'){
       loadoutControls(profile);
@@ -89,6 +104,7 @@ export function mountNestManager(root, catalog, storage, onProfile, notify) {
         if(definition.id==='dsh_claude_allowlist')select.onchange=()=>{if(equipped)void act({type:'equipDsh',slots:profile.equippedDsh.map(slot=>slot.id===definition.id?{...slot,options:{protect:select.value}}:slot)});};node.dataset.dshId=definition.id;node.append(toggle);
       }
     }else{
+      const gallery=button('打开角色图鉴');gallery.onclick=()=>open('gallery');body.append(gallery);
       if(profile.bestApi){const r=profile.bestApi;card('API调用 · 个人记录',`最长${Math.floor(r.survivedTicks/3600)}分${Math.floor(r.survivedTicks/60)%60}秒 · 最多首领${r.bossKills} · 最高有效击杀${r.kills} · 最高等级${r.maxLevel}`);}
       const achievement=RESET_ACHIEVEMENT,achievementCard=card(achievement.name,`${profile.unlockLedger.includes(achievement.ledgerId)?'成就已解锁':'成就未解锁'} · ${achievement.description}`);achievementCard.dataset.achievementId=achievement.id;
       card('我去吃饭，测完告诉我就行',`已经发现 ${profile.discovered.length} 件内容，收藏 ${profile.unlockedDsh.length} 件DSH。收获来自实际探索与结算，小窝不自动生产资源。`);
@@ -97,5 +113,5 @@ export function mountNestManager(root, catalog, storage, onProfile, notify) {
       for(const id of profile.discovered)card(catalog.definitions[id]?.displayName??id,catalog.definitions[id]?.kind==='companion'?'已入住 · 可在出发配装中选择随行。':'已记录发现。');
     }
   }
-  return {setProfile(value){record=value?structuredClone(value):null;render();},getLoadout(){const profile=record?.profile;return {weaponIds:weaponIds.filter(id=>profile?.unlockedWeapons.includes(id)).slice(0,profile?.purchasedTree.includes('tree_mcp_d')?2:1),skillId:profile?.unlockedSkills.includes(skillId)?skillId:'skill_disconnect',companionId:companionId&&profile?.unlockedCompanions.includes(companionId)&&(companionId==='companion_rice'||profile.facilities.includes('home_guest'))?companionId:null};},dispose(){disposed=true;root.replaceChildren();}};
+  return {setProfile(value){record=value?structuredClone(value):null;render();},getLoadout(){const profile=record?.profile;return {weaponIds:weaponIds.filter(id=>profile?.unlockedWeapons.includes(id)).slice(0,profile?.purchasedTree.includes('tree_mcp_d')?2:1),skillId:profile?.unlockedSkills.includes(skillId)?skillId:'skill_disconnect',companionId:companionId&&profile?.unlockedCompanions.includes(companionId)?companionId:null};},dispose(){stop();panel.removeEventListener('toggle',toggle);disposed=true;root.replaceChildren();}};
 }

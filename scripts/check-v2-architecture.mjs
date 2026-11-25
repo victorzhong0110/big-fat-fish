@@ -89,8 +89,8 @@ for (const id of createHandlerRegistry().implementedIds) {
   const binding = manifest.bindings.find(binding => binding.id === id);
   assert(binding && exports.get(`${binding.module}#${binding.function}`).implementation === 'implemented', `False implemented capability: ${id}`);
 }
-assert.equal(manifest.dataDefinitions.length, 33);
-assert.equal(new Set(manifest.dataDefinitions.map(definition => definition.id)).size, 33);
+assert.equal(manifest.dataDefinitions.length, 36);
+assert.equal(new Set(manifest.dataDefinitions.map(definition => definition.id)).size, 36);
 assert(!(await fs.readFile(path.join(root, 'src/main.js'), 'utf8')).includes('/v2/'), 'Legacy entry must remain isolated until V2 is playable');
 // All remaining placeholders must still fail explicitly. No empty successes.
 for (const [file, module] of modules) {

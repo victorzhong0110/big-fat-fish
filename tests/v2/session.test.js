@@ -19,7 +19,7 @@ function command(session,type,payload={},clock='world',seq=0,targetTick=readSess
 function ctx(state) {return {state,catalog,random:state.random.combat,entityId:null,event:null};}
 
 describe('source-backed V2 catalog',()=>{
- it('has all declared categories, exact 160-GPU tree cost, explicit runtime capabilities and detached loads',()=>{
+ it('has all declared categories, exact 180-GPU tree cost, explicit runtime capabilities and detached loads',()=>{
   const registry=createHandlerRegistry();expect(validateContentCatalog(catalog,registry)).toEqual({valid:true,diagnostics:[]});expect(registry.implementedIds).toHaveLength(100);expect(Object.keys(registry.bindings)).toHaveLength(100);
   const copy=loadContentCatalog();copy.definitions.mcp_bubble.parameters.damage=99;expect(loadContentCatalog().definitions.mcp_bubble.parameters.damage).toBe(12);
  });
