@@ -1,3 +1,4 @@
+import {screenAreas} from './guide-hotspots.js';
 import {BUOY_OFFSETS, BUOY_SECONDS, STATION_RADIUS, tuneStation} from './v2/domain/world/beacon.js';
 
 const byId = id => document.getElementById(id);
@@ -13,8 +14,39 @@ const photo = (name,cls) => `<img class="${cls}" alt="" src="${asset(name)}">`;
 const choose = (group, value, key) => group.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset[key]===value)));
 const studioEnabled = document.body.dataset.studio === 'true' || new URLSearchParams(location.search).has('studio');
 byId('studio-tab').hidden=!studioEnabled;
+byId('screens-tab').hidden=!studioEnabled;
 if (studioEnabled) byId('book-title').textContent='目标界面与实战手册';
-let panel='', version='port', selected=0, sailed=false;
+let panel='', version='port', selected=0, sailed=false, conceptPage='entry';
+let sampleMode=1;
+const sampleSettings={music:35,sfx:50,simple:false};
+const sampleRoutes=[
+  ['码头试音','在岸边试试移动、射击和冲刺。','radio'],
+  ['晚饭呼叫','接通两座电台，再去闸口找首领。','mast'],
+  ['沿海送信','穿过三片海，把晚饭消息送到最后一班。','bowl'],
+  ['通宵值班','通关难度 15 后开放。','chip']
+];
+function renderPageStudy(scene) {
+  if (version==='port') {
+    const key=conceptPage+'-wide';
+    scene.innerHTML='<img class="study-capture" alt="夜港食堂的正式游戏界面">';
+    scene.firstElementChild.src=window.fishScreenPhotos?.[key] ?? './guide/screens/'+key+'.webp';
+    return;
+  }
+  const chart=version==='chart';
+  const art=conceptPage==='modes'?sampleRoutes[sampleMode][2]:conceptPage==='audio'?'radio':chart?'mast':'fish';
+  const stamp=chart?'港务局 · 领航图册':'口袋街机';
+  const nav='<button class="study-back" data-page="title">返回标题</button>';
+  let copy;
+  if(conceptPage==='title'){
+    copy=`<small>${stamp}</small><h3>大肥鱼<br>历险记</h3><p>${chart?'从这张图，去找最后一班值夜人。':'饭团就位，泡泡炮装填完毕。'}</p><div class="study-buttons"><button data-page="modes">${chart?'摊开航图':'开始游戏'} →</button><button data-page="audio">设置</button></div>`;
+  } else if(conceptPage==='modes'){
+    copy=`<small>${stamp}</small><h3>${chart?'航线一览':'选择关卡'}</h3><div class="study-routes">${sampleRoutes.map(([n],i)=>`<button data-sample-mode="${i}" aria-pressed="${i===sampleMode}">${n}</button>`).join('')}</div><p aria-live="polite">${sampleRoutes[sampleMode][1]}</p>${nav}`;
+  } else{
+    const slider=(key,label)=>`<label class="study-slider">${label}<input aria-label="${label}" data-sample-sound="${key}" type="range" min="0" max="100" value="${sampleSettings[key]}"><output>${sampleSettings[key]}%</output></label>`;
+    copy=`<small>${stamp}</small><h3>${chart?'领航设置':'机台设置'}</h3>${slider('music','音乐')}${slider('sfx','音效')}<label class="study-check"><input data-sample-fx type="checkbox" ${sampleSettings.simple?'checked':''}> 简化特效</label>${nav}`;
+  }
+  scene.innerHTML=`<div class="study-art">${photo('seabed','study-water')}${photo(art,'study-object')}</div><div class="study-copy">${copy}</div>`;
+}
 const stops=['盐风修船厂','浮标邮局','海沟气象站'];
 const gear=[['冲刺尾流','甩开追兵，让它从尾流里走过。','gear','wake'],['浮标调频','穿过副浮标，把跑位变成调频进度。','mast','beacon'],['蟹壳弱侧','迎面打不动？看看它转身的那一刻。','chip','shell']];
 const versionCaptions={
@@ -24,7 +56,13 @@ const versionCaptions={
 };
 function renderConcept(){
   const scene=byId('scene');scene.className='scene '+version+(version==='port'&&sailed?' port-battle':'');
-  choose(byId('versions'),version,'version');byId('concept-caption').textContent=versionCaptions[version];
+  choose(byId('versions'),version,'version');
+  choose(byId('concept-pages'),conceptPage,'page');
+  byId('concept-caption').textContent=versionCaptions[version];
+  if(conceptPage!=='entry'){
+    scene.className='scene study '+version;
+    renderPageStudy(scene);return;
+  }
   if(version==='port'){
     scene.innerHTML=photo(sailed?'seabed':'harbor','plate')+photo('fish','actor')+`<div class="port-copy"><small>BIG FAT FISH</small><h3>${sailed?'晚饭呼叫':'大肥鱼'}</h3><p>${sailed?'盐风修船厂 · 收到第一段杂音。':'深夜食堂电台<br>「开饭了。听得见吗？」'}</p><button class="action" data-sail>${sailed?'返回港口':'出海喊人 →'}</button></div>`;
   }else if(version==='chart'){
@@ -34,9 +72,19 @@ function renderConcept(){
     const [name,copy,art]=gear[selected];scene.innerHTML=`<div class="deck-stage">${photo('seabed','plate')}${photo(art,'big-prop')}</div><div class="deck-text"><small>随船装备</small><h3>${name}</h3><p>${copy}</p><div class="deck-strip">${gear.map(([title,,image],i)=>`<button aria-label="${title}" aria-pressed="${i===selected}" data-gear="${i}">${photo(image,'')}</button>`).join('')}</div><button class="action" data-watch>看实战 →</button></div>`;
   }
 }
+byId('concept-pages').onclick=e=>{const button=e.target.closest('[data-page]');if(button){conceptPage=button.dataset.page;renderConcept();}};
+byId('scene').oninput=e=>{
+  const slider=e.target;
+  if(slider.dataset.sampleSound){
+    sampleSettings[slider.dataset.sampleSound]=Number(slider.value);
+    slider.parentElement.querySelector('output').textContent=slider.value+'%';
+  }else if(slider.hasAttribute('data-sample-fx'))sampleSettings.simple=slider.checked;
+};
 byId('versions').onclick=e=>{const v=e.target.closest('[data-version]');if(v){version=v.dataset.version;sailed=false;selected=0;renderConcept();}};
 byId('scene').onclick=e=>{const b=e.target.closest('button');if(!b)return;
-  if(b.hasAttribute('data-sail'))sailed=!sailed;
+  if(b.dataset.page){conceptPage=b.dataset.page;}
+  else if(b.dataset.sampleMode!=null){sampleMode=Number(b.dataset.sampleMode);}
+  else if(b.hasAttribute('data-sail'))sailed=!sailed;
   else if(b.dataset.stop!=null||b.dataset.gear!=null){selected=Number(b.dataset.stop??b.dataset.gear);sailed=false;}
   else if(b.hasAttribute('data-watch')){openLesson(gear[selected][3]);return;}
   renderConcept();
@@ -134,12 +182,71 @@ function resetLesson(){
   if(lesson==='beacon')buoyTrace();draw();play(motionOK&&panel==='demos');
 }
 function show(id){
-  panel=id;for(const name of ['studio','demos','rules'])byId(name).hidden=name!==id;
-  for(const [name,tab] of [['studio','studio-tab'],['demos','demo-tab'],['rules','rules-tab']])byId(tab).setAttribute('aria-pressed',String(id===name));
+  panel=id;for(const name of ['screens','studio','demos','rules'])byId(name).hidden=name!==id;
+  for(const [name,tab] of [['screens','screens-tab'],['studio','studio-tab'],['demos','demo-tab'],['rules','rules-tab']])byId(tab).setAttribute('aria-pressed',String(id===name));
   play(false);
+  if(id==='screens')renderScreen();
   if(id==='studio')renderConcept();if(id==='demos')resetLesson();
 }
 function openLesson(id){lesson=id;variant=0;show('demos');}
+const screens = [
+  ['title','标题界面','在港灯亮着的地方开始航行。已有存档时，标题下会出现继续航程。'],
+  ['modes','模式选择','四张航票对应教学、短途、远征和生存。选票会更新下方的任务，航程难度可单独调整。'],
+  ['audio','设置 · 声音','音乐与音效可以分别调节或静音。电台左侧的表针跟随背景音乐音量。'],
+  ['controls','设置 · 操作与画面','需要时打开按住挣脱或简化特效。修改即时保存。'],
+  ['nest','小窝配装','选好下趟要带的武器、主动技能和随行伙伴。'],
+  ['gallery','角色图鉴','翻看角色原画，切换移动、攻击、受控和受击姿态。'],
+  ['workshop','模组工坊','在修船厂安装和管理社区模组。带模组出海会使用独立小窝。'],
+  ['sea','战斗画面','移动、射击和冲刺在同一张海图上进行。右上角可以暂停。'],
+  ['pause','航行暂停','停下读本航次的电台记录、调整设置，或继续航行。'],
+  ['return','返港结算','这里展示短途中途返港的结果。回港后可以再翻一遍这趟听到的留言。']
+];
+const targetNames = Object.fromEntries(screens.map(([id,title])=>[id,title]));
+targetNames['modes-guide']='选择教学';targetNames['modes-expedition']='选择远征';targetNames.back='返回';
+let currentScreen = 0;
+let modeShot = 'modes';
+let settingsFrom = 'title';
+function jumpTo(target) {
+  const previous = screens[currentScreen][0];
+  if (target === 'back') target = settingsFrom;
+  if (target === 'audio' && previous !== 'controls') settingsFrom = previous === 'pause' ? 'pause' : 'title';
+  if (target.startsWith('modes')) modeShot=target;
+  const index=screens.findIndex(([id]) => id === (target.startsWith('modes')?'modes':target));
+  if(index >= 0){currentScreen=index;renderScreen();}
+}
+let screenFormat = matchMedia('(max-width:600px)').matches ? 'phone' : 'wide';
+for (const screen of screens) {
+  const button = document.createElement('button');
+  button.type='button';button.textContent=screen[1];
+  button.addEventListener('click', () => { jumpTo(screen[0]); });
+  byId('screen-index').append(button);
+}
+function renderScreen() {
+  const [id, title, desc] = screens[currentScreen];
+  const key=(id==='modes'?modeShot:id)+'-'+screenFormat;
+  const photo=byId('screen-photo');
+  photo.src=window.fishScreenPhotos?.[key] ?? './guide/screens/'+key+'.webp';
+  const links=byId('screen-links');links.replaceChildren();
+  for(const [target, box] of screenAreas[key] ?? []) {
+    const link=document.createElement('button');link.type='button';link.className='photo-link';
+    link.setAttribute('aria-label',id==='modes'&&target==='modes'?'选择短途':targetNames[target]);
+    const [x,y,width,height]=box;
+    Object.assign(link.style,{left:x+'%',top:y+'%',width:width+'%',height:height+'%'});
+    link.onclick=()=>jumpTo(target);links.append(link);
+  }
+  photo.alt=title+'，'+(screenFormat==='wide'?'桌面':'手机')+'实拍';
+  byId('screen-name').textContent=title;byId('screen-description').textContent=desc;
+  byId('screen-next').textContent=currentScreen===screens.length-1?'回到标题 ↺':'下一页 →';
+  byId('screens').dataset.format=screenFormat;
+  Array.from(byId('screen-index').children).forEach((b,i)=>b.setAttribute('aria-pressed',String(i===currentScreen)));
+  choose(byId('screen-formats'),screenFormat,'format');
+}
+byId('screen-formats').onclick=event=>{
+  const button=event.target.closest('[data-format]');if(!button)return;
+  screenFormat=button.dataset.format;renderScreen();
+};
+byId('screen-next').onclick=()=>jumpTo(screens[(currentScreen+1)%screens.length][0]);
+byId('screens-tab').onclick=()=>show('screens');
 byId('studio-tab').onclick=()=>show('studio');byId('demo-tab').onclick=()=>show('demos');byId('rules-tab').onclick=()=>show('rules');
 byId('lessons').onclick=e=>{const b=e.target.closest('[data-lesson]');if(b)openLesson(b.dataset.lesson);};
 byId('variants').onclick=e=>{const b=e.target.closest('[data-v]');if(b){variant=Number(b.dataset.v);resetLesson();}};
@@ -150,4 +257,4 @@ for(const im of Object.values(sprites))im.addEventListener('load',()=>{if(panel=
 document.addEventListener('visibilitychange',()=>{lastTime=0;});
 const requested=new URLSearchParams(location.search).get('lesson');
 if(requested&&Object.hasOwn(lessons,requested))lesson=requested;
-show(studioEnabled?'studio':'demos');
+show(studioEnabled?'screens':'demos');

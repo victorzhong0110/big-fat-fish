@@ -1,0 +1,118 @@
+/* Harbor title, illustrated travel tickets, and the radio desk. */
+.title-settings {position:absolute;z-index:3;top:max(22px,env(safe-area-inset-top));right:5.5vw;background:#14263be6;border:1px solid #c3bc9e;border-radius:30px;padding:8px 24px;color:#fff0d4;letter-spacing:.12em}
+.home-copy {width:min(570px,59%);padding-bottom:0}
+.home-copy h1 {display:flex;align-items:baseline;gap:.08em;font-size:clamp(68px,8.7vw,148px);margin:.09em 0 0;line-height:1.26}
+.home-copy h1 .title-voyage {font:800 .37em/1 var(--display);color:#ffda9b;letter-spacing:.015em;margin:0;white-space:nowrap}
+.title-subtitle {display:flex;align-items:center;gap:12px;font:700 clamp(17px,2vw,28px)/1.3 var(--display);letter-spacing:.21em;color:#ffe0ac;margin:.3em 0 1em}
+.title-subtitle::before {content:"";width:27px;height:1px;background:currentColor}
+.home-kicker {letter-spacing:.33em}
+.home-actions #continue:disabled {display:none}
+.home-start {position:relative;min-width:200px;border-radius:2px;box-shadow:5px 5px 0 #0c2238aa}
+.home-menu:has(#departure-screen:not(.hidden)) {background:#162832}
+.home-menu:has(#departure-screen:not(.hidden))::before {background-image:url('/art/harbor/seabed.webp');opacity:.4}
+.home-menu:has(#departure-screen:not(.hidden))::after {background:linear-gradient(110deg,#13212ccf,transparent 75%)}
+#departure-screen {width:min(1080px,100%);background:#f2e7cf;color:#283c3e;border:0;border-radius:3px;box-shadow:0 18px 60px #06162080;padding:clamp(18px,3.2vh,38px) clamp(18px,3.3vw,48px);position:relative;color-scheme:light}
+.departure-heading {border-bottom:1px solid #9ba99b;display:flex;align-items:baseline;gap:16px;padding-bottom:13px}
+.departure-heading .eyebrow {order:2;color:#697b6a;font:650 13px/1.5 var(--display);letter-spacing:.12em}
+.departure-heading h1 {margin:0;color:#233836;font:850 clamp(30px,3.4vw,52px)/1.2 var(--display)}
+.adventure-modes {grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:18px 0 12px;align-items:stretch}
+.adventure-modes button,.adventure-modes button[aria-pressed=true],.adventure-modes button[data-locked=true] {background:#fbf3e0;color:#223b3b;border:1px solid #a6afa1;border-radius:2px;padding:0 0 14px;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;position:relative;min-width:0;min-height:0;box-shadow:none}
+.adventure-modes .guide-retired {display:none}
+.adventure-modes button::before {display:none}
+.adventure-modes button[aria-pressed=true] {border-color:#204f48;background:#fff7e5;box-shadow:0 0 0 2px #265e54}
+.adventure-modes button[aria-pressed=true]::after {content:"已选";position:absolute;right:6px;top:6px;background:#234d43;color:#fff2cf;padding:3px 6px;font:700 11px/1.45 system-ui;border:1px solid #d4d9b9}
+.adventure-modes button:hover {background:#fff9ee;border-color:#526e5d}
+.mode-poster {display:block;align-self:stretch;aspect-ratio:1.55;background:var(--poster) center / cover no-repeat;border-bottom:1px solid #a4a695}
+.mode-poster.guide {--poster:url('/art/harbor/route-guide.webp')}.mode-poster.short {--poster:url('/art/harbor/route-short.webp')}.mode-poster.expedition {--poster:url('/art/harbor/route-expedition.webp')}.mode-poster.tower {--poster:url('/art/harbor/route-tower.webp')}
+.mode-kind {font:bold 11px/1.5 system-ui;letter-spacing:.16em;color:#536d60;margin:10px 10px 1px}
+.adventure-modes button strong,.adventure-modes button[aria-pressed=true] strong {margin:1px 10px;color:#25392f;font:750 clamp(18px,1.7vw,27px)/1.4 var(--display)}
+.adventure-modes button small {margin:2px 10px 0;color:#505f52;font:500 12px/1.5 system-ui}
+.dispatch-note {color:#45564b;margin:12px 0;border-left:3px solid #9e513d;padding:4px 0 4px 12px;font:600 14px/1.6 var(--display)}
+#departure-screen .setup {gap:8px;margin:0 0 10px}
+#departure-screen .difficulty-field {display:flex;align-items:center;max-width:none;gap:12px;color:#354a43}
+#departure-screen .setup select,#departure-screen .setup input,#departure-screen #mod-profile-source {width:auto;max-width:100%;border:1px solid #98a594;border-radius:2px;color:#263e3a;background:#fff7e7}
+#departure-screen .advanced-grid label,#departure-screen .advanced-settings summary {color:#455a4c}
+#departure-screen .advanced-settings {padding:0;border-color:#bfc5b5}
+#departure-screen .advanced-settings summary::before {content:'＋';padding-right:8px}
+#departure-screen .advanced-settings[open] summary::before {content:'−'}
+#departure-screen .departure-actions {border-top:1px solid #8d9f8e;padding-top:12px;gap:10px;align-items:center}
+#departure-screen .primary {background:#244f45;border:1px solid #244f45;color:#fff1d3;border-radius:2px;min-width:144px}
+#departure-screen .secondary {color:#314c43;background:transparent;border:1px solid #899b89;border-radius:2px}
+#departure-screen .scope-note {color:#435848}
+#settings-panel {width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;border:0;padding:clamp(18px,6vw,90px);background:linear-gradient(#102431bf,#102431ed),url('/art/harbor/night-canteen.webp') center/cover;color:#e6eeee;overflow:auto}
+#settings-panel[open] {display:grid;align-items:center;justify-items:center}
+.radio-desk {--volume:35;width:min(960px,100%);display:grid;grid-template-columns:minmax(0,.84fr) minmax(0,1.16fr);border:2px solid #91836b;padding:8px;background:#254b49;box-shadow:0 14px 48px #091c23aa;border-radius:12px}
+.radio-plate {display:flex;align-items:flex-end;min-height:360px;background:linear-gradient(0deg,#173d3c99,transparent 48%),url('/art/harbor/route-guide.webp') 43% center/cover;border-radius:5px 0 0 5px}
+.dial-face {width:calc(100% - 36px);margin:18px;padding:11px 15px 8px;background:#e6cea1;border:4px solid #34554d;box-shadow:inset 0 0 0 1px #8e7f61;color:#344d43}
+.dial-label,.dial-numbers {font:700 10px/1.5 ui-monospace,monospace;letter-spacing:.12em}
+.dial-scale {height:22px;position:relative;margin-top:4px;border-bottom:1px solid #526753;background:repeating-linear-gradient(90deg,#697863 0 1px,transparent 1px 5%) 0 bottom /100% 8px no-repeat}
+.dial-scale i {position:absolute;left:calc(var(--volume) * 1%);height:100%;width:2px;background:#b64d38;transition:left .12s}
+.dial-numbers {display:flex;justify-content:space-between}
+.settings-board {background:#162e32;padding:clamp(18px,3.5vw,52px);border-left:4px solid #8d866b}
+.room-heading {display:flex;align-items:center;justify-content:space-between}
+.room-heading h1 {font:800 clamp(34px,4vw,56px)/1.15 var(--display);color:#fff0d1;margin:4px 0 12px}
+.room-heading form button,.station-tabs button {background:transparent;border:1px solid #8ba094;border-radius:2px;color:#eae7d0}
+.station-tabs {display:flex;border-bottom:1px solid #798b7c;margin:6px 0 16px;gap:15px}
+.station-tabs button {min-height:44px;border:0;border-bottom:2px solid transparent;color:#bbcfbd;padding:8px 4px}
+.station-tabs button[aria-pressed=true] {border-color:#f4c282;color:#ffd08e}
+#settings-panel [hidden] {display:none}
+#settings-panel .sound-settings {border:0;padding:0;margin:0}#settings-panel .sound-settings legend {position:absolute;clip-path:inset(100%);width:1px;height:1px;overflow:hidden}
+#settings-panel .sound-row {grid-template-columns:1fr auto auto;gap:3px 12px;border-bottom:1px dashed #61786c;padding:9px 0 11px}
+#settings-panel .sound-row label:first-child {grid-column:1;grid-row:1;font:700 17px/1.5 var(--display);color:#f8f1d9}
+#settings-panel .sound-row output {grid-column:2;grid-row:1;color:#f6cc8f}
+#settings-panel .sound-row label:last-of-type {grid-column:3;grid-row:1;min-height:40px}
+#settings-panel .sound-row input[type=range] {grid-column:1 / -1;grid-row:2;accent-color:#f7c782}
+#settings-panel .sound-status {margin:0;color:#b3c8b9;letter-spacing:.04em}
+.switch-line {display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:66px;border-bottom:1px dashed #72897a;cursor:pointer}
+.switch-line strong,.switch-line small {display:block}.switch-line strong {font:700 17px/1.5 var(--display);color:#f9e3bd}.switch-line small {font:12px/1.65 system-ui;color:#b8c9bf}
+.switch-line input {width:22px;height:22px;accent-color:#e8ba7d}
+.key-strip {display:grid;grid-template-columns:repeat(4,1fr);font:12px/1.6 system-ui;margin:16px 0 0}
+.key-strip dt {color:#b8c7b8}.key-strip dd {color:#f5dab0;margin:0}
+#pause-menu .pause-card {background:#1a3339;border:1px solid #819585;border-top:5px solid #d9b275;border-radius:2px}
+#pause-menu h1 {font-size:clamp(33px,3.2vw,49px)}
+#pause-menu.homecoming .pause-card {color:#334c3e;background:#f3e7d0;border:0;border-top:8px solid #9e5140}
+#pause-menu.homecoming :is(h1,.ending-line,.radio-log) {color:#364b3e}
+#pause-menu.homecoming :is(.eyebrow,#pause-description,.radio-log dt) {color:#80513d}
+.homecoming .ending-line {border-left-color:#b87147}
+#pause-menu.homecoming #pause-settings {display:none}
+#workshop {background:linear-gradient(105deg,#102e34fc 25%,#203c39e8),url('/art/harbor/route-guide.webp') center/cover}
+.workshop-head {position:relative;isolation:isolate;background:linear-gradient(90deg,#203637ff 10%,#233939aa 70%,#20363733),url('/art/harbor/route-guide.webp') center 50%/cover;padding:18px 20px}
+@media(max-width:700px){
+  .home-copy{width:100%}.home-copy h1{font-size:clamp(64px,14vw,90px)}.title-settings{top:14px;right:15px}
+  .adventure-modes{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}.mode-poster{aspect-ratio:2.85}
+  .adventure-modes button,.adventure-modes button[aria-pressed=true],.adventure-modes button[data-locked=true]{padding:0 0 6px}
+  .mode-kind{margin:5px 8px 0}.adventure-modes button strong,.adventure-modes button[aria-pressed=true] strong,.adventure-modes button small{margin-inline:8px}
+  #settings-panel{padding:10px}.radio-desk{grid-template-columns:1fr;max-width:480px}.radio-plate{min-height:135px;background-position:center 45%;border-radius:3px}.dial-face{width:min(140px,40%);margin:8px;padding:4px 7px}.settings-board{border-left:0;border-top:3px solid #8d866b;padding:14px 20px}
+}
+@media(max-height:540px) and (min-width:610px) {
+  .home-copy h1{font-size:55px}.title-subtitle{font-size:15px;margin:0 0 7px}
+  #departure-screen{padding:10px 20px}.departure-heading{padding-bottom:4px}.departure-heading h1{font-size:26px}
+  .adventure-modes{grid-template-columns:repeat(auto-fit,minmax(100px,1fr));margin:6px 0}.mode-poster{height:50px;aspect-ratio:auto}
+  .mode-kind{margin-top:3px}.adventure-modes button,.adventure-modes button[aria-pressed=true],.adventure-modes button[data-locked=true]{padding:0 0 4px}
+  .dispatch-note{margin:3px 0;font-size:12px}.advanced-settings summary{min-height:38px}
+  #settings-panel{padding:8px}.radio-desk{grid-template-columns:.75fr 1.25fr;max-width:820px}.radio-plate{min-height:260px}.settings-board{border:0;padding:12px 20px}.room-heading h1{font-size:28px}
+  .station-tabs{margin:0 0 2px}.dial-face{width:calc(100% - 24px);margin:12px}
+}
+.home-drawer[open] {left:50%;bottom:50%;transform:translate(-50%,50%);width:min(850px,94vw);max-height:88dvh;border:1px solid #95a897;border-radius:3px;background:#182f37;box-shadow:0 0 0 100vmax #101c2ac9,0 14px 40px #07152199}
+.home-drawer[open] > summary {display:flex;align-items:baseline;padding:16px 20px 12px;border-bottom:1px solid #7e9486;font:750 26px/1.2 var(--display)}
+.home-drawer[open] > summary::before {content:'‹'}
+.home-drawer[open] .home-navigation {padding:14px 18px}.home-drawer[open] .home-tools:has(details[open]) {grid-template-columns:1fr}
+.home-drawer .home-tools:has(details[open]) > :not([open]) {display:none}
+.home-drawer .home-tools .mods-panel[open] {border:0;background:transparent}
+.home-drawer .home-tools .mods-panel[open] > summary {color:#f6c880}
+#pause-menu:not(.homecoming) .pause-card {display:flex;flex-direction:column}
+#pause-menu:not(.homecoming) #resume {order:1}#pause-menu:not(.homecoming) #pause-settings {order:2}#pause-menu:not(.homecoming) #abandon {order:3}
+#pause-menu:not(.homecoming) #restart {order:4}
+@media (max-width:600px) {.home-drawer[open] > summary{font-size:21px}.home-drawer[open] .home-navigation{padding:10px}.home-drawer[open] .home-tools{grid-template-columns:1fr}}
+.home-drawer .home-tools > .mods-panel[open]{position:static;inset:auto;transform:none;width:100%;padding:0;overflow:visible;box-shadow:none}
+.home-drawer .home-tools > .mods-panel[open] > summary{position:static;min-height:42px;padding:5px 3px;border:0;background:transparent}
+.home-drawer[open]:has(.mods-panel[open]) {height:min(86dvh,730px)}
+.home-drawer[open]:has(.mods-panel[open])>.home-navigation{display:block}
+#preview:has(#pause-menu:not(.hidden)) #toast{top:auto;bottom:8px}
+#pause-menu:not(.homecoming) #restart:disabled{display:none}
+.workshop-samples h2{font:700 20px/1.5 var(--display);color:#edd6a7;margin:16px 0 6px}
+#mods-panel .workshop-samples nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+#mods-panel .workshop-samples a{background:#203d40;border:1px solid #65817b;color:#ede4c8;border-radius:3px;padding:10px 8px;display:grid;justify-items:center;gap:6px;font:600 13px/1.4 var(--display);text-decoration:none}
+#mods-panel .workshop-samples a:hover {background:#33504e;border-color:#d8bd89}
+.workshop-samples img{height:38px;width:48px;object-fit:contain;image-rendering:pixelated}
+@media(max-width:620px){#mods-panel .workshop-samples nav{grid-template-columns:repeat(2,minmax(0,1fr))}#mods-panel .workshop-head{padding:10px}}

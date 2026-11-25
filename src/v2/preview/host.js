@@ -111,6 +111,7 @@ export function mountCombatPreview(mountElementId) {
       ending.textContent=terminal?(lines.at(-1)?.text??''):'';
       ending.classList.toggle('hidden',!terminal);
       node('pause-menu').classList.toggle('homecoming',terminal);
+      node('pause-kicker').textContent=terminal?'食堂收船簿':'航行手记';
       if(terminal){node('toast').classList.remove('visible');toastUntil=0;}
       if(newest && !terminal){
         node('radio-speaker').textContent=newest.speaker;node('radio-line').textContent=newest.text;
@@ -138,7 +139,7 @@ export function mountCombatPreview(mountElementId) {
     node('mode-tower').setAttribute('aria-pressed',String(api));
     const towerOpen=!!profileRecord?.profile.apiUnlocked;
     node('mode-tower').dataset.locked=String(!towerOpen);
-    node('tower-access').textContent=towerOpen?'爬塔生存 · 安全处可返航':'爬塔生存 · 通关难度 15 后开放';
+    node('tower-access').textContent=towerOpen?'在安全处可随时返航':'通关难度 15 后开放';
     node('route-brief').textContent=routeBrief(api?'api':mode, /** @type {HTMLSelectElement} */(node('boss-select')).value);
   }
   /** @param {string} message */
@@ -287,11 +288,10 @@ export function mountCombatPreview(mountElementId) {
   function saveAssist(){try{localStorage.setItem('big-fat-fish:v2:escape-assist',assist.checked?'1':'0');}catch{}}
   on(assist,'change',()=>{homeAssist.checked=assist.checked;saveAssist();canvas.focus();});
   on(homeAssist,'change',()=>{assist.checked=homeAssist.checked;saveAssist();});
-  const simpleHome=/** @type {HTMLInputElement} */(node('home-simple-fx')),simplePause=/** @type {HTMLInputElement} */(node('pause-simple-fx'));
-  try{simpleHome.checked=simplePause.checked=localStorage.getItem('big-fat-fish:v2:simple-fx')==='1';}catch{}
+  const simpleHome=/** @type {HTMLInputElement} */(node('home-simple-fx'));
+  try{simpleHome.checked=localStorage.getItem('big-fat-fish:v2:simple-fx')==='1';}catch{}
   function saveSimple(){try{localStorage.setItem('big-fat-fish:v2:simple-fx',simpleHome.checked?'1':'0');}catch{}}
-  on(simpleHome,'change',()=>{simplePause.checked=simpleHome.checked;saveSimple();});
-  on(simplePause,'change',()=>{simpleHome.checked=simplePause.checked;saveSimple();canvas.focus();});
+  on(simpleHome,'change',saveSimple);
   const workshop=/** @type {HTMLDialogElement} */(node('workshop'));
   on(node('open-workshop'),'click',()=>{
     /** @type {HTMLDetailsElement} */(node('home-drawer')).open=false;
@@ -316,7 +316,7 @@ export function mountCombatPreview(mountElementId) {
     select.value=isModMode()?'mod-short':'short';select.dispatchEvent(new Event('change'));updateWallet();
   });
   on(node('escape-input'),'pointerdown',event=>{blockTrainingClick=true;event.preventDefault();escape(false);});on(window,'pointerup',()=>{if(escapePressing)escape(true);});
-  for(const id of ['nest-panel','mods-panel','settings-panel'])on(node(id),'toggle',()=>{if(!/** @type {HTMLDetailsElement} */(node(id)).open)return;for(const other of ['nest-panel','mods-panel','settings-panel'])if(other!==id)/** @type {HTMLDetailsElement} */(node(other)).open=false;});
+
   on(node('mods-manager'),'modschange',()=>{void syncProfileScope();});
   on(node('mod-profile-create'),'click',()=>{void createSelectedModProfile();});
   on(node('mode-select'),'change',()=>{syncModeCards();try{localStorage.setItem('big-fat-fish:v2:mode',/** @type {HTMLSelectElement} */(node('mode-select')).value);}catch{}const adventure=/** @type {HTMLSelectElement} */(node('mode-select')).value!=='tutorial';void syncProfileScope();if(adventure){/** @type {HTMLSelectElement} */(node('skill-select')).value='skill_disconnect';/** @type {HTMLSelectElement} */(node('dsh-select')).value='';}node('boss-select').toggleAttribute('disabled',['expedition','mod-expedition','tutorial-guide'].includes(/** @type {HTMLSelectElement} */(node('mode-select')).value)||/** @type {HTMLSelectElement} */(node('difficulty-select')).value==='api');node('skill-select').toggleAttribute('disabled',adventure);node('companion-select').toggleAttribute('disabled',adventure);node('dsh-select').toggleAttribute('disabled',adventure);refreshContinue();});on(node('retry-profile'),'click',()=>{void flushProfile();});on(node('difficulty-select'),'change',()=>{preferApi=/** @type {HTMLSelectElement} */(node('difficulty-select')).value==='api';node('boss-select').toggleAttribute('disabled',preferApi||['expedition','mod-expedition','tutorial-guide'].includes(/** @type {HTMLSelectElement} */(node('mode-select')).value));syncModeCards();});on(node('interact'),'pointerdown',event=>{if(canWithdrawNow()){event.preventDefault();withdrawalPointerHeld=true;send('StartWithdrawal');}});on(window,'pointerup',()=>{if(withdrawalPointerHeld){withdrawalPointerHeld=false;send('CancelWithdrawal');}});on(node('interact'),'click',()=>{if(!canWithdrawNow())send('Interact');});
@@ -328,7 +328,7 @@ export function mountCombatPreview(mountElementId) {
   on(node('training-input'),'pointerdown',event=>{blockTrainingClick=true;event.preventDefault();train(false);});on(window,'pointerup',()=>train(true));on(node('training-input'),'click',event=>{if(/** @type {MouseEvent} */(event).detail===0){train(false);train(true);}});
   on(node('plugin-reroll'),'click',()=>choose('RerollPlugin'));on(node('plugin-skip'),'click',()=>choose('SkipPlugin'));
   on(node('switch'),'click',()=>{send('SwitchWeapon');});on(node('skill'),'click',()=>{send('Skill');});on(node('dash'),'click',()=>{send('Dash');});on(node('checkpoint'),'click',()=>requestSave());
-  on(window,'keydown',event=>{const e=/** @type {KeyboardEvent} */(event);if(!session||e.target instanceof HTMLInputElement||e.target instanceof HTMLSelectElement)return;const key=e.code;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(key))e.preventDefault();if(e.repeat)return;
+  on(window,'keydown',event=>{const e=/** @type {KeyboardEvent} */(event);if(!session||document.querySelector('dialog[open]')||e.target instanceof HTMLInputElement||e.target instanceof HTMLSelectElement)return;const key=e.code;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(key))e.preventDefault();if(e.repeat)return;
     if(key==='Escape'){readSessionState(session).flow.phase==='paused'?resume():pause();return;}keys.add(key);
     if(key==='Space'&&readSessionState(session).flow.phase==='loraTraining'){train(false);return;}
     if(key==='Space'){const state=readSessionState(session);if(state.world.entities[state.player.entityId].statusIds.some(id=>state.world.statuses[id]?.kind==='root'))escape(false);else send('Dash');}else if(key==='KeyE')send('Skill');else if(key==='KeyQ')send('SwitchWeapon');else if(key==='KeyF'){if(canWithdrawNow())send('StartWithdrawal');else send('Interact');}else if(key==='KeyR')requestSave();

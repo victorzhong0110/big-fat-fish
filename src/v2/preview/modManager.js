@@ -42,7 +42,7 @@ export function mountModManager(root, base, notify) {
       card.append(name, description, toggle, remove); list.append(card);
     }
     root.dispatchEvent(new Event('modschange'));
-    status.textContent = installed.length ? `已安装 ${installed.length} 个 · 已启用 ${installed.filter(item => item.enabled).length} 个。下次Free练习或模组冒险使用当前组合；原版与每组模组档案独立。` : '暂无模组。SDK 1.0–1.3支持MCP参数、名称、新武器及护盾/爆发技能配方，可在Free练习和独立模组冒险使用。';
+    status.textContent = installed.length ? `已安装 ${installed.length} 个 · 已启用 ${installed.filter(item => item.enabled).length} 个。` : '还没装模组。选一个示例下载，再用上方的按钮装上。';
   }
   function read() {
     try {

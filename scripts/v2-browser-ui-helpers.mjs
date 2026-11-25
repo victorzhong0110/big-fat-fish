@@ -26,6 +26,13 @@ export async function selectMode(page, value) {
 }
 
 export async function setDrawer(page, id, open) {
+  if (id === 'settings-panel') {
+    const dialog = page.locator('#settings-panel');
+    if (await dialog.evaluate(element => element.open) !== open) {
+      await page.locator(open ? '[data-open-settings]:visible' : '#close-settings').click();
+    }
+    return;
+  }
   if (id === 'mods-panel') {
     const workshop = page.locator('#workshop');
     if (await workshop.evaluate(element => element.open) === open) return;

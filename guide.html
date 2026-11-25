@@ -1,9 +1,12 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>大肥鱼 · 航海手册</title><link rel="stylesheet" href="./src/guide.css"></head>
 <body><main class="book">
-<header class="mast"><div><small>BIG FAT FISH</small><h1 id="book-title">航海手册</h1></div><nav aria-label="手册导航"><button id="studio-tab" hidden>界面方案</button><button id="demo-tab">实战演示</button><button id="rules-tab">航海须知</button></nav></header>
-<section id="studio" hidden><div class="section-head"><div><h2>三种出航方式</h2><p>试着出航、选站或换装，看看第一眼自然会做什么。</p></div><div class="switcher" id="versions"><button data-version="port">夜港食堂</button><button data-version="chart">领航海图</button><button data-version="deck">口袋街机</button></div></div>
-<div id="scene" class="scene" aria-live="polite"></div><p class="caption" id="concept-caption"></p></section>
+<header class="mast"><div><small>BIG FAT FISH</small><h1 id="book-title">航海手册</h1></div><nav aria-label="手册导航"><button id="screens-tab" hidden>游戏界面</button><button id="studio-tab" hidden>风格备选</button><button id="demo-tab">实战演示</button><button id="rules-tab">航海须知</button></nav></header>
+<section id="screens" hidden>
+<div class="section-head"><div><h2>从标题到返港</h2><p>点左侧索引直达任一画面，也可以从标题点「开始航行」或「设置」走一遍。</p></div><div id="screen-formats" class="switcher" aria-label="画幅"><button data-format="wide">桌面</button><button data-format="phone">手机</button></div></div>
+<div class="screen-gallery"><nav id="screen-index" aria-label="画面索引"></nav><figure class="screen-display"><div class="screen-frame"><div class="photo-surface"><img id="screen-photo" alt=""><div id="screen-links" aria-label="画面内导航"></div></div></div><figcaption><div><h3 id="screen-name"></h3><p id="screen-description"></p></div><button id="screen-next" type="button">下一页 →</button></figcaption></figure></div></section>
+<section id="studio" hidden><div class="section-head"><div><h2>三种界面方向</h2><p>选一种风格，再切换标题、模式或设置比较。</p></div><div class="switcher" id="versions"><button data-version="port">夜港食堂</button><button data-version="chart">领航海图</button><button data-version="deck">口袋街机</button></div></div>
+<div id="concept-pages" class="switcher concept-pages" aria-label="对照页面"><button data-page="entry">出航概念</button><button data-page="title">标题</button><button data-page="modes">模式选择</button><button data-page="audio">设置</button></div><div id="scene" class="scene" aria-live="polite"></div><p class="caption" id="concept-caption"></p></section>
 <section id="demos" hidden><div class="section-head"><div><h2>看一遍就会</h2><p>换一种走法，对照同一个场景的结果。</p></div><div class="switcher" id="lessons"><button data-lesson="beacon">穿标调频</button><button data-lesson="wake">冲刺尾流</button><button data-lesson="shell">绕后破壳</button></div></div>
 <div class="theater"><div class="projection"><canvas id="drill" width="680" height="420" aria-label="战术演示动画"></canvas><div class="overlay"><b id="clock"></b><b id="readout"></b></div></div>
 <aside class="lesson-copy"><small>港口训练场</small><h3 id="lesson-title"></h3><p id="lesson-desc"></p><h4>对照打法</h4><div id="variants" class="tactics"></div><p id="comment" aria-live="polite"></p></aside></div>

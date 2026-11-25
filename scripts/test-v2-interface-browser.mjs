@@ -20,9 +20,9 @@ try{
  check(await page.locator('#home-screen').isVisible()&&await page.locator('#departure-screen').isHidden(),'Home is the first screen');
  check(await page.locator('.home-art img').evaluate(i=>i.complete&&i.naturalWidth>0),'Previously approved fish artwork loads on the home screen');
  await page.screenshot({path:path.join(output,'home.png')});
- await page.locator('#home-drawer > summary').click();await page.locator('#settings-panel summary').click();await page.locator('#home-escape-assist').check();await page.locator('#settings-panel summary').click();
- await page.reload();await page.locator('#home-drawer > summary').click();await page.locator('#settings-panel summary').click();check(await page.locator('#home-escape-assist').isChecked()&&await page.locator('#escape-assist').isChecked(),'Control assistance persists and matches the in-game setting');await page.locator('#settings-panel summary').click();
- await page.locator('#nest-panel > summary').click();check(await page.locator('#nest-panel').evaluate(e=>e.open),'Nest opens from home');await page.locator('#nest-panel > summary').click();
+ await page.locator('#title-settings').click();await page.locator('[data-tab-setting=controls]').click();await page.locator('#home-escape-assist').check();await page.locator('#close-settings').click();
+ await page.reload();await page.locator('#title-settings').click();await page.locator('[data-tab-setting=controls]').click();check(await page.locator('#home-escape-assist').isChecked()&&await page.locator('#escape-assist').isChecked(),'Control assistance persists and matches the in-game setting');await page.locator('#close-settings').click();
+ await page.locator('#home-drawer > summary').click();await page.locator('#nest-panel > summary').click();check(await page.locator('#nest-panel').evaluate(e=>e.open),'Nest opens from home');await page.locator('#nest-panel > summary').click();
  await page.locator('#open-workshop').click();check(await page.locator('#workshop').evaluate(e=>e.open),'Workshop has a separate modal screen');await page.locator('#workshop form button').click();
  await page.locator('#open-departure').click();await page.screenshot({path:path.join(output,'departure.png')});
  await page.locator('#mode-guide').click();await page.waitForFunction(()=>document.querySelector('#difficulty-select').value==='0');check(await page.locator('#difficulty-select').isDisabled()&&await page.locator('#mode-guide').getAttribute('aria-pressed')==='true','Free teaching selects difficulty zero');
