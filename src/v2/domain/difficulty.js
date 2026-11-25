@@ -4,7 +4,7 @@
  * Incremental V2 implementation; remaining TODO bodies are intentionally unavailable.
  * Calls describe allowed dependencies; per-export implementation status is in the manifest.
  */
-import * as dependency1 from '../content/catalog.js';
+export const ENDLESS_STAGE_TICKS = 7200;
 import * as dependency2 from './random.js';
 
 /**
@@ -24,15 +24,15 @@ export function resolveDifficultySnapshot(request, catalog) {
   const api = level === 'api';
   const stage = api ? 3 : d <= 5 ? 0 : d <= 10 ? 1 : 2;
   const mechanics = catalog.mechanics.filter(mechanic => mechanic.unlockAt >= 1 && mechanic.unlockAt <= d);
-  return { ok: true, value: { level, mode: request.mode, mechanicIds: mechanics.map(mechanic => mechanic.id),
+  return { ok: true, value: { level, petTiers: 'benchmark', mode: request.mode, mechanicIds: mechanics.map(mechanic => mechanic.id),
     difficultyPerkIds: d >= 1 && d <= 5 && !api ? ['plugin_5h'] : [],
-    modelProfileIds: { claude: ['claude_haiku', 'claude_sonnet', 'claude_opus', 'claude_fable'][stage], gpt: ['gpt_astra', 'gpt_sol', 'gpt_terra', 'gpt_luna'][stage], grok: 'grok_bot' },
+    modelProfileIds: { claude: ['claude_haiku', 'claude_sonnet', 'claude_opus', 'claude_fable'][stage], gpt: ['gpt_luna', 'gpt_sol', 'gpt_astra', 'gpt_terra'][stage], grok: 'grok_bot' },
     hpMultiplier: d === 0 ? 0.6 : 1 + 0.06 * (d - 1), damageMultiplier: d === 0 ? 0.5 : 1 + 0.035 * (d - 1), spawnBudgetMultiplier: d === 0 ? 0.5 : 1 + 0.035 * (d - 1),
   } };
 }
 
 /**
- * 选择Haiku/Sonnet/Opus/Fable或Mythos及Astra/Sol/Terra/Luna对应阶段。
+ * 选择Haiku/Sonnet/Opus/Fable或Mythos及Luna/Sol/Astra/Terra对应阶段。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @calls domain/random.js#drawRandom
@@ -63,4 +63,21 @@ export function resolveApiSpawnMultipliers(elapsedTicks) {
   const hp = 1.84 * 1.06 ** minutes, damage = 1.49 * 1.035 ** minutes, budget = Math.min(2.5, 1.49 + 0.03 * minutes);
   if (![hp, damage, budget].every(Number.isFinite)) return { ok: false, code: 'API_STRENGTH_OVERFLOW', message: 'API strength exceeds numeric range' };
   return { ok: true, value: { hp, damage, budget } };
+}
+
+/** Keep the API curve and scale numeric Endless from its own Benchmark.
+ * @calls domain/difficulty.js#resolveApiSpawnMultipliers
+ * @param {import('../contracts.d.ts').DifficultySnapshot} difficulty
+ * @param {import('../contracts.d.ts').Tick} elapsedTicks
+ * @returns {import('../contracts.d.ts').Result<{hp:number;damage:number;budget:number}>}
+ */
+export function resolveSurvivalSpawnMultipliers(difficulty, elapsedTicks) {
+  const strength = resolveApiSpawnMultipliers(elapsedTicks);
+  if (!strength.ok || difficulty.mode === 'api') return strength;
+  const minutes = Math.floor(elapsedTicks / 3600);
+  return { ok:true, value:{
+    hp: strength.value.hp / 1.84 * difficulty.hpMultiplier,
+    damage: strength.value.damage / 1.49 * difficulty.damageMultiplier,
+    budget: Math.min(2.5, difficulty.spawnBudgetMultiplier + 0.03 * minutes),
+  } };
 }

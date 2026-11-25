@@ -30,6 +30,7 @@ import { planEnemyAi, planBossAi, planCompanionAi } from '../domain/ai.js';
 import { planPlayerMovement, planEntityMotion, planPickupMotion } from '../domain/movement.js';
 import { planWeaponFire, planCollisionEffects } from '../domain/attacks.js';
 import { detectCollisions } from '../domain/collision.js';
+import { planExtraction } from '../domain/world/extraction.js';
 import { planDeathRewards } from '../domain/rewards.js';
 import { resolveTerminalOutcome } from '../domain/deaths.js';
 import { orderPendingCommands, planGameCommand } from './commands.js';
@@ -70,6 +71,7 @@ import { drainEffectQueue } from './effectLoop.js';
  * @calls domain/world/escort.js#planEscortAdvance
  * @calls domain/world/expedition.js#planExpeditionProgression
  * @calls domain/world/expeditionMaintenance.js#planExpeditionMaintenance
+ * @calls domain/world/extraction.js#planExtraction
  * @calls domain/world/map.js#planMapExploration
  * @calls domain/world/objectives.js#planApiProgression
  * @calls domain/world/objectives.js#planObjectiveAdvance
@@ -136,11 +138,14 @@ export function advanceWorldTick(state, commands, catalog) {
   const retry=planTutorialRetry(context(),drained.deaths);if(retry.changes.length)apply(retry);
   const outcome = retry.changes.length?null:resolveTerminalOutcome(context(), drained.deaths);
   if (outcome) apply({ ...createEmptyPlan(), changes: [createStateChange('flow', 'phase', 'setFlowPhase', { phase: outcome, resumePhase: null }), createStateChange('runtime', 'input', 'setInput', { ...working.input, move: { x: 0, y: 0 }, firing: false }),...(working.api?[createStateChange('runtime','api','setApiState',{...working.api,withdrawal:null})]:[])] });
+  if (outcome && working.extractionHold) apply(planExtraction(context(),'CancelWithdrawal'));
   if (!outcome) apply(planApiProgression(context(),true));
+  if (!outcome && working.extractionHold) apply(planExtraction(context(),'advance'));
   if (!outcome) apply(planTutorialAdvance(context()));
   if (!outcome) apply(planEscortAdvance(context()));
-  if (!outcome) apply(planObjectiveAdvance(context()));
+  if (!outcome && working.flow.phase !== 'withdrawal') apply(planObjectiveAdvance(context()));
   if (!outcome) for (let i = 0; i < 128; i++) { const plan = planProgressionPanels(context()); if (!plan.changes.length) break; apply(plan); if (i === 127) throw new Error('Growth queue did not settle'); }
+  if (working.extractionHold && working.flow.phase!=='exploring') apply(planExtraction(context(),'CancelWithdrawal'));
   if(working.api?.withdrawal&&working.flow.phase!=='exploring')apply({...createEmptyPlan(),changes:[createStateChange('runtime','api','setApiState',{...working.api,withdrawal:null})]});
   if(working.api)apply(planApiMaintenance(context()));
   if(working.expedition)apply(planExpeditionMaintenance(context()));

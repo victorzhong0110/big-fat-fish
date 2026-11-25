@@ -66,6 +66,7 @@ export async function commitProfilePlan(storage, plan, catalog) {
  * @calls domain/profile/unlocks.js#planBossUnlock
  * @calls domain/profile/unlocks.js#planDiscoveryUnlock
  * @calls domain/profile/unlocks.js#planEasterUnlock
+ * @calls domain/profile/unlocks.js#planEndlessClear
  * @calls domain/serialization.js#serializeCanonical
  * @calls domain/settlement.js#planSettlementCommit
  * @calls domain/settlement.js#validateProfileRecord
@@ -104,7 +105,8 @@ export function mergePersistenceIntents(profile, intents, catalog) {
       next = { ...next, revision: next.revision + 1, checkpoint }; continue;
     } else {
       const event = /** @type {import('../contracts.d.ts').DomainEvent} */ (JSON.parse(serializeCanonical(intent.payload)));
-      result = intent.kind === 'discovery' ? dependency1.planDiscoveryUnlock(next, event, catalog) : event.type === 'DshCycleDurationReset' ? dependency1.planAchievementUnlock(next,event,catalog) : event.type === 'BossDefeated' ? dependency1.planBossUnlock(next, event, catalog) : dependency1.planEasterUnlock(next, event, catalog);
+      result = intent.kind === 'discovery' ? dependency1.planDiscoveryUnlock(next, event, catalog) : event.type === 'DshCycleDurationReset' ? dependency1.planAchievementUnlock(next,event,catalog) : event.type === 'BossDefeated' ? dependency1.planBossUnlock(next, event, catalog)
+        : event.type === 'EndlessBenchmarkCleared' ? dependency1.planEndlessClear(next,event) : dependency1.planEasterUnlock(next, event, catalog);
     }
     if (!result.ok) return result;
     if(settledRetry&&serializeCanonical(result.value.next)!==serializeCanonical(next))return {ok:false,code:'MOD_RUN_MISMATCH',message:'A settled mod run cannot generate new progress'};

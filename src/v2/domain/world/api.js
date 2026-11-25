@@ -3,7 +3,7 @@ import {namespaceEncounterPlan} from './encounterIds.js';
 import {createEmptyPlan,createStateChange} from '../plans.js';
 import {createEntityState} from '../entities.js';
 import {distanceSquared} from '../geometry.js';
-import {resolveApiSpawnMultipliers} from '../difficulty.js';
+import {ENDLESS_STAGE_TICKS, resolveSurvivalSpawnMultipliers} from '../difficulty.js';
 import {planBossEncounter} from './adventure.js';
 import {isWorldSafe} from './safety.js';
 import {validatePressureReservation} from './pressureRules.js';
@@ -27,7 +27,7 @@ export function canApiWithdraw(c){const s=c.state,p=s.world.entities[s.player.en
 export function planApiWithdrawal(c,type){const s=c.state;if(!s.api)return createEmptyPlan();const p=s.world.entities[s.player.entityId];if(type==='StartWithdrawal'&&(!canApiWithdraw(c)||s.api.withdrawal))return createEmptyPlan();return {...createEmptyPlan(),changes:[createStateChange('runtime','api','setApiState',{...s.api,withdrawal:type==='StartWithdrawal'?{startedAt:s.tick,position:p.position,hpDamageTotal:Number(p.runtime.hpDamageTotal??0)}:null})]};}
 /** Reuse the same three tested Boss factories, replacing every created identity (including nodes/covers) with a stage-unique ID. The temporary beacon state is only a construction input and is never committed.
  * @implementationScope adventure-slice API
- * @calls domain/difficulty.js#resolveApiSpawnMultipliers
+ * @calls domain/difficulty.js#resolveSurvivalSpawnMultipliers
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @calls domain/world/adventure.js#planBossEncounter
@@ -36,10 +36,10 @@ export function planApiWithdrawal(c,type){const s=c.state;if(!s.api)return creat
  * @returns {import('../../contracts.d.ts').SystemPlan}
  */
 export function planApiBossEncounter(c){
- const s=c.state,a=s.api;if(!a||s.bosses.some(b=>!s.world.entities[b.entityId]?.dead))return createEmptyPlan();const strength=resolveApiSpawnMultipliers(a.elapsedTicks);if(!strength.ok)throw new Error(strength.message);const faction=/** @type {import('../../contracts.d.ts').Faction} */(['claude','gpt','grok'][a.bossIndex%3]),fake={...s,start:{...s.start,bossFaction:faction,difficulty:{...s.start.difficulty,hpMultiplier:strength.value.hp,damageMultiplier:strength.value.damage}},bosses:[],world:{...s.world,objectives:s.world.objectives.map((o,i)=>o.kind==='beacon'?{...o,completed:true}:o)}};
+ const s=c.state,a=s.api;if(!a||s.bosses.some(b=>!s.world.entities[b.entityId]?.dead))return createEmptyPlan();const strength=resolveSurvivalSpawnMultipliers(s.start.difficulty,a.elapsedTicks);if(!strength.ok)throw new Error(strength.message);const faction=/** @type {import('../../contracts.d.ts').Faction} */(['claude','gpt','grok'][a.bossIndex%3]),fake={...s,start:{...s.start,bossFaction:faction,difficulty:{...s.start.difficulty,hpMultiplier:strength.value.hp,damageMultiplier:strength.value.damage}},bosses:[],world:{...s.world,objectives:s.world.objectives.map((o,i)=>o.kind==='beacon'?{...o,completed:true}:o)}};
  const plan=namespaceEncounterPlan(planBossEncounter({...c,state:fake}),s.bosses,`api:${a.bossIndex}:`),changes=plan.changes;
  for(const ch of changes){if(ch.operation==='putEntity'){const e=/** @type {import('../../contracts.d.ts').EntityState} */(/** @type {unknown} */(ch.payload));if(e.definitionId.startsWith('boss_'))e.runtime={...e.runtime,finalBoss:false,apiStage:true,damageMultiplier:strength.value.damage};}}
- return {...plan,changes:[...changes,createStateChange('runtime','api','setApiState',{...a,bossIndex:a.bossIndex+1,nextBossAt:a.nextBossAt+18000,bossWarningAt:null,withdrawal:null})]};
+ return {...plan,changes:[...changes,createStateChange('runtime','api','setApiState',{...a,bossIndex:a.bossIndex+1,nextBossAt:a.nextBossAt+(s.start.difficulty.mode==='endless'?ENDLESS_STAGE_TICKS:18000),bossWarningAt:null,withdrawal:null})]};
 }
 /** Advance API time once per world step; afterCombat reacts only after damage/death settlement, so death beats a completed withdrawal and a stage Boss never ends the run.
  * @implementationScope adventure-slice API
@@ -55,10 +55,17 @@ export function planApiBossEncounter(c){
  */
 export function planApiWorldAdvance(c,afterCombat=false){
  const s=c.state;if(!s.api||!['exploring','boss'].includes(s.flow.phase))return createEmptyPlan();const a={...s.api},changes=/** @type {import('../../contracts.d.ts').StateChange[]} */([]),events=/** @type {import('../../contracts.d.ts').DomainEvent[]} */([]),p=s.world.entities[s.player.entityId];
+ const persistence=/** @type {import('../../contracts.d.ts').PersistenceIntent[]} */([]);
  if(afterCombat){
   if(p.dead||p.hp<=0)return createEmptyPlan();
   const ended=s.bosses.map(b=>s.world.entities[b.entityId]).find(e=>e?.dead&&e.runtime.apiStage===true&&e.runtime.apiFinished!==true);
   if(ended){for(const child of Object.values(s.world.entities))if(child.id!==ended.id&&child.sourceId===ended.id&&(child.runtime.resetNodeOwner===ended.id||child.definitionId==='gpt_node_marker'||child.runtime.bossGround===true))changes.push(createStateChange('world',child.id,'removeEntity',{}));a.calmUntil=s.tick+900;a.nextBossAt=Math.max(a.nextBossAt,a.calmUntil);changes.push(createStateChange('entity',ended.id,'setEntityRuntime',{runtime:{...ended.runtime,apiFinished:true}}),createStateChange('flow','phase','setFlowPhase',{phase:'exploring',resumePhase:null}));const removed=s.world.spawnQueue.filter(r=>r.bossOwner===ended.id);if(removed.length)changes.push(createStateChange('world','api','setSpawnDirector',{queue:s.world.spawnQueue.filter(r=>r.bossOwner!==ended.id),budgets:s.world.budgets.map(b=>({...b,reserved:b.reserved-removed.filter(r=>r.budgetId===b.id).length})),nextAt:Math.max(s.spawnDirectorNextAt??0,a.calmUntil)}));}
+  if (ended?.runtime.lastDamageCreditOwner==='player' && a.bossKills===1 && s.start.difficulty.mode==='endless') {
+   const event={id:`endlessClear:${s.runId}`,runId:s.runId,tick:s.tick,seq:0,type:'EndlessBenchmarkCleared',
+    sourceId:p.id,targetId:ended.id,payload:{difficulty:s.start.difficulty.level}};
+   events.push(event);
+   persistence.push({id:event.id,kind:'unlock',payload:event});
+  }
   if(a.withdrawal){const hold=a.withdrawal,interrupted=!canApiWithdraw(c)||distanceSquared(p.position,hold.position)>.01||Number(p.runtime.hpDamageTotal??0)!==hold.hpDamageTotal;if(interrupted)a.withdrawal=null;else if(s.tick-hold.startedAt>=180){a.withdrawal=null;changes.push(createStateChange('flow','phase','setFlowPhase',{phase:'withdrawal',resumePhase:null}),createStateChange('runtime','input','setInput',{...s.input,move:{x:0,y:0},firing:false,heldKeys:[],pointerIds:[]}));}}
   if(!changes.length&&a.withdrawal===s.api.withdrawal)return createEmptyPlan();
  }else{
@@ -66,7 +73,7 @@ export function planApiWorldAdvance(c,afterCombat=false){
   const live=s.bosses.some(b=>!s.world.entities[b.entityId]?.dead);
   if(!live&&!a.withdrawal&&s.tick>=a.calmUntil){if(a.bossWarningAt!==null&&s.tick>=a.bossWarningAt+240)return planApiBossEncounter({...c,state:{...s,api:a}});if(a.bossWarningAt===null&&a.elapsedTicks>=a.nextBossAt){a.bossWarningAt=s.tick;events.push({id:`apiWarning:${s.runId}:${a.bossIndex}`,runId:s.runId,tick:s.tick,seq:0,type:'ApiBossWarning',sourceId:null,targetId:null,payload:{faction:['claude','gpt','grok'][a.bossIndex%3],seconds:4}});const id=`apiWarning:${a.bossIndex}`;changes.push(createStateChange('world',id,'putEntity',createEntityState(id,'world_blast','objective','neutral',{x:2550,y:1750},{radius:90,expiresAt:s.tick+240,runtime:{visualOnly:true}})));}}
  }
- return {...createEmptyPlan(),changes:[...changes,createStateChange('runtime','api','setApiState',a)],events};
+ return {...createEmptyPlan(),changes:[...changes,createStateChange('runtime','api','setApiState',a)],events,persistence};
 }
 /** API additional pressure rotates every 90 seconds with four-second warnings; blocked schedules are deferred, never piled into a catch-up queue.
  * @implementationScope adventure-slice API
@@ -76,4 +83,4 @@ export function planApiWorldAdvance(c,afterCombat=false){
  * @param {import('../../contracts.d.ts').EvaluationContext} c
  * @returns {import('../../contracts.d.ts').SystemPlan}
  */
-export function planApiPressure(c){const s=c.state,a=s.api;if(!a||s.flow.phase!=='exploring'||a.withdrawal||a.bossWarningAt!==null||s.tick<a.calmUntil||s.tick<a.nextPressureAt||s.world.pressureEvents.some(e=>e.phase==='queued'&&e.runtime.kind==='coordinator'&&Number(e.runtime.gapUntil)>s.tick))return createEmptyPlan();const n=a.pressureSeq,kind=n%3===2?'tideReverse':'apiWave',r=validatePressureReservation(c,{id:`apiPressure:${n}`,mechanicId:['mech_02_reinforcements','mech_08_grok_flanks','mech_14_anomaly'][n%3],budgetId:'pursuers',phase:'queued',startedAt:null,remaining:4,runtime:{kind,count:kind==='apiWave'?6:0,currentId:'current:0',durationTicks:kind==='apiWave'?1800:720,title:'API调用 · 额外压力'}});return {...createEmptyPlan(),changes:[...(r.ok?[createStateChange('world','pressure','setPressureEvents',{events:[...s.world.pressureEvents,r.value]})]:[]),createStateChange('runtime','api','setApiState',{...a,nextPressureAt:s.tick+(r.ok?5400:60),pressureSeq:n+(r.ok?1:0)})]};}
+export function planApiPressure(c){const s=c.state,a=s.api;if(!a||s.flow.phase!=='exploring'||a.withdrawal||a.bossWarningAt!==null||s.tick<a.calmUntil||s.tick<a.nextPressureAt||s.world.pressureEvents.some(e=>e.phase==='queued'&&e.runtime.kind==='coordinator'&&Number(e.runtime.gapUntil)>s.tick))return createEmptyPlan();const n=a.pressureSeq,kind=n%3===2?'tideReverse':'apiWave',r=validatePressureReservation(c,{id:`apiPressure:${n}`,mechanicId:['mech_02_reinforcements','mech_08_grok_flanks','mech_14_anomaly'][n%3],budgetId:'pursuers',phase:'queued',startedAt:null,remaining:4,runtime:{kind,count:kind==='apiWave'?6:0,currentId:'current:0',durationTicks:kind==='apiWave'?1800:720,title:s.start.difficulty.mode==='endless'?'无尽模式 · 额外压力':'API调用 · 额外压力'}});return {...createEmptyPlan(),changes:[...(r.ok?[createStateChange('world','pressure','setPressureEvents',{events:[...s.world.pressureEvents,r.value]})]:[]),createStateChange('runtime','api','setApiState',{...a,nextPressureAt:s.tick+(r.ok?5400:60),pressureSeq:n+(r.ok?1:0)})]};}

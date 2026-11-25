@@ -20,7 +20,7 @@ import { createEmptyPlan, createStateChange } from './plans.js';
 export function planLevelProgression(context) {
   const state = context.state;
   if (!['exploring', 'boss'].includes(state.flow.phase) || state.world.entities[state.player.entityId].dead) return createEmptyPlan();
-  const cap = state.start.difficulty.mode === 'api' ? Number.MAX_SAFE_INTEGER : state.start.difficulty.mode === 'expedition' ? 30 : 16;
+  const cap = state.api ? Number.MAX_SAFE_INTEGER : state.start.difficulty.mode === 'expedition' ? 30 : 16;
   let level = state.level, xp = state.xpRemainder;
   const rewards = [...state.flow.queuedLevelRewards];
   // Process one level at a time. Its HP/LoRA/plugin resolves before the next threshold.
@@ -59,6 +59,6 @@ export function planNextLevelReward(context) {
  */
 export function isPluginMilestone(level, mode) {
   if (!Number.isSafeInteger(level) || level < 2) return false;
-  const milestones = mode === 'short' || mode === 'tutorial' ? [2, 4, 7, 10, 13, 16] : [2, 4, 7, 10, 13, 16, 19, 22, 25, 28];
-  return milestones.includes(level) || mode === 'api' && level >= 31 && (level - 31) % 3 === 0;
+  const milestones = ['short','tutorial','exploration'].includes(mode) ? [2, 4, 7, 10, 13, 16] : [2, 4, 7, 10, 13, 16, 19, 22, 25, 28];
+  return milestones.includes(level) || ['api','endless'].includes(mode) && level >= 31 && (level - 31) % 3 === 0;
 }

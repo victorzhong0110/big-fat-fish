@@ -56,7 +56,7 @@ export function planDeathTransitions(context, records) {
 export function resolveTerminalOutcome(context, records) {
   const state = context.state;
   if (records.some(record => record.entityId === state.player.entityId) || state.world.entities[state.player.entityId]?.hp <= 0) return 'defeat';
-  if (state.start.difficulty.mode === 'api') return null;
+  if (['api','endless','exploration'].includes(state.start.difficulty.mode)) return null;
   const finalBossDied = records.some(record => state.bosses.some(boss => boss.entityId === record.entityId) && state.world.entities[record.entityId]?.runtime.finalBoss === true);
   return finalBossDied ? 'victory' : null;
 }

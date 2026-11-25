@@ -1297,6 +1297,7 @@
             "domain/profile/unlocks.js#planBossUnlock",
             "domain/profile/unlocks.js#planDiscoveryUnlock",
             "domain/profile/unlocks.js#planEasterUnlock",
+            "domain/profile/unlocks.js#planEndlessClear",
             "domain/serialization.js#serializeCanonical",
             "domain/settlement.js#planSettlementCommit",
             "domain/settlement.js#validateProfileRecord"
@@ -2155,6 +2156,54 @@
           "callMode": "sequence",
           "implementation": "implemented",
           "implementationScope": "core-preview"
+        },
+        {
+          "description": "planEnemyGptBsod",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planEnemyGptBsod",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            }
+          ],
+          "result": "EffectPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/gptPets.js#planGptPet"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
+        },
+        {
+          "description": "planEnemyGptNullSignal",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planEnemyGptNullSignal",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
+              "type": "untyped"
+            }
+          ],
+          "result": "EffectPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/gptPets.js#planGptPet"
+          ],
+          "implementationScope": "core-preview + adventure-slice"
         }
       ]
     },
@@ -3972,7 +4021,7 @@
           "name": "createHandlerRegistry",
           "args": [],
           "result": "HandlerRegistry",
-          "description": "返回95项设计绑定与显式implementedIds能力集合，不把未实现条目声明为可运行。",
+          "description": "返回100项设计绑定与显式implementedIds能力集合，不把未实现条目声明为可运行。",
           "calls": [],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -4195,10 +4244,12 @@
           "description": "按合法稳定id和已实现绑定只调用一个对应处理器。",
           "calls": [
             "content/handlers/enemies.js#planEnemyClaudeGuard",
+            "content/handlers/enemies.js#planEnemyGptBsod",
             "content/handlers/enemies.js#planEnemyGptCodex",
             "content/handlers/enemies.js#planEnemyGptDewey",
             "content/handlers/enemies.js#planEnemyGptFireball",
             "content/handlers/enemies.js#planEnemyGptHoots",
+            "content/handlers/enemies.js#planEnemyGptNullSignal",
             "content/handlers/enemies.js#planEnemyGptRocky",
             "content/handlers/enemies.js#planEnemyGptSeedy",
             "content/handlers/enemies.js#planEnemyGptStacky",
@@ -5018,7 +5069,7 @@
           "result": "SystemPlan",
           "description": "按血量/节点/冷却决定读条，保持可被打死；低级基础位置、高级5选3。",
           "calls": [
-            "domain/difficulty.js#resolveApiSpawnMultipliers",
+            "domain/difficulty.js#resolveSurvivalSpawnMultipliers",
             "domain/entities.js#createEntityState",
             "domain/geometry.js#distanceSquared",
             "domain/geometry.js#normalizeVector",
@@ -5880,7 +5931,6 @@
       "layer": "domain",
       "purpose": "难度累计集合、档位福利和模型阶段解析。",
       "dependencies": [
-        "content/catalog.js",
         "domain/random.js"
       ],
       "functions": [
@@ -5948,6 +5998,29 @@
           "phase": "query",
           "callMode": "sequence",
           "implementation": "implemented"
+        },
+        {
+          "description": "resolveSurvivalSpawnMultipliers",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolveSurvivalSpawnMultipliers",
+          "args": [
+            {
+              "name": "difficulty",
+              "type": "untyped"
+            },
+            {
+              "name": "elapsedTicks",
+              "type": "untyped"
+            }
+          ],
+          "result": "Result<{hp:number;damage:number;budget:number}>",
+          "implementation": "implemented",
+          "calls": [
+            "domain/difficulty.js#resolveApiSpawnMultipliers"
+          ]
         }
       ]
     },
@@ -6436,6 +6509,10 @@
               "name": "overrides",
               "default": "{}",
               "type": "untyped"
+            },
+            {
+              "name": "difficulty",
+              "type": "untyped"
             }
           ],
           "result": "EntityState",
@@ -6785,6 +6862,7 @@
       "dependencies": [
         "content/skillCapabilities.js",
         "content/weaponCapabilities.js",
+        "domain/difficulty.js",
         "domain/entities.js",
         "domain/random.js",
         "domain/serialization.js",
@@ -6794,7 +6872,7 @@
       ],
       "functions": [
         {
-          "description": "创建Free引导/练习、短途/远征或API初态；模组冒险要求显式标记及完整锁，full仍拒绝。",
+          "description": "创建Free引导/练习、短途、远征、探索、无尽或API初态；模组冒险要求显式标记及完整锁，full仍拒绝。",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
           "phase": "query",
@@ -7338,6 +7416,10 @@
             {
               "name": "entity",
               "type": "untyped"
+            },
+            {
+              "name": "difficulty",
+              "type": "untyped"
             }
           ],
           "result": "number",
@@ -7355,6 +7437,10 @@
           "args": [
             {
               "name": "entity",
+              "type": "untyped"
+            },
+            {
+              "name": "difficulty",
               "type": "untyped"
             }
           ],
@@ -7955,6 +8041,31 @@
           "implementation": "implemented"
         },
         {
+          "description": "isDifficultyUnlocked",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "isDifficultyUnlocked",
+          "args": [
+            {
+              "name": "profile",
+              "type": "untyped"
+            },
+            {
+              "name": "mode",
+              "type": "untyped"
+            },
+            {
+              "name": "level",
+              "type": "untyped"
+            }
+          ],
+          "result": "boolean",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
           "name": "validateStartRequest",
           "args": [
             {
@@ -7972,7 +8083,9 @@
           ],
           "result": "ValidationReport",
           "description": "检查模式/难度/武器/伙伴/设施和活动存档覆盖确认。",
-          "calls": [],
+          "calls": [
+            "domain/profile/nest.js#isDifficultyUnlocked"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
@@ -8209,6 +8322,27 @@
             },
             {
               "name": "catalog",
+              "type": "untyped"
+            }
+          ],
+          "result": "Result<ProfilePlan>",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "planEndlessClear",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planEndlessClear",
+          "args": [
+            {
+              "name": "profile",
+              "type": "untyped"
+            },
+            {
+              "name": "event",
               "type": "untyped"
             }
           ],
@@ -8734,7 +8868,7 @@
             }
           ],
           "result": "Settlement",
-          "description": "按真实终态产生一次结算；模组冒险附完整范围，Free引导仅首次奖励标记，API不能胜利。",
+          "description": "按真实终态生成结算；探索撤离全额带回，失败无材料收入；生存模式生成对局成绩。",
           "calls": [
             "domain/modScope.js#createRunModScope"
           ],
@@ -9318,7 +9452,8 @@
       "dependencies": [
         "domain/easter.js",
         "domain/entities.js",
-        "domain/plans.js"
+        "domain/plans.js",
+        "domain/world/extraction.js"
       ],
       "functions": [
         {
@@ -9509,7 +9644,7 @@
           "result": "SystemPlan",
           "implementation": "implemented",
           "calls": [
-            "domain/difficulty.js#resolveApiSpawnMultipliers",
+            "domain/difficulty.js#resolveSurvivalSpawnMultipliers",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
             "domain/world/adventure.js#planBossEncounter",
@@ -9931,6 +10066,62 @@
             "domain/world/adventure.js#createAdventureMapPlan",
             "domain/world/regionRules.js#expeditionPoint",
             "domain/world/regionRules.js#expeditionRegionScale"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "domain/world/extraction.js",
+      "layer": "domain",
+      "purpose": "A live player must hold position inside the extraction zone without firing.",
+      "dependencies": [
+        "domain/geometry.js",
+        "domain/plans.js"
+      ],
+      "functions": [
+        {
+          "description": "canExtract",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "canExtract",
+          "args": [
+            {
+              "name": "{ state }",
+              "type": "untyped"
+            }
+          ],
+          "result": "boolean",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared"
+          ]
+        },
+        {
+          "description": "planExtraction",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "planExtraction",
+          "args": [
+            {
+              "name": "context",
+              "type": "untyped"
+            },
+            {
+              "name": "action",
+              "type": "untyped"
+            }
+          ],
+          "result": "SystemPlan",
+          "implementation": "implemented",
+          "calls": [
+            "domain/geometry.js#distanceSquared",
+            "domain/plans.js#createEmptyPlan",
+            "domain/plans.js#createStateChange",
+            "domain/world/extraction.js#canExtract"
           ]
         }
       ]
@@ -10593,8 +10784,8 @@
           "calls": [
             "content/catalog.js#findContentDefinition",
             "domain/collision.js#validateSpawnLocation",
-            "domain/difficulty.js#resolveApiSpawnMultipliers",
             "domain/difficulty.js#resolveModelProfileId",
+            "domain/difficulty.js#resolveSurvivalSpawnMultipliers",
             "domain/entities.js#createEntityState",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
@@ -10626,7 +10817,7 @@
           "result": "SystemPlan",
           "description": "按阶段压力和屏幕外规则预留一组Bot预算，不积累补刷债务。",
           "calls": [
-            "domain/difficulty.js#resolveApiSpawnMultipliers",
+            "domain/difficulty.js#resolveSurvivalSpawnMultipliers",
             "domain/plans.js#createEmptyPlan",
             "domain/plans.js#createStateChange",
             "domain/world/regionRules.js#regionWorldTick"
@@ -10762,6 +10953,7 @@
         "domain/status.js",
         "domain/world/api.js",
         "domain/world/expedition.js",
+        "domain/world/extraction.js",
         "domain/world/map.js",
         "engine/flow.js"
       ],
@@ -10818,6 +11010,7 @@
             "domain/status.js#planEscapeInput",
             "domain/world/api.js#planApiWithdrawal",
             "domain/world/expedition.js#planExpeditionRest",
+            "domain/world/extraction.js#planExtraction",
             "domain/world/map.js#planWorldInteraction",
             "engine/commands.js#validateGameCommand",
             "engine/flow.js#planPause",
@@ -11558,7 +11751,9 @@
       "purpose": "表现层只读投影，不把活实体对象交给UI。",
       "dependencies": [
         "content/skillCapabilities.js",
+        "domain/modelProfiles.js",
         "domain/serialization.js",
+        "domain/world/extraction.js",
         "domain/world/regionRules.js"
       ],
       "functions": [
@@ -11578,6 +11773,7 @@
           "description": "只读投影战斗实体、掉落、探索格、Claude预警与首领生命，供Canvas绘制。",
           "calls": [
             "content/skillCapabilities.js#resolveSkillTemplate",
+            "domain/modelProfiles.js#resolvePetStage",
             "domain/serialization.js#toJson",
             "domain/world/regionRules.js#regionWorldTick"
           ],
@@ -11640,6 +11836,7 @@
         "domain/world/escort.js",
         "domain/world/expedition.js",
         "domain/world/expeditionMaintenance.js",
+        "domain/world/extraction.js",
         "domain/world/map.js",
         "domain/world/objectives.js",
         "domain/world/pressure.js",
@@ -11704,6 +11901,7 @@
             "domain/world/escort.js#planEscortAdvance",
             "domain/world/expedition.js#planExpeditionProgression",
             "domain/world/expeditionMaintenance.js#planExpeditionMaintenance",
+            "domain/world/extraction.js#planExtraction",
             "domain/world/map.js#planMapExploration",
             "domain/world/objectives.js#planApiProgression",
             "domain/world/objectives.js#planObjectiveAdvance",
@@ -11888,8 +12086,10 @@
         "domain/difficulty.js",
         "domain/dshCycle.js",
         "domain/modScope.js",
+        "domain/profile/nest.js",
         "domain/settlement.js",
         "domain/world/api.js",
+        "domain/world/extraction.js",
         "domain/world/regionRules.js",
         "engine/session.js",
         "preview/modManager.js",
@@ -11934,8 +12134,10 @@
             "domain/difficulty.js#resolveDifficultySnapshot",
             "domain/dshCycle.js#readDshCycleTimers",
             "domain/modScope.js#scopePersistenceIntent",
+            "domain/profile/nest.js#isDifficultyUnlocked",
             "domain/settlement.js#createSettlement",
             "domain/world/api.js#canApiWithdraw",
+            "domain/world/extraction.js#canExtract",
             "domain/world/regionRules.js#localWorldId",
             "domain/world/regionRules.js#resolveExpeditionRoute",
             "engine/session.js#createGameSession",
@@ -12644,6 +12846,20 @@
       "source": "05-enemies.md"
     },
     {
+      "kind": "enemies",
+      "id": "enemy_gpt_bsod",
+      "module": "content/handlers/enemies.js",
+      "function": "planEnemyGptBsod",
+      "source": "UI-ART-OVERHAUL-SPEC.md"
+    },
+    {
+      "kind": "enemies",
+      "id": "enemy_gpt_null-signal",
+      "module": "content/handlers/enemies.js",
+      "function": "planEnemyGptNullSignal",
+      "source": "UI-ART-OVERHAUL-SPEC.md"
+    },
+    {
       "kind": "models",
       "id": "claude_haiku",
       "module": "content/handlers/models.js",
@@ -13077,9 +13293,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 120,
-    "functions": 432,
-    "implemented": 392,
+    "modules": 121,
+    "functions": 439,
+    "implemented": 399,
     "placeholders": 40
   }
 }

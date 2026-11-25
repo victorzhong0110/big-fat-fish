@@ -13,10 +13,12 @@ import * as dependency1 from '../content/handlers/enemies.js';
  * 约束：@calls为可能分支，不是执行顺序；未绑定/不适用给诊断，不返回假成功。
  * @implementationScope core-preview + adventure-slice
  * @calls content/handlers/enemies.js#planEnemyClaudeGuard
+ * @calls content/handlers/enemies.js#planEnemyGptBsod
  * @calls content/handlers/enemies.js#planEnemyGptCodex
  * @calls content/handlers/enemies.js#planEnemyGptDewey
  * @calls content/handlers/enemies.js#planEnemyGptFireball
  * @calls content/handlers/enemies.js#planEnemyGptHoots
+ * @calls content/handlers/enemies.js#planEnemyGptNullSignal
  * @calls content/handlers/enemies.js#planEnemyGptRocky
  * @calls content/handlers/enemies.js#planEnemyGptSeedy
  * @calls content/handlers/enemies.js#planEnemyGptStacky
@@ -29,6 +31,8 @@ import * as dependency1 from '../content/handlers/enemies.js';
 export function dispatchEnemiesHandler(context, definitionId, event) {
   if (definitionId === 'enemy_claude_guard') return dependency1.planEnemyClaudeGuard(context, event);
   if (definitionId === 'enemy_grok_bot') return dependency1.planEnemyGrokBot(context, event);
+  if(definitionId==='enemy_gpt_bsod')return dependency1.planEnemyGptBsod(context,event);
+  if(definitionId==='enemy_gpt_null-signal')return dependency1.planEnemyGptNullSignal(context,event);
   if(definitionId==='enemy_gpt_codex')return dependency1.planEnemyGptCodex(context,event);
   if(definitionId==='enemy_gpt_dewey')return dependency1.planEnemyGptDewey(context,event);
   if(definitionId==='enemy_gpt_fireball')return dependency1.planEnemyGptFireball(context,event);

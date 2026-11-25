@@ -58,11 +58,26 @@ export function planDshEquipment(profile, slots, catalog) {
   return { ok: true, value: { expectedRevision: profile.revision, next: { ...structuredClone(profile), revision: profile.revision + 1, equippedDsh: structuredClone(slots) }, events: [] } };
 }
 
+/** Numeric runs open one tier at a time. Exploration requires proof for that exact Benchmark.
+ * @calls 无内部公开函数。
+ * @param {import('../../contracts.d.ts').Profile} profile
+ * @param {import('../../contracts.d.ts').Mode} mode
+ * @param {number|'api'} level
+ * @returns {boolean}
+ */
+export function isDifficultyUnlocked(profile, mode, level) {
+  if (mode==='tutorial') return level===0;
+  if (mode==='api') return level==='api' && profile.apiUnlocked;
+  if (typeof level!=='number'||!Number.isInteger(level)||level<1||level>15) return false;
+  if (mode==='exploration') return profile.unlockLedger.includes(`endlessClear:${level}`);
+  return ['short','expedition','endless'].includes(mode) && level<=profile.highestDifficulty+1;
+}
+
 /**
  * 检查模式/难度/武器/伙伴/设施和活动存档覆盖确认。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
- * @calls 无内部公开函数。
+ * @calls domain/profile/nest.js#isDifficultyUnlocked
  * @param {import('../../contracts.d.ts').Profile} profile
  * @param {import('../../contracts.d.ts').StartRequest} request
  * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
@@ -72,8 +87,10 @@ export function validateStartRequest(profile, request, catalog) {
   const diagnostics = /** @type {import('../../contracts.d.ts').Diagnostic[]} */ ([]);
   const fail = (/** @type {string} */ message) => diagnostics.push({ code: 'START_REJECTED', message, relatedIds: [] });
   if (!Number.isSafeInteger(request.seed) || request.seed < 0 || request.seed > 0xffffffff) fail('Invalid seed');
-  if (!['tutorial', 'short', 'expedition', 'api'].includes(request.mode)) fail('Unknown mode');
-  if (request.mode === 'tutorial' ? request.difficulty !== 0 : request.mode === 'api' ? request.difficulty !== 'api' || !profile.apiUnlocked : typeof request.difficulty !== 'number' || !Number.isInteger(request.difficulty) || request.difficulty < 1 || request.difficulty > Math.min(15, profile.highestDifficulty + 1)) fail('Difficulty is not unlocked for this mode');
+  if (!['tutorial', 'short', 'expedition', 'exploration', 'endless', 'api'].includes(request.mode)) fail('Unknown mode');
+  if (!isDifficultyUnlocked(profile, request.mode, request.difficulty)) {
+    fail(request.mode==='exploration'?'先在无尽模式通关同一档 Benchmark。':'Difficulty is not unlocked for this mode');
+  }
   if (request.weaponIds.length < 1 || request.weaponIds.length > 2 || new Set(request.weaponIds).size !== request.weaponIds.length || request.weaponIds.some(id => !profile.unlockedWeapons.includes(id) || catalog.definitions[id]?.kind !== 'weapon') || request.weaponIds.length === 2 && !profile.purchasedTree.includes('tree_mcp_d')) fail('Invalid owned weapon loadout or second start slot');
   if (!profile.unlockedSkills.includes(request.skillId) || catalog.definitions[request.skillId]?.kind !== 'skill') fail('Skill is not owned');
   if (request.companionId !== null && (!profile.unlockedCompanions.includes(request.companionId) || request.companionId !== 'companion_rice' && !profile.facilities.includes('home_guest'))) fail('Companion is not available');

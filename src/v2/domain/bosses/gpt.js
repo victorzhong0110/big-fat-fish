@@ -1,5 +1,5 @@
 import {expeditionRegionScale} from '../world/regionRules.js';
-import {resolveApiSpawnMultipliers} from '../difficulty.js';
+import {resolveSurvivalSpawnMultipliers} from '../difficulty.js';
 // @ts-check
 import {createEmptyPlan,createStateChange} from '../plans.js';
 import {createEntityState} from '../entities.js';
@@ -12,13 +12,13 @@ function bossChange(c,boss,next){return createStateChange('world','bosses','setB
 function bubble(c,owner,point,id,angleOffset){const a=Math.atan2(point.y-owner.position.y,point.x-owner.position.x)+angleOffset;return createStateChange('world',id,'putEntity',createEntityState(id,'projectile_bubble','projectile','enemy',owner.position,{sourceId:owner.id,attackId:id,radius:7,velocity:{x:Math.cos(a)*180,y:Math.sin(a)*180},expiresAt:c.state.tick+300,runtime:{sourceKind:'enemy',chainId:id,damage:10*Number(owner.runtime.damageMultiplier??1),maxHits:1,hitTargetIds:[],critEligible:false,reflectable:true}}));}
 /** @param {import('../../contracts.d.ts').EvaluationContext} c @param {import('../../contracts.d.ts').BossState} boss */
 function spawnEchoes(c,boss){const s=c.state,e=s.world.entities[boss.entityId],changes=[],species=['codex','dewey','fireball','codex'],count=Object.values(s.world.entities).filter(x=>x.runtime.echoOwner===e.id&&!x.dead).length;
- const region=expeditionRegionScale(s.start.difficulty.mode==='expedition'?s.world.map.biomeIndex:0);const strength=s.api?resolveApiSpawnMultipliers(s.api.elapsedTicks):{ok:/** @type {const} */(true),value:{hp:s.start.difficulty.hpMultiplier*region.hp,damage:s.start.difficulty.damageMultiplier*region.damage,budget:1}};if(!strength.ok)throw new Error(strength.message);const room=s.api?Math.max(0,100-Object.values(s.world.entities).filter(body=>body.kind==='enemy'&&!body.dead&&body.runtime.noAi!==true).length):4;
- for(let n=0;n<Math.min(4,10-count,room);n++){const id=`echo:${e.id}:${boss.spawnGroupSeq}:${n}`,definitionId=`enemy_gpt_${species[n]}`,p=c.catalog.definitions[definitionId].parameters,point=resolveBodyDestination(c,e,{x:e.position.x+Math.cos(n*Math.PI/2)*170,y:e.position.y+Math.sin(n*Math.PI/2)*170});if(distanceSquared(point,s.world.entities[s.player.entityId].position)<80**2)continue;changes.push(createStateChange('world',id,'putEntity',createEntityState(id,definitionId,'enemy','enemy',point,{faction:'gpt',modelProfileId:s.start.difficulty.modelProfileIds.gpt,hp:Number(p.hp)*strength.value.hp,maxHp:Number(p.hp)*strength.value.hp,radius:Number(p.radius),rewardPolicy:'none',distillEligible:false,runtime:{echoOwner:e.id,moveSpeed:Number(p.moveSpeed)*region.speed,contactDamage:Number(p.contactDamage)*strength.value.damage,damageMultiplier:strength.value.damage,engaged:true}})));}
+ const region=expeditionRegionScale(s.start.difficulty.mode==='expedition'?s.world.map.biomeIndex:0);const strength=s.api?resolveSurvivalSpawnMultipliers(s.start.difficulty,s.api.elapsedTicks):{ok:/** @type {const} */(true),value:{hp:s.start.difficulty.hpMultiplier*region.hp,damage:s.start.difficulty.damageMultiplier*region.damage,budget:1}};if(!strength.ok)throw new Error(strength.message);const room=s.api?Math.max(0,100-Object.values(s.world.entities).filter(body=>body.kind==='enemy'&&!body.dead&&body.runtime.noAi!==true).length):4;
+ for(let n=0;n<Math.min(4,10-count,room);n++){const id=`echo:${e.id}:${boss.spawnGroupSeq}:${n}`,definitionId=`enemy_gpt_${species[n]}`,p=c.catalog.definitions[definitionId].parameters,point=resolveBodyDestination(c,e,{x:e.position.x+Math.cos(n*Math.PI/2)*170,y:e.position.y+Math.sin(n*Math.PI/2)*170});if(distanceSquared(point,s.world.entities[s.player.entityId].position)<80**2)continue;changes.push(createStateChange('world',id,'putEntity',createEntityState(id,definitionId,'enemy','enemy',point,{faction:'gpt',modelProfileId:s.start.difficulty.modelProfileIds.gpt,hp:Number(p.hp)*strength.value.hp,maxHp:Number(p.hp)*strength.value.hp,radius:Number(p.radius),rewardPolicy:'none',distillEligible:false,runtime:{echoOwner:e.id,moveSpeed:Number(p.moveSpeed)*region.speed,contactDamage:Number(p.contactDamage)*strength.value.damage,damageMultiplier:strength.value.damage,engaged:true}},s.start.difficulty)));}
  return changes;
 }
 /** GPT's conditional reset is a local encounter transaction. The completion is deferred until after this tick's damage/deaths.
  * @implementationScope adventure-slice
- * @calls domain/difficulty.js#resolveApiSpawnMultipliers
+ * @calls domain/difficulty.js#resolveSurvivalSpawnMultipliers
  * @calls domain/entities.js#createEntityState
  * @calls domain/geometry.js#distanceSquared
  * @calls domain/geometry.js#normalizeVector

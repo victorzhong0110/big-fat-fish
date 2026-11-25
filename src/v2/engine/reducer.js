@@ -73,6 +73,10 @@ function applyPlan(working,plan,tickOwned) {
       case 'compactApiLedgers':if(!next.api)throw new Error('API compaction outside API mode');next.processedRewardIds=/** @type {string[]} */(p.rewardIds);next.lora.resolvedTrialIds=/** @type {string[]} */(p.resolvedTrialIds);break;
       case 'setExpeditionState':if(!next.expedition)throw new Error('Expedition state outside expedition');next.expedition=/** @type {import('../contracts.d.ts').ExpeditionState} */(JSON.parse(serializeCanonical(p)));break;
       case 'replaceExpeditionWorld':if(!next.expedition||next.flow.phase!=='exploring')throw new Error('Unsafe regional replacement');next.world=/** @type {import('../contracts.d.ts').WorldState} */(JSON.parse(serializeCanonical(p.world)));next.bosses=/** @type {import('../contracts.d.ts').BossState[]} */(JSON.parse(serializeCanonical(p.bosses)));next.attackHits=/** @type {import('../contracts.d.ts').AttackHitRecord[]} */(JSON.parse(serializeCanonical(p.attackHits)));next.spawnDirectorNextAt=Number(p.nextAt);next.expedition=/** @type {import('../contracts.d.ts').ExpeditionState} */(JSON.parse(serializeCanonical(p.expedition)));break;
+      case 'setExtractionHold':
+        if (next.start.difficulty.mode !== 'exploration') throw new Error('Extraction hold outside Exploration');
+        next.extractionHold = /** @type {import('../contracts.d.ts').WithdrawalHold|null} */ (p.hold);
+        break;
       case 'setApiState': if(!next.api)throw new Error('API state outside API mode');next.api=/** @type {import('../contracts.d.ts').ApiState} */(JSON.parse(serializeCanonical(p)));break;
       case 'setBosses': next.bosses=/** @type {import('../contracts.d.ts').BossState[]} */ (JSON.parse(serializeCanonical(p.bosses)));break;
       case 'setPressureEvents': next.world.pressureEvents=/** @type {import('../contracts.d.ts').PressureEvent[]} */(JSON.parse(serializeCanonical(p.events)));break;

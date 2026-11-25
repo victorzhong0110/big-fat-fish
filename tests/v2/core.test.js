@@ -118,7 +118,7 @@ describe('V2 content, stats and cumulative difficulty', () => {
       expect(result.value.difficultyPerkIds).toEqual(level <= 5 ? ['plugin_5h'] : []); previous = result.value.mechanicIds;
     }
     const api = resolveDifficultySnapshot({ mode: 'api', difficulty: 'api' }, catalog()).value;
-    expect(api.mechanicIds).toEqual(previous); expect(api.modelProfileIds).toEqual({ claude: 'claude_fable', gpt: 'gpt_luna', grok: 'grok_bot' });
+    expect(api.mechanicIds).toEqual(previous); expect(api.modelProfileIds).toEqual({ claude: 'claude_fable', gpt: 'gpt_terra', grok: 'grok_bot' });
     expect(resolveDifficultySnapshot({ mode: 'short', difficulty: 0 }, catalog()).ok).toBe(false);
     expect(resolveDifficultySnapshot({ mode: 'tutorial', difficulty: 0 }, catalog()).value.mechanicIds).toEqual([]);
   });
@@ -126,7 +126,7 @@ describe('V2 content, stats and cumulative difficulty', () => {
     const difficulty = resolveDifficultySnapshot({ mode: 'api', difficulty: 'api' }, catalog()).value, random = { seed: 1, cursor: 0 };
     const result = resolveModelProfileId(difficulty, 'claude', random).value;
     expect(['claude_fable', 'claude_mythos']).toContain(result.profileId); expect(result.next.cursor).toBe(1);
-    expect(resolveModelProfileId(difficulty, 'gpt', random).value).toEqual({ profileId: 'gpt_luna', next: random });
+    expect(resolveModelProfileId(difficulty, 'gpt', random).value).toEqual({ profileId: 'gpt_terra', next: random });
   });
   it('locks API spawn multipliers at whole minutes and rejects numeric overflow', () => {
     expect(resolveApiSpawnMultipliers(3599).value.hp).toBe(1.84); expect(resolveApiSpawnMultipliers(3600).value.hp).toBeCloseTo(1.84 * 1.06);
