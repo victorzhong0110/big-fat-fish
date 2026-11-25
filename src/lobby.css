@@ -62,7 +62,7 @@
   .bench-layout{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(140px,34vh)}
   .lobby-left{display:flex;flex-flow:row wrap;top:8px;left:8px;right:128px;width:auto;max-height:112px}
   .lobby-right{top:8px;right:8px}
-  .lobby-title{top:auto;bottom:220px;transform:translate(-50%,0)}
+  .lobby-title{top:auto;bottom:236px;transform:translate(-50%,0)}
   #pixel-logo{width:min(520px,92vw)}
   .launch-dock{left:12px;right:12px;bottom:12px;width:auto}
 }

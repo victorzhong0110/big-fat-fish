@@ -144,4 +144,5 @@ footer{display:none}
 @media(pointer:coarse) and (max-width:700px){#pause kbd{display:none}.hud{right:92px}}
 .objective-label,.pressure-label,.toast{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .toast{top:112px;max-width:min(560px,calc(100vw - 48px))}
+@media (min-width:701px) and (pointer:fine){.toast{top:156px}}
 .counters{max-height:min(240px,40vh);overflow:auto}
