@@ -12,20 +12,22 @@
 @keyframes rise{to{transform:translateY(-110vh)}}
 .lobby-title{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);text-align:center;z-index:2;max-width:92vw}
 #pixel-logo{width:min(640px,92vw);height:auto;image-rendering:pixelated}
-.lobby-title p{margin:8px 0 0;color:#f4efe0;font-weight:800}
+.lobby-title p{margin:8px 0 0;color:#f4efe0;font-family:var(--sans);font-weight:400}
+.bench-affixes,.lobby-corners .mods-panel p{font-family:var(--sans)}
 .lobby-corners{position:absolute;z-index:3;display:grid;gap:8px}
 .lobby-left{top:16px;left:16px;align-content:start;justify-items:start;max-height:calc(100% - 32px);overflow:auto}
 .lobby-corners:has(details[open]){overflow:visible;z-index:40}
 .lobby-corners .mods-panel[open]{position:fixed;z-index:40;top:48px;bottom:48px;left:max(16px,calc(50vw - 325px));width:min(650px,calc(100vw - 32px));transform:none;overflow:auto;padding:16px 20px;background:#14384a;border:4px solid #111;border-radius:18px;box-shadow:8px 8px 0 #071820}
 .lobby-right{top:16px;right:16px}
-.pixel-chip,.pixel-pop,summary.pixel-pop,.mods-panel.pixel-pop>summary{border:4px solid #111;border-radius:14px;background:#163d4e;color:#f4efe0;font-weight:800;box-shadow:4px 4px 0 #071820}
-.pixel-pop:active,summary:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #071820}
+.pixel-chip,.pixel-pop,summary.pixel-pop,.mods-panel.pixel-pop>summary{border:4px solid #111;border-radius:14px;background:#163d4e;color:#f4efe0;font-family:var(--pixel);font-weight:400;box-shadow:var(--bevel),4px 4px 0 #071820}
+.pixel-pop:hover,summary.pixel-pop:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.pixel-pop:active,summary:active{transform:translateY(2px);filter:none;box-shadow:var(--bevel),2px 2px 0 #071820}
 .pixel-chip{margin:0;padding:8px 12px}
 .lobby-corners .mods-panel{background:transparent;border:0;padding:0;box-shadow:none}
 .lobby-corners .mods-panel>summary{min-height:44px;padding:8px 14px;cursor:pointer;list-style:none}
 .lobby-corners .mods-panel>summary::-webkit-details-marker{display:none}
 .launch-dock{position:absolute;z-index:4;right:24px;bottom:24px;display:grid;justify-items:end;gap:10px;width:min(360px,calc(100% - 32px))}
-.mode-pill{display:grid;grid-template-columns:repeat(3,1fr);width:100%;border:4px solid #111;border-radius:999px;overflow:hidden;background:#102838;box-shadow:4px 4px 0 #071820}
+.mode-pill{display:grid;grid-template-columns:repeat(3,1fr);width:100%;border:4px solid #111;border-radius:999px;overflow:hidden;background:#102838;box-shadow:var(--bevel),4px 4px 0 #071820}
 .mode-pill button{min-height:48px;border:0;border-radius:0;background:transparent;box-shadow:none;color:#f4efe0;font-weight:800;white-space:nowrap;padding:8px 6px}
 .mode-pill button[aria-pressed=true]{background:#75d7ed;color:#102838}
 .dock-side{justify-self:end}
@@ -34,15 +36,15 @@
 .primary.pixel-pop{background:#75d7ed;color:#102838;border-color:#111}
 .bench-page{display:grid;grid-template-rows:minmax(0,1fr) auto;padding:84px 24px 20px;background:#0f2c3d}
 .bench-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(220px,320px);gap:18px;min-height:0}
-.bench-detail,.benchmark-list{border:4px solid #111;border-radius:18px;background:#14384a;box-shadow:6px 6px 0 #071820;min-height:0}
+.bench-detail,.benchmark-list{border:4px solid #111;border-radius:18px;background:#14384a;box-shadow:var(--bevel),6px 6px 0 #071820;min-height:0}
 .bench-detail{padding:22px;overflow:auto}
 .bench-kicker{margin:0;color:#75d7ed;font-weight:800}
-.bench-detail h1{margin:8px 0;color:#fff8e7;font-size:40px}
+.bench-detail h1{margin:8px 0;color:#fff8e7;font-family:var(--pixel);font-size:36px;font-weight:400}
 .bench-models{display:inline-block;margin:0 0 12px;padding:8px 12px;border:4px solid #111;border-radius:12px;background:#10a37f;color:#102838;font-weight:900}
 .bench-affixes{margin:0;padding-left:18px;color:#f4efe0}
 .benchmark-list{list-style:none;margin:0;padding:10px;overflow:auto;display:grid;align-content:start;gap:8px}
 .bench-row{display:grid;grid-template-columns:72px 1fr auto;align-items:center;gap:8px;width:100%;text-align:left;border:4px solid #111;border-radius:12px;background:#102838;color:#f4efe0;box-shadow:none}
-.bench-row strong{font-size:28px}
+.bench-row strong{font-family:var(--pixel);font-size:24px;font-weight:400}
 .bench-badge{font-size:12px}
 .bench-row.tier-1{border-color:#10a37f}.bench-row.tier-2{border-color:#75d7ed}.bench-row.tier-3{border-color:#f4b77f}
 .bench-row[aria-pressed=true]{background:#75d7ed;color:#102838}

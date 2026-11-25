@@ -43,6 +43,8 @@ const overlaps=(a,b)=>a.x<b.x+b.width&&b.x<a.x+a.width&&a.y<b.y+b.height&&b.y<a.
 try{
  const page=await browser.newPage({viewport:{width:1280,height:800}});page.on('pageerror',e=>errors.push(e.message));await page.goto(url);
  await page.waitForFunction(()=>document.querySelector('#wallet').textContent!=='小窝档案读取中');
+ check(await page.evaluate(async()=>{await document.fonts.load('12px "Fusion Pixel"');return document.fonts.check('12px "Fusion Pixel"');}),'Bundled pixel font loads offline');
+ check((await page.locator('#toast').evaluate(el=>getComputedStyle(el).top))==='156px','Desktop toast sits below the objective row');
  check(await page.locator('#home-screen').isVisible()&&await page.locator('#departure-screen').isHidden(),'Home is the first screen');
  check(await page.locator('#pixel-logo').evaluate(canvas=>canvas.width>0&&canvas.height>0),'Pixel title is drawn without a large character portrait');
  await page.screenshot({path:path.join(output,'home.png')});

@@ -41,7 +41,7 @@ export function mountNestRange(root,catalog,profile,equipped) {
     for(const entity of projectiles){
       ctx.fillStyle=entity.template==='mcp_batch'?'#ffbc76':entity.template==='mcp_return'?'#d4b5fd':'#b6ffff';ctx.strokeStyle='#122c40';ctx.lineWidth=2;ctx.beginPath();ctx.arc(entity.x-143,entity.y-190,entity.radius,0,Math.PI*2);ctx.fill();ctx.stroke();
     }
-    if(flash){ctx.fillStyle='#fff4aa';ctx.font='bold 18px monospace';ctx.fillText('−'+damage,targetX,44-flash/2);}
+    if(flash){ctx.fillStyle='#fff4aa';ctx.font='12px "Fusion Pixel",sans-serif';ctx.fillText('−'+damage,targetX,44-flash/2);}
     result.textContent='命中 '+hits+'　最近伤害 '+damage;result.dataset.hits=String(hits);frame=requestAnimationFrame(draw);
   }
   frame=requestAnimationFrame(draw);return ()=>{cancelAnimationFrame(frame);controller.abort();};
