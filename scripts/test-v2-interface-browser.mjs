@@ -48,7 +48,7 @@ try{
  await page.screenshot({path:path.join(output,'home.png')});
  await page.locator('#settings-panel > summary').click();await page.locator('#home-escape-assist').check();await page.locator('#settings-panel > summary').click();
  await page.reload();await page.locator('#settings-panel > summary').click();check(await page.locator('#home-escape-assist').isChecked()&&await page.locator('#escape-assist').isChecked(),'Control assistance persists and matches the in-game setting');await page.locator('#settings-panel > summary').click();
- for(const id of ['nest-panel','mods-panel']){await page.locator(`#${id} > summary`).click();check(await page.locator(`#${id}`).evaluate(e=>e.open),`${id} opens from home`);await page.locator(`#${id} > summary`).click();}
+ for(const id of ['nest-panel','mods-panel']){await page.locator(`#${id} > summary`).click();check(await page.locator(`#${id}`).evaluate(e=>e.open),`${id} opens from home`);await page.locator(id==='nest-panel'?'.nest-exit':`#${id} > summary`).click();}
  const homeBoxes=await Promise.all(['#pixel-logo','#launch-dock','#wallet','#nest-panel'].map(async selector=>({selector,box:await page.locator(selector).boundingBox()})));
  const view=page.viewportSize();
  for(const item of homeBoxes)check(item.box&&item.box.x>=-1&&item.box.y>=-1&&item.box.x+item.box.width<=view.width+1&&item.box.y+item.box.height<=view.height+1,`${item.selector} stays inside the desktop lobby`);

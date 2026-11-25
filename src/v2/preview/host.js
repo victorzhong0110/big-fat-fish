@@ -1,6 +1,6 @@
 const SOUND_EVENTS=new Set(['WeaponFired','SkillCast','DashStarted','DamageResolved','PickupCollected','LevelGained','ObjectiveCompleted','EquipmentEquipped']);
 import {resolveExpeditionRoute,localWorldId} from '../domain/world/regionRules.js';
-import {canExtract, EXTRACTION_ID, EXTRACTION_TICKS} from '../domain/world/extraction.js';
+import {canExtract, EXTRACTION_ID, extractionDuration} from '../domain/world/extraction.js';
 import {isDifficultyUnlocked} from '../domain/profile/nest.js';
 import {canApiWithdraw} from '../domain/world/api.js';
 import {readDshCycleTimers} from '../domain/dshCycle.js';
@@ -51,6 +51,7 @@ import { getPreviewCamera, renderPreviewFrame } from './view.js';
  * @calls domain/settlement.js#createSettlement
  * @calls domain/world/api.js#canApiWithdraw
  * @calls domain/world/extraction.js#canExtract
+ * @calls domain/world/extraction.js#extractionDuration
  * @calls domain/world/regionRules.js#localWorldId
  * @calls domain/world/regionRules.js#resolveExpeditionRoute
  * @calls engine/session.js#createGameSession
@@ -464,7 +465,7 @@ export function mountCombatPreview(mountElementId) {
         if(growth.start.guidedTutorial){const stage=String(growth.world.entities['tutorial:director']?.runtime.stage??''),labels=/** @type {Record<string,string>} */({move:'先移动并瞄准射击',collect:'击败敌人并捡大白饭，升级后选择插件',dash:'按 Space / 冲刺，试试躲开攻击',escapeWait:'准备挣脱：留意即将出现的禁锢',escape:'连续按 Space / 挣脱，或用断开连接',checkpoint:'回到检查点按 R 保存，随后按 F 挑战首领',boss:'躲开重钳，击败教学首领'});node('objective-label').textContent=`Free教学 · ${labels[stage]??'继续探索'}`;}
         const exploration=growth.start.difficulty.mode==='exploration',endless=growth.start.difficulty.mode==='endless';
         if (exploration) {
-          const exit=growth.world.entities[EXTRACTION_ID],remaining=growth.extractionHold?EXTRACTION_TICKS-growth.tick+growth.extractionHold.startedAt:null;
+          const exit=growth.world.entities[EXTRACTION_ID],remaining=growth.extractionHold?extractionDuration(growth.start.treeNodeIds)-growth.tick+growth.extractionHold.startedAt:null;
           const distance=Math.round(Math.hypot(exit.position.x-player.position.x,exit.position.y-player.position.y));
           node('objective-label').textContent=remaining!==null?`撤离中 ${(remaining/60).toFixed(1)} 秒`
             :distance<=exit.radius?'长按 F 或交互键撤离':`搜刮补给后前往撤离点 · 距离 ${distance}`;

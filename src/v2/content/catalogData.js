@@ -1913,6 +1913,9 @@ export const CATALOG_DATA = {
       "handlerId": "content/handlers/mechanics.js#planMechanic15Integration",
       "exclusions": []
     },
+    "tree_mcp_heavy": {"id": "tree_mcp_heavy", "kind": "tree", "displayName": "重炮微调", "parameters": {"prerequisites": ["tree_mcp_b"], "cost": 4, "effect": "武器伤害 +30%，射击间隔 ×1.18", "previewAvailable": false}, "version": "2.0.0-preview.5"},
+    "tree_body_context": {"id": "tree_body_context", "kind": "tree", "displayName": "上下文吃撑", "parameters": {"prerequisites": ["tree_body_c", "tree_mcp_c"], "cost": 8, "effect": "捡饭后 3 秒内武器射速 +20%", "previewAvailable": false}, "version": "2.0.0-preview.5"},
+    "tree_explore_extract": {"id": "tree_explore_extract", "kind": "tree", "displayName": "搜打撤专家", "parameters": {"prerequisites": ["tree_explore_d", "tree_skill_c"], "cost": 8, "effect": "撤离缩短为 2 秒，有零件时额外带回 1 件", "previewAvailable": false}, "version": "2.0.0-preview.5"},
     "tree_body_a": {
       "id": "tree_body_a",
       "kind": "tree",

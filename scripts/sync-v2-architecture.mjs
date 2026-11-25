@@ -68,7 +68,7 @@ for(const module of sourceModel){
    planTreeWeaponSwitch:'切换成功时规划下一发+25%与1秒移速；分别保存5秒/8秒内置冷却。',
    executeNestAction:'读取最新Profile，拒绝活动冒险，规划购买/退款/建设/解锁/DSH并事务提交；CAS冲突最多重算三次。',
    prepareAdventureStart:'验证永久拥有与已实现能力，复制树/DSH/基础品质装备为Pro1出发快照。',
-   mountNestManager:'组装27节点、设施、装备、DSH和收藏小窝UI；所有消费经应用用例，不接触GameState。',
+   mountNestManager:'组装30节点、设施、装备、DSH和收藏小窝UI；所有消费经应用用例，不接触GameState。',
    resolveWeaponTemplate:'解析原版MCP或拥有已锁定模组注册的独立配方，只允许已实现泡泡/扇面模板。',
    listRuntimeWeapons:'列出实际可运行的原版与社区MCP，供练习出发选择。',
    mountCombatPreview:'组装Free/Pro1、八技能/六伙伴/插件替换、正式小窝消费与配装、事务结算和本地模组。'
@@ -235,6 +235,6 @@ for(const module of manifest.modules){rows.push(`## ${module.path}`,'',module.pu
  rows.push('','公开函数上游：','');for(const fn of module.functions){const id=module.path+'#'+fn.name,callers=manifest.modules.flatMap(owner=>owner.functions.filter(fn=>fn.calls.includes(id)).map(fn=>owner.path+'#'+fn.name));rows.push(`- \`${fn.name}\` ← ${callers.map(call=>'`'+call+'`').join('、')||'宿主/工具入口或待编排'}。`);}rows.push('');
 }
 rows.push('## 内容处理器绑定','','| 分类 | 稳定ID | 处理器 |','|---|---|---|');for(const binding of manifest.bindings)rows.push(`| ${binding.kind} | \`${binding.id}\` | \`${binding.module}#${binding.function}\` |`);
-rows.push('','## 声明式数据消费者','','27个技能树节点和6项设施列于manifest.dataDefinitions；来源与参数见content/catalogData.js。数值落表不表示树购买、局外应用或全部运行效果已经实现。','');
+rows.push('','## 声明式数据消费者','','30个技能树节点和6项设施列于manifest.dataDefinitions；来源与参数见content/catalogData.js。数值落表不表示树购买、局外应用或全部运行效果已经实现。','');
 await fs.writeFile(path.join(root,'docs/design-v2/12-function-catalog.md'),rows.join('\n'));
 console.log(manifest.counts);

@@ -90,6 +90,8 @@ export function planTokenCollection(context, pickupId) {
   if (!pickup || pickup.collected || (pickup.position.x - player.position.x) ** 2 + (pickup.position.y - player.position.y) ** 2 > 40 ** 2) return createEmptyPlan();
   if (!['riceXp', 'gpuFragment', 'part'].includes(pickup.kind)) return createEmptyPlan();
   const collect=pickup.kind==='riceXp'?state.plugins.find(plugin=>plugin.id==='plugin_collect'):null;
+  const riceBoost = pickup.kind === 'riceXp' && state.start.treeNodeIds.includes('tree_body_context')
+    ? [createStateChange('entity', player.id, 'setEntityRuntime', {runtime: {...player.runtime, riceBoostUntil: state.tick + 180}})] : [];
   const heal=collect?collect.rank===1?1:2:0;
-  return { ...createEmptyPlan(), changes: [createStateChange('world', pickupId, 'removePickup', {}), createStateChange('progression', pickupId, 'addCollectedResource', { kind: pickup.kind, amount: pickup.amount }),...(heal>0?[createStateChange('entity',player.id,'setHp',{hp:Math.min(player.maxHp,player.hp+heal)})]:[])], events: [{ id: `collected:${pickupId}`, runId: state.runId, tick: state.tick, seq: 0, type: 'PickupCollected', sourceId: player.id, targetId: null, payload: { kind: pickup.kind, amount: pickup.amount } }] };
+  return { ...createEmptyPlan(), changes: [...riceBoost, createStateChange('world', pickupId, 'removePickup', {}), createStateChange('progression', pickupId, 'addCollectedResource', { kind: pickup.kind, amount: pickup.amount }),...(heal>0?[createStateChange('entity',player.id,'setHp',{hp:Math.min(player.maxHp,player.hp+heal)})]:[])], events: [{ id: `collected:${pickupId}`, runId: state.runId, tick: state.tick, seq: 0, type: 'PickupCollected', sourceId: player.id, targetId: null, payload: { kind: pickup.kind, amount: pickup.amount } }] };
 }
