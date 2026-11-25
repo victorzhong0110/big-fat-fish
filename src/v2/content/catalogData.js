@@ -2,6 +2,7 @@
 export const CATALOG_DATA = {
   "version": "2.0.0-preview.5",
   "definitions": {
+    "world_extraction": {"id":"world_extraction","kind":"entity","displayName":"撤离点","parameters":{},"version":"2.0.0-preview.5"},
     "world_escort": {"id":"world_escort","kind":"entity","displayName":"补给机器人","parameters":{},"version":"2.0.0-preview.5"},
     "world_blockade": {"id":"world_blockade","kind":"entity","displayName":"封锁装置","parameters":{},"version":"2.0.0-preview.5"},
     "world_blockade_relay": {"id":"world_blockade_relay","kind":"entity","displayName":"封锁供能柱","parameters":{},"version":"2.0.0-preview.5"},
@@ -1442,6 +1443,40 @@ export const CATALOG_DATA = {
       },
       "version": "2.0.0-preview.5"
     },
+    "enemy_gpt_bsod": {
+      "id": "enemy_gpt_bsod",
+      "kind": "enemy",
+      "displayName": "蓝屏",
+      "parameters": {
+        "description": "高价值补给守卫，部署蓝屏伤害区。",
+        "source": "UI-ART-OVERHAUL-SPEC.md",
+        "handler": "content/handlers/enemies.js#planEnemyGptBsod",
+        "hp": 145,
+        "moveSpeed": 85,
+        "contactDamage": 15,
+        "radius": 26,
+        "faction": "gpt",
+        "previewAvailable": true
+      },
+      "version": "2.0.0-preview.5"
+    },
+    "enemy_gpt_null-signal": {
+      "id": "enemy_gpt_null-signal",
+      "kind": "enemy",
+      "displayName": "断网",
+      "parameters": {
+        "description": "高价值补给守卫，部署断网减速区。",
+        "source": "UI-ART-OVERHAUL-SPEC.md",
+        "handler": "content/handlers/enemies.js#planEnemyGptNullSignal",
+        "hp": 115,
+        "moveSpeed": 92,
+        "contactDamage": 12,
+        "radius": 24,
+        "faction": "gpt",
+        "previewAvailable": true
+      },
+      "version": "2.0.0-preview.5"
+    },
     "enemy_claude_guard": {
       "id": "enemy_claude_guard",
       "kind": "enemy",
@@ -1551,7 +1586,7 @@ export const CATALOG_DATA = {
       "kind": "model",
       "displayName": "Astra",
       "parameters": {
-        "description": "Pro七种Pet基础技能；种类和模型profile分离。",
+        "description": "Benchmark 11–15旗舰档继承Sol，强化宠物的区域控制与支援。",
         "source": "08-model-variants.md",
         "handler": "content/handlers/models.js#planModelGptAstra",
         "previewAvailable": true
@@ -1575,7 +1610,7 @@ export const CATALOG_DATA = {
       "kind": "model",
       "displayName": "Terra",
       "parameters": {
-        "description": "Max20x继承Sol，逐Pet强化支援/区域/掉层等行为。",
+        "description": "API隐藏档继承Astra并开启额外行为，假身与种子不发奖励。",
         "source": "08-model-variants.md",
         "handler": "content/handlers/models.js#planModelGptTerra",
         "previewAvailable": true
@@ -1587,7 +1622,7 @@ export const CATALOG_DATA = {
       "kind": "model",
       "displayName": "Luna",
       "parameters": {
-        "description": "API继承Terra并开启08指定额外行为，假身/种子不发奖励。",
+        "description": "Benchmark 1–5采用七种宠物的基础技能，种类与模型档位相互独立。",
         "source": "08-model-variants.md",
         "handler": "content/handlers/models.js#planModelGptLuna",
         "previewAvailable": true
@@ -3360,6 +3395,20 @@ export const CONTENT_BINDINGS = [
     "module": "content/handlers/enemies.js",
     "function": "planEnemyGrokBot",
     "source": "05-enemies.md"
+  },
+  {
+    "kind": "enemies",
+    "id": "enemy_gpt_bsod",
+    "module": "content/handlers/enemies.js",
+    "function": "planEnemyGptBsod",
+    "source": "UI-ART-OVERHAUL-SPEC.md"
+  },
+  {
+    "kind": "enemies",
+    "id": "enemy_gpt_null-signal",
+    "module": "content/handlers/enemies.js",
+    "function": "planEnemyGptNullSignal",
+    "source": "UI-ART-OVERHAUL-SPEC.md"
   },
   {
     "kind": "models",

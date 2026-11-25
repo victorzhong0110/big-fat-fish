@@ -55,8 +55,8 @@ export function planSpawnSchedule(context) {
  * @implementationScope adventure-slice
  * @calls content/catalog.js#findContentDefinition
  * @calls domain/collision.js#validateSpawnLocation
- * @calls domain/difficulty.js#resolveApiSpawnMultipliers
  * @calls domain/difficulty.js#resolveModelProfileId
+ * @calls domain/difficulty.js#resolveSurvivalSpawnMultipliers
  * @calls domain/entities.js#createEntityState
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
@@ -73,9 +73,9 @@ export function planEnemySpawn(context, request) {
   const p=definition.value.parameters,grok=request.enemyId==='enemy_grok_bot';
   const budget=state.world.budgets.find(item=>item.id===request.budgetId);if(!budget||budget.reserved<1||budget.spawned>=budget.total)return createEmptyPlan();
   const region=expeditionRegionScale(state.start.difficulty.mode==='expedition'?state.world.map.biomeIndex:0);
-  const strength=state.api?dependency3.resolveApiSpawnMultipliers(state.api.elapsedTicks):{ok:/** @type {const} */(true),value:{hp:state.start.difficulty.hpMultiplier*region.hp,damage:state.start.difficulty.damageMultiplier*region.damage,budget:state.start.difficulty.spawnBudgetMultiplier}};if(!strength.ok)throw new Error(strength.message);
+  const strength=state.api?dependency3.resolveSurvivalSpawnMultipliers(state.start.difficulty,state.api.elapsedTicks):{ok:/** @type {const} */(true),value:{hp:state.start.difficulty.hpMultiplier*region.hp,damage:state.start.difficulty.damageMultiplier*region.damage,budget:state.start.difficulty.spawnBudgetMultiplier}};if(!strength.ok)throw new Error(strength.message);
   const profile=state.api?dependency3.resolveModelProfileId(state.start.difficulty,/** @type {import('../../contracts.d.ts').Faction} */(p.faction),state.random.world):{ok:/** @type {const} */(true),value:{profileId:request.modelProfileId,next:state.random.world}};if(!profile.ok)throw new Error(profile.message);
-  const entity=createEntityState(request.id,request.enemyId,'enemy','enemy',validation.value,{faction:/** @type {import('../../contracts.d.ts').Faction} */(p.faction),radius:Number(p.radius)*(request.elite?1.25:1),hp:Number(p.hp)*strength.value.hp*(request.elite?2:1),maxHp:Number(p.hp)*strength.value.hp*(request.elite?2:1),modelProfileId:profile.value.profileId,rewardPolicy:request.rewardPolicy,distillEligible:request.distillEligible,runtime:{birthMinute:state.api?Math.floor(state.api.elapsedTicks/3600):0,elite:request.elite===true,...(request.bossOwner?{bossOwner:request.bossOwner,bossGrokSample:request.bossGrokSample===true}:{}),engaged:true,moveSpeed:Number(p.moveSpeed)*region.speed,contactDamage:Number(p.contactDamage)*strength.value.damage*(request.elite?1.2:1),damageMultiplier:strength.value.damage*(request.elite?1.2:1),groupId:request.groupId,spawnGroup:request.groupId}});
+  const entity=createEntityState(request.id,request.enemyId,'enemy','enemy',validation.value,{faction:/** @type {import('../../contracts.d.ts').Faction} */(p.faction),radius:Number(p.radius)*(request.elite?1.25:1),hp:Number(p.hp)*strength.value.hp*(request.elite?2:1),maxHp:Number(p.hp)*strength.value.hp*(request.elite?2:1),modelProfileId:profile.value.profileId,rewardPolicy:request.rewardPolicy,distillEligible:request.distillEligible,runtime:{birthMinute:state.api?Math.floor(state.api.elapsedTicks/3600):0,elite:request.elite===true,...(request.bossOwner?{bossOwner:request.bossOwner,bossGrokSample:request.bossGrokSample===true}:{}),engaged:true,moveSpeed:Number(p.moveSpeed)*region.speed,contactDamage:Number(p.contactDamage)*strength.value.damage*(request.elite?1.2:1),damageMultiplier:strength.value.damage*(request.elite?1.2:1),groupId:request.groupId,spawnGroup:request.groupId}},state.start.difficulty);
   return {...createEmptyPlan(),changes:[...(state.api?[createStateChange('random','world','setRandomStream',profile.value.next)]:[]),createStateChange('world',entity.id,'putEntity',entity),createStateChange('world',request.budgetId,'setSpawnDirector',{queue:state.world.spawnQueue.filter(item=>item.id!==request.id),budgets:state.world.budgets.map(item=>item.id===budget.id?{...item,reserved:item.reserved-1,spawned:item.spawned+1}:item),nextAt:state.spawnDirectorNextAt??720})]};
 }
 
@@ -84,7 +84,7 @@ export function planEnemySpawn(context, request) {
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @implementationScope adventure-slice
- * @calls domain/difficulty.js#resolveApiSpawnMultipliers
+ * @calls domain/difficulty.js#resolveSurvivalSpawnMultipliers
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
  * @calls domain/world/regionRules.js#regionWorldTick
@@ -96,7 +96,7 @@ export function planEnemySpawn(context, request) {
 export function planReinforcementGroup(context, groupId, budgetId) {
   const state=context.state,budget=state.world.budgets.find(item=>item.id===budgetId);
   if(!budget||state.world.spawnQueue.some(item=>item.groupId===groupId)||!state.input.viewport)return createEmptyPlan();
-  const concentrated=regionWorldTick(state)/60%90>=50,strength=state.api?dependency3.resolveApiSpawnMultipliers(state.api.elapsedTicks):null;if(strength&&!strength.ok)throw new Error(strength.message);const count=Math.min(20,Math.floor((concentrated?8:6)*(strength?.ok?strength.value.budget:1)),budget.total-budget.spawned-budget.reserved);
+  const concentrated=regionWorldTick(state)/60%90>=50,strength=state.api?dependency3.resolveSurvivalSpawnMultipliers(state.start.difficulty,state.api.elapsedTicks):null;if(strength&&!strength.ok)throw new Error(strength.message);const count=Math.min(20,Math.floor((concentrated?8:6)*(strength?.ok?strength.value.budget:1)),budget.total-budget.spawned-budget.reserved);
   if(count<=0)return createEmptyPlan();
   const player=state.world.entities[state.player.entityId],queue=[...state.world.spawnQueue];
   for(let i=0;i<count;i++){const angle=(i+state.seed%16)*Math.PI/8,flanks=state.start.difficulty.mechanicIds.includes('mech_08_grok_flanks'),right=i>=Math.ceil(count/2),grokBoss=state.api&&state.bosses.some(b=>b.faction==='grok'&&!state.world.entities[b.entityId]?.dead),species=state.api?(i%6===4?'enemy_claude_guard':i%6===5||grokBoss?['enemy_gpt_codex','enemy_gpt_dewey','enemy_gpt_hoots','enemy_gpt_rocky','enemy_gpt_fireball','enemy_gpt_seedy','enemy_gpt_stacky'][Math.floor(state.tick/720+i)%7]:'enemy_grok_bot'):'enemy_grok_bot',faction=species==='enemy_grok_bot'?'grok':species==='enemy_claude_guard'?'claude':'gpt';queue.push({id:`${groupId}:${i}`,groupId,budgetId,enemyId:species,position:flanks?{x:player.position.x+(right?800:-800),y:player.position.y+(right?200:-200)}:{x:player.position.x+Math.cos(angle)*800,y:player.position.y+Math.sin(angle)*800},at:state.tick+90+(flanks?(right?120:0)+(i%Math.ceil(count/2))*5:i*5),modelProfileId:state.start.difficulty.modelProfileIds[faction],rewardPolicy:'normal',distillEligible:true});}

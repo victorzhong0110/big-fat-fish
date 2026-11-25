@@ -54,9 +54,23 @@ export function planWorldReward(context, rewardId) {
   const objective=state.world.objectives.find(item=>item.rewardId===rewardId),cache=rewardId.startsWith('cache:')?state.world.entities[rewardId.slice(6)]:null;
   const entity=objective?state.world.entities[objective.id]:cache;
   if(!entity||!objective&&!cache||cache?.runtime.opened===true)return {plan:createEmptyPlan(),rewardIds:[]};
-  const amounts=objective?{riceXp:80,gpuFragment:2,part:3}:{riceXp:40,gpuFragment:5,part:2};
+  const exploration=state.start.difficulty.mode==='exploration';
+  const level=Number(state.start.difficulty.level);
+  const guardId=cache?.runtime.guardId;
+  if (typeof guardId==='string'&&!state.world.entities[guardId]?.dead) return {plan:createEmptyPlan(),rewardIds:[]};
+  const multiplier=exploration?1+(level-1)*0.1:1;
+  const amounts=objective?{riceXp:80,gpuFragment:2,part:3}:guardId?{riceXp:60,gpuFragment:8,part:5}:{riceXp:40,gpuFragment:5,part:2};
   const changes=[createStateChange('runtime',rewardId,'recordReward',{})];
-  for(const [kind,amount]of Object.entries(amounts)){const id=`${rewardId}:${kind}`;changes.push(createStateChange('world',id,'putPickup',{id,kind,amount,position:entity.position,instanceId:null,collected:false}));}
+  for(const [kind,amount]of Object.entries(amounts)){
+    const id=`${rewardId}:${kind}`;
+    changes.push(createStateChange('world',id,'putPickup',{id,kind,amount:Math.round(amount*multiplier),position:entity.position,instanceId:null,collected:false}));
+  }
+  if (exploration&&typeof cache?.runtime.weaponId==='string') {
+    const id=`${rewardId}:weapon`,instanceId=`${state.runId}:${id}`,definitionId=cache.runtime.weaponId;
+    const originalQuality=level<=5?0:level<=10?1:2;
+    changes.push(createStateChange('world',id,'putPickup',{id,kind:'weapon',amount:1,position:entity.position,instanceId,collected:false,
+      weapon:{instanceId,definitionId,originalQuality,cooldown:0,temporaryQuality:null,updateExpiresAt:null}}));
+  }
   return {plan:{...createEmptyPlan(),changes},rewardIds:[rewardId]};
 }
 

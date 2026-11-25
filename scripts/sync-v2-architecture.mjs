@@ -96,7 +96,7 @@ for(const module of sourceModel){
   if(fn.name==='mountNestManager')item.ownership='宿主只读Profile副本，经应用服务消费；不修改GameState';
 
   if(fn.name==='loadContentCatalog')item.description='返回来源于设计表格的正式版本化内容副本；数据存在不表示其处理器已经实现。';
-  if(fn.name==='createHandlerRegistry')item.description='返回95项设计绑定与显式implementedIds能力集合，不把未实现条目声明为可运行。';
+  if(fn.name==='createHandlerRegistry')item.description='返回100项设计绑定与显式implementedIds能力集合，不把未实现条目声明为可运行。';
   if(fn.name==='validateContentCatalog')item.description='校验原版目录数量、社区MCP注册与锁、稳定ID/引用、160点树前置DAG及运行能力声明。';
   if(fn.name==='mountCombatPreview')item.ownership='宿主入口，只持Session句柄与输入/表现/存储；不直接写GameState';
   const finalDescriptions={
@@ -199,9 +199,9 @@ for(const module of sourceModel){
    commitProfilePlan:'校验新旧档案的模组范围及revision后CAS提交；冲突重读，绝不跨范围覆盖。',
    mergePersistenceIntents:'按发出顺序合并发现、解锁、存档和结算；模组范围及活动run必须匹配，已结算重复批次仅允许无变化重试。',
    prepareAdventureStart:'校验拥有、难度和档案范围并锁定装备/树/DSH；模组冒险附完整锁，Free引导保持原版。',
-   createInitialGameState:'创建Free引导/练习、短途/远征或API初态；模组冒险要求显式标记及完整锁，full仍拒绝。',
+   createInitialGameState:'创建Free引导/练习、短途、远征、探索、无尽或API初态；模组冒险要求显式标记及完整锁，full仍拒绝。',
    createGameSession:'校验目录与世界后发布私有Session；正式模组使用隔离档案和精确锁。',
-   createSettlement:'按真实终态产生一次结算；模组冒险附完整范围，Free引导仅首次奖励标记，API不能胜利。',
+   createSettlement:'按真实终态生成结算；探索撤离全额带回，失败无材料收入；生存模式生成对局成绩。',
    planSettlementCommit:'校验结算与档案范围、活动检查点并幂等入账；Free引导首次完成发一张算力卡。',
    mountModManager:'提供本地JSON安装、启停与移除；组合影响下次Free练习或独立模组冒险，不热替换对局。',
    mountNestManager:'组装当前原版或精确模组档案的小窝UI；所有消费经应用服务，不接触GameState。',
@@ -228,7 +228,7 @@ manifest.rules=[...new Set(manifest.rules)];
 const fns=manifest.modules.flatMap(module=>module.functions),implemented=fns.filter(fn=>fn.implementation==='implemented').length;
 manifest.counts={modules:manifest.modules.length,functions:fns.length,implemented,placeholders:fns.length-implemented};
 await fs.writeFile(filename,JSON.stringify(manifest,null,2)+'\n');
-const esc=value=>value.replaceAll('|','\\|').replaceAll('\n',' '),rows=['# 12 · 全部函数目录与调用契约','',`当前${manifest.counts.modules}个JS模块、${fns.length}个公开函数：${implemented}个有实现，${fns.length-implemented}个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途/远征与已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。`,'','调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。',''];
+const esc=value=>value.replaceAll('|','\\|').replaceAll('\n',' '),rows=['# 12 · 全部函数目录与调用契约','',`当前${manifest.counts.modules}个JS模块、${fns.length}个公开函数：${implemented}个有实现，${fns.length-implemented}个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途、远征、无尽及同档解锁的探索，以及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。`,'','调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。',''];
 for(const module of manifest.modules){rows.push(`## ${module.path}`,'',module.purpose,'',`[源码](../../src/v2/${module.path})；层：\`${module.layer}\`。`,'',`直接依赖：${module.dependencies.map(dep=>'`'+dep+'`').join('、')||'无'}。`,'','| 函数签名 | 返回 | 状态/范围 | 功能与约束 |','|---|---|---|---|');
  for(const fn of module.functions)rows.push(`| \`${esc(fn.name+'('+fn.args.map(arg=>arg.name+': '+arg.type+(arg.default!==undefined?' = '+arg.default:'')).join(', ')+')')}\` | \`${esc(fn.result)}\` | ${fn.implementation==='implemented'?'已实现':'TODO'}${fn.implementationScope?' / '+fn.implementationScope:''} | ${esc(fn.description+'；'+fn.rule+'；状态权限：'+fn.ownership)} |`);
  rows.push('','公开函数下游：','');for(const fn of module.functions)rows.push(`- \`${fn.name}\` → ${fn.calls.map(call=>'`'+call+'`').join('、')||'无内部公开函数'}。`);

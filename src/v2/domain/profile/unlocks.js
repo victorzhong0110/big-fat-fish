@@ -37,7 +37,7 @@ export function planDiscoveryUnlock(profile, event, catalog) {
  */
 export function planBossUnlock(profile, event, catalog) {
   const p = /** @type {{faction?:string;difficulty?:number|string;mode?:string;entityId?:string}} */ (event.payload);
-  if (event.type !== 'BossDefeated' || !['claude', 'gpt', 'grok'].includes(p?.faction ?? '') || !p?.entityId || !['short', 'expedition', 'api'].includes(p.mode ?? '')) return { ok: false, code: 'INVALID_BOSS_UNLOCK', message: 'Expected an actual boss-defeat event' };
+  if (event.type !== 'BossDefeated' || !['claude', 'gpt', 'grok'].includes(p?.faction ?? '') || !p?.entityId || !['short', 'expedition', 'endless', 'api'].includes(p.mode ?? '')) return { ok: false, code: 'INVALID_BOSS_UNLOCK', message: 'Expected an actual boss-defeat event' };
   if(p.mode==='api'){const milestone='milestone:grok-defeated',newMilestone=p.faction==='grok'&&!profile.unlockLedger.includes(milestone);return {ok:true,value:{expectedRevision:profile.revision,next:{...structuredClone(profile),revision:profile.revision+(newMilestone?1:0),unlockLedger:newMilestone?[...profile.unlockLedger,milestone]:[...profile.unlockLedger]},events:[]}};}
   const id = `boss:${event.runId}:${p.entityId}`;
   if (profile.unlockLedger.includes(id)) return { ok: true, value: { expectedRevision: profile.revision, next: structuredClone(profile), events: [] } };
@@ -79,7 +79,30 @@ export function planEasterUnlock(profile, event, catalog) {
  */
 export function planAchievementUnlock(profile,event,catalog){
  const p=/** @type {{achievementId?:string;mode?:string;activeRemaining?:number;durationResets?:number}|null} */(event.payload),a=RESET_ACHIEVEMENT;
- if(event.type!=='DshCycleDurationReset'||event.sourceId!=='dsh_gpt_branch'||!event.runId||p?.achievementId!==a.id||!['short','expedition','api'].includes(p.mode??'')||p.activeRemaining!==300||!Number.isSafeInteger(p.durationResets)||Number(p.durationResets)<1)return {ok:false,code:'INVALID_ACHIEVEMENT',message:'Expected an actual formal-adventure duration-reset event'};
+ if(event.type!=='DshCycleDurationReset'||event.sourceId!=='dsh_gpt_branch'||!event.runId||p?.achievementId!==a.id||!['short','expedition','endless','exploration','api'].includes(p.mode??'')||p.activeRemaining!==300||!Number.isSafeInteger(p.durationResets)||Number(p.durationResets)<1)return {ok:false,code:'INVALID_ACHIEVEMENT',message:'Expected an actual formal-adventure duration-reset event'};
  if(profile.unlockLedger.includes(a.ledgerId))return {ok:true,value:{expectedRevision:profile.revision,next:structuredClone(profile),events:[]}};
  return {ok:true,value:{expectedRevision:profile.revision,next:{...structuredClone(profile),revision:profile.revision+1,unlockLedger:[...profile.unlockLedger,a.ledgerId]},events:[{...event,id:`${event.runId}:${a.ledgerId}`,type:'AchievementUnlocked',payload:{achievementId:a.id,name:a.name}}]}};
+}
+
+/** Record only the exact cleared Benchmark in the profile for the active Endless run.
+ * @calls 无内部公开函数。
+ * @param {import('../../contracts.d.ts').Profile} profile
+ * @param {import('../../contracts.d.ts').DomainEvent} event
+ * @returns {import('../../contracts.d.ts').Result<import('../../contracts.d.ts').ProfilePlan>}
+ */
+export function planEndlessClear(profile, event) {
+  const {difficulty} = /** @type {{difficulty?:number}} */ (event.payload ?? {});
+  const reject = {ok:/** @type {const} */(false),code:'INVALID_ENDLESS_CLEAR',message:'Expected a matching Endless Benchmark clear'};
+  if (event.type!=='EndlessBenchmarkCleared'||!event.runId||event.id!==`endlessClear:${event.runId}`
+    ||!event.targetId||typeof difficulty!=='number'||!Number.isInteger(difficulty)||difficulty<1||difficulty>15) return reject;
+  const key = `endlessClear:${difficulty}`;
+  if (profile.unlockLedger.includes(key)) {
+    return {ok:true,value:{expectedRevision:profile.revision,next:structuredClone(profile),events:[]}};
+  }
+  const active = profile.checkpoint?.state;
+  if (active?.runId!==event.runId||active.start.difficulty.mode!=='endless'||active.start.difficulty.level!==difficulty) return reject;
+  const highestDifficulty = Math.max(profile.highestDifficulty, difficulty);
+  const next = {...structuredClone(profile),revision:profile.revision+1,highestDifficulty,apiUnlocked:highestDifficulty>=15,
+    unlockLedger:[...profile.unlockLedger,key]};
+  return {ok:true,value:{expectedRevision:profile.revision,next,events:[]}};
 }

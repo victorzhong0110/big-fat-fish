@@ -138,6 +138,7 @@ export function planWorldInteraction(context, command) {
   if (entity.runtime.interaction === 'bossGate') return state.expedition?planExpeditionBossEncounter(context):state.api?createEmptyPlan():planBossEncounter(context);
   if (entity.runtime.opened === true) return createEmptyPlan();
   const reward = dependency3.planWorldReward(context, `cache:${entity.id}`);
+  if (!reward.rewardIds.length) return reward.plan;
   const changes=[...reward.plan.changes,createStateChange('entity',entity.id,'setEntityRuntime',{runtime:{...entity.runtime,opened:true}})],events=[...reward.plan.events,{id:`cacheOpened:${state.runId}:${entity.id}`,runId:state.runId,tick:state.tick,seq:0,type:'CacheOpened',sourceId:player.id,targetId:entity.id,payload:{cacheId:entity.id,secret:entity.runtime.secret===true}}],persistence=[...reward.plan.persistence];
   if(entity.id===localWorldId(state,'cache:0')&&state.start.dsh.some(slot=>slot.id==='dsh_open')&&state.world.map.biomeIndex===0){
     for(const [i,definitionId]of ['mcp_fan','mcp_vector'].entries()){const instanceId=`${state.runId}:open:${i}`,id=`open:${entity.id}:${i}`;changes.push(createStateChange('world',id,'putPickup',{id,kind:'weapon',amount:1,position:{x:entity.position.x+(i?35:-35),y:entity.position.y},instanceId,collected:false,exclusiveGroup:`open:${state.runId}`,weapon:{instanceId,definitionId,originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null}}));}

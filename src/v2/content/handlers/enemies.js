@@ -142,3 +142,25 @@ export function planEnemyClaudeGuard(context, event) {
 export function planEnemyGrokBot(context, event) {
   return planMeleeEnemy(context, false);
 }
+
+/** Blue screen elite guards a high-value cache with area damage.
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/gptPets.js#planGptPet
+ * @param {import('../../contracts.d.ts').EvaluationContext} context
+ * @param {import('../../contracts.d.ts').DomainEvent} event
+ * @returns {import('../../contracts.d.ts').EffectPlan}
+ */
+export function planEnemyGptBsod(context, event) {
+  return planGptPet(context,'fireball');
+}
+
+/** Null Signal elite guards a high-value cache with movement disruption.
+ * @implementationScope core-preview + adventure-slice
+ * @calls domain/gptPets.js#planGptPet
+ * @param {import('../../contracts.d.ts').EvaluationContext} context
+ * @param {import('../../contracts.d.ts').DomainEvent} event
+ * @returns {import('../../contracts.d.ts').EffectPlan}
+ */
+export function planEnemyGptNullSignal(context, event) {
+  return planGptPet(context,'seedy');
+}
