@@ -45,7 +45,11 @@ export function mountNestRoom(root,profile,open,companion,equip,position){
     const distance=(/** @type {typeof places[number]} */ p)=>Math.hypot((p[2]-position.x)*w/100,(p[3]-position.y)*h/100);
     nearest=visible.reduce((a,b)=>distance(a)<distance(b)?a:b);
     if(distance(nearest)>Math.max(38,Math.min(74,Math.min(w,h)*.18)))nearest=undefined;
-    interact.disabled=!nearest;interact.textContent=nearest?'F · '+nearest[1]:'F · 交互';floor.dataset.near=nearest?.[0]??'';
+    interact.disabled=!nearest;interact.textContent=nearest?'F · '+nearest[1]:'F · 交互';const id=nearest?.[0]??'';
+    if(floor.dataset.near!==id){
+      floor.dataset.near=id;
+      for(const station of floor.querySelectorAll('.room-fixture'))station.classList.toggle('near',station.getAttribute('data-station')===id);
+    }
   }
   function activate(){
     if(!nearest||!dialogue.hidden)return;

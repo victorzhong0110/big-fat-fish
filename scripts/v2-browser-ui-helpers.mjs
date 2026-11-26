@@ -13,6 +13,8 @@ export async function selectMode(page, value) {
   await page.locator('#mode-select').selectOption(value);
 }
 export async function setDrawer(page, id, open) {
+  const back=page.locator('#back-home');
+  if (open&&await back.isVisible()) await back.click();
   const drawer=page.locator(`#${id}`);
   if ((await drawer.evaluate(element=>element.open))!==open) await drawer.locator('summary').click();
 }

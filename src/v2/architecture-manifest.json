@@ -12029,6 +12029,107 @@
       ]
     },
     {
+      "path": "preview/arcadePanels.js",
+      "layer": "host",
+      "purpose": "Display-only arcade prizes and paired firing lanes. Gameplay owns the candidates and equipped slots.",
+      "dependencies": [
+        "domain/projectiles.js",
+        "domain/stats.js"
+      ],
+      "functions": [
+        {
+          "description": "createPrizeButton",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createPrizeButton",
+          "args": [
+            {
+              "name": "definition",
+              "type": "untyped"
+            },
+            {
+              "name": "rank",
+              "type": "untyped"
+            }
+          ],
+          "result": "HTMLButtonElement",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
+          "description": "createShotLane",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createShotLane",
+          "args": [
+            {
+              "name": "label",
+              "type": "untyped"
+            },
+            {
+              "name": "state",
+              "type": "untyped"
+            },
+            {
+              "name": "weapon",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            }
+          ],
+          "result": "HTMLElement",
+          "implementation": "implemented",
+          "calls": [
+            "domain/projectiles.js#planNativeProjectiles",
+            "domain/stats.js#deriveWeaponStats"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "preview/benchmarkStage.js",
+      "layer": "host",
+      "purpose": "Animated previews of the Benchmark ladder, drawn on a shared isometric reef.",
+      "dependencies": [
+        "preview/characters.js"
+      ],
+      "functions": [
+        {
+          "description": "renderBenchmarkCast",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "renderBenchmarkCast",
+          "args": [
+            {
+              "name": "root",
+              "type": "untyped"
+            },
+            {
+              "name": "value",
+              "type": "untyped"
+            },
+            {
+              "name": "locked",
+              "type": "untyped"
+            }
+          ],
+          "result": "void",
+          "implementation": "implemented",
+          "calls": [
+            "preview/characters.js#characterSource"
+          ]
+        }
+      ]
+    },
+    {
       "path": "preview/characters.js",
       "layer": "host",
       "purpose": "@typedef {{x:number;y:number;w:number;h:number;color:string}} PixelRect",
@@ -12156,6 +12257,8 @@
         "domain/world/extraction.js",
         "domain/world/regionRules.js",
         "engine/session.js",
+        "preview/arcadePanels.js",
+        "preview/benchmarkStage.js",
         "preview/modManager.js",
         "preview/nestManager.js",
         "preview/view.js"
@@ -12215,6 +12318,9 @@
             "engine/session.js#restoreGameSession",
             "engine/session.js#stepSessionUi",
             "engine/session.js#stepSessionWorld",
+            "preview/arcadePanels.js#createPrizeButton",
+            "preview/arcadePanels.js#createShotLane",
+            "preview/benchmarkStage.js#renderBenchmarkCast",
             "preview/modManager.js#mountModManager",
             "preview/nestManager.js#mountNestManager",
             "preview/view.js#getPreviewCamera",
@@ -13518,9 +13624,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 125,
-    "functions": 444,
-    "implemented": 404,
+    "modules": 127,
+    "functions": 447,
+    "implemented": 407,
     "placeholders": 40
   }
 }

@@ -44,7 +44,7 @@ export function renderTechMap(root,catalog,profile,available,buy,view) {
     const a=points.get(parent),x=a.x+width,y=a.y+height/2,end=p.x-2,endY=p.y+height/2;
     const mid=x+12+(p.y/ lane%3)*3;
     const path=document.createElementNS(svg.namespaceURI,'path');
-    path.setAttribute('d',`M${x} ${y} H${mid} V${endY} H${end} m-6 -4 6 4 -6 4`);path.setAttribute('class','tech-edge');path.setAttribute('data-from',parent);path.setAttribute('data-to',id);svg.append(path);edges.push({parent,id,path});
+    path.setAttribute('d',`M${x} ${y} H${mid} V${endY} H${end} m-6 -4 6 4 -6 4`);path.setAttribute('class',profile.purchasedTree.includes(id)&&profile.purchasedTree.includes(parent)?'tech-edge powered':'tech-edge');path.setAttribute('data-from',parent);path.setAttribute('data-to',id);svg.append(path);edges.push({parent,id,path});
   }
   /** @param {string} id */
   function highlight(id){

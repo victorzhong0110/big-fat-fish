@@ -50,7 +50,10 @@ export function mountNestManager(root, catalog, storage, onProfile, notify) {
   async function act(action) {
     if(busy||disposed)return;busy=true;render();
     try {const result=await executeNestAction(storage,catalog,action);if(disposed)return;if(!result.ok){notify(`小窝未修改：${result.message}`);return;}record=result.value;onProfile(result.value);notify(action.type==='respec'?'已全额退还技能树算力卡，卸下DSH，收藏保留。':'小窝已保存。');}
-    catch(error){if(!disposed)notify(`小窝保存失败：${String(error)}`);}finally{busy=false;if(!disposed)render();}
+    catch(error){if(!disposed)notify(`小窝保存失败：${String(error)}`);}finally{
+      busy=false;
+      if(!disposed){render();if(action.type==='buyTree'&&record?.profile.purchasedTree.includes(action.id))body.querySelector(`[data-tree-id="${action.id}"]`)?.classList.add('chip-installed');}
+    }
   }
   /** @param {string} heading @param {string} text @returns {HTMLElement} */
   function card(heading,text){const node=document.createElement('article'),h=document.createElement('strong'),p=document.createElement('p');node.className='nest-card';h.textContent=heading;p.textContent=text;node.append(h,p);body.append(node);return node;}

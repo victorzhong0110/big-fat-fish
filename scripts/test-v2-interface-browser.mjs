@@ -53,6 +53,7 @@ try{
  check(await page.locator('#mode-guide').isHidden()&&await page.locator('#mode-expedition').isHidden(),'Teaching and expedition stay off the title page');
  await page.locator('#mode-short').click();
  await page.waitForFunction(()=>document.querySelector('#mode-pill').dataset.slot==='0');
+ await page.waitForFunction(()=>document.querySelector('.mode-thumb').getAnimations().every(animation=>animation.playState!=='running'));
  const storyThumb=await page.locator('.mode-thumb').boundingBox();
  await page.locator('#mode-tower').click();
  await page.evaluate(()=>new Promise(resolve=>{const thumb=document.querySelector('.mode-thumb');const done=()=>{thumb.removeEventListener('transitionend',done);resolve();};thumb.addEventListener('transitionend',done);setTimeout(done,600);}));
@@ -60,43 +61,59 @@ try{
  const ease=await page.locator('.mode-thumb').evaluate(el=>getComputedStyle(el).transitionTimingFunction);
  const thumbInside=await page.evaluate(()=>{const pill=document.querySelector('#mode-pill').getBoundingClientRect(),thumb=document.querySelector('.mode-thumb').getBoundingClientRect();return thumb.left>=pill.left-1&&thumb.right<=pill.right+1&&thumb.top>=pill.top-1&&thumb.bottom<=pill.bottom+1;});
  check(storyThumb&&endlessThumb&&endlessThumb.x>storyThumb.x+storyThumb.width*0.8&&ease.includes('0.34')&&thumbInside,'Mode thumb slides inside the track with a bounce');
- await page.locator('#settings-panel > summary').hover();
- await page.waitForFunction(()=>Number(getComputedStyle(document.querySelector('#settings-panel .icon-tip')).opacity)>0.9);
- const settingsTip=await page.locator('#settings-panel .icon-tip').evaluate(el=>{const style=getComputedStyle(el);return {opacity:Number(style.opacity),left:style.left,display:style.display,text:el.textContent};});
- check(settingsTip.display!=='none'&&settingsTip.opacity>0.9&&settingsTip.left!=='auto'&&settingsTip.text==='设置','Settings caption fades in to the right');
- await page.locator('#open-tree').hover();
- await page.waitForFunction(()=>Number(getComputedStyle(document.querySelector('#open-tree .icon-tip')).opacity)>0.9);
- const treeTip=await page.locator('#open-tree .icon-tip').evaluate(el=>{const style=getComputedStyle(el);return {opacity:Number(style.opacity),right:style.right,text:el.textContent};});
- check(treeTip.opacity>0.9&&treeTip.right!=='auto'&&treeTip.text==='AI 科技树','Tech-tree caption fades in to the left');
- await page.locator('#characters-panel > summary').evaluate(el=>el.focus({focusVisible:true}));
- await page.waitForFunction(()=>Number(getComputedStyle(document.querySelector('#characters-panel .icon-tip')).opacity)>0.9);
- check(await page.locator('#characters-panel .icon-tip').evaluate(el=>el.textContent==='图鉴'),'Keyboard focus fades in the gallery caption');
+ const icons=page.locator('#home-screen .icon-btn');
+ check(await icons.count()===7,'All seven lobby tools have their own illustrated silhouettes');
+ for(const icon of await icons.all()){
+   await icon.hover();
+   check(!!await icon.getAttribute('aria-label')&&await icon.locator('.icon-tip').isHidden(),'Wordless icon keeps an accessible name even on hover');
+ }
+ await page.locator('#characters-panel > summary').focus();
+ check(await page.locator('#characters-panel .icon-tip').isHidden(),'Keyboard focus keeps the wordless treatment');
  await page.screenshot({path:path.join(output,'home.png')});
- await page.locator('#settings-panel > summary').click();await page.locator('#home-escape-assist').check();await page.locator('#settings-panel > summary').click();
+ await page.locator('#settings-panel > summary').click();await page.locator('#settings-panel').evaluate(el=>Promise.all(el.getAnimations().map(a=>a.finished)));
+ check(await page.locator('#settings-panel > summary').evaluate(el=>{const b=el.getBoundingClientRect();return el.contains(document.elementFromPoint(b.x+b.width/2,b.y+b.height/2));}),'Open drawer owns its close button above the lobby');
+ await page.screenshot({path:path.join(output,'settings.png')});await page.locator('#home-escape-assist').check();await page.locator('#settings-panel > summary').click();
  await page.reload();await page.locator('#settings-panel > summary').click();check(await page.locator('#home-escape-assist').isChecked()&&await page.locator('#escape-assist').isChecked(),'Control assistance persists and matches the in-game setting');await page.locator('#settings-panel > summary').click();
  for(const id of ['nest-panel','mods-panel']){await page.locator(`#${id} > summary`).click();check(await page.locator(`#${id}`).evaluate(e=>e.open),`${id} opens from home`);await page.locator(id==='nest-panel'?'.nest-exit':`#${id} > summary`).click();}
  const homeBoxes=await Promise.all(['#pixel-logo','#launch-dock','#wallet','#nest-panel'].map(async selector=>({selector,box:await page.locator(selector).boundingBox()})));
  const view=page.viewportSize();
  for(const item of homeBoxes)check(item.box&&item.box.x>=-1&&item.box.y>=-1&&item.box.x+item.box.width<=view.width+1&&item.box.y+item.box.height<=view.height+1,`${item.selector} stays inside the desktop lobby`);
  check(!overlaps(homeBoxes[0].box,homeBoxes[1].box),'Title and mode dock do not overlap');
- await page.locator('#open-departure').click();await page.screenshot({path:path.join(output,'departure.png')});
+ await page.locator('#open-departure').click();await page.locator('#stage-cast img').evaluateAll(images=>Promise.all(images.map(i=>i.decode())));await page.locator('#stage-cast').evaluate(el=>Promise.all(el.getAnimations({subtree:true}).map(a=>a.finished)));await page.screenshot({path:path.join(output,'departure.png')});
  const bench=await Promise.all(['.bench-detail','#benchmark-list','#start'].map(async selector=>({selector,box:await page.locator(selector).boundingBox()})));
  for(const item of bench)check(item.box&&item.box.x>=-1&&item.box.y>=-1&&item.box.x+item.box.width<=view.width+1&&item.box.y+item.box.height<=view.height+1,`${item.selector} stays inside the desktop difficulty page`);
  check(!overlaps(bench[0].box,bench[1].box),'Difficulty detail and Benchmark list do not overlap');
  check(!overlaps(bench[2].box,await page.locator('#launch-dock').boundingBox()),'Start stays clear of the mode dock');
  await page.locator('#mode-guide').click();await page.waitForFunction(()=>document.querySelector('#difficulty-select').value==='0');check(await page.locator('#difficulty-select').isDisabled()&&await page.locator('#mode-guide').getAttribute('aria-pressed')==='true','Free teaching selects difficulty zero');
  await page.locator('#mode-short').click();await page.waitForFunction(()=>document.querySelector('#difficulty-select').value==='1');check(await page.locator('#mode-short').getAttribute('aria-pressed')==='true'&&!await page.locator('#difficulty-select').isDisabled(),'Short adventure selects unlocked Pro difficulty');
+ const wheel=page.locator('#benchmark-list');
+ await wheel.focus();
+ for(let i=0;i<5;i++)await page.keyboard.press('ArrowUp');
+ await page.waitForFunction(()=>document.querySelector('#bench-title').textContent==='Benchmark 6');
+ const rows=await wheel.evaluate(el=>{
+   const clip=el.getBoundingClientRect(),boxes=Array.from(el.children,child=>child.getBoundingClientRect());
+   return {whole:boxes.filter(b=>b.top>=clip.top-.6&&b.bottom<=clip.bottom+.6).length,visible:boxes.filter(b=>b.bottom>clip.top+.6&&b.top<clip.bottom-.6).length};
+ });
+ check(rows.whole===3&&rows.visible===5,'A settled middle Benchmark shows three full rows and two partial neighbours');
+ check(await page.locator('#bench-affixes').innerText()==='？'&&await page.locator('.motion-mystery').count()===1&&await page.locator('#start').isDisabled(),'Locked stage shows one silhouette and hides mechanics');
+ await page.screenshot({path:path.join(output,'bench-locked.png')});
+ await wheel.hover();await page.mouse.wheel(0,120);
+ await page.waitForFunction(()=>document.querySelector('#difficulty-select').value==='5');
+ await page.keyboard.press('Home');
+ await page.waitForFunction(()=>document.querySelector('#difficulty-select').value==='1'&&!document.querySelector('#start').disabled);
  await page.locator('#mode-expedition').click();check(await page.locator('#mode-expedition').getAttribute('aria-pressed')==='true'&&(await page.locator('#expedition-route').textContent()).includes('→'),'Expedition selects and previews its route');
- await page.locator('#mode-exploration').click();check(await page.locator('.bench-row[data-benchmark="1"]').isDisabled(),'Exploration stays locked until that endless Benchmark is cleared');
+ await page.locator('#mode-exploration').click();check(await page.locator('.bench-row[data-benchmark="1"]').getAttribute('data-locked')==='true'&&await page.locator('#start').isDisabled(),'Locked exploration can be inspected and cannot launch');
  await page.locator('#back-home').click();check(await page.locator('#home-screen').isVisible(),'Return goes back to home');
  await page.locator('#open-departure').click();await page.locator('#mode-guide').click();await page.locator('#start').click();await page.locator('#hud').waitFor({state:'visible'});
  await page.waitForFunction(()=>performance.getEntriesByType('resource').some(e=>e.name.includes('/art/characters/deepseek.png')));
  check(await page.locator('.growth-track').getAttribute('aria-valuenow')==='0','Experience progress exposes the real initial value');
- check(await page.locator('.growth-label .rice-icon').evaluate(i=>i.complete&&i.naturalWidth>0&&i.alt==='大白饭'),'Rice icon loads without relying on a system emoji font');
+ check(await page.locator('.vitals .rice-icon').evaluate(i=>i.complete&&i.naturalWidth>0&&i.alt==='大白饭'),'Rice icon loads without relying on a system emoji font');
  check(!overlaps(await page.locator('.hud-details summary').boundingBox(),await page.locator('#pause').boundingBox()),'Status and pause buttons do not overlap on desktop');
  await battleFloor(page,'Desktop battle');
  await page.screenshot({path:path.join(output,'battle.png')});
  await page.reload();await page.waitForFunction(()=>!document.querySelector('#continue').disabled);await page.locator('#continue').click();await page.locator('#pause-menu').waitFor({state:'visible'});check(true,'Home continues the saved tutorial in the paused state');
+ check(await page.locator('.paper-eye').count()===2&&await page.getByText('正在工作',{exact:true}).isVisible(),'Pause shows two paper eyes and the work sign');
+ await page.screenshot({path:path.join(output,'pause.png')});
  // Draw a detached pickup through the real renderer; confirm white rice and the blue bowl rim.
  const pickup=await page.evaluate(async()=>{
    const {renderPreviewFrame}=await import('/src/v2/preview/view.js');const c=document.createElement('canvas');c.width=c.height=200;const ctx=c.getContext('2d');
@@ -109,7 +126,33 @@ try{
    renderPreviewFrame(ctx,{tick:0,phase:'exploring',hud:{map:{width:3000,height:3000},aim:{x:1,y:0},rice:0,invulnerable:false},entities:[guard]},200,200,1,[]);
    const region=(x)=>{const p=ctx.getImageData(x-3,97,7,7).data;let light=0;for(let i=0;i<p.length;i+=4)if(p[i]>220&&p[i+1]>190&&p[i+2]>140)light++;return light;};return {back:region(77),front:region(123)};
  });check(shell.back>shell.front,'Claude shell visibly marks the same rear weak arc used by combat');
- for(const [width,height] of [[844,390],[390,844]]){
+ // Inspect the same wheel and stage that the new profile uses, with a progressed test profile.
+ await page.evaluate(async()=>{
+   const {createStoragePort}=await import('/src/v2/adapters/storage.js');
+   const {readProfileRepository,commitProfilePlan}=await import('/src/v2/application/repository.js');
+   const {loadContentCatalog}=await import('/src/v2/content/catalog.js');
+   const catalog=loadContentCatalog(),port=createStoragePort('big-fat-fish:v2:profile');
+   const record=await readProfileRepository(port,catalog);
+   const profile=record.value.profile;
+   const saved=await commitProfilePlan(port,{expectedRevision:profile.revision,next:{...profile,revision:profile.revision+1,highestDifficulty:8},events:[]},catalog);
+   if(!saved.ok)throw Error(saved.message);
+ });
+ await page.reload();await page.locator('#mode-short').click();await page.locator('#open-departure').click();
+ await wheel.focus();for(let i=0;i<3;i++)await page.keyboard.press('ArrowUp');
+ await page.locator('#stage-cast[data-scene="4"] img').evaluateAll(images=>Promise.all(images.map(i=>i.decode())));
+ check(await page.locator('.motion-hammer').count()===1&&await page.locator('.motion-breakable').count()===1,'B4 stages the heavy claw and destructible cover');
+ check(await page.locator('#bench-affixes').innerText()==='Claude重钳破阵','B4 shows only the newly introduced mechanic');
+ await page.screenshot({path:path.join(output,'benchmark-4.png')});
+ const bounds=await wheel.boundingBox(),row=await page.locator('.bench-row[aria-pressed=true]').boundingBox();
+ const x=bounds.x+bounds.width/2,y=bounds.y+bounds.height/2;
+ await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x,y+row.height,{steps:12});await page.mouse.up();
+ await page.waitForFunction(()=>document.querySelector('#bench-title').textContent==='Benchmark 5');
+ await wheel.focus();for(let i=0;i<3;i++)await page.keyboard.press('ArrowUp');
+ await page.waitForFunction(()=>document.querySelector('#stage-cast').dataset.scene==='8');
+ check(await page.locator('.motion-flank-left').count()===2&&await page.locator('.motion-flank-right').count()===2,'Real mouse drag snaps once and B8 previews both entrances');
+ await page.locator('#stage-cast').evaluate(el=>Promise.all(el.getAnimations({subtree:true}).map(a=>a.finished)));
+ await page.screenshot({path:path.join(output,'benchmark-8.png')});
+ for(const [width,height] of process.argv.includes('--desktop')?[]:[[844,390],[390,844]]){
    const context=await browser.newContext({viewport:{width,height},isMobile:true,hasTouch:true,deviceScaleFactor:1});const phone=await context.newPage();phone.on('pageerror',e=>errors.push(e.message));await phone.goto(url);await phone.waitForFunction(()=>document.querySelector('#wallet').textContent.includes('算力卡'));
    const logo=await phone.locator('#pixel-logo').boundingBox(),dock=await phone.locator('#launch-dock').boundingBox(),wallet=await phone.locator('#wallet').boundingBox(),nest=await phone.locator('#nest-panel').boundingBox();
    const fits=(box,label)=>check(box&&box.x>=-1&&box.y>=-1&&box.x+box.width<=width+1&&box.y+box.height<=height+1,`${label} stays inside ${width}×${height}`);
