@@ -14,6 +14,8 @@ import { mountModManager } from './modManager.js';
 import { createStoragePort } from '../adapters/storage.js';
 import { readProfileRepository, commitProfilePlan, mergePersistenceIntents } from '../application/repository.js';
 import { createSettlement } from '../domain/settlement.js';
+import { drawRandom } from '../domain/random.js';
+import { derivePlayerStats } from '../domain/stats.js';
 import {scopePersistenceIntent} from '../domain/modScope.js';
 import { loadContentCatalog, validateContentCatalog } from '../content/catalog.js';
 import { createHandlerRegistry } from '../content/registry.js';
@@ -48,7 +50,9 @@ import { getPreviewCamera, renderPreviewFrame } from './view.js';
  * @calls domain/dshCycle.js#readDshCycleTimers
  * @calls domain/modScope.js#scopePersistenceIntent
  * @calls domain/profile/nest.js#isDifficultyUnlocked
+ * @calls domain/random.js#drawRandom
  * @calls domain/settlement.js#createSettlement
+ * @calls domain/stats.js#derivePlayerStats
  * @calls domain/world/api.js#canApiWithdraw
  * @calls domain/world/extraction.js#canExtract
  * @calls domain/world/extraction.js#extractionDuration
@@ -90,7 +94,8 @@ export function mountCombatPreview(mountElementId) {
   let clock=createClockState(),lastTime=0,sequence=0,frameId=0,disposed=false,saveRequested=false;
   let displayedChoice='',displayedTrial='',blockTrainingClick=false,offeredPickupId='';
   let aim={x:1,y:0},aimDistance=400,mouseFiring=false,stickFiring=false,leftMove={x:0,y:0},lastInput='',toastUntil=0;
-  let popups=/** @type {{x:number;y:number;amount:number;tick:number}[]} */([]);
+  let popups=/** @type {{x:number;y:number;amount:number;tick:number;punch?:boolean}[]} */([]);
+  let extractionPulse=false;
   const keys=new Set();
   const stickResetters=/** @type {(() => void)[]} */([]);
   const removers=/** @type {(() => void)[]} */([]);
@@ -416,10 +421,14 @@ export function mountCombatPreview(mountElementId) {
         if(schedule.performancePause){pause();toast('帧积压较多，已暂停。继续时不会快进战斗。');}
         for(let index=0;index<schedule.worldSteps;index++){
           if(escapePressing&&/** @type {HTMLInputElement} */(node('escape-assist')).checked){const state=readSessionState(session),player=state.world.entities[state.player.entityId];if(player.statusIds.some(id=>state.world.statuses[id]?.kind==='root')&&state.tick-Number(player.runtime.lastEscapeAt??0)>=12)send('EscapeHeld',{edge:'held',repeat:false});}
-          const result=stepSessionWorld(session);showEvents(result.events);if(formal)pendingPersistence.push(...result.persistence);
+          const before=readSessionState(session),result=stepSessionWorld(session);showEvents(result.events);if(formal)pendingPersistence.push(...result.persistence);
+          const hits=result.events.filter(event=>{const payload=/** @type {{sourceKind?:string}} */(event.payload??{});return event.type==='DamageResolved'&&payload.sourceKind==='weapon_primary'&&result.next.world.entities[event.targetId??'']?.team==='enemy';});
+          const rolls=result.next.random.combat.cursor-before.random.combat.cursor;
+          const crits=new Set();
+          if(rolls===hits.length&&rolls>0){let stream=before.random.combat;const chance=derivePlayerStats(before,catalog).critChance;for(const event of hits){const draw=drawRandom(stream);stream=draw.next;if(draw.value<chance)crits.add(event.id);}}
           for(const event of result.events)if(event.type==='DamageResolved'){
-            const p=/** @type {{hpDamage:number;shellDamage:number;shieldDamage:number}} */(event.payload),entity=event.targetId?result.next.world.entities[event.targetId]:null;
-            if(entity&&p.hpDamage+p.shellDamage>0)popups.push({x:entity.position.x,y:entity.position.y,amount:p.hpDamage+p.shellDamage,tick:result.next.tick});
+            const p=/** @type {{hpDamage:number;shellDamage:number;shieldDamage:number;sourceKind?:string}} */(event.payload),entity=event.targetId?result.next.world.entities[event.targetId]:null;
+            if(entity&&p.hpDamage+p.shellDamage>0)popups.push({x:entity.position.x,y:entity.position.y,amount:p.hpDamage+p.shellDamage,tick:result.next.tick,punch:p.shellDamage>0||crits.has(event.id)});
           }
           if(!['exploring','boss'].includes(result.next.flow.phase))break;
         }
@@ -469,6 +478,8 @@ export function mountCombatPreview(mountElementId) {
           const distance=Math.round(Math.hypot(exit.position.x-player.position.x,exit.position.y-player.position.y));
           node('objective-label').textContent=remaining!==null?`撤离中 ${(remaining/60).toFixed(1)} 秒`
             :distance<=exit.radius?'长按 F 或交互键撤离':`搜刮补给后前往撤离点 · 距离 ${distance}`;
+          if(remaining!==null&&remaining<=60&&remaining>0){if(!extractionPulse){extractionPulse=true;window.dispatchEvent(new CustomEvent('fish:game-sound',{detail:{type:'ObjectiveCompleted'}}));}}
+          else extractionPulse=false;
           const label=node('interact').firstChild;
           if (label&&distance<=exit.radius&&!nearbyWeapon) label.textContent='长按撤离 ';
         }
@@ -484,7 +495,7 @@ export function mountCombatPreview(mountElementId) {
           const outcome=/** @type {'victory'|'defeat'|'withdrawal'} */(view.phase),settlement=createSettlement(growth,outcome);pendingPersistence.push(scopePersistenceIntent({id:settlement.id,kind:'settlement',payload:/** @type {import('../contracts.d.ts').Json} */(JSON.parse(JSON.stringify(settlement)))},growth));
         }
         if(formal&&pendingPersistence.length&&!profileWorking&&!profileFailed)void flushProfile();
-        node('equipment-menu').setAttribute('aria-label',offeredRestId?'选择休整奖励':'选择要替换的装备');node('equipment-menu').classList.toggle('hidden',(!offeredPickupId&&!offeredRestId)||view.phase!=='paused');node('pause-menu').classList.toggle('hidden',!stopped||(!!offeredPickupId||!!offeredRestId)&&view.phase==='paused');node('resume').classList.toggle('hidden',terminal);node('abandon').classList.toggle('hidden',!formal||terminal);node('retry-profile').classList.toggle('hidden',!profileFailed);node('restart').toggleAttribute('disabled',formal&&settledRunId!==session.runId);node('pause-title').textContent=view.phase==='victory'?'带着收获回家！':view.phase==='defeat'?'这次先回小窝':view.phase==='withdrawal'?(exploration?'撤离成功，带收获回家！':'带收获回家！'):'已暂停';node('pause-description').textContent=terminal?(formal?(settledRunId===session.runId?(exploration&&view.phase==='defeat'?'本局战利品已损失。':'收获已保存。可以返回出发页查看小窝余额。'):'正在保存收获，请稍候。失败时可重试，原档不会被覆盖。'):'练习结束，不产生永久资源。'):formal?'战斗已冻结。继续原进度，或明确放弃并按失败结算。':'战斗时间已冻结；回来后不会补跑。';mount?.classList.toggle('stopped',stopped);
+        node('equipment-menu').setAttribute('aria-label',offeredRestId?'选择休整奖励':'选择要替换的装备');node('equipment-menu').classList.toggle('hidden',(!offeredPickupId&&!offeredRestId)||view.phase!=='paused');node('pause-menu').classList.toggle('hidden',!stopped||(!!offeredPickupId||!!offeredRestId)&&view.phase==='paused');node('resume').classList.toggle('hidden',terminal);node('abandon').classList.toggle('hidden',!formal||terminal);node('retry-profile').classList.toggle('hidden',!profileFailed);node('restart').toggleAttribute('disabled',formal&&settledRunId!==session.runId);const loot=node('loot-card'),showLoot=exploration&&view.phase==='withdrawal';loot.classList.toggle('hidden',!showLoot);if(showLoot){const card=createSettlement(growth,'withdrawal');node('loot-fragments').textContent=String(card.gpuFragments);node('loot-parts').textContent=String(card.parts);}node('pause-title').textContent=view.phase==='victory'?'带着收获回家！':view.phase==='defeat'?'这次先回小窝':view.phase==='withdrawal'?(exploration?'撤离成功，带收获回家！':'带收获回家！'):'已暂停';node('pause-description').textContent=terminal?(formal?(settledRunId===session.runId?(exploration&&view.phase==='defeat'?'本局战利品已损失。':'收获已保存。可以返回出发页查看小窝余额。'):'正在保存收获，请稍候。失败时可重试，原档不会被覆盖。'):'练习结束，不产生永久资源。'):formal?'战斗已冻结。继续原进度，或明确放弃并按失败结算。':'战斗时间已冻结；回来后不会补跑。';mount?.classList.toggle('stopped',stopped);
         popups=popups.filter(popup=>view&&view.tick-popup.tick<45);renderPreviewFrame(ctx,view,width,height,ratio,popups);
       }else{ctx.setTransform(ratio,0,0,ratio,0,0);ctx.fillStyle='#12333e';ctx.fillRect(0,0,width,height);}
       if(now>toastUntil)node('toast').classList.remove('visible');

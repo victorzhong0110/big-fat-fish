@@ -14,7 +14,7 @@ export function mountNestRange(root,catalog,profile,equipped) {
   canvas.width=440;canvas.height=150;canvas.className='range-view';fire.textContent='开火 · Space';root.append(canvas,fire,swap,result);
   const ctx=canvas.getContext('2d');if(!ctx)throw Error('Canvas unavailable');
   const art=new Image(),fish=new Image();art.src='./art/props/reef-atlas.png';fish.src='./art/characters/deepseek.png';
-  let firing=false,queued=false,frame=0,last=0,carry=0,hits=0,flash=0,damage=0;
+  let firing=false,queued=false,frame=0,last=0,carry=0,hits=0,flash=0,damage=0,baseline=0,punch=false;
   const controller=new AbortController(),options={signal:controller.signal};
   function label(){swap.textContent=catalog.definitions[lane.weapon()].displayName+' · Q';}
   function switchGun(){lane.switchWeapon();label();}
@@ -31,17 +31,19 @@ export function mountNestRange(root,catalog,profile,equipped) {
     while(carry>=1000/60){
       carry-=1000/60;
       const sample=lane.step(firing||queued);queued=false;projectiles=sample.projectiles;
-      if(sample.damage>0){hits++;damage=Math.round(sample.damage);flash=12;}
+      if(sample.damage>0){hits++;damage=Math.round(sample.damage);if(!baseline)baseline=damage;punch=damage>=baseline*1.45-0.5;flash=14;}
       flash=Math.max(0,flash-1);
     }
     ctx.clearRect(0,0,440,150);ctx.imageSmoothingEnabled=false;
     if(fish.complete&&fish.naturalWidth)ctx.drawImage(fish,44,48,62,64);
-    const targetX=280+(flash%4)*2;
+    const wobble=flash?Math.round(Math.sin(flash*1.7)*Math.min(6,flash/2)):0;
+    const targetX=280+wobble;
     if(art.complete&&art.naturalWidth)ctx.drawImage(art,224,0,32,32,targetX,48,64,64);
     for(const entity of projectiles){
       ctx.fillStyle=entity.template==='mcp_batch'?'#ffbc76':entity.template==='mcp_return'?'#d4b5fd':'#b6ffff';ctx.strokeStyle='#122c40';ctx.lineWidth=2;ctx.beginPath();ctx.arc(entity.x-143,entity.y-190,entity.radius,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.globalAlpha=.28;ctx.fillStyle='#D7F7FF';ctx.beginPath();ctx.arc(entity.x-143-6,entity.y-190,Math.max(2,entity.radius-2),0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
     }
-    if(flash){ctx.fillStyle='#fff4aa';ctx.font='12px "Fusion Pixel",sans-serif';ctx.fillText('−'+damage,targetX,44-flash/2);}
+    if(flash){ctx.fillStyle='#A1EAFA';for(let i=0;i<6;i++){const ang=i/6*Math.PI*2;ctx.fillRect(targetX+32+Math.cos(ang)*(18-flash)-2,80+Math.sin(ang)*(14-flash)-2,4,4);}const rise=Math.min(12,14-flash);ctx.save();ctx.translate(targetX+32,36-rise);ctx.textAlign='center';ctx.font='12px "Fusion Pixel",sans-serif';if(punch){ctx.scale(1.45,1.45);ctx.lineWidth=3;ctx.strokeStyle='#111';ctx.strokeText(String(damage),0,0);ctx.fillStyle='#F4B77F';}else ctx.fillStyle='#FFF8E7';ctx.fillText(String(damage),0,0);ctx.restore();}
     result.textContent='命中 '+hits+'　最近伤害 '+damage;result.dataset.hits=String(hits);frame=requestAnimationFrame(draw);
   }
   frame=requestAnimationFrame(draw);return ()=>{cancelAnimationFrame(frame);controller.abort();};

@@ -6,11 +6,11 @@ if(typeof document!=='undefined'&&document.fonts?.load)document.fonts.load(`12px
 /** Canvas presentation for the combat preview. Never mutates or simulates game state. */
 
 const PARTICLE_LIMIT=160,SHOCK_LIMIT=24,FX_FROZEN=new Set(['paused','loraTraining','pluginChoice','victory','defeat','withdrawal','preparing']);
-/** @typedef {{alive:boolean,x:number,y:number,vx:number,vy:number,born:number,life:number,radius:number,color:string,front:boolean}} FxParticle */
+/** @typedef {{alive:boolean,x:number,y:number,vx:number,vy:number,born:number,life:number,radius:number,color:string,front:boolean,alpha?:number}} FxParticle */
 /** @typedef {{alive:boolean,x:number,y:number,born:number,life:number,radius:number}} FxShock */
-/** @typedef {{hp:number,x:number,y:number,kind:string,spriteId:string,team:string,radius:number,progress:number,required:number}} FxBody */
+/** @typedef {{hp:number,x:number,y:number,kind:string,spriteId:string,team:string,radius:number,progress:number,required:number,style:string}} FxBody */
 /** @returns {FxParticle} */
-function blankParticle(){return {alive:false,x:0,y:0,vx:0,vy:0,born:0,life:1,radius:2,color:'#5B7CFF',front:true};}
+function blankParticle(){return {alive:false,x:0,y:0,vx:0,vy:0,born:0,life:1,radius:2,color:'#5B7CFF',front:true,alpha:1};}
 const fx={
  tick:/** @type {number|null} */(null),
  prev:/** @type {Map<string,FxBody>} */(new Map()),
@@ -21,6 +21,7 @@ const fx={
  hits:/** @type {Map<string,number>} */(new Map()),
  shakeBorn:-1000,
  shakeAmp:0,
+ banner:/** @type {{name:string,color:string,born:number}|null} */(null),
 };
 /** @type {HTMLCanvasElement|null} */
 let distilledCanvas=null;
@@ -29,7 +30,7 @@ if(typeof window!=='undefined')window.addEventListener('fish:reset-wave',()=>{re
 /** @param {string} text */
 function fxHash(text){let n=2166136261;for(const c of text)n=Math.imul(n^c.charCodeAt(0),16777619)>>>0;return n>>>0;}
 function simpleEffects(){try{return localStorage.getItem('big-fat-fish:v2:simple-fx')==='1';}catch{return false;}}
-function resetPresentationEffects(){fx.tick=null;fx.prev=new Map();fx.cursor=0;fx.shockCursor=0;fx.hits.clear();fx.shakeBorn=-1000;fx.shakeAmp=0;for(const particle of fx.particles)particle.alive=false;for(const shock of fx.shocks)shock.alive=false;}
+function resetPresentationEffects(){fx.tick=null;fx.prev=new Map();fx.cursor=0;fx.shockCursor=0;fx.hits.clear();fx.shakeBorn=-1000;fx.shakeAmp=0;fx.banner=null;for(const particle of fx.particles)particle.alive=false;for(const shock of fx.shocks)shock.alive=false;}
 /** @param {string} spriteId @param {string} kind @param {string} team */
 function factionColor(spriteId,kind,team){
  if(kind==='player'||spriteId==='distilled_bot')return '#5B7CFF';
@@ -40,7 +41,7 @@ function factionColor(spriteId,kind,team){
  return team==='player'?'#5B7CFF':'#10A37F';
 }
 /** @param {FxParticle} particle */
-function spawnParticle(particle){const slot=fx.particles[fx.cursor%PARTICLE_LIMIT];fx.cursor++;Object.assign(slot,particle,{alive:true});}
+function spawnParticle(particle){const slot=fx.particles[fx.cursor%PARTICLE_LIMIT];fx.cursor++;Object.assign(slot,particle,{alive:true,alpha:particle.alpha??1});}
 /** @param {number} x @param {number} y @param {number} count @param {string} color @param {number} lifeBase @param {number} lifeSpan @param {number} speed @param {number} born @param {boolean} simple @param {number} radius */
 function emitBurst(x,y,count,color,lifeBase,lifeSpan,speed,born,simple,radius){
  const n=simple?Math.max(1,Math.floor(count/2)):count,seed=fxHash(`${x}:${y}:${born}:${color}`);
@@ -51,7 +52,7 @@ function syncPresentationEffects(view){
  if(fx.tick!==null&&view.tick<fx.tick)resetPresentationEffects();
  if(FX_FROZEN.has(view.phase)||fx.tick===view.tick)return;
  const simple=simpleEffects(),current=new Map();
- for(const entity of view.entities)current.set(entity.id,{hp:entity.hp,x:entity.position.x,y:entity.position.y,kind:entity.kind,spriteId:entity.spriteId,team:entity.team,radius:entity.radius,progress:entity.objectiveProgress??0,required:entity.objectiveRequired??0});
+ for(const entity of view.entities)current.set(entity.id,{hp:entity.hp,x:entity.position.x,y:entity.position.y,kind:entity.kind,spriteId:entity.spriteId,team:entity.team,radius:entity.radius,progress:entity.objectiveProgress??0,required:entity.objectiveRequired??0,style:entity.projectileStyle??''});
  if(fx.tick!==null){
   const explained=new Set();
   for(const [id,prev] of fx.prev){
@@ -66,10 +67,11 @@ function syncPresentationEffects(view){
   }
   for(const [id,now] of current){
    const prev=fx.prev.get(id);
-   if(!prev){if(now.spriteId==='world_blast'){const slot=fx.shocks[fx.shockCursor%SHOCK_LIMIT];fx.shockCursor++;Object.assign(slot,{alive:true,x:now.x,y:now.y,born:view.tick,life:12,radius:Math.max(36,now.radius)});if(!simple){fx.shakeBorn=view.tick;fx.shakeAmp=3+(fxHash(id)%3);}}continue;}
+   if(!prev){if(now.spriteId==='world_blast'){const slot=fx.shocks[fx.shockCursor%SHOCK_LIMIT];fx.shockCursor++;Object.assign(slot,{alive:true,x:now.x,y:now.y,born:view.tick,life:12,radius:Math.max(36,now.radius)});if(!simple){fx.shakeBorn=view.tick;fx.shakeAmp=3+(fxHash(id)%3);}}if(now.kind==='enemy'&&now.spriteId.startsWith('boss_')){const color=now.spriteId==='boss_claude'?'#D97757':now.spriteId==='boss_grok'?'#00C875':'#10A37F',name=now.spriteId==='boss_claude'?'Claude':now.spriteId==='boss_grok'?'Grok':'ChatGPT';fx.banner={name,color,born:view.tick};}if(now.kind==='projectile'&&now.team==='player'&&now.style.startsWith('mcp_')){spawnParticle({alive:true,x:now.x,y:now.y,vx:0,vy:0,born:view.tick,life:1,radius:7,color:'#A1EAFA',front:true,alpha:1});spawnParticle({alive:true,x:now.x,y:now.y,vx:1.4,vy:-1.1,born:view.tick,life:1,radius:2,color:'#D7F7FF',front:true,alpha:.9});spawnParticle({alive:true,x:now.x,y:now.y,vx:-1.2,vy:-0.8,born:view.tick,life:1,radius:2,color:'#A1EAFA',front:true,alpha:.9});}continue;}
    if(now.hp<prev.hp-0.01&&!explained.has(id)&&!['pickup','projectile'].includes(now.kind)){emitBurst(now.x,now.y,4+(fxHash(`${id}:hit`)%3),factionColor(now.spriteId,now.kind,now.team),11,5,2.1,view.tick,simple,2.6);fx.hits.set(id,view.tick);}
    if(now.spriteId==='distilled_bot'&&Math.hypot(now.x-prev.x,now.y-prev.y)>0.4){let trail=false;for(let tick=(fx.tick??view.tick)+1;tick<=view.tick;tick++)if(tick%(simple?6:3)===0)trail=true;if(trail)spawnParticle({alive:true,x:now.x,y:now.y-8,vx:0,vy:-0.12,born:view.tick,life:18,radius:3.2,color:'#A9C0FF',front:false});}
-   if(now.spriteId==='world_extraction'&&now.progress>prev.progress){spawnParticle({alive:true,x:now.x+(fxHash(`${id}:${view.tick}`)%7)-3,y:now.y-8,vx:0,vy:-1.1,born:view.tick,life:26,radius:3.4,color:'#75D7ED',front:true});if(now.required>0&&prev.progress<now.required&&now.progress>=now.required)emitBurst(now.x,now.y,10,'#F4B77F',20,8,2.1,view.tick,simple,4);}
+   if(now.spriteId==='world_extraction'&&now.progress>prev.progress){spawnParticle({alive:true,x:now.x+(fxHash(`${id}:${view.tick}`)%7)-3,y:now.y-8,vx:0,vy:-1.1,born:view.tick,life:26,radius:3.4,color:'#75D7ED',front:true,alpha:1});if(now.required>0&&prev.progress<now.required&&now.progress>=now.required)emitBurst(now.x,now.y,10,'#F4B77F',20,8,2.1,view.tick,simple,4);}
+   if(prev&&now.kind==='projectile'&&now.team==='player'&&now.style.startsWith('mcp_')&&(now.x!==prev.x||now.y!==prev.y))spawnParticle({alive:true,x:prev.x,y:prev.y,vx:0,vy:0,born:view.tick,life:2,radius:2.4,color:'#D7F7FF',front:true,alpha:.32});
   }
  }
  for(const [id,born] of [...fx.hits])if((view.tick-born)*1000/60>=120)fx.hits.delete(id);
@@ -87,7 +89,7 @@ function drawPresentationEffects(ctx,front){
   if(particle.front!==front||!particle.alive)continue;
   const age=now-particle.born;if(age<0||age>=particle.life)continue;
   const t=age/particle.life,travel=age-age*age/(2*particle.life);
-  ctx.save();ctx.globalAlpha=1-t;ctx.fillStyle=particle.color;ctx.beginPath();ctx.arc(particle.x+particle.vx*travel,particle.y+particle.vy*travel,Math.max(0.4,particle.radius*(1-t)),0,Math.PI*2);ctx.fill();ctx.restore();
+  ctx.save();ctx.globalAlpha=(particle.alpha??1)*(1-t);ctx.fillStyle=particle.color;ctx.beginPath();ctx.arc(particle.x+particle.vx*travel,particle.y+particle.vy*travel,Math.max(0.4,particle.radius*(1-t)),0,Math.PI*2);ctx.fill();ctx.restore();
  }
  if(!front)return;
  for(const shock of fx.shocks){
@@ -183,6 +185,7 @@ function drawExtractionPillar(ctx,x,y,radius,progress,required,tick){
  ctx.strokeStyle='#111';ctx.lineWidth=6;ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.stroke();
  ctx.strokeStyle=progress>0?'#FFF8E7':'#75D7ED';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,radius,progress>0?-Math.PI/2:0,progress>0?-Math.PI/2+Math.PI*2*progress:Math.PI*2);ctx.stroke();
  const seconds=required>0?Math.max(0,(required-progress)/60):0;
+ if(progress>0&&seconds<=1){const pull=1-seconds;for(let i=0;i<8;i++){const ang=i/8*Math.PI*2+tick*0.35,dist=radius*(1.2-pull);ctx.fillStyle='#111';ctx.beginPath();ctx.arc(x+Math.cos(ang)*dist,y+Math.sin(ang)*dist,5-pull*2,0,Math.PI*2);ctx.fill();ctx.fillStyle='#FFF8E7';ctx.beginPath();ctx.arc(x+Math.cos(ang)*dist,y+Math.sin(ang)*dist,3-pull,0,Math.PI*2);ctx.fill();}}
  pixelLabel(ctx,x,y-radius-10,progress>0?seconds.toFixed(1):'撤离');
 }
 /** @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y @param {number} radius @param {'bsod'|'null-signal'} kind @param {boolean} drawn */
@@ -218,7 +221,7 @@ export function getPreviewCamera(view, width, height) {
  * @param {number} width
  * @param {number} height
  * @param {number} pixelRatio
- * @param {readonly {x:number;y:number;amount:number;tick:number}[]} popups
+ * @param {readonly {x:number;y:number;amount:number;tick:number;punch?:boolean}[]} popups
  * @returns {void}
  */
 export function renderPreviewFrame(ctx,view,width,height,pixelRatio,popups=[]) {
@@ -328,9 +331,25 @@ export function renderPreviewFrame(ctx,view,width,height,pixelRatio,popups=[]) {
   }
   drawPresentationEffects(ctx,true);
   // Pickups are projected as dedicated display entities by the snapshot.
-  for(const popup of popups){const age=(view.tick-popup.tick)/60;if(age<0||age>0.65)continue;ctx.globalAlpha=1-age/.65;ctx.fillStyle='#ffdfb8';ctx.textAlign='center';ctx.font=`12px ${PIXEL_FONT}`;ctx.fillText(String(Math.round(popup.amount)),popup.x,popup.y-25-age*25);ctx.globalAlpha=1;}
+  for(const popup of popups)drawDamagePopup(ctx,popup,view.tick);
   ctx.restore();
+  drawBossBanner(ctx,width,view.tick);
   if(width>=1000&&height>=500)drawMinimap(ctx,view,width);
+}
+/** @param {CanvasRenderingContext2D} ctx @param {{x:number;y:number;amount:number;tick:number;punch?:boolean}} popup @param {number} tick */
+function drawDamagePopup(ctx,popup,tick){
+ const age=(tick-popup.tick)/60;if(age<0||age>0.65)return;
+ const t=age/0.65,text=String(Math.round(popup.amount)),x=popup.x+Math.sin(Math.PI*t)*8,y=popup.y-18-t*36-Math.sin(Math.PI*t)*8;
+ ctx.save();ctx.translate(x,y);ctx.globalAlpha=1-t;ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`12px ${PIXEL_FONT}`;
+ if(popup.punch){const intro=age<0.16?1.25-(0.25*age/0.16):1;ctx.scale(1.45*intro,1.45*intro);ctx.lineWidth=4;ctx.strokeStyle='#111';ctx.strokeText(text,0,0);ctx.fillStyle='#F4B77F';}
+ else ctx.fillStyle='#FFF8E7';
+ ctx.fillText(text,0,0);ctx.restore();
+}
+/** @param {CanvasRenderingContext2D} ctx @param {number} width @param {number} tick */
+function drawBossBanner(ctx,width,tick){
+ const banner=fx.banner;if(!banner)return;const age=tick-banner.born;if(age<0||age>108)return;
+ const fade=age<8?age/8:age>96?(108-age)/12:1;
+ ctx.save();ctx.globalAlpha=fade;ctx.translate(width/2,88);ctx.fillStyle='#111';ctx.fillRect(-124,-18,248,36);ctx.fillStyle=banner.color;ctx.fillRect(-120,-14,240,28);ctx.fillStyle='#102838';ctx.font=`12px ${PIXEL_FONT}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`${banner.name} 登场`,0,0);ctx.restore();
 }
 
 /** @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y */
