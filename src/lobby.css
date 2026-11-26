@@ -12,7 +12,6 @@
 @keyframes rise{to{transform:translateY(-110vh)}}
 .lobby-title{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);text-align:center;z-index:2;max-width:92vw}
 #pixel-logo{width:min(640px,92vw);height:auto;image-rendering:pixelated}
-.lobby-title p{margin:8px 0 0;color:#f4efe0;font-family:var(--sans);font-weight:400}
 .bench-affixes,.lobby-corners .mods-panel p{font-family:var(--sans)}
 .lobby-corners{position:absolute;z-index:3;display:grid;gap:8px}
 .lobby-left{top:16px;left:16px;align-content:start;justify-items:start;max-height:calc(100% - 32px);overflow:auto}
