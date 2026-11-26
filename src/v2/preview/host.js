@@ -181,20 +181,6 @@ export function mountCombatPreview(mountElementId) {
     hint.toggleAttribute('hidden',!hint.textContent);
     syncModeCards();
   }
-  function paintLobbyLogo(){
-    const canvas=/** @type {HTMLCanvasElement} */(node('pixel-logo'));
-    const small=document.createElement('canvas');small.width=310;small.height=52;
-    const pen=small.getContext('2d');if(!pen)return;
-    pen.font='900 34px "PingFang SC","Microsoft YaHei",sans-serif';pen.textBaseline='middle';
-    for(const [dx,dy] of [[-2,0],[2,0],[0,-2],[0,2],[-2,-2],[2,-2],[-2,2],[2,2]]){pen.fillStyle='#111';pen.fillText('大肥鱼历险记',64+dx,28+dy);}
-    pen.fillStyle='#75D7ED';pen.fillText('大肥鱼历险记',64,28);
-    pen.fillStyle='#111';pen.fillRect(2,20,8,14);pen.fillRect(8,14,30,22);pen.fillRect(18,8,8,8);
-    pen.fillStyle='#5B7CFF';pen.fillRect(4,22,4,10);pen.fillRect(10,16,26,18);pen.fillRect(20,10,4,6);
-    pen.fillStyle='#F4EFE0';pen.fillRect(28,20,4,4);pen.fillStyle='#111';pen.fillRect(30,22,2,2);pen.fillRect(34,26,4,2);
-    canvas.width=small.width*3;canvas.height=small.height*3;
-    const out=canvas.getContext('2d');if(!out)return;
-    out.imageSmoothingEnabled=false;out.drawImage(small,0,0,canvas.width,canvas.height);
-  }
   function renderBenchmarkBoard(){
     const list=node('benchmark-list');list.replaceChildren();
     const raw=difficultySelect.value,level=Number(raw);
@@ -502,7 +488,7 @@ export function mountCombatPreview(mountElementId) {
     }catch(error){pause();toast(`试作已暂停：${error instanceof Error?error.message:String(error)}`);}
     lastTime=now;frameId=requestAnimationFrame(frame);
   }
-  const routeHint=node('expedition-route');function updateRouteHint(){const mode=/** @type {HTMLSelectElement} */(node('mode-select')).value,seed=Number(/** @type {HTMLInputElement} */(node('seed')).value);routeHint.textContent=mode.endsWith('expedition')?`本局首领顺序：${resolveExpeditionRoute(seed).map(f=>catalog.definitions[`boss_${f}`].displayName).join(' → ')}。可往返，第三位首领结束这一趟。`:'';}on(node('mode-select'),'change',updateRouteHint);on(node('seed'),'input',updateRouteHint);updateRouteHint();paintLobbyLogo();
+  const routeHint=node('expedition-route');function updateRouteHint(){const mode=/** @type {HTMLSelectElement} */(node('mode-select')).value,seed=Number(/** @type {HTMLInputElement} */(node('seed')).value);routeHint.textContent=mode.endsWith('expedition')?`本局首领顺序：${resolveExpeditionRoute(seed).map(f=>catalog.definitions[`boss_${f}`].displayName).join(' → ')}。可往返，第三位首领结束这一趟。`:'';}on(node('mode-select'),'change',updateRouteHint);on(node('seed'),'input',updateRouteHint);updateRouteHint();
   node('mode-select').dispatchEvent(new Event('change'));refreshContinue();frameId=requestAnimationFrame(frame);
   return ()=>{if(disposed)return;disposed=true;cancelAnimationFrame(frameId);for(const remove of removers)remove();if(session)disposeGameSession(session);clearInput();};
 }
