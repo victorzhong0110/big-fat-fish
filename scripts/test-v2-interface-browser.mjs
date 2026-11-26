@@ -46,7 +46,8 @@ try{
  check(await page.evaluate(async()=>{await document.fonts.load('12px "Fusion Pixel"');return document.fonts.check('12px "Fusion Pixel"');}),'Bundled pixel font loads offline');
  check((await page.locator('#toast').evaluate(el=>getComputedStyle(el).top))==='156px','Desktop toast sits below the objective row');
  check(await page.locator('#home-screen').isVisible()&&await page.locator('#departure-screen').isHidden(),'Home is the first screen');
- check(await page.locator('#pixel-logo').evaluate(canvas=>canvas.width>0&&canvas.height>0),'Pixel title is drawn without a large character portrait');
+ await page.locator('#pixel-logo').evaluate(image=>image.decode());
+ check(await page.locator('#pixel-logo').evaluate(image=>image.naturalWidth>0&&image.alt==='big fat fish'),'The illustrated English title loads in the lobby');
  await page.screenshot({path:path.join(output,'home.png')});
  await page.locator('#settings-panel > summary').click();await page.locator('#home-escape-assist').check();await page.locator('#settings-panel > summary').click();
  await page.reload();await page.locator('#settings-panel > summary').click();check(await page.locator('#home-escape-assist').isChecked()&&await page.locator('#escape-assist').isChecked(),'Control assistance persists and matches the in-game setting');await page.locator('#settings-panel > summary').click();
