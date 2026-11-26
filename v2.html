@@ -11,16 +11,16 @@
       <div id="home-screen" class="home-screen">
         <div class="lobby-sea" aria-hidden="true"><i class="weed weed-a"></i><i class="weed weed-b"></i><i class="weed weed-c"></i><i class="bubble b1"></i><i class="bubble b2"></i><i class="bubble b3"></i><i class="bubble b4"></i><i class="bubble b5"></i></div>
         <div class="lobby-corners lobby-left">
-          <p id="wallet" class="wallet pixel-chip">小窝档案读取中</p>
-          <p id="achievement-chip" class="pixel-chip">成就 0</p>
-          <details id="characters-panel" class="mods-panel pixel-pop"><summary>图鉴</summary><div id="character-gallery"></div></details>
-          <details id="mods-panel" class="mods-panel pixel-pop"><summary>模组</summary><p>安装并启用本地模组。Free练习可直接试用；模组冒险使用独立小窝与检查点。</p><div id="mods-manager"></div><a href="./mods/community-bubbles.json" download="community-bubbles.json">示例：一盆大泡泡</a></details>
-          <details id="settings-panel" class="mods-panel settings-panel pixel-pop"><summary>设置</summary><p>WASD 移动 · 鼠标瞄准并射击 · Q 切换 MCP · E 技能 · Space 冲刺 / 挣脱 · F 交互 · R 保存。</p><label class="assist-setting"><input id="home-escape-assist" type="checkbox"> 按住辅助挣脱控制</label><label class="assist-setting"><input id="home-simple-fx" type="checkbox"> 简化特效</label></details>
-          <button id="continue" class="secondary pixel-pop continue-chip" type="button" disabled>继续检查点</button>
+          <div id="wallet" class="resource-bar"><span id="wallet-status" class="sr-only">小窝档案读取中</span><span class="resource"><svg class="pixel-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="3" width="14" height="8"/><rect x="3" y="5" width="4" height="3" fill="#102838"/><rect x="8" y="5" width="5" height="2" fill="#102838"/><rect x="4" y="11" width="2" height="3"/><rect x="10" y="11" width="2" height="3"/></svg><b id="gpu-cards">–</b></span><span class="resource"><svg class="pixel-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="7" y="1" width="2" height="14"/><rect x="1" y="7" width="14" height="2"/><rect x="3" y="3" width="3" height="3"/><rect x="10" y="3" width="3" height="3"/><rect x="3" y="10" width="3" height="3"/><rect x="10" y="10" width="3" height="3"/><rect x="6" y="6" width="4" height="4" fill="#102838"/></svg><b id="parts-count">–</b></span></div>
+          <button id="achievement-chip" class="icon-btn" type="button"><svg class="pixel-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="7" y="1" width="2" height="3"/><rect x="4" y="3" width="8" height="2"/><rect x="3" y="5" width="10" height="6"/><rect x="5" y="11" width="6" height="2"/><rect x="4" y="13" width="8" height="2"/></svg><span id="achievement-tip" class="icon-tip">成就 0</span></button>
+          <details id="characters-panel" class="mods-panel"><summary class="icon-btn" aria-label="图鉴"><svg class="pixel-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2" width="10" height="12"/><rect x="4" y="4" width="6" height="4" fill="#102838"/><rect x="4" y="9" width="6" height="1" fill="#102838"/><rect x="4" y="11" width="4" height="1" fill="#102838"/><rect x="12" y="3" width="2" height="10"/></svg><span class="icon-tip">图鉴</span></summary><div id="character-gallery"></div></details>
+          <details id="mods-panel" class="mods-panel"><summary class="icon-btn" aria-label="模组"><svg class="pixel-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="4" width="12" height="9"/><rect x="4" y="2" width="8" height="2"/><rect x="7" y="7" width="2" height="4" fill="#102838"/></svg><span class="icon-tip">模组</span></summary><p>安装并启用本地模组。Free练习可直接试用；模组冒险使用独立小窝与检查点。</p><div id="mods-manager"></div><a href="./mods/community-bubbles.json" download="community-bubbles.json">示例：一盆大泡泡</a></details>
+          <details id="settings-panel" class="mods-panel settings-panel"><summary class="icon-btn" aria-label="设置"><svg class="pixel-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="2"/><rect x="2" y="7" width="12" height="2"/><rect x="2" y="11" width="12" height="2"/><rect x="4" y="2" width="2" height="4" fill="#75d7ed"/><rect x="9" y="6" width="2" height="4" fill="#75d7ed"/><rect x="6" y="10" width="2" height="4" fill="#75d7ed"/></svg><span class="icon-tip">设置</span></summary><p>WASD 移动 · 鼠标瞄准并射击 · Q 切换 MCP · E 技能 · Space 冲刺 / 挣脱 · F 交互 · R 保存。</p><label class="assist-setting"><input id="home-escape-assist" type="checkbox"> 按住辅助挣脱控制</label><label class="assist-setting"><input id="home-simple-fx" type="checkbox"> 简化特效</label></details>
+          <button id="continue" class="icon-btn" type="button" disabled aria-label="继续检查点"><svg class="pixel-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="3" height="12"/><rect x="6" y="4" width="3" height="8"/><rect x="9" y="6" width="4" height="4"/></svg><span class="icon-tip">继续检查点</span></button>
         </div>
         <div class="lobby-corners lobby-right">
-          <details id="nest-panel" class="mods-panel nest-panel pixel-pop"><summary>小窝家园</summary><div id="nest-manager"></div></details>
-          <button id="open-tree" class="pixel-pop" type="button">AI 科技树</button>
+          <details id="nest-panel" class="mods-panel nest-panel"><summary class="icon-btn" aria-label="小窝家园"><svg class="pixel-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="7" y="1" width="2" height="3"/><rect x="3" y="4" width="10" height="2"/><rect x="2" y="6" width="12" height="8"/><rect x="6" y="9" width="4" height="5" fill="#102838"/></svg><span class="icon-tip">小窝家园</span></summary><div id="nest-manager"></div></details>
+          <button id="open-tree" class="icon-btn" type="button" aria-label="AI 科技树"><svg class="pixel-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2" width="3" height="3"/><rect x="11" y="2" width="3" height="3"/><rect x="6" y="11" width="4" height="3"/><rect x="3" y="4" width="2" height="4"/><rect x="11" y="4" width="2" height="4"/><rect x="5" y="7" width="6" height="2"/><rect x="7" y="8" width="2" height="3"/></svg><span class="icon-tip">AI 科技树</span></button>
         </div>
         <div class="lobby-title"><img id="pixel-logo" width="1280" height="427" src="./art/title/big-fat-fish.webp" alt="big fat fish" fetchpriority="high"></div>
       </div>
@@ -33,6 +33,11 @@
             <ul id="bench-affixes" class="bench-affixes"></ul>
             <p id="benchmark-hint" class="scope-note" hidden></p>
             <p id="expedition-route" class="scope-note"></p>
+            <div class="bench-extra">
+              <button id="mode-expedition" class="pixel-pop" type="button" aria-pressed="false">三连战</button>
+              <button id="mode-guide" class="pixel-pop" type="button" aria-pressed="false">Free 教学</button>
+              <button id="mode-guide-more" class="pixel-pop hidden" type="button">再走一次 Free 教学</button>
+            </div>
           </section>
           <ol id="benchmark-list" class="benchmark-list" aria-label="Benchmark 1 到 15"></ol>
         </div>
@@ -46,14 +51,12 @@
         </div>
       </div>
       <div id="launch-dock" class="launch-dock">
-        <div class="mode-pill" role="group" aria-label="冒险模式">
+        <div id="mode-pill" class="mode-pill" role="group" aria-label="冒险模式">
+          <i class="mode-thumb" aria-hidden="true"></i>
           <button id="mode-short" type="button" aria-pressed="false">剧情</button>
           <button id="mode-exploration" type="button" aria-pressed="false">探索</button>
           <button id="mode-tower" type="button" aria-pressed="false">无尽</button>
         </div>
-        <button id="mode-expedition" class="pixel-pop dock-side" type="button" aria-pressed="false">三连战</button>
-        <button id="mode-guide" class="pixel-pop dock-side" type="button" aria-pressed="false">Free 教学</button>
-        <button id="mode-guide-more" class="pixel-pop dock-side hidden" type="button">再走一次 Free 教学</button>
         <button id="open-departure" class="primary pixel-pop" type="button">▶ 选择难度</button>
       </div>
     </section>

@@ -118,6 +118,9 @@ export function mountCombatPreview(mountElementId) {
   function syncModeCards(){
     const mode=modeSelect.value.replace(/^mod-/,'');
     for (const [value,id] of Object.entries(modeCards)) node(id).setAttribute('aria-pressed',String(mode===value));
+    const slot=mode==='short'?'0':mode==='exploration'?'1':mode==='endless'?'2':'';
+    const pill=node('mode-pill');
+    if(slot)pill.dataset.slot=slot;else delete pill.dataset.slot;
   }
   /** @param {string} message */
   function toast(message){if(disposed)return;node('toast').textContent=message;node('toast').classList.add('visible');toastUntil=performance.now()+3800;}
@@ -242,9 +245,14 @@ export function mountCombatPreview(mountElementId) {
     const taught=!!profile?.unlockLedger.includes('tutorialReward:free');
     node('mode-guide').classList.toggle('guide-retired',taught);node('mode-guide-more').classList.toggle('hidden',!taught);
     const achievements=profile?.unlockLedger.filter(id=>id.startsWith('achievement')||id.startsWith('tutorialReward')).length??0;
-    node('achievement-chip').textContent=`成就 ${achievements}`;
-    node('wallet').textContent=profile?`算力卡 ${profile.gpuCards} · 零件 ${profile.parts}`
+    const achievementLabel=`成就 ${achievements}`;
+    node('achievement-tip').textContent=achievementLabel;
+    node('achievement-chip').setAttribute('aria-label',achievementLabel);
+    const walletText=profile?`算力卡 ${profile.gpuCards} · 零件 ${profile.parts}`
       :scopeUnavailable&&isModMode()?'请先启用至少一个模组':modProfileMissing?'请先创建这组模组的小窝':scopeLoading?'小窝档案读取中':'小窝档案暂不可用';
+    node('wallet-status').textContent=walletText;
+    node('gpu-cards').textContent=profile?String(profile.gpuCards):'–';
+    node('parts-count').textContent=profile?String(profile.parts):'–';
     node('mod-profile-setup').classList.toggle('hidden',!(isModMode()&&modProfileMissing));
     node('mod-profile-create').toggleAttribute('disabled',scopeLoading||beginWorking);
     updateDepartureSelection();
