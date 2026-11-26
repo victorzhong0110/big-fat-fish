@@ -24,9 +24,18 @@ export function mountNestRoom(root,profile,open,companion,equip,position){
   const floor=document.createElement('div'), fish=document.createElement('img'), controls=document.createElement('div'), stick=document.createElement('div'), interact=document.createElement('button'), dialogue=document.createElement('section');
   floor.className='nest-floor';fish.className='nest-fish';fish.src='./art/characters/deepseek.png';fish.alt='大肥鱼';controls.className='room-controls';stick.className='room-stick';stick.ariaLabel='移动摇杆';stick.append(document.createElement('i'));dialogue.className='room-dialogue';dialogue.hidden=true;
   const hint=document.createElement('small');hint.textContent='WASD 游动 · 靠近后按 F';controls.append(stick,hint,interact);floor.append(fish);root.append(floor,controls,dialogue);
+  const water=document.createElement('div');water.className='room-water';water.setAttribute('aria-hidden','true');
+  for(const [index,x] of [5,27,59,81,94].entries()){
+    const grass=document.createElement('i'),bubble=document.createElement('i');
+    grass.className='room-kelp';bubble.className='room-air';
+    grass.style.left=x+'%';grass.style.bottom=(index%3*3)+'%';
+    bubble.style.left=(x-2)+'%';bubble.style.animationDelay=(-index*3)+'s';grass.style.animationDelay=(-index*.65)+'s';
+    water.append(grass,bubble);
+  }
+  floor.prepend(water);
   const visible=places.filter(([id])=>!id.startsWith('companion_')||profile.unlockedCompanions.includes(id));
   /** @param {number} index */
-  function sprite(index){const el=document.createElement('i');el.className='room-sprite';el.style.backgroundPositionX=(index*10)+'%';return el;}
+  function sprite(index){const el=document.createElement('i');el.className='room-sprite';el.style.setProperty('--fixture-frame',(index*10)+'%');return el;}
   for(const place of visible){const [id,label,x,y]=place,station=document.createElement('div'),name=document.createElement('span');station.dataset.station=id;station.className='room-fixture';station.style.left=x+'%';station.style.top=y+'%';name.textContent=label;station.append(sprite(places.indexOf(place)),name);floor.append(station);}
   let nearest=/** @type {typeof places[number]|undefined} */(undefined), frame=0,last=0,dx=0,dy=0;
   const keys=new Set(), controller=new AbortController(),options={signal:controller.signal};

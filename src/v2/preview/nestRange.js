@@ -13,7 +13,7 @@ export function mountNestRange(root,catalog,profile,equipped) {
   const canvas=document.createElement('canvas'),fire=document.createElement('button'),swap=document.createElement('button'),result=document.createElement('output');
   canvas.width=440;canvas.height=150;canvas.className='range-view';fire.textContent='开火 · Space';root.append(canvas,fire,swap,result);
   const ctx=canvas.getContext('2d');if(!ctx)throw Error('Canvas unavailable');
-  const art=new Image(),fish=new Image();art.src='./art/nest/fixtures.png';fish.src='./art/characters/deepseek.png';
+  const art=new Image(),fish=new Image();art.src='./art/props/reef-atlas.png';fish.src='./art/characters/deepseek.png';
   let firing=false,queued=false,frame=0,last=0,carry=0,hits=0,flash=0,damage=0;
   const controller=new AbortController(),options={signal:controller.signal};
   function label(){swap.textContent=catalog.definitions[lane.weapon()].displayName+' · Q';}
