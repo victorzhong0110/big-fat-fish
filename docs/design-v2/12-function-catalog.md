@@ -1,6 +1,6 @@
 # 12 · 全部函数目录与调用契约
 
-当前125个JS模块、444个公开函数：404个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途、远征、无尽及同档解锁的探索，以及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
+当前127个JS模块、447个公开函数：407个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途、远征、无尽及同档解锁的探索，以及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
 
 调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。
 
@@ -2198,7 +2198,7 @@ Active rank, never an archived or difficulty-independent duplicate.
 公开函数上游：
 
 - `createWeaponProjectile` ← `content/handlers/plugins.js#planPluginParallel`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/projectiles.js#planNativeProjectiles`。
-- `planNativeProjectiles` ← `content/handlers/weapons.js#planWeaponBubble`、`content/handlers/weapons.js#planWeaponFan`、`content/handlers/weapons.js#planWeaponVector`、`content/handlers/weapons.js#planWeaponStream`、`content/handlers/weapons.js#planWeaponReturn`、`content/handlers/weapons.js#planWeaponBatch`。
+- `planNativeProjectiles` ← `content/handlers/weapons.js#planWeaponBubble`、`content/handlers/weapons.js#planWeaponFan`、`content/handlers/weapons.js#planWeaponVector`、`content/handlers/weapons.js#planWeaponStream`、`content/handlers/weapons.js#planWeaponReturn`、`content/handlers/weapons.js#planWeaponBatch`、`preview/arcadePanels.js#createShotLane`。
 - `planProjectileBurst` ← `domain/attacks.js#planCollisionEffects`、`domain/movement.js#planEntityMotion`。
 
 ## domain/quotas.js
@@ -2446,7 +2446,7 @@ Store typed declarative delayed actions, never a stale mutable-state replacement
 公开函数上游：
 
 - `derivePlayerStats` ← `content/handlers/plugins.js#planPluginParallel`、`domain/abilities.js#planEquippedAbility`、`domain/combatPlugins.js#planCombatPluginEvent`、`domain/combatPlugins.js#planCombatPluginWorld`、`domain/companions.js#planCompanionAbility`、`domain/currents.js#resolveTideVelocity`、`domain/damage.js#resolveDamageRequest`、`domain/distill.js#planDistillEvent`、`domain/distill.js#planDistilledAbilities`、`domain/dshEffects.js#planDshEffects`、`domain/lora.js#planLoraOutcome`、`domain/movement.js#planPlayerMovement`、`domain/stats.js#deriveWeaponStats`、`domain/status.js#resolveControlRequest`、`preview/host.js#mountCombatPreview`。
-- `deriveWeaponStats` ← `domain/attacks.js#planWeaponFire`、`domain/projectiles.js#planNativeProjectiles`。
+- `deriveWeaponStats` ← `domain/attacks.js#planWeaponFire`、`domain/projectiles.js#planNativeProjectiles`、`preview/arcadePanels.js#createShotLane`。
 - `resolveStatModifier` ← `domain/stats.js#derivePlayerStats`、`domain/stats.js#deriveWeaponStats`。
 
 ## domain/status.js
@@ -3272,6 +3272,49 @@ Start an isolated target lane. Only expose render data and discard persistence i
 - `advanceWorldTick` ← `engine/previewTick.js#advancePreviewWorldTick`、`engine/session.js#stepSessionWorld`、`engine/session.js#stepSessionUi`、`engine/shootingRange.js#createShootingRange`。
 - `advanceUiTick` ← `engine/previewTick.js#advancePreviewUiCommands`、`engine/session.js#stepSessionWorld`、`engine/session.js#stepSessionUi`。
 
+## preview/arcadePanels.js
+
+Display-only arcade prizes and paired firing lanes. Gameplay owns the candidates and equipped slots.
+
+[源码](../../src/v2/preview/arcadePanels.js)；层：`host`。
+
+直接依赖：`domain/projectiles.js`、`domain/stats.js`。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `createPrizeButton(definition: untyped, rank: untyped)` | `HTMLButtonElement` | 已实现 | createPrizeButton；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `createShotLane(label: untyped, state: untyped, weapon: untyped, catalog: untyped)` | `HTMLElement` | 已实现 | createShotLane；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `createPrizeButton` → 无内部公开函数。
+- `createShotLane` → `domain/projectiles.js#planNativeProjectiles`、`domain/stats.js#deriveWeaponStats`。
+
+公开函数上游：
+
+- `createPrizeButton` ← `preview/host.js#mountCombatPreview`。
+- `createShotLane` ← `preview/host.js#mountCombatPreview`。
+
+## preview/benchmarkStage.js
+
+Animated previews of the Benchmark ladder, drawn on a shared isometric reef.
+
+[源码](../../src/v2/preview/benchmarkStage.js)；层：`host`。
+
+直接依赖：`preview/characters.js`。
+
+| 函数签名 | 返回 | 状态/范围 | 功能与约束 |
+|---|---|---|---|
+| `renderBenchmarkCast(root: untyped, value: untyped, locked: untyped)` | `void` | 已实现 | renderBenchmarkCast；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+
+公开函数下游：
+
+- `renderBenchmarkCast` → `preview/characters.js#characterSource`。
+
+公开函数上游：
+
+- `renderBenchmarkCast` ← `preview/host.js#mountCombatPreview`。
+
 ## preview/characters.js
 
 @typedef {{x:number;y:number;w:number;h:number;color:string}} PixelRect
@@ -3296,7 +3339,7 @@ Start an isolated target lane. Only expose render data and discard persistence i
 
 公开函数上游：
 
-- `characterSource` ← `preview/characters.js#loadCharacterArt`、`preview/characters.js#drawCharacter`。
+- `characterSource` ← `preview/benchmarkStage.js#renderBenchmarkCast`、`preview/characters.js#loadCharacterArt`、`preview/characters.js#drawCharacter`。
 - `loadCharacterArt` ← `preview/characters.js#drawCharacter`。
 - `drawCharacter` ← `preview/view.js#renderPreviewFrame`。
 - `resolveCharacterModel` ← `preview/view.js#renderPreviewFrame`。
@@ -3307,7 +3350,7 @@ Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,
 
 [源码](../../src/v2/preview/host.js)；层：`host`。
 
-直接依赖：`adapters/storage.js`、`application/modProfile.js`、`application/nest.js`、`application/repository.js`、`content/catalog.js`、`content/registry.js`、`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/checkpoint.js`、`domain/clock.js`、`domain/difficulty.js`、`domain/dshCycle.js`、`domain/modScope.js`、`domain/profile/nest.js`、`domain/random.js`、`domain/settlement.js`、`domain/stats.js`、`domain/world/api.js`、`domain/world/extraction.js`、`domain/world/regionRules.js`、`engine/session.js`、`preview/modManager.js`、`preview/nestManager.js`、`preview/view.js`。
+直接依赖：`adapters/storage.js`、`application/modProfile.js`、`application/nest.js`、`application/repository.js`、`content/catalog.js`、`content/registry.js`、`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/checkpoint.js`、`domain/clock.js`、`domain/difficulty.js`、`domain/dshCycle.js`、`domain/modScope.js`、`domain/profile/nest.js`、`domain/random.js`、`domain/settlement.js`、`domain/stats.js`、`domain/world/api.js`、`domain/world/extraction.js`、`domain/world/regionRules.js`、`engine/session.js`、`preview/arcadePanels.js`、`preview/benchmarkStage.js`、`preview/modManager.js`、`preview/nestManager.js`、`preview/view.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -3315,7 +3358,7 @@ Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,
 
 公开函数下游：
 
-- `mountCombatPreview` → `adapters/storage.js#createStoragePort`、`application/modProfile.js#createModProfileNamespace`、`application/modProfile.js#initializeModProfile`、`application/nest.js#prepareAdventureStart`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`application/repository.js#readProfileRepository`、`content/catalog.js#loadContentCatalog`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`content/skillCapabilities.js#listRuntimeSkills`、`content/weaponCapabilities.js#listRuntimeWeapons`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/checkpoint.js#canCreateCheckpoint`、`domain/checkpoint.js#createCheckpoint`、`domain/clock.js#createClockState`、`domain/clock.js#resumeClock`、`domain/clock.js#scheduleFrame`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/dshCycle.js#readDshCycleTimers`、`domain/modScope.js#scopePersistenceIntent`、`domain/profile/nest.js#isDifficultyUnlocked`、`domain/random.js#drawRandom`、`domain/settlement.js#createSettlement`、`domain/stats.js#derivePlayerStats`、`domain/world/api.js#canApiWithdraw`、`domain/world/extraction.js#canExtract`、`domain/world/extraction.js#extractionDuration`、`domain/world/regionRules.js#localWorldId`、`domain/world/regionRules.js#resolveExpeditionRoute`、`engine/session.js#createGameSession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#readSessionView`、`engine/session.js#restoreGameSession`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`preview/modManager.js#mountModManager`、`preview/nestManager.js#mountNestManager`、`preview/view.js#getPreviewCamera`、`preview/view.js#renderPreviewFrame`。
+- `mountCombatPreview` → `adapters/storage.js#createStoragePort`、`application/modProfile.js#createModProfileNamespace`、`application/modProfile.js#initializeModProfile`、`application/nest.js#prepareAdventureStart`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`application/repository.js#readProfileRepository`、`content/catalog.js#loadContentCatalog`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`content/skillCapabilities.js#listRuntimeSkills`、`content/weaponCapabilities.js#listRuntimeWeapons`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/checkpoint.js#canCreateCheckpoint`、`domain/checkpoint.js#createCheckpoint`、`domain/clock.js#createClockState`、`domain/clock.js#resumeClock`、`domain/clock.js#scheduleFrame`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/dshCycle.js#readDshCycleTimers`、`domain/modScope.js#scopePersistenceIntent`、`domain/profile/nest.js#isDifficultyUnlocked`、`domain/random.js#drawRandom`、`domain/settlement.js#createSettlement`、`domain/stats.js#derivePlayerStats`、`domain/world/api.js#canApiWithdraw`、`domain/world/extraction.js#canExtract`、`domain/world/extraction.js#extractionDuration`、`domain/world/regionRules.js#localWorldId`、`domain/world/regionRules.js#resolveExpeditionRoute`、`engine/session.js#createGameSession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#readSessionView`、`engine/session.js#restoreGameSession`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`preview/arcadePanels.js#createPrizeButton`、`preview/arcadePanels.js#createShotLane`、`preview/benchmarkStage.js#renderBenchmarkCast`、`preview/modManager.js#mountModManager`、`preview/nestManager.js#mountNestManager`、`preview/view.js#getPreviewCamera`、`preview/view.js#renderPreviewFrame`。
 
 公开函数上游：
 

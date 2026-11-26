@@ -18,6 +18,7 @@ npm run build      # 构建产出到 dist/
 * [品牌与美术界面指南（BRAND_GUIDE）](docs/BRAND_GUIDE.md)
 * [后续开发规划与 AI 协作指南](docs/ROADMAP-FUN-GAME.md)
 * [设计总览与统一术语](docs/design-v2/00-README.md)
+* [桌面固定规则开发任务卡](docs/DESKTOP-RULES-HANDOFF.md)
 * [实际开发进度](docs/design-v2/13-development-status.md)
 * [架构契约与调用规则](docs/design-v2/11-architecture-contracts.md)
 * [函数目录](docs/design-v2/12-function-catalog.md)
@@ -25,7 +26,7 @@ npm run build      # 构建产出到 dist/
 
 ## 社区模组
 
-V2 出发页下方支持本地 JSON 模组安装、启停和移除，已开放 Free 练习的 MCP 参数/内容名称，以及 SDK 1.0–1.3 独立新 MCP 与技能配方。示例包见 `public/mods/`。
+V2 大厅的模组卡带盒支持本地 JSON 模组安装、启停和移除，已开放 Free 练习的 MCP 参数/内容名称，以及 SDK 1.0–1.3 独立新 MCP 与技能配方。示例包见 `public/mods/`。
 
 ## 版权边界与许可
 

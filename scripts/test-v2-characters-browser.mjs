@@ -20,11 +20,12 @@ try{
   for(const name of CHARACTER_NAMES){const a=document.createElement('canvas'),b=document.createElement('canvas');a.width=b.width=200;a.height=b.height=200;const ac=a.getContext('2d'),bc=b.getContext('2d');drawCharacter(ac,name,100,100,160,{horizontal:-1});bc.translate(200,0);bc.scale(-1,1);drawCharacter(bc,name,100,100,160,{horizontal:1});results.push({name:`${name} mirrored`,equal:a.toDataURL()===b.toDataURL()});}
   return results;
  });for(const result of faithful)check(result.equal,`${result.name}: rendered pixels match direct approved-image rendering`);
+ await page.locator('.faction-tabs').getByRole('button',{name:'DeepSeek'}).click();
  check(await page.locator('[data-model="deepseek"]').isVisible(),'DeepSeek appears in the actual gallery');
  const pixels=()=>page.locator('[data-model="deepseek"]').evaluate(c=>c.toDataURL());await page.locator('#model-pose').selectOption('control');await page.waitForTimeout(80);const still=await pixels();await page.waitForTimeout(200);check(await pixels()===still,'Control does not invent replacement frames');await page.locator('#model-pose').selectOption('idle');
- await page.evaluate(()=>{const gallery=document.querySelector('#character-gallery');document.body.replaceChildren(gallery);document.body.style.cssText='margin:0;padding:28px;background:#111e25;color:#e9e9d5';gallery.style.width='1120px';document.querySelector('.model-gallery').style.gridTemplateColumns='repeat(5,1fr)';document.querySelector('.model-controls').style.display='none';document.querySelector('[data-model="deepseek"]').closest('figure').querySelector('figcaption').textContent='Big Fat Fish / DeepSeek';});await page.waitForTimeout(100);await page.locator('#character-gallery').screenshot({path:'docs/design-v2/art-drafts/models-v2-overview.png'});
+ await fs.mkdir('dist/v2-character-check',{recursive:true});await page.locator('#characters-panel').screenshot({path:'dist/v2-character-check/foldout.png'});
  await page.goto(url);await page.locator('#open-departure').click();await page.locator('#mode-guide').click();await page.locator('#start').click();await page.locator('#hud').waitFor({state:'visible'});
- check(await page.locator('.home-art img').getAttribute('src')==='./art/characters/deepseek.png','Home uses the same approved fish artwork');
+ check(requests.some(url=>url.endsWith('/art/characters/deepseek.png')),'The renderer loads the approved fish artwork');
  check(!requests.some(url=>url.includes('/art/models/')),'No rejected simplified character assets are requested');
  check(errors.length===0,`No browser errors: ${errors.join(', ')}`);console.log(`PASS ${checks.length} approved-art checks for ${CHARACTER_NAMES.length} characters`);
 }finally{await browser.close();await server.close();}

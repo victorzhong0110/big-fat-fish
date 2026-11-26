@@ -334,7 +334,7 @@ export function renderPreviewFrame(ctx,view,width,height,pixelRatio,popups=[]) {
   for(const popup of popups)drawDamagePopup(ctx,popup,view.tick);
   ctx.restore();
   drawBossBanner(ctx,width,view.tick);
-  if(width>=1000&&height>=500)drawMinimap(ctx,view,width);
+  if(width>=320&&height>=300)drawMinimap(ctx,view,width,height);
 }
 /** @param {CanvasRenderingContext2D} ctx @param {{x:number;y:number;amount:number;tick:number;punch?:boolean}} popup @param {number} tick */
 function drawDamagePopup(ctx,popup,tick){
@@ -368,9 +368,13 @@ function drawBossWarning(ctx,entity,tick){
  ctx.font=`12px ${PIXEL_FONT}`;ctx.textAlign='center';ctx.fillStyle='#ffe4bb';ctx.fillText(`${move.kind==='skillBan'?'技能封禁':move.kind==='companionBan'?'助战封禁':move.kind==='sweep'?'批量执法':'钳制'} ${Math.max(0,(move.executeAt-tick)/60).toFixed(1)}s`,move.point.x,move.point.y-110);
 }
 
-/** @param {CanvasRenderingContext2D} ctx @param {import('../contracts.d.ts').RenderSnapshot} view @param {number} width */
-function drawMinimap(ctx,view,width){
- const hud=/** @type {{map:{width:number;height:number;exploredCells:readonly string[]};treeHints:boolean}} */(view.hud),scale=150/hud.map.width,x=width-174,y=130,seen=new Set(hud.map.exploredCells);
- ctx.save();ctx.translate(x,y);ctx.fillStyle='#071e29df';ctx.fillRect(-5,-5,160,hud.map.height*scale+10);ctx.strokeStyle='#85a19a55';ctx.strokeRect(-5,-5,160,hud.map.height*scale+10);ctx.fillStyle='#32565a';for(const id of seen){const[cx,cy]=id.split(':').map(Number);ctx.fillRect(cx*160*scale,cy*160*scale,160*scale,160*scale);}
+/** @param {CanvasRenderingContext2D} ctx @param {import('../contracts.d.ts').RenderSnapshot} view @param {number} width @param {number} height */
+function drawMinimap(ctx,view,width,height){
+ const hud=/** @type {{map:{width:number;height:number;exploredCells:readonly string[]};treeHints:boolean}} */(view.hud),scale=150/hud.map.width,seen=new Set(hud.map.exploredCells);
+ const compact=width<1000||height<500;
+ const side=compact?Math.min(80,height*.17):150;
+ const factor=Math.min(side/150,side/(hud.map.height*scale));
+ const x=width-(compact?14:24)-150*factor,y=compact?64:130;
+ ctx.save();ctx.translate(x,y);ctx.scale(factor,factor);ctx.fillStyle='#071e29df';ctx.fillRect(-5,-5,160,hud.map.height*scale+10);ctx.strokeStyle='#85a19a55';ctx.strokeRect(-5,-5,160,hud.map.height*scale+10);ctx.fillStyle='#32565a';for(const id of seen){const[cx,cy]=id.split(':').map(Number);ctx.fillRect(cx*160*scale,cy*160*scale,160*scale,160*scale);}
  const player=view.entities.find(entity=>entity.kind==='player');for(const entity of view.entities){const interaction=['world_checkpoint','world_cache'].includes(entity.spriteId);if(interaction&&(!hud.treeHints||!player||Math.hypot(entity.position.x-player.position.x,entity.position.y-player.position.y)>300||entity.opened))continue;if(!['world_beacon','world_blockade','world_escort','world_gate','world_rest','world_checkpoint','world_cache','world_extraction'].includes(entity.spriteId)&&entity.kind!=='player')continue;const visible=seen.has(`${Math.floor(entity.position.x/160)}:${Math.floor(entity.position.y/160)}`);if(!visible&&entity.spriteId!=='world_extraction'&&!(entity.spriteId==='world_gate'&&entity.unlocked))continue;ctx.fillStyle=entity.kind==='player'?'#fff2cb':['world_beacon','world_blockade','world_escort'].includes(entity.spriteId)?'#acd295':'#d7a180';ctx.fillRect(entity.position.x*scale-2,entity.position.y*scale-2,4,4);}ctx.restore();
 }

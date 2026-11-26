@@ -33,13 +33,13 @@ export function mountModManager(root, base, notify) {
     if (disposed) return;
     list.replaceChildren();
     for (const item of installed) {
-      const card = document.createElement('article'); card.className = 'mod-card';
+      const card = document.createElement('article'); card.className = 'mod-card'; card.dataset.enabled=String(item.enabled);
       const name = document.createElement('strong'); name.textContent = `${item.pack.name} · ${item.pack.version}`;
       const description = document.createElement('p'); description.textContent = `${item.pack.author} / ${item.pack.id} — ${item.pack.description}`;
-      const toggle = document.createElement('button'); toggle.type = 'button'; toggle.textContent = item.enabled ? '停用' : '启用'; toggle.setAttribute('aria-pressed', String(item.enabled));
+      const toggle = document.createElement('button'); toggle.type = 'button'; toggle.className='cartridge-switch'; toggle.textContent = item.enabled ? '停用' : '启用'; toggle.setAttribute('aria-pressed', String(item.enabled));
       toggle.onclick = () => { try { persist(installed.map(entry => entry.pack.id === item.pack.id ? { ...entry, enabled: !entry.enabled } : entry)); } catch (error) { notify(String(error)); } };
-      const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '移除'; remove.onclick = () => { try { persist(installed.filter(entry => entry.pack.id !== item.pack.id)); } catch (error) { notify(String(error)); } };
-      card.append(name, description, toggle, remove); list.append(card);
+      const remove = document.createElement('button'); remove.type = 'button'; remove.className='cartridge-remove'; remove.textContent = '移除'; remove.onclick = () => { try { persist(installed.filter(entry => entry.pack.id !== item.pack.id)); } catch (error) { notify(String(error)); } };
+      const flag=document.createElement('small');flag.className='cartridge-flag';flag.textContent=item.enabled?'已启用':'未启用';card.append(flag,name,description,toggle,remove); list.append(card);
     }
     root.dispatchEvent(new Event('modschange'));
     status.textContent = installed.length ? `已安装 ${installed.length} 个 · 已启用 ${installed.filter(item => item.enabled).length} 个。下次Free练习或模组冒险使用当前组合；原版与每组模组档案独立。` : '暂无模组。SDK 1.0–1.3支持MCP参数、名称、新武器及护盾/爆发技能配方，可在Free练习和独立模组冒险使用。';
