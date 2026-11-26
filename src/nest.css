@@ -45,3 +45,15 @@
 @media(max-width:640px){#nest-panel[open] #nest-manager{inset:9px}}
 
 .tech-icon{display:inline-block;vertical-align:middle;width:21px;height:21px;margin-right:6px;background:url('/art/nest/fixtures.png') 0 center/1100% 100%;image-rendering:pixelated}
+
+.room-fixture[data-station=facilities] .room-sprite,.room-fixture[data-station=range] .room-sprite,.room-kelp,.room-air{background-image:url('/art/props/reef-atlas.png');background-size:1200% 100%;image-rendering:pixelated}
+.room-sprite{background-position-x:var(--fixture-frame,0%)}
+.room-fixture[data-station=facilities] .room-sprite{background-position-x:calc(100% * 6 / 11)}
+.room-fixture[data-station=range] .room-sprite{background-position-x:calc(100% * 7 / 11)}
+.room-water{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.room-kelp,.room-air{position:absolute;aspect-ratio:1}
+.room-kelp{width:clamp(30px,5vw,64px);background-position-x:calc(100% * 8 / 11);animation:kelp-sway 2.8s steps(1) infinite}
+.room-air{width:18px;bottom:-20px;opacity:.38;background-position-x:100%;animation:room-air-rise 16s linear infinite}
+@keyframes kelp-sway{25%,75%{background-position-x:calc(100% * 9 / 11)}50%{background-position-x:calc(100% * 10 / 11)}}
+@keyframes room-air-rise{0%{bottom:-20px;translate:0}50%{translate:6px}100%{bottom:100%;translate:0}}
+@media(prefers-reduced-motion:reduce){.room-kelp,.room-air{animation:none}}

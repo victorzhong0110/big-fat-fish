@@ -113,8 +113,15 @@ function drawDistilled(ctx,x,y,pose){
  if(!pose.flash){off.globalCompositeOperation='source-atop';off.fillStyle='#6B7BFF';off.fillRect(0,0,96,96);off.globalCompositeOperation='source-over';}
  ctx.save();ctx.globalAlpha*=pose.flash?1:0.65;ctx.drawImage(distilledCanvas,Math.round(x-48),Math.round(y-48));ctx.restore();
 }
-/** @param {CanvasRenderingContext2D} ctx @param {{x:number;y:number;scale:number}} camera @param {number} width @param {number} height @param {{width:number;height:number}} map */
-function drawSeabed(ctx,camera,width,height,map){
+// Native frames are 32px square, shared with the room fixtures and target range.
+const propFrames={coral:0,crate:1,chest:2,openChest:3,blindBox:4,openCrate:5,grass:8,bubble:11};
+let reefAtlas=/** @type {HTMLImageElement|null} */(null), caustics=/** @type {HTMLImageElement|null} */(null);
+/** @param {CanvasRenderingContext2D} ctx @param {number} frame @param {number} x @param {number} y @param {number} size */
+function prop(ctx,frame,x,y,size){
+ if(reefAtlas?.naturalWidth)ctx.drawImage(reefAtlas,frame*32,0,32,32,Math.round(x-size/2),Math.round(y-size/2),size,size);
+}
+/** @param {CanvasRenderingContext2D} ctx @param {{x:number;y:number;scale:number}} camera @param {number} width @param {number} height @param {{width:number;height:number}} map @param {number} tick */
+function drawSeabed(ctx,camera,width,height,map,tick){
  const colors=['#14384A','#163D4E','#184556'];
  const left=Math.max(0,Math.floor(camera.x/32)*32),top=Math.max(0,Math.floor(camera.y/32)*32);
  const right=Math.min(map.width,camera.x+width/camera.scale+32),bottom=Math.min(map.height,camera.y+height/camera.scale+32);
@@ -123,6 +130,27 @@ function drawSeabed(ctx,camera,width,height,map){
   if(h%5===0){ctx.fillStyle='#1C4C5A';ctx.fillRect(tx+(h%14),ty+10+((h>>3)%12),12,2);ctx.fillRect(tx+((h>>5)%12),ty+22,8,2);}
   if(h%23===0){const bx=tx+8+(h%14),by=ty+8+((h>>4)%12);ctx.fillStyle='#245868';ctx.fillRect(bx,by,4,4);ctx.fillStyle=colors[h%3];ctx.fillRect(bx+1,by+1,2,2);}
  }
+ if(typeof Image==='undefined')return;
+ if(!reefAtlas){reefAtlas=new Image();reefAtlas.src='./art/props/reef-atlas.png';caustics=new Image();caustics.src='./art/props/caustics.png';}
+ ctx.save();
+ const cell=256;
+ const driftX=Math.floor(tick/16)%cell,driftY=Math.floor(tick/29)%cell;
+ if(caustics?.naturalWidth){
+  ctx.globalAlpha=.055;
+  for(let y=Math.floor((top-driftY)/cell)*cell+driftY;y<bottom;y+=cell)
+   for(let x=Math.floor((left-driftX)/cell)*cell+driftX;x<right;x+=cell)ctx.drawImage(caustics,x,y,cell,cell);
+ }
+ for(let y=Math.floor((top-32)/cell)*cell;y<bottom+32;y+=cell){
+  for(let x=Math.floor((left-32)/cell)*cell;x<right+32;x+=cell){
+   const seed=fxHash(x+','+y)>>>0;
+   ctx.globalAlpha=.68;
+   const sway=[0,1,2,1][Math.floor((tick+seed)/36)%4];
+   prop(ctx,propFrames.grass+sway,x+25+seed%200,y+52+(seed>>>8)%160,36);
+   ctx.globalAlpha=.33;
+   prop(ctx,propFrames.bubble,x+30+(seed>>>6)%194+Math.sin((tick+seed)/95)*4,y+cell-((tick/4+seed)%cell),13);
+  }
+ }
+ ctx.restore();
 }
 /** @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y @param {number} w @param {number} h @param {string} fill */
 function pixelBlock(ctx,x,y,w,h,fill){ctx.fillStyle='#111';ctx.fillRect(x-2,y-2,w+4,h+4);ctx.fillStyle=fill;ctx.fillRect(x,y,w,h);}
@@ -130,16 +158,11 @@ function pixelBlock(ctx,x,y,w,h,fill){ctx.fillStyle='#111';ctx.fillRect(x-2,y-2,
 function pixelLabel(ctx,x,y,text){ctx.font=`12px ${PIXEL_FONT}`;ctx.textAlign='center';ctx.fillStyle='#111';ctx.fillText(text,x+1,y+1);ctx.fillStyle='#F4EFE0';ctx.fillText(text,x,y);}
 /** @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y @param {number} radius */
 function drawCoral(ctx,x,y,radius){
- const r=Math.max(18,radius);
- pixelBlock(ctx,x-r*.15,y-r*.05,r*.7,r*.85,'#1D6A52');
- pixelBlock(ctx,x-r*.72,y+r*.08,r*.42,r*.5,'#248F68');
- pixelBlock(ctx,x+r*.28,y-r*.42,r*.32,r*.48,'#166B4E');
+ prop(ctx,propFrames.coral,x,y,Math.max(32,radius*2));
 }
 /** @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y @param {boolean} open */
 function drawCrate(ctx,x,y,open){
- pixelBlock(ctx,x-18,y-14,36,28,open?'#6B5344':'#C4A574');
- ctx.fillStyle='#111';ctx.fillRect(x-2,y-12,4,24);ctx.fillRect(x-16,y-2,32,4);
- if(!open){ctx.fillStyle='#8A6230';ctx.fillRect(x-12,y-10,8,5);}
+ prop(ctx,open?propFrames.openCrate:propFrames.crate,x,y,44);
 }
 /** @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y @param {boolean} lit @param {number} tick */
 function drawBuoy(ctx,x,y,lit,tick){
@@ -150,7 +173,7 @@ function drawBuoy(ctx,x,y,lit,tick){
 /** @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y @param {string} fill */
 function drawShell(ctx,x,y,fill){pixelBlock(ctx,x-8,y-3,16,10,fill);ctx.fillStyle='#111';ctx.fillRect(x-5,y,10,2);ctx.fillRect(x-1,y-1,2,6);}
 /** @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y */
-function drawBlindBox(ctx,x,y){pixelBlock(ctx,x-12,y-10,24,22,'#5B7CFF');pixelBlock(ctx,x-8,y-16,16,6,'#75D7ED');ctx.fillStyle='#111';ctx.fillRect(x-2,y-6,4,10);ctx.fillRect(x-6,y-2,12,4);}
+function drawBlindBox(ctx,x,y){prop(ctx,propFrames.blindBox,x,y,34);}
 /** @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y @param {boolean} rare */
 function drawWeaponDrop(ctx,x,y,rare){pixelBlock(ctx,x-16,y-5,28,12,rare?'#F4B77F':'#75D7ED');pixelBlock(ctx,x+8,y-9,8,8,'#F4EFE0');}
 /** @param {CanvasRenderingContext2D} ctx @param {number} x @param {number} y @param {number} radius @param {number} progress @param {number} required @param {number} tick */
@@ -207,7 +230,7 @@ export function renderPreviewFrame(ctx,view,width,height,pixelRatio,popups=[]) {
   ctx.fillStyle='#0F2C3D';ctx.fillRect(0,0,width,height);
   ctx.save();if(shake.x||shake.y)ctx.translate(shake.x,shake.y);ctx.scale(camera.scale,camera.scale);ctx.translate(-camera.x,-camera.y);
   const hud=/** @type {{map:{width:number;height:number};invulnerable:boolean;aim:{x:number;y:number};rice:number;skillId?:string;skillTemplateId?:string;skillCooldown?:number;aimDistance?:number;overclock?:boolean}} */ (view.hud);
-  drawSeabed(ctx,camera,width,height,hud.map);
+  drawSeabed(ctx,camera,width,height,hud.map,view.tick);
   ctx.strokeStyle='#1E4A58';ctx.lineWidth=3;ctx.strokeRect(1,1,hud.map.width-2,hud.map.height-2);
   drawPresentationEffects(ctx,false);
   const fish=view.entities.find(e=>e.kind==='player'),skillTemplate=hud.skillTemplateId??hud.skillId??'';if(fish&&['skill_batch','skill_sandbox'].includes(skillTemplate)&&Number(hud.skillCooldown??0)<=0&&['exploring','boss'].includes(view.phase)){const distance=hud.aimDistance??400,cx=Math.max(0,Math.min(hud.map.width,fish.position.x+hud.aim.x*distance)),cy=Math.max(0,Math.min(hud.map.height,fish.position.y+hud.aim.y*distance));ctx.strokeStyle='#e1ddbc55';ctx.setLineDash([5,7]);ctx.beginPath();ctx.arc(cx,cy,skillTemplate==='skill_batch'?130:160,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
@@ -256,7 +279,7 @@ export function renderPreviewFrame(ctx,view,width,height,pixelRatio,popups=[]) {
     if(entity.spriteId==='world_extraction'){drawExtractionPillar(ctx,x,y,entity.radius,entity.objectiveProgress??0,entity.objectiveRequired??180,view.tick);continue;}
     if(entity.spriteId==='world_gate'){const open=entity.unlocked===true;pixelBlock(ctx,x-34,y-28,12,64,open?'#8EE0A8':'#6B5344');pixelBlock(ctx,x+22,y-28,12,64,open?'#8EE0A8':'#6B5344');pixelBlock(ctx,x-34,y-40,68,14,open?'#C4A574':'#5C4632');pixelLabel(ctx,x,y+52,entity.modelLabel??(open?'首领入口 · F':'完成任意两个目标'));continue;}
     if(entity.spriteId.startsWith('easter_')){const consoleEgg=entity.spriteId==='easter_console';if(consoleEgg){pixelBlock(ctx,x-14,y-12,28,22,entity.opened?'#245868':'#1A3A8A');ctx.fillStyle='#75D7ED';ctx.fillRect(x-8,y-6,16,2);ctx.fillRect(x-8,y-1,10,2);}else if(entity.spriteId==='easter_lunchbox')drawCrate(ctx,x,y,entity.opened===true);else drawShell(ctx,x,y,entity.opened?'#6B8F78':'#F4EFE0');const labels=/** @type {Record<string,string>} */({easter_chair:'坐下 · F',easter_note:'留言 · F',easter_lunchbox:'找齐留言 · F',easter_console:'蓝屏彩蛋 · F',easter_interface:entity.modelLabel??'射击接口'});pixelLabel(ctx,x,y+32,entity.opened?'已发现':labels[entity.spriteId]??'秘密');continue;}
-    if(entity.spriteId==='world_cache'){drawCrate(ctx,x,y,entity.opened===true);pixelLabel(ctx,x,y+36,entity.opened?'已打开':entity.modelLabel??'补给箱 · F');continue;}
+    if(entity.spriteId==='world_cache'){prop(ctx,entity.opened?propFrames.openChest:propFrames.chest,x,y,48);pixelLabel(ctx,x,y+36,entity.opened?'已打开':entity.modelLabel??'补给箱 · F');continue;}
     if(entity.spriteId==='claude_seal'){ctx.strokeStyle='#db967c';ctx.lineWidth=3;ctx.strokeRect(x-17,y-17,34,34);ctx.fillStyle='#e8c6a3';ctx.font=`12px ${PIXEL_FONT}`;ctx.textAlign='center';ctx.fillText(`${Math.ceil(entity.hp)}击`,x,y+5);continue;}
     if(entity.spriteId==='world_blast'){ctx.strokeStyle='#eebd82';ctx.fillStyle='#f8c47622';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,entity.radius,0,Math.PI*2);ctx.fill();ctx.stroke();continue;}
     if(entity.id.startsWith('rescue:')){const lines={'companion_patch':['封禁装置把我卡在这里了。','分我一口大白饭，我跟你走。'],'companion_cache':['两个箱子我都看见了。','分我一口，我帮你记路。'],'companion_router':['你已经摸到两把接口了。','分我一口，我帮你换着打。'],'companion_decoy':['刚才那次重置被你拆穿了。','分我一口，我留个替身给你。']};const pair=entity.spriteId==='companion_patch'?lines.companion_patch:entity.spriteId==='companion_cache'?lines.companion_cache:entity.spriteId==='companion_router'?lines.companion_router:entity.spriteId==='companion_decoy'?lines.companion_decoy:['我有点虚。','分我一口大白饭。'];const riceHud=Number(/** @type {{rice?:number}|null} */(view.hud&&typeof view.hud==='object'&&!Array.isArray(view.hud)?view.hud:null)?.rice??0);const line=riceHud<1&&!view.entities.some(other=>other.spriteId==='riceXp'&&Math.hypot(other.position.x-x,other.position.y-y)<=96)?'先去捡一口大白饭。':pair[Math.floor(view.tick/120)%2];ctx.globalAlpha=.6;drawActor(ctx,entity.spriteId==='companion_patch'?'claude':entity.spriteId==='companion_router'?'grok':'deepseek',x,y,52,{tick:view.tick,moving:false,attacking:false,facing:0,horizontal:1,hopPhase:16},entity);ctx.globalAlpha=1;ctx.fillStyle='#0c2530ee';ctx.fillRect(x-78,y-58,156,22);ctx.fillStyle='#f4efe0';ctx.font=`12px ${PIXEL_FONT}`;ctx.textAlign='center';ctx.fillText(line,x,y-43);continue;}
