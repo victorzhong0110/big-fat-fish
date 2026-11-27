@@ -3,26 +3,39 @@ import { deriveWeaponStats } from '../domain/stats.js';
 import { planNativeProjectiles } from '../domain/projectiles.js';
 
 /** Display-only arcade prizes and paired firing lanes. Gameplay owns the candidates and equipped slots. */
-const prizes=['parallel','local_deploy','quant_int4','rollback_emergency','batch','compress','cache','retry','temperature','collect','cooldown','offload','keepalive','redirect','backoff','distill','5h','failover','sandbox','hallucination','chain','context','hotplug','guard','prefill','toolchain','mirror','recursion','moe','speculate','window','agent','breaker'];
+const prizes=['plugin_parallel','plugin_local_deploy','plugin_quant_int4','plugin_rollback_emergency','plugin_batch','plugin_compress','plugin_cache','plugin_retry','plugin_temperature','plugin_collect','plugin_cooldown','plugin_offload','plugin_keepalive','plugin_redirect','plugin_backoff','plugin_distill','plugin_5h','plugin_failover','plugin_sandbox','plugin_hallucination','plugin_chain','plugin_context','plugin_hotplug','plugin_guard','plugin_prefill','plugin_toolchain','plugin_mirror','plugin_recursion','plugin_moe','plugin_speculate','plugin_window','plugin_agent','plugin_breaker'];
+
+/** Resolve a prize toy by plugin id. Catalog order and rarity never choose the cell.
+ * @calls 无内部公开函数。
+ * @param {import('../contracts.d.ts').Definition} definition
+ * @param {number} rank
+ * @returns {{cell:number|'generic';rarity:string;badge:string;name:string;effect:string}}
+ */
+export function resolvePrizePresentation(definition,rank){
+  const index=prizes.indexOf(definition.id);
+  const rarity=String(definition.parameters.rarity??'common');
+  const descriptions=/** @type {readonly string[]|undefined} */(definition.parameters.rankDescriptions);
+  return {cell:index>=0?index:'generic',rarity,badge:rarity==='legendary'?'棱彩':rarity==='advanced'?'黄金':'白银',name:`${definition.displayName} · ${rank}级`,effect:String(descriptions?.[rank-1]??'')};
+}
 
 /** Create a toy, rarity-specific pedestal and aligned description from one live candidate.
- * @calls 无内部公开函数。
+ * @calls preview/arcadePanels.js#resolvePrizePresentation
  * @param {import('../contracts.d.ts').Definition} definition
  * @param {number} rank
  * @returns {HTMLButtonElement}
  */
 export function createPrizeButton(definition,rank){
+  const prize=resolvePrizePresentation(definition,rank);
   const button=document.createElement('button');button.type='button';button.className='prize-button';
-  const rarity=String(definition.parameters.rarity??'common');
-  button.dataset.rarity=rarity;button.dataset.pluginId=definition.id;
+  button.dataset.rarity=prize.rarity;button.dataset.pluginId=definition.id;button.dataset.prizeCell=String(prize.cell);
   const display=document.createElement('span');display.className='prize-display';
   const toy=document.createElement('i'),stand=document.createElement('i'),badge=document.createElement('b');
-  toy.className='prize-toy';toy.ariaHidden='true';stand.className='prize-stand';stand.ariaHidden='true';badge.className='prize-grade';
-  const index=prizes.indexOf(definition.id.replace(/^plugin_/,''));if(index>=0)toy.style.backgroundPosition=`${index%6*20}% ${Math.floor(index/6)*20}%`;
-  badge.textContent=rarity==='legendary'?'棱彩':rarity==='advanced'?'黄金':'白银';
+  toy.className=prize.cell==='generic'?'prize-toy generic':'prize-toy';toy.ariaHidden='true';stand.className='prize-stand';stand.ariaHidden='true';badge.className='prize-grade';
+  if(typeof prize.cell==='number')toy.style.backgroundPosition=`${prize.cell%6*20}% ${Math.floor(prize.cell/6)*20}%`;
+  badge.textContent=prize.badge;
   display.append(stand,toy,badge);
-  const name=document.createElement('strong');name.textContent=`${definition.displayName} · ${rank}级`;
-  const desc=document.createElement('small');desc.textContent=String(/** @type {readonly string[]} */(definition.parameters.rankDescriptions??[])[rank-1]??'');
+  const name=document.createElement('strong');name.textContent=prize.name;
+  const desc=document.createElement('small');desc.textContent=prize.effect;
   button.append(display,name,desc);return button;
 }
 

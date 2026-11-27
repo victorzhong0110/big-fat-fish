@@ -1,6 +1,6 @@
 # 12 · 全部函数目录与调用契约
 
-当前127个JS模块、447个公开函数：407个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途、远征、无尽及同档解锁的探索，以及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
+当前127个JS模块、448个公开函数：408个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途、远征、无尽及同档解锁的探索，以及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
 
 调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。
 
@@ -3282,16 +3282,19 @@ Display-only arcade prizes and paired firing lanes. Gameplay owns the candidates
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
+| `resolvePrizePresentation(definition: untyped, rank: untyped)` | `{cell:number\|'generic';rarity:string;badge:string;name:string;effect:string}` | 已实现 | resolvePrizePresentation；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 | `createPrizeButton(definition: untyped, rank: untyped)` | `HTMLButtonElement` | 已实现 | createPrizeButton；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 | `createShotLane(label: untyped, state: untyped, weapon: untyped, catalog: untyped)` | `HTMLElement` | 已实现 | createShotLane；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
-- `createPrizeButton` → 无内部公开函数。
+- `resolvePrizePresentation` → 无内部公开函数。
+- `createPrizeButton` → `preview/arcadePanels.js#resolvePrizePresentation`。
 - `createShotLane` → `domain/projectiles.js#planNativeProjectiles`、`domain/stats.js#deriveWeaponStats`。
 
 公开函数上游：
 
+- `resolvePrizePresentation` ← `preview/arcadePanels.js#createPrizeButton`。
 - `createPrizeButton` ← `preview/host.js#mountCombatPreview`。
 - `createShotLane` ← `preview/host.js#mountCombatPreview`。
 

@@ -12038,6 +12038,27 @@
       ],
       "functions": [
         {
+          "description": "resolvePrizePresentation",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "resolvePrizePresentation",
+          "args": [
+            {
+              "name": "definition",
+              "type": "untyped"
+            },
+            {
+              "name": "rank",
+              "type": "untyped"
+            }
+          ],
+          "result": "{cell:number|'generic';rarity:string;badge:string;name:string;effect:string}",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
           "description": "createPrizeButton",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
@@ -12056,7 +12077,9 @@
           ],
           "result": "HTMLButtonElement",
           "implementation": "implemented",
-          "calls": []
+          "calls": [
+            "preview/arcadePanels.js#resolvePrizePresentation"
+          ]
         },
         {
           "description": "createShotLane",
@@ -13625,8 +13648,8 @@
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
     "modules": 127,
-    "functions": 447,
-    "implemented": 407,
+    "functions": 448,
+    "implemented": 408,
     "placeholders": 40
   }
 }

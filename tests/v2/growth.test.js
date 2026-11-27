@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { loadContentCatalog } from '../../src/v2/content/catalog.js';
 import { createInitialGameState } from '../../src/v2/domain/initial.js';
+import { createGameSession, readSessionState, disposeGameSession } from '../../src/v2/engine/session.js';
 import { resolveDifficultySnapshot } from '../../src/v2/domain/difficulty.js';
 import { createEntityState } from '../../src/v2/domain/entities.js';
 import { advancePreviewWorldTick, advancePreviewUiCommands } from '../../src/v2/engine/previewTick.js';
@@ -53,6 +54,21 @@ describe('connected XP and plugin progression',()=>{
  });
  it('does not offer capped plugins again and offers replacements when all six slots are full',()=>{
   const s=gain();s.flow.choice=null;s.plugins=['plugin_collect','plugin_guard','plugin_5h','plugin_distill','plugin_compress','plugin_parallel'].map(id=>plugin(id,2));const choice=createPluginChoice(ctx(s),s.flow.queuedLevelRewards[0]).value.choice;expect(choice.candidates).toHaveLength(3);expect(choice.candidates.every(c=>!s.plugins.some(p=>p.id===c.id))).toBe(true);s.flow.choice=choice;expect(planPluginSkip(ctx(s),ui(s,'SkipPlugin')).changes.length).toBeGreaterThan(0);
+ });
+ it('upgrades the fourth Benchmark 1 card in place on the next reachable reward',()=>{
+  const session=createGameSession({runtimeProfile:'adventure-slice',runId:'growth:benchmark-1',treeNodeIds:['tree_dsh_a'],dsh:[{id:'dsh_gpt_preview',options:{}}],difficulty:resolveDifficultySnapshot({mode:'short',difficulty:1},catalog).value,loadout:{weapons:[{instanceId:'bubble',definitionId:'mcp_bubble',originalQuality:0,cooldown:0,temporaryQuality:null,updateExpiresAt:null}],activeWeaponIndex:0,skillId:'skill_disconnect',skillCooldown:0,companionId:'companion_rice',companionCooldown:0,dashCooldown:0}},7,catalog);
+  let s=readSessionState(session);disposeGameSession(session);
+  const feed=amount=>{const id=`rice:${s.level}:${s.xpRemainder}`;s.world.pickups[id]={id,kind:'riceXp',amount,position:{...s.world.entities.fish.position},collected:false,instanceId:null};s=advancePreviewWorldTick(s,[],catalog).next;};
+  feed(30);
+  expect(s.flow.choice.candidates).toEqual([{id:'plugin_distill',rank:1},{id:'plugin_quant_int4',rank:1},{id:'plugin_cooldown',rank:1},{id:'plugin_backoff',rank:1}]);
+  const owned=s.plugins.map(item=>({...item}));
+  s=advancePreviewUiCommands(s,[ui(s,'SelectPlugin',{optionId:'plugin_backoff'})],catalog).next;
+  expect(s.plugins.filter(item=>item.id!=='plugin_backoff')).toEqual(owned);expect(s.plugins.find(item=>item.id==='plugin_backoff')).toEqual(plugin('plugin_backoff'));
+  for(let step=0;s.flow.phase!=='pluginChoice'&&step<4;step++)feed(20+10*s.level);
+  expect(s.flow.choice.level).toBe(4);expect(s.flow.choice.candidates.find(item=>item.id==='plugin_backoff')).toEqual({id:'plugin_backoff',rank:2});
+  const before=s.plugins.filter(item=>item.id!=='plugin_backoff');
+  s=advancePreviewUiCommands(s,[ui(s,'SelectPlugin',{optionId:'plugin_backoff'})],catalog).next;
+  expect(s.plugins.find(item=>item.id==='plugin_backoff')).toEqual(plugin('plugin_backoff',2));expect(s.plugins.filter(item=>item.id!=='plugin_backoff')).toEqual(before);
  });
  it('upgrades in place, preserves origin, and lowers distillation thresholds immediately',()=>{
   let s=gain();s.plugins=[plugin('plugin_distill')];s.distill.claude={stage:0,samples:5};s.flow.choice.candidates=[{id:'plugin_distill',rank:2}];s=apply(s,planPluginSelection(ctx(s),ui(s,'SelectPlugin',{optionId:'plugin_distill'})));expect(s.plugins).toEqual([plugin('plugin_distill',2)]);expect(s.distill.claude).toEqual({stage:2,samples:1});
