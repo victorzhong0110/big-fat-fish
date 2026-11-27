@@ -84,6 +84,40 @@ export function planAchievementUnlock(profile,event,catalog){
  return {ok:true,value:{expectedRevision:profile.revision,next:{...structuredClone(profile),revision:profile.revision+1,unlockLedger:[...profile.unlockLedger,a.ledgerId]},events:[{...event,id:`${event.runId}:${a.ledgerId}`,type:'AchievementUnlocked',payload:{achievementId:a.id,name:a.name}}]}};
 }
 
+const bossBase = { claude: 'dsh_claude_appeal', gpt: 'dsh_gpt_preview', grok: 'dsh_grok_license' };
+
+/** Names this run can prove from its own ledger entries. Another run's collection stays off the receipt.
+ * @calls 无内部公开函数。
+ * @param {import('../../contracts.d.ts').Profile} profile
+ * @param {import('../../contracts.d.ts').Id} runId
+ * @param {Readonly<import('../../contracts.d.ts').ContentCatalog>} catalog
+ * @returns {string[]}
+ */
+export function runReceiptStamps(profile, runId, catalog) {
+  /** @type {string[]} */
+  const names = [];
+  const seen = new Set();
+  const add = (/** @type {string|undefined} */ name) => { if (name && !seen.has(name)) { seen.add(name); names.push(name); } };
+  const discoveryPrefix = `discovery:discovery:${runId}:`;
+  for (const entry of profile.discoveryLedger) {
+    if (!entry.startsWith(discoveryPrefix)) continue;
+    const definitionId = entry.slice(discoveryPrefix.length);
+    const alreadyCollected = profile.discoveryLedger.some(other => other !== entry && other.endsWith(`:${definitionId}`) && !other.startsWith(discoveryPrefix));
+    if (!alreadyCollected) add(catalog.definitions[definitionId]?.displayName);
+  }
+  const bossPrefix = `boss:${runId}:`;
+  for (const entry of profile.unlockLedger) {
+    if (!entry.startsWith(bossPrefix)) continue;
+    const faction = /** @type {keyof typeof bossBase|undefined} */ (['claude', 'gpt', 'grok'].find(name => entry.slice(bossPrefix.length).includes(name)));
+    if (!faction) continue;
+    const earlier = profile.unlockLedger.some(other => other.startsWith('boss:') && !other.startsWith(bossPrefix) && other.includes(faction));
+    if (earlier) continue;
+    const id = bossBase[faction];
+    if (profile.unlockedDsh.includes(id)) add(catalog.definitions[id]?.displayName);
+  }
+  return names;
+}
+
 /** Record only the exact cleared Benchmark in the profile for the active Endless run.
  * @calls 无内部公开函数。
  * @param {import('../../contracts.d.ts').Profile} profile

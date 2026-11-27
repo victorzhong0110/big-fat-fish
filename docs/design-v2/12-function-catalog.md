@@ -1,6 +1,6 @@
 # 12 · 全部函数目录与调用契约
 
-当前127个JS模块、448个公开函数：408个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途、远征、无尽及同档解锁的探索，以及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
+当前127个JS模块、453个公开函数：413个有实现，40个明确TODO。core-preview为Free练习，adventure-slice为正式Free引导、原版及隔离模组档的1–15短途、远征、无尽及同档解锁的探索，以及已解锁API；均不能当完整规格已完成。参见[进度与边界](13-development-status.md)。
 
 调用图包含模块私有辅助函数转达的公开调用。TODO列出预定契约；已实现函数列出真实公开依赖。dispatch按内容ID选分支；顺序仍受适用条件约束。
 
@@ -1482,6 +1482,7 @@ Current drift uses effective ticks and the normal body solver; native dash/root/
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
+| `introducedMechanics(catalog: untyped, level: untyped)` | `readonly MechanicDefinition[]` | 已实现 | introducedMechanics；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 | `resolveDifficultySnapshot(request: untyped, catalog: untyped)` | `Result<DifficultySnapshot>` | 已实现 | 一次性解析0–15/API、静态倍率、完整累计机制和独立Pro福利。；API使用M(15)；常驻机制不能轮换丢失；Pro自带5h仅1–5。；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `resolveModelProfileId(difficulty: untyped, faction: untyped, random: untyped)` | `Result<{ profileId: Id; next: RandomState }>` | 已实现 | 选择Haiku/Sonnet/Opus/Fable或Mythos及Astra/Sol/Terra/Luna对应阶段。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `resolveApiSpawnMultipliers(elapsedTicks: untyped)` | `Result<{ hp: number; damage: number; budget: number }>` | 已实现 | 按出生时API有效分钟计算强化，检查数值溢出；不突然给活敌加血。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
@@ -1489,6 +1490,7 @@ Current drift uses effective ticks and the normal body solver; native dash/root/
 
 公开函数下游：
 
+- `introducedMechanics` → 无内部公开函数。
 - `resolveDifficultySnapshot` → 无内部公开函数。
 - `resolveModelProfileId` → `domain/random.js#drawRandom`。
 - `resolveApiSpawnMultipliers` → 无内部公开函数。
@@ -1496,8 +1498,9 @@ Current drift uses effective ticks and the normal body solver; native dash/root/
 
 公开函数上游：
 
+- `introducedMechanics` ← `preview/host.js#mountCombatPreview`。
 - `resolveDifficultySnapshot` ← `application/game.js#startAdventure`、`application/nest.js#prepareAdventureStart`、`engine/shootingRange.js#createShootingRange`、`preview/host.js#mountCombatPreview`。
-- `resolveModelProfileId` ← `domain/world/spawning.js#planEnemySpawn`。
+- `resolveModelProfileId` ← `domain/world/spawning.js#planEnemySpawn`、`preview/host.js#mountCombatPreview`。
 - `resolveApiSpawnMultipliers` ← `domain/difficulty.js#resolveSurvivalSpawnMultipliers`。
 - `resolveSurvivalSpawnMultipliers` ← `domain/bosses/gpt.js#planGptBoss`、`domain/world/api.js#planApiBossEncounter`、`domain/world/spawning.js#planEnemySpawn`、`domain/world/spawning.js#planReinforcementGroup`。
 
@@ -2093,6 +2096,8 @@ Active rank, never an archived or difficulty-independent duplicate.
 | `planPermanentUnlock(profile: untyped, definitionId: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 已发现且满足设施时购买武器/技能出发选择权，不赠高品质实例。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planDshEquipment(profile: untyped, slots: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 校验拥有/重复/槽数/选项，只在小窝更换，不改当前出发快照。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `isDifficultyUnlocked(profile: untyped, mode: untyped, level: untyped)` | `boolean` | 已实现 | isDifficultyUnlocked；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `describeDifficultyAccess(profile: untyped, mode: untyped, level: untyped)` | `{playable:boolean, reason:string}` | 已实现 | describeDifficultyAccess；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `offersApiDeparture(profile: untyped, mode: untyped)` | `boolean` | 已实现 | offersApiDeparture；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 | `validateStartRequest(profile: untyped, request: untyped, catalog: untyped)` | `ValidationReport` | 已实现 | 检查模式/难度/武器/伙伴/设施和活动存档覆盖确认。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planResidentRescue(profile: untyped, companionId: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | planResidentRescue；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
@@ -2102,6 +2107,8 @@ Active rank, never an archived or difficulty-independent duplicate.
 - `planPermanentUnlock` → 无内部公开函数。
 - `planDshEquipment` → `domain/profile/tree.js#resolveDshSlotCount`。
 - `isDifficultyUnlocked` → 无内部公开函数。
+- `describeDifficultyAccess` → `domain/profile/nest.js#isDifficultyUnlocked`。
+- `offersApiDeparture` → `domain/profile/nest.js#isDifficultyUnlocked`。
 - `validateStartRequest` → `domain/profile/nest.js#isDifficultyUnlocked`。
 - `planResidentRescue` → 无内部公开函数。
 
@@ -2110,7 +2117,9 @@ Active rank, never an archived or difficulty-independent duplicate.
 - `planFacilityPurchase` ← `application/game.js#submitNestAction`、`application/nest.js#executeNestAction`。
 - `planPermanentUnlock` ← `application/game.js#submitNestAction`、`application/nest.js#executeNestAction`。
 - `planDshEquipment` ← `application/game.js#submitNestAction`、`application/nest.js#executeNestAction`。
-- `isDifficultyUnlocked` ← `domain/profile/nest.js#validateStartRequest`、`preview/host.js#mountCombatPreview`。
+- `isDifficultyUnlocked` ← `domain/profile/nest.js#describeDifficultyAccess`、`domain/profile/nest.js#offersApiDeparture`、`domain/profile/nest.js#validateStartRequest`。
+- `describeDifficultyAccess` ← `preview/host.js#mountCombatPreview`。
+- `offersApiDeparture` ← `preview/host.js#mountCombatPreview`。
 - `validateStartRequest` ← `application/game.js#startAdventure`、`application/nest.js#prepareAdventureStart`。
 - `planResidentRescue` ← `application/nest.js#executeNestAction`。
 
@@ -2157,7 +2166,8 @@ Active rank, never an archived or difficulty-independent duplicate.
 | `planBossUnlock(profile: untyped, event: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 数字难度首领触发DSH里程碑；API不发数字成就或为每阶段堆永久账本，仅保留Grok居民事实。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planEasterUnlock(profile: untyped, event: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | LoRA/饭点/摸鱼等定义条件的唯一永久解锁计划，不需已开槽。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planAchievementUnlock(profile: untyped, event: untyped, catalog: untyped)` | `Result<ProfilePlan>` | 已实现 | 校验正式冒险的真实有效期重置事件，永久幂等解锁“这是哪个‘重置’？”，不发资源，练习事件拒绝。；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
-| `planEndlessClear(profile: untyped, event: untyped)` | `Result<ProfilePlan>` | 已实现 | planEndlessClear；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `runReceiptStamps(profile: untyped, runId: untyped, catalog: untyped)` | `string[]` | 已实现 | runReceiptStamps；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
+| `planEndlessClear(profile: untyped, event: untyped)` | `void` | 已实现 | planEndlessClear；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 
 公开函数下游：
 
@@ -2165,6 +2175,7 @@ Active rank, never an archived or difficulty-independent duplicate.
 - `planBossUnlock` → 无内部公开函数。
 - `planEasterUnlock` → 无内部公开函数。
 - `planAchievementUnlock` → 无内部公开函数。
+- `runReceiptStamps` → 无内部公开函数。
 - `planEndlessClear` → 无内部公开函数。
 
 公开函数上游：
@@ -2173,6 +2184,7 @@ Active rank, never an archived or difficulty-independent duplicate.
 - `planBossUnlock` ← `application/repository.js#mergePersistenceIntents`。
 - `planEasterUnlock` ← `application/repository.js#mergePersistenceIntents`。
 - `planAchievementUnlock` ← `application/repository.js#mergePersistenceIntents`。
+- `runReceiptStamps` ← `preview/host.js#mountCombatPreview`。
 - `planEndlessClear` ← `application/repository.js#mergePersistenceIntents`。
 
 ## domain/projectiles.js
@@ -2264,18 +2276,21 @@ Active rank, never an archived or difficulty-independent duplicate.
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
 | `planDeathRewards(context: untyped, records: untyped)` | `RewardPlan` | 已实现 / core-preview + adventure-slice | 幂等死亡经验/材料；API首领8碎片4零件，普通材料每分钟2碎片1零件，回响/召兵无额外收益。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
+| `explorationLootMultiplier(level: untyped)` | `number` | 已实现 | explorationLootMultiplier；；状态权限：只读输入、返回值/计划；不得写调用者状态 |
 | `planWorldReward(context: untyped, rewardId: untyped)` | `RewardPlan` | 已实现 / adventure-slice | 为当前信标/资源箱生成稳定ID的拾取物，永久收入由事务结算处理。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 | `planTokenCollection(context: untyped, pickupId: untyped)` | `SystemPlan` | 已实现 / core-preview | 只消费接触的大白饭/材料；装备走F和实例交换，不自动吸入、不变为资源。；；状态权限：只读输入，返回计划/值；不得修改调用者状态 |
 
 公开函数下游：
 
 - `planDeathRewards` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/random.js#drawRandom`、`domain/serialization.js#toJson`。
-- `planWorldReward` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
+- `explorationLootMultiplier` → 无内部公开函数。
+- `planWorldReward` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`、`domain/rewards.js#explorationLootMultiplier`。
 - `planTokenCollection` → `domain/plans.js#createEmptyPlan`、`domain/plans.js#createStateChange`。
 
 公开函数上游：
 
 - `planDeathRewards` ← `engine/tick.js#advanceWorldTick`。
+- `explorationLootMultiplier` ← `domain/rewards.js#planWorldReward`、`preview/host.js#mountCombatPreview`。
 - `planWorldReward` ← `domain/world/lateMechanics.js#planLateSchedule`、`domain/world/map.js#planWorldInteraction`、`domain/world/objectives.js#planObjectiveCompletion`。
 - `planTokenCollection` ← `engine/effectLoop.js#evaluateEffectRequest`。
 
@@ -3353,7 +3368,7 @@ Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,
 
 [源码](../../src/v2/preview/host.js)；层：`host`。
 
-直接依赖：`adapters/storage.js`、`application/modProfile.js`、`application/nest.js`、`application/repository.js`、`content/catalog.js`、`content/registry.js`、`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/checkpoint.js`、`domain/clock.js`、`domain/difficulty.js`、`domain/dshCycle.js`、`domain/modScope.js`、`domain/profile/nest.js`、`domain/random.js`、`domain/settlement.js`、`domain/stats.js`、`domain/world/api.js`、`domain/world/extraction.js`、`domain/world/regionRules.js`、`engine/session.js`、`preview/arcadePanels.js`、`preview/benchmarkStage.js`、`preview/modManager.js`、`preview/nestManager.js`、`preview/view.js`。
+直接依赖：`adapters/storage.js`、`application/modProfile.js`、`application/nest.js`、`application/repository.js`、`content/achievements.js`、`content/catalog.js`、`content/registry.js`、`content/skillCapabilities.js`、`content/weaponCapabilities.js`、`domain/checkpoint.js`、`domain/clock.js`、`domain/difficulty.js`、`domain/dshCycle.js`、`domain/modScope.js`、`domain/profile/nest.js`、`domain/profile/unlocks.js`、`domain/random.js`、`domain/rewards.js`、`domain/settlement.js`、`domain/stats.js`、`domain/world/api.js`、`domain/world/extraction.js`、`domain/world/regionRules.js`、`engine/session.js`、`preview/arcadePanels.js`、`preview/benchmarkStage.js`、`preview/modManager.js`、`preview/nestManager.js`、`preview/view.js`。
 
 | 函数签名 | 返回 | 状态/范围 | 功能与约束 |
 |---|---|---|---|
@@ -3361,7 +3376,7 @@ Mount the opt-in browser preview. Storage is an isolated single-key checkpoint,
 
 公开函数下游：
 
-- `mountCombatPreview` → `adapters/storage.js#createStoragePort`、`application/modProfile.js#createModProfileNamespace`、`application/modProfile.js#initializeModProfile`、`application/nest.js#prepareAdventureStart`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`application/repository.js#readProfileRepository`、`content/catalog.js#loadContentCatalog`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`content/skillCapabilities.js#listRuntimeSkills`、`content/weaponCapabilities.js#listRuntimeWeapons`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/checkpoint.js#canCreateCheckpoint`、`domain/checkpoint.js#createCheckpoint`、`domain/clock.js#createClockState`、`domain/clock.js#resumeClock`、`domain/clock.js#scheduleFrame`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/dshCycle.js#readDshCycleTimers`、`domain/modScope.js#scopePersistenceIntent`、`domain/profile/nest.js#isDifficultyUnlocked`、`domain/random.js#drawRandom`、`domain/settlement.js#createSettlement`、`domain/stats.js#derivePlayerStats`、`domain/world/api.js#canApiWithdraw`、`domain/world/extraction.js#canExtract`、`domain/world/extraction.js#extractionDuration`、`domain/world/regionRules.js#localWorldId`、`domain/world/regionRules.js#resolveExpeditionRoute`、`engine/session.js#createGameSession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#readSessionView`、`engine/session.js#restoreGameSession`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`preview/arcadePanels.js#createPrizeButton`、`preview/arcadePanels.js#createShotLane`、`preview/benchmarkStage.js#renderBenchmarkCast`、`preview/modManager.js#mountModManager`、`preview/nestManager.js#mountNestManager`、`preview/view.js#getPreviewCamera`、`preview/view.js#renderPreviewFrame`。
+- `mountCombatPreview` → `adapters/storage.js#createStoragePort`、`application/modProfile.js#createModProfileNamespace`、`application/modProfile.js#initializeModProfile`、`application/nest.js#prepareAdventureStart`、`application/repository.js#commitProfilePlan`、`application/repository.js#mergePersistenceIntents`、`application/repository.js#readProfileRepository`、`content/catalog.js#loadContentCatalog`、`content/catalog.js#validateContentCatalog`、`content/registry.js#createHandlerRegistry`、`content/skillCapabilities.js#listRuntimeSkills`、`content/weaponCapabilities.js#listRuntimeWeapons`、`content/weaponCapabilities.js#resolveWeaponTemplate`、`domain/checkpoint.js#canCreateCheckpoint`、`domain/checkpoint.js#createCheckpoint`、`domain/clock.js#createClockState`、`domain/clock.js#resumeClock`、`domain/clock.js#scheduleFrame`、`domain/difficulty.js#introducedMechanics`、`domain/difficulty.js#resolveDifficultySnapshot`、`domain/difficulty.js#resolveModelProfileId`、`domain/dshCycle.js#readDshCycleTimers`、`domain/modScope.js#scopePersistenceIntent`、`domain/profile/nest.js#describeDifficultyAccess`、`domain/profile/nest.js#offersApiDeparture`、`domain/profile/unlocks.js#runReceiptStamps`、`domain/random.js#drawRandom`、`domain/rewards.js#explorationLootMultiplier`、`domain/settlement.js#createSettlement`、`domain/stats.js#derivePlayerStats`、`domain/world/api.js#canApiWithdraw`、`domain/world/extraction.js#canExtract`、`domain/world/extraction.js#extractionDuration`、`domain/world/regionRules.js#localWorldId`、`domain/world/regionRules.js#resolveExpeditionRoute`、`engine/session.js#createGameSession`、`engine/session.js#disposeGameSession`、`engine/session.js#enqueueSessionCommand`、`engine/session.js#readSessionState`、`engine/session.js#readSessionView`、`engine/session.js#restoreGameSession`、`engine/session.js#stepSessionUi`、`engine/session.js#stepSessionWorld`、`preview/arcadePanels.js#createPrizeButton`、`preview/arcadePanels.js#createShotLane`、`preview/benchmarkStage.js#renderBenchmarkCast`、`preview/modManager.js#mountModManager`、`preview/nestManager.js#mountNestManager`、`preview/view.js#getPreviewCamera`、`preview/view.js#renderPreviewFrame`。
 
 公开函数上游：
 

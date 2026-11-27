@@ -7,6 +7,17 @@
 export const ENDLESS_STAGE_TICKS = 7200;
 import * as dependency2 from './random.js';
 
+/** 本档新增机制。战斗快照另用 1 到本档的累计集合。
+ * @calls 无内部公开函数。
+ * @param {Readonly<import('../contracts.d.ts').ContentCatalog>} catalog
+ * @param {number} level
+ * @returns {readonly import('../contracts.d.ts').MechanicDefinition[]}
+ */
+export function introducedMechanics(catalog, level){
+  if(!Number.isInteger(level)||level<1||level>15)return [];
+  return catalog.mechanics.filter(mechanic=>mechanic.unlockAt===level);
+}
+
 /**
  * 一次性解析0–15/API、静态倍率、完整累计机制和独立Pro福利。
  * 调用阶段：query；下游模式：sequence。

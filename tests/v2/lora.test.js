@@ -55,6 +55,14 @@ describe('V2 LoRA training domain', () => {
     expect(game.lora.modifiers[0]).toMatchObject({ stat: 'armor', value: -1 }); expect(game.lora.underfitRemaining).toBe(8); expect(game.lora.overfitRemaining).toBe(0);
     expect(deriveWeaponStats(game, game.player.loadout.weapons[0], catalog()).damage).toBeCloseTo(9.6);
   });
+  it('confirms the four boundary pointer ticks without moving the world clock', () => {
+    for (const [ticks, result] of [[50, 'underfit'], [51, 'perfect'], [69, 'perfect'], [70, 'overfit']]) {
+      const confirmed = confirm(at(start(prepared('armor')), ticks));
+      expect(confirmed.plan.events[0].payload.result).toBe(result);
+      expect(confirmed.game.tick).toBe(0);
+      expect(confirmed.game.uiTick).toBe(ticks);
+    }
+  });
   it('times out after exactly 120 UI ticks, applies overfit, preserves native cooldown values and never touches world tick', () => {
     const game = at(start(prepared('damageMultiplier')), 120); expect(game.tick).toBe(0); expect(game.uiTick).toBe(120); expect(game.lora.active).toBeNull(); expect(game.lora.overfitRemaining).toBe(8); expect(game.lora.underfitRemaining).toBe(0); expect(game.player.loadout.skillCooldown).toBe(8); expect(game.lora.modifiers[0].value).toBe(-0.01);
   });

@@ -38,6 +38,16 @@ export function planDeathRewards(context, records) {
   return { plan: { ...createEmptyPlan(), changes,events,persistence }, rewardIds };
 }
 
+/** 探索宝箱与目标掉落倍率。敌方生命另读 resolveDifficultySnapshot。
+ * @calls 无内部公开函数。
+ * @param {number} level
+ * @returns {number}
+ */
+export function explorationLootMultiplier(level){
+  if(!Number.isInteger(level)||level<1||level>15)return 1;
+  return 1+(level-1)*0.1;
+}
+
 /**
  * 按stable rewardId发箱子/任务奖励，API分钟材料限额先校验。
  * 调用阶段：query；下游模式：sequence。
@@ -45,6 +55,7 @@ export function planDeathRewards(context, records) {
  * @implementationScope adventure-slice
  * @calls domain/plans.js#createEmptyPlan
  * @calls domain/plans.js#createStateChange
+ * @calls domain/rewards.js#explorationLootMultiplier
  * @param {import('../contracts.d.ts').EvaluationContext} context
  * @param {import('../contracts.d.ts').Id} rewardId
  * @returns {import('../contracts.d.ts').RewardPlan}
@@ -58,7 +69,7 @@ export function planWorldReward(context, rewardId) {
   const level=Number(state.start.difficulty.level);
   const guardId=cache?.runtime.guardId;
   if (typeof guardId==='string'&&!state.world.entities[guardId]?.dead) return {plan:createEmptyPlan(),rewardIds:[]};
-  const multiplier=exploration?1+(level-1)*0.1:1;
+  const multiplier=exploration?explorationLootMultiplier(level):1;
   const amounts=objective?{riceXp:80,gpuFragment:2,part:3}:guardId?{riceXp:60,gpuFragment:8,part:5}:{riceXp:40,gpuFragment:5,part:2};
   const changes=[createStateChange('runtime',rewardId,'recordReward',{})];
   for(const [kind,amount]of Object.entries(amounts)){

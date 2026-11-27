@@ -73,6 +73,31 @@ export function isDifficultyUnlocked(profile, mode, level) {
   return ['short','expedition','endless'].includes(mode) && level<=profile.highestDifficulty+1;
 }
 
+/** 选择器与出发校验共用的可玩状态和解锁原因。
+ * @calls domain/profile/nest.js#isDifficultyUnlocked
+ * @param {import('../../contracts.d.ts').Profile} profile
+ * @param {import('../../contracts.d.ts').Mode} mode
+ * @param {number|'api'} level
+ * @returns {{playable:boolean, reason:string}}
+ */
+export function describeDifficultyAccess(profile, mode, level) {
+  if (isDifficultyUnlocked(profile, mode, level)) return { playable: true, reason: '' };
+  if (mode==='exploration' && typeof level==='number') return { playable: false, reason: `通关无尽 ${level} 后解锁` };
+  if (mode==='api') return { playable: false, reason: '通关 Benchmark 15 后解锁' };
+  if (typeof level==='number' && level>1) return { playable: false, reason: `通关 Benchmark ${level-1} 后解锁` };
+  return { playable: false, reason: '尚未解锁' };
+}
+
+/** API 只出现在剧情和三海域。无尽与探索继续用各自的数字档。
+ * @calls domain/profile/nest.js#isDifficultyUnlocked
+ * @param {import('../../contracts.d.ts').Profile} profile
+ * @param {import('../../contracts.d.ts').Mode} mode
+ * @returns {boolean}
+ */
+export function offersApiDeparture(profile, mode) {
+  return (mode==='short'||mode==='expedition') && isDifficultyUnlocked(profile, 'api', 'api');
+}
+
 /**
  * 检查模式/难度/武器/伙伴/设施和活动存档覆盖确认。
  * 调用阶段：query；下游模式：sequence。

@@ -5935,6 +5935,27 @@
       ],
       "functions": [
         {
+          "description": "introducedMechanics",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "introducedMechanics",
+          "args": [
+            {
+              "name": "catalog",
+              "type": "untyped"
+            },
+            {
+              "name": "level",
+              "type": "untyped"
+            }
+          ],
+          "result": "readonly MechanicDefinition[]",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
           "name": "resolveDifficultySnapshot",
           "args": [
             {
@@ -8066,6 +8087,56 @@
           "calls": []
         },
         {
+          "description": "describeDifficultyAccess",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "describeDifficultyAccess",
+          "args": [
+            {
+              "name": "profile",
+              "type": "untyped"
+            },
+            {
+              "name": "mode",
+              "type": "untyped"
+            },
+            {
+              "name": "level",
+              "type": "untyped"
+            }
+          ],
+          "result": "{playable:boolean, reason:string}",
+          "implementation": "implemented",
+          "calls": [
+            "domain/profile/nest.js#isDifficultyUnlocked"
+          ]
+        },
+        {
+          "description": "offersApiDeparture",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "offersApiDeparture",
+          "args": [
+            {
+              "name": "profile",
+              "type": "untyped"
+            },
+            {
+              "name": "mode",
+              "type": "untyped"
+            }
+          ],
+          "result": "boolean",
+          "implementation": "implemented",
+          "calls": [
+            "domain/profile/nest.js#isDifficultyUnlocked"
+          ]
+        },
+        {
           "name": "validateStartRequest",
           "args": [
             {
@@ -8330,6 +8401,31 @@
           "calls": []
         },
         {
+          "description": "runReceiptStamps",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "runReceiptStamps",
+          "args": [
+            {
+              "name": "profile",
+              "type": "untyped"
+            },
+            {
+              "name": "runId",
+              "type": "untyped"
+            },
+            {
+              "name": "catalog",
+              "type": "untyped"
+            }
+          ],
+          "result": "string[]",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
           "description": "planEndlessClear",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
@@ -8346,7 +8442,7 @@
               "type": "untyped"
             }
           ],
-          "result": "Result<ProfilePlan>",
+          "result": "void",
           "implementation": "implemented",
           "calls": []
         }
@@ -8648,6 +8744,23 @@
           "implementationScope": "core-preview + adventure-slice"
         },
         {
+          "description": "explorationLootMultiplier",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "explorationLootMultiplier",
+          "args": [
+            {
+              "name": "level",
+              "type": "untyped"
+            }
+          ],
+          "result": "number",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
           "name": "planWorldReward",
           "args": [
             {
@@ -8663,7 +8776,8 @@
           "description": "为当前信标/资源箱生成稳定ID的拾取物，永久收入由事务结算处理。",
           "calls": [
             "domain/plans.js#createEmptyPlan",
-            "domain/plans.js#createStateChange"
+            "domain/plans.js#createStateChange",
+            "domain/rewards.js#explorationLootMultiplier"
           ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
@@ -12263,6 +12377,7 @@
         "application/modProfile.js",
         "application/nest.js",
         "application/repository.js",
+        "content/achievements.js",
         "content/catalog.js",
         "content/registry.js",
         "content/skillCapabilities.js",
@@ -12273,7 +12388,9 @@
         "domain/dshCycle.js",
         "domain/modScope.js",
         "domain/profile/nest.js",
+        "domain/profile/unlocks.js",
         "domain/random.js",
+        "domain/rewards.js",
         "domain/settlement.js",
         "domain/stats.js",
         "domain/world/api.js",
@@ -12321,11 +12438,16 @@
             "domain/clock.js#createClockState",
             "domain/clock.js#resumeClock",
             "domain/clock.js#scheduleFrame",
+            "domain/difficulty.js#introducedMechanics",
             "domain/difficulty.js#resolveDifficultySnapshot",
+            "domain/difficulty.js#resolveModelProfileId",
             "domain/dshCycle.js#readDshCycleTimers",
             "domain/modScope.js#scopePersistenceIntent",
-            "domain/profile/nest.js#isDifficultyUnlocked",
+            "domain/profile/nest.js#describeDifficultyAccess",
+            "domain/profile/nest.js#offersApiDeparture",
+            "domain/profile/unlocks.js#runReceiptStamps",
             "domain/random.js#drawRandom",
+            "domain/rewards.js#explorationLootMultiplier",
             "domain/settlement.js#createSettlement",
             "domain/stats.js#derivePlayerStats",
             "domain/world/api.js#canApiWithdraw",
@@ -13648,8 +13770,8 @@
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
     "modules": 127,
-    "functions": 448,
-    "implemented": 408,
+    "functions": 453,
+    "implemented": 413,
     "placeholders": 40
   }
 }

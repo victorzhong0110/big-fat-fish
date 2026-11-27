@@ -3,7 +3,9 @@ import { prepareAdventureStart } from '../../src/v2/application/nest.js';
 import { mergePersistenceIntents } from '../../src/v2/application/repository.js';
 import { loadContentCatalog } from '../../src/v2/content/catalog.js';
 import { canCreateCheckpoint, createCheckpoint } from '../../src/v2/domain/checkpoint.js';
-import { ENDLESS_STAGE_TICKS, resolveDifficultySnapshot } from '../../src/v2/domain/difficulty.js';
+import { ENDLESS_STAGE_TICKS, introducedMechanics, resolveDifficultySnapshot, resolveModelProfileId } from '../../src/v2/domain/difficulty.js';
+import { describeDifficultyAccess, offersApiDeparture, validateStartRequest } from '../../src/v2/domain/profile/nest.js';
+import { explorationLootMultiplier, planWorldReward } from '../../src/v2/domain/rewards.js';
 import { createEntityState } from '../../src/v2/domain/entities.js';
 import { resolvePetStage } from '../../src/v2/domain/modelProfiles.js';
 import { createDefaultProfile, createSettlement } from '../../src/v2/domain/settlement.js';
@@ -120,6 +122,58 @@ describe('Benchmark tiers and progression', () => {
     expect(committed.value.next.bestApi).toBeUndefined();
     expect(prepareAdventureStart(committed.value.next, request('exploration', 2), catalog, 'open').ok).toBe(true);
     expect(prepareAdventureStart(committed.value.next, request('exploration', 1), catalog, 'locked').ok).toBe(false);
+  });
+});
+
+describe('one departure rule for the menu and the actual start', () => {
+  const agrees = (profile, mode, level) => expect(validateStartRequest(profile, request(mode, level), catalog).valid).toBe(describeDifficultyAccess(profile, mode, level).playable);
+  it('opens Benchmark 1 on a new story file and explains the next lock', () => {
+    const profile = createDefaultProfile();
+    expect(describeDifficultyAccess(profile, 'tutorial', 0)).toEqual({ playable: true, reason: '' });
+    expect(describeDifficultyAccess(profile, 'short', 1)).toEqual({ playable: true, reason: '' });
+    expect(describeDifficultyAccess(profile, 'short', 2)).toEqual({ playable: false, reason: '通关 Benchmark 1 后解锁' });
+    agrees(profile, 'short', 1);
+    agrees(profile, 'short', 2);
+    agrees(profile, 'expedition', 1);
+    agrees(profile, 'endless', 2);
+    agrees(profile, 'exploration', 1);
+  });
+  it('lets a Benchmark 7 file open story 8 and only the proved exploration tier', () => {
+    const profile = { ...createDefaultProfile(), highestDifficulty: 7, unlockLedger: ['endlessClear:4'] };
+    expect(describeDifficultyAccess(profile, 'short', 8).playable).toBe(true);
+    expect(describeDifficultyAccess(profile, 'short', 9)).toEqual({ playable: false, reason: '通关 Benchmark 8 后解锁' });
+    expect(describeDifficultyAccess(profile, 'exploration', 4)).toEqual({ playable: true, reason: '' });
+    expect(explorationLootMultiplier(4)).toBeCloseTo(1.3);
+    expect(describeDifficultyAccess(profile, 'exploration', 5)).toEqual({ playable: false, reason: '通关无尽 5 后解锁' });
+    agrees(profile, 'short', 8);
+    agrees(profile, 'expedition', 8);
+    agrees(profile, 'endless', 8);
+    agrees(profile, 'exploration', 4);
+    agrees(profile, 'exploration', 5);
+    const { state } = explore(4);
+    state.world.entities['cacheGuard:1'].dead = true;
+    const reward = planWorldReward({ state, catalog, event: null, entityId: null, random: state.random.reward }, 'cache:cache:1');
+    const amounts = Object.fromEntries(reward.plan.changes.filter(change => change.operation === 'putPickup').map(change => [change.payload.kind, change.payload.amount]));
+    expect(amounts).toMatchObject({ riceXp: 78, gpuFragment: 10, part: 7 });
+  });
+  it('lists only the two new Benchmark 11 mechanics and keeps API off the numeric ladders', () => {
+    expect(introducedMechanics(catalog, 11).map(mechanic => mechanic.displayName)).toEqual(['目标增援信号', 'Claude · Project Glasswing']);
+    expect(introducedMechanics(catalog, 11).every(mechanic => mechanic.unlockAt === 11)).toBe(true);
+    const opened = { ...createDefaultProfile(), highestDifficulty: 15, apiUnlocked: true, unlockLedger: ['endlessClear:15'] };
+    const story = resolveDifficultySnapshot(request('short', 11), catalog).value.mechanicIds;
+    const api = resolveDifficultySnapshot(request('api', 'api'), catalog).value;
+    expect(story).toEqual(expect.arrayContaining(['mech_11_objective_signal', 'mech_11_glasswing']));
+    expect(api.mechanicIds).toEqual(resolveDifficultySnapshot(request('short', 15), catalog).value.mechanicIds);
+    expect(offersApiDeparture(opened, 'short')).toBe(true);
+    expect(offersApiDeparture(opened, 'expedition')).toBe(true);
+    expect(offersApiDeparture(opened, 'endless')).toBe(false);
+    expect(offersApiDeparture(opened, 'exploration')).toBe(false);
+    expect(describeDifficultyAccess(opened, 'api', 'api').playable).toBe(true);
+    expect(describeDifficultyAccess(createDefaultProfile(), 'api', 'api')).toEqual({ playable: false, reason: '通关 Benchmark 15 后解锁' });
+    const random = { seed: 1, cursor: 0 };
+    expect(catalog.definitions[resolveModelProfileId(api, 'gpt', random).value.profileId].displayName).toBe('Terra');
+    expect(catalog.definitions[resolveModelProfileId(api, 'grok', random).value.profileId].displayName).toBe('Bot');
+    expect([catalog.definitions.claude_fable.displayName, catalog.definitions.claude_mythos.displayName]).toEqual(['Fable', 'Mythos']);
   });
 });
 

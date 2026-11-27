@@ -3,7 +3,9 @@ import {renderBenchmarkCast} from './benchmarkStage.js';
 const SOUND_EVENTS=new Set(['WeaponFired','SkillCast','DashStarted','DamageResolved','PickupCollected','LevelGained','ObjectiveCompleted','EquipmentEquipped']);
 import {resolveExpeditionRoute,localWorldId} from '../domain/world/regionRules.js';
 import {canExtract, EXTRACTION_ID, extractionDuration} from '../domain/world/extraction.js';
-import {isDifficultyUnlocked} from '../domain/profile/nest.js';
+import {describeDifficultyAccess,offersApiDeparture} from '../domain/profile/nest.js';
+import {runReceiptStamps} from '../domain/profile/unlocks.js';
+import {RESET_ACHIEVEMENT} from '../content/achievements.js';
 import {canApiWithdraw} from '../domain/world/api.js';
 import {readDshCycleTimers} from '../domain/dshCycle.js';
 // @ts-check
@@ -21,7 +23,8 @@ import { derivePlayerStats } from '../domain/stats.js';
 import {scopePersistenceIntent} from '../domain/modScope.js';
 import { loadContentCatalog, validateContentCatalog } from '../content/catalog.js';
 import { createHandlerRegistry } from '../content/registry.js';
-import { resolveDifficultySnapshot } from '../domain/difficulty.js';
+import { resolveDifficultySnapshot, resolveModelProfileId, introducedMechanics } from '../domain/difficulty.js';
+import { explorationLootMultiplier } from '../domain/rewards.js';
 import { createClockState, scheduleFrame, resumeClock } from '../domain/clock.js';
 import { canCreateCheckpoint, createCheckpoint } from '../domain/checkpoint.js';
 import { createGameSession, enqueueSessionCommand, readSessionState, readSessionView, stepSessionWorld, stepSessionUi, restoreGameSession, disposeGameSession } from '../engine/session.js';
@@ -48,11 +51,16 @@ import { getPreviewCamera, renderPreviewFrame } from './view.js';
  * @calls domain/clock.js#createClockState
  * @calls domain/clock.js#resumeClock
  * @calls domain/clock.js#scheduleFrame
+ * @calls domain/difficulty.js#introducedMechanics
  * @calls domain/difficulty.js#resolveDifficultySnapshot
+ * @calls domain/difficulty.js#resolveModelProfileId
  * @calls domain/dshCycle.js#readDshCycleTimers
  * @calls domain/modScope.js#scopePersistenceIntent
- * @calls domain/profile/nest.js#isDifficultyUnlocked
+ * @calls domain/profile/nest.js#describeDifficultyAccess
+ * @calls domain/profile/nest.js#offersApiDeparture
+ * @calls domain/profile/unlocks.js#runReceiptStamps
  * @calls domain/random.js#drawRandom
+ * @calls domain/rewards.js#explorationLootMultiplier
  * @calls domain/settlement.js#createSettlement
  * @calls domain/stats.js#derivePlayerStats
  * @calls domain/world/api.js#canApiWithdraw
@@ -294,6 +302,17 @@ export function mountCombatPreview(mountElementId) {
     const index=key==='Home'?0:key==='End'?last:Math.max(0,Math.min(last,current+(key==='ArrowUp'?1:-1)));
     wheel.focus();pickBenchmark(difficultySelect.options[index].value);
   });
+  /** @param {import('../contracts.d.ts').Result<import('../contracts.d.ts').DifficultySnapshot>} snap */
+  function apiModelNames(snap){
+    if(!snap.ok)return '';
+    const random={seed:1,cursor:0};
+    const name=/** @param {import('../contracts.d.ts').Faction} faction */faction=>{
+      const resolved=resolveModelProfileId(snap.value,faction,random);
+      return resolved.ok?catalog.definitions[resolved.value.profileId]?.displayName??'':'';
+    };
+    const claude=['claude_fable','claude_mythos'].map(id=>catalog.definitions[id]?.displayName).filter(Boolean).join(' / ');
+    return [name('gpt'),claude,name('grok')].filter(Boolean).join(' · ');
+  }
   function renderBenchmarkBoard(){
     const raw=difficultySelect.value,level=Number(raw),guide=raw==='0',api=raw==='api';
     const freeName=modeSelect.value==='tutorial'?'Free 练习':'Free 教学';
@@ -301,8 +320,7 @@ export function mountCombatPreview(mountElementId) {
     const ranks=[['Luna','Haiku'],['Sol','Sonnet'],['Astra','Opus']],tier=level>10?2:level>5?1:0;
     node('bench-current').textContent=locked?'未解锁':'当前难度';
     node('bench-title').textContent=guide?freeName:api?'API 调用':`Benchmark ${level}`;
-    node('bench-models').textContent=locked?'':guide?'DeepSeek · 泡泡炮基础训练':api?'ChatGPT · Claude · Grok':`GPT ${ranks[tier][0]} · Claude ${ranks[tier][1]}`;
-    const names=locked?['？']:catalog.mechanics.filter(item=>!guide&&!api&&item.unlockAt===level).map(item=>item.displayName);
+    const names=locked?['？']:introducedMechanics(catalog,level).map(item=>item.displayName);
     const affixes=node('bench-affixes');affixes.replaceChildren();
     for(const name of names.length?names:[guide?(modeSelect.value==='tutorial'?'自由练习':'基础操作教学'):api?'持续生存 · 三阵营轮换':'沿用已有机制']){
       const line=document.createElement('li');line.textContent=name;affixes.append(line);
@@ -310,8 +328,11 @@ export function mountCombatPreview(mountElementId) {
     const mode=selectedMode();
     const snap=resolveDifficultySnapshot(/** @type {import('../contracts.d.ts').StartRequest} */({mode,difficulty:api?'api':level,seed:1,weaponIds:['mcp_bubble'],skillId:'skill_disconnect',companionId:null}),catalog);
     const strength=snap.ok?`敌方生命 ×${Number(snap.value.hpMultiplier.toFixed(2))}`:'';
-    node('bench-reward').textContent=guide?'Free 不记 Benchmark':locked||api?'':strength;
-    node('start').textContent=locked?(mode==='exploration'?`通关无尽 ${level} 后解锁`:`通关 Benchmark ${level-1} 后解锁`):'▶ 开始整活';
+    const loot=mode==='exploration'&&!locked&&Number.isInteger(level)?`宝箱与目标 ×${explorationLootMultiplier(level).toFixed(1)}`:'';
+    node('bench-reward').textContent=guide?'Free 不记 Benchmark':locked||api?'':[strength,loot].filter(Boolean).join(' · ');
+    const access=profileRecord?.profile&&!guide?describeDifficultyAccess(profileRecord.profile,mode,api?'api':level):null;
+    node('start').textContent=locked?access?.reason||'尚未解锁':'▶ 开始整活';
+    node('bench-models').textContent=locked?'':guide?'DeepSeek · 泡泡炮基础训练':api?apiModelNames(snap):`GPT ${ranks[tier][0]} · Claude ${ranks[tier][1]}`;
     const options=Array.from(difficultySelect.options).reverse();
     if(wheel.children.length!==options.length){
       wheel.replaceChildren(...options.map(()=>{
@@ -348,14 +369,14 @@ export function mountCombatPreview(mountElementId) {
     if (mode==='tutorial-guide'||mode==='tutorial') {
       addDifficulty('0',mode==='tutorial'?'Free 0 · 自由练习':'Free 0 · 引导教学');
     } else {
+      const ladder=mode==='exploration'||mode==='endless'||mode==='expedition'?mode:'short';
       for (let level=1;level<=15;level++) {
-        const locked=mode==='exploration'? !profile||!isDifficultyUnlocked(profile,'exploration',level)
-          :level>Math.min(15,(profile?.highestDifficulty??0)+1);
-        addDifficulty(String(level),`Benchmark ${level}${locked?' · 未解锁':''}`,locked);
+        const access=profile?describeDifficultyAccess(profile,ladder,level):{playable:false,reason:'小窝档案读取中'};
+        addDifficulty(String(level),`Benchmark ${level}${access.playable?'':' · 未解锁'}`,!access.playable);
       }
-      const numericLadder=mode!=='exploration'&&mode!=='endless';
-      if (numericLadder&&profile?.apiUnlocked) addDifficulty('api','API调用 · 持续生存 / 三阵营轮换');
-      if (preferApi&&numericLadder&&profile?.apiUnlocked) difficultySelect.value='api';
+      const apiOffered=!!profile&&offersApiDeparture(profile,ladder);
+      if (apiOffered) addDifficulty('api','API调用 · 持续生存 / 三阵营轮换');
+      if (preferApi&&apiOffered) difficultySelect.value='api';
       else {
         const available=Array.from(difficultySelect.options).filter(option=>!option.disabled);
         difficultySelect.value=available.find(option=>option.value===previous)?.value??available[0]?.value??'1';
@@ -410,7 +431,7 @@ export function mountCombatPreview(mountElementId) {
     }
     for(const entry of after.unlockLedger)if(!before.unlockLedger.includes(entry)){
       if(entry.startsWith('endlessClear:'))runUnlocks.add('探索 Benchmark '+entry.split(':')[1]);
-      if(entry.startsWith('achievement:'))runUnlocks.add(catalog.definitions[entry.slice(12)]?.displayName??'新成就');
+      if(entry===RESET_ACHIEVEMENT.ledgerId)runUnlocks.add(RESET_ACHIEVEMENT.name);
     }
   }
   async function flushProfile(){
@@ -655,8 +676,11 @@ export function mountCombatPreview(mountElementId) {
             node('loot-fragments').textContent=String(card.gpuFragments);node('loot-parts').textContent=String(card.parts);
             node('loot-cards-line').hidden=settlementCards===0;node('loot-cards').textContent=String(settlementCards);
           }
-          const stamp=node('receipt-stamp');stamp.hidden=runUnlocks.size===0||settledRunId!==session.runId;
-          if(!stamp.hidden)stamp.textContent='新解锁 · '+Array.from(runUnlocks).join(' / ');
+          const verified=profileRecord?runReceiptStamps(profileRecord.profile,growth.runId,catalog):[];
+          const live=settledRunId===session.runId?Array.from(runUnlocks):[];
+          const stamps=[...new Set([...verified,...live])];
+          const stamp=node('receipt-stamp');stamp.hidden=stamps.length===0;
+          if(!stamp.hidden)stamp.textContent='新解锁 · '+stamps.join(' / ');
         }else{node('loot-card').classList.add('hidden');node('receipt-stamp').hidden=true;}
         node('pause-title').textContent=view.phase==='victory'?'带着收获回家！':view.phase==='defeat'?'这次先回小窝':view.phase==='withdrawal'?(exploration?'撤离成功，带收获回家！':'带收获回家！'):'已暂停';node('pause-description').textContent=terminal?(formal?(settledRunId===session.runId?(exploration&&view.phase==='defeat'?'本局战利品已损失。':'收获已保存。可以返回出发页查看小窝余额。'):'正在保存收获，请稍候。失败时可重试，原档不会被覆盖。'):'练习结束，不产生永久资源。'):formal?'战斗已冻结。继续原进度，或明确放弃并按失败结算。':'战斗时间已冻结；回来后不会补跑。';mount?.classList.toggle('stopped',stopped);
         popups=popups.filter(popup=>view&&view.tick-popup.tick<45);renderPreviewFrame(ctx,view,width,height,ratio,popups);

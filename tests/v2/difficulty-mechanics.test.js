@@ -1,6 +1,8 @@
 import{describe,it,expect}from'vitest';
 import{loadContentCatalog}from'../../src/v2/content/catalog.js';
-import{resolveDifficultySnapshot}from'../../src/v2/domain/difficulty.js';
+import{introducedMechanics,resolveDifficultySnapshot}from'../../src/v2/domain/difficulty.js';
+import{describeDifficultyAccess}from'../../src/v2/domain/profile/nest.js';
+import{explorationLootMultiplier}from'../../src/v2/domain/rewards.js';
 import{createGameSession,readSessionState,disposeGameSession}from'../../src/v2/engine/session.js';
 import{applySystemPlan,validateStateInvariants}from'../../src/v2/engine/reducer.js';
 import{createEntityState}from'../../src/v2/domain/entities.js';
@@ -31,5 +33,19 @@ describe('cumulative difficulty and real mechanic consumers',()=>{
  it('effective-time tides affect bodies with a 1.8 cap and retain native dash movement',()=>{const s=game(7),fish=s.world.entities.fish;fish.position={x:1320,y:850};expect(resolveTideVelocity(s,fish,{x:220,y:0},catalog)).toEqual({x:280,y:0});const crab=s.world.entities['resident:0:0'];crab.position={...fish.position};expect(Math.hypot(...Object.values(resolveTideVelocity(s,crab,{x:80,y:0},catalog)))).toBeLessThanOrEqual(144);s.tick=1800;expect(resolveTideVelocity(s,fish,{x:220,y:0},catalog).x).toBe(160);fish.runtime.dashUntil=1810;expect(resolveTideVelocity(s,fish,{x:650,y:0},catalog).x).toBe(650);});
  it('flanks reuse one finite group and separate its two entrances by two seconds',()=>{let s=game(8);s.input.viewport={width:500,height:300};s.world.entities.fish.position={x:1500,y:1100};s=applySystemPlan(s,planReinforcementGroup(ctx(s),'flank:test','pursuers'));expect(s.world.spawnQueue).toHaveLength(6);expect(new Set(s.world.spawnQueue.map(r=>r.position.x)).size).toBe(2);expect(s.world.spawnQueue[3].at-s.world.spawnQueue[0].at).toBe(120);expect(s.world.budgets[0].reserved).toBe(6);});
  it('short-range retreat walks a legal route and postpones firing instead of teleporting',()=>{let s=game(9);s.world.entities.pet=createEntityState('pet','enemy_gpt_hoots','enemy','enemy',{x:300,y:270},{faction:'gpt',modelProfileId:'gpt_sol',hp:30,maxHp:30,runtime:{engaged:true,moveSpeed:75}});s=applySystemPlan(s,planGptPet(ctx(s,'pet'),'hoots'));expect(s.world.entities.pet.position).toEqual({x:300,y:270});expect(s.world.entities.pet.runtime.retreatPoint).toBeTruthy();expect(Math.hypot(s.world.entities.pet.velocity.x,s.world.entities.pet.velocity.y)).toBeGreaterThan(0);expect(s.world.entities.pet.runtime.petCast).toBeUndefined();});
+ it('splits 5/6, 10/11 and 15/API without opening an unproved exploration tier',()=>{
+  const ids=level=>resolveDifficultySnapshot({mode:'short',difficulty:level,seed:1,weaponIds:['mcp_bubble'],skillId:'skill_disconnect',companionId:null},catalog).value.mechanicIds;
+  expect(ids(5)).toHaveLength(5);expect(introducedMechanics(catalog,6).map(item=>item.id)).toEqual(['mech_06_alarm_cache']);
+  expect(ids(6)).toEqual([...ids(5),'mech_06_alarm_cache']);
+  expect(ids(10)).toHaveLength(10);expect(introducedMechanics(catalog,11)).toHaveLength(2);
+  expect(ids(11)).toEqual([...ids(10),...introducedMechanics(catalog,11).map(item=>item.id)]);
+  expect(ids(15)).toHaveLength(16);
+  expect(resolveDifficultySnapshot({mode:'api',difficulty:'api',seed:1,weaponIds:['mcp_bubble'],skillId:'skill_disconnect',companionId:null},catalog).value.mechanicIds).toEqual(ids(15));
+  expect(resolveDifficultySnapshot({mode:'tutorial',difficulty:0,seed:1,weaponIds:['mcp_bubble'],skillId:'skill_disconnect',companionId:null},catalog).value.hpMultiplier).toBeCloseTo(0.6);
+  const profile={...createDefaultProfile(),highestDifficulty:7,unlockLedger:['endlessClear:4']};
+  expect(describeDifficultyAccess(profile,'exploration',4).playable).toBe(true);
+  expect(describeDifficultyAccess(profile,'exploration',5).reason).toBe('通关无尽 5 后解锁');
+  expect(explorationLootMultiplier(1)).toBe(1);expect(explorationLootMultiplier(6)).toBeCloseTo(1.5);expect(explorationLootMultiplier(11)).toBe(2);
+ });
  it('arena cover is added without replacing earlier mechanics and departure still checks unlock ownership',()=>{let s=game(10);s.world.objectives=s.world.objectives.map((o,i)=>({...o,completed:i<2,active:i>=2,progress:i<2?2100:0}));s=applySystemPlan(s,planBossEncounter(ctx(s)));expect(s.world.entities['cover:0']).toBeTruthy();expect(s.world.map.obstacleIds).toContain('arena:cover:1');const p=createDefaultProfile(),request={mode:'short',difficulty:10,seed:19,weaponIds:['mcp_bubble'],skillId:'skill_disconnect',companionId:null};expect(prepareAdventureStart(p,request,catalog,'blocked').ok).toBe(false);p.highestDifficulty=9;expect(prepareAdventureStart(p,request,catalog,'allowed').ok).toBe(true);});
 });
