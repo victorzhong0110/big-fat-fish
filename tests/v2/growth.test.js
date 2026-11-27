@@ -54,6 +54,13 @@ describe('connected XP and plugin progression',()=>{
  it('does not offer capped plugins again and offers replacements when all six slots are full',()=>{
   const s=gain();s.flow.choice=null;s.plugins=['plugin_collect','plugin_guard','plugin_5h','plugin_distill','plugin_compress','plugin_parallel'].map(id=>plugin(id,2));const choice=createPluginChoice(ctx(s),s.flow.queuedLevelRewards[0]).value.choice;expect(choice.candidates).toHaveLength(3);expect(choice.candidates.every(c=>!s.plugins.some(p=>p.id===c.id))).toBe(true);s.flow.choice=choice;expect(planPluginSkip(ctx(s),ui(s,'SkipPlugin')).changes.length).toBeGreaterThan(0);
  });
+ it('offers an owned rank-one plugin as rank two through the real draft and upgrades only that plugin',()=>{
+  let s=gain();s.flow.choice=null;s.plugins=Object.values(catalog.definitions).filter(d=>d.kind==='plugin'&&d.id!=='plugin_cache').map(d=>plugin(d.id,2));s.plugins.push(plugin('plugin_cache',1));
+  const choice=createPluginChoice(ctx(s),s.flow.queuedLevelRewards[0]).value.choice;expect(choice.candidates).toEqual([{id:'plugin_cache',rank:2}]);
+  s.flow.phase='pluginChoice';s.flow.choice=choice;const before=s.plugins.filter(p=>p.id!=='plugin_cache');
+  s=apply(s,planPluginSelection(ctx(s),ui(s,'SelectPlugin',{optionId:'plugin_cache'})));
+  expect(s.plugins.find(p=>p.id==='plugin_cache')).toEqual(plugin('plugin_cache',2));expect(s.plugins.filter(p=>p.id!=='plugin_cache')).toEqual(before);
+ });
  it('upgrades in place, preserves origin, and lowers distillation thresholds immediately',()=>{
   let s=gain();s.plugins=[plugin('plugin_distill')];s.distill.claude={stage:0,samples:5};s.flow.choice.candidates=[{id:'plugin_distill',rank:2}];s=apply(s,planPluginSelection(ctx(s),ui(s,'SelectPlugin',{optionId:'plugin_distill'})));expect(s.plugins).toEqual([plugin('plugin_distill',2)]);expect(s.distill.claude).toEqual({stage:2,samples:1});
  });

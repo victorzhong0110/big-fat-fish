@@ -220,6 +220,8 @@
 .prize-display{position:relative;display:block;width:100%;height:clamp(98px,18vh,165px)}
 .prize-toy{position:absolute;width:min(65%,100px);aspect-ratio:1;left:50%;bottom:27%;transform:translateX(-50%);z-index:1;
   background:url('/art/interface/prize-toys.webp') 0 0/600% 600%;image-rendering:pixelated;filter:drop-shadow(0 3px 0 #13273880);animation:prize-land .42s ease-out both}
+.prize-toy.generic{background:#e7f3fb;border:3px solid #111;border-radius:6px;box-shadow:inset 0 3px #fff,inset 0 -3px #6f93a8}
+.prize-toy.generic::before{content:'?';position:absolute;inset:0;display:grid;place-items:center;color:#102838;font:28px var(--pixel)}
 .prize-stand{position:absolute;inset:auto 9% 5%;height:28%;border-radius:50% / 25%;border:2px solid #1e3a51;background:linear-gradient(#e0eff6 0 23%,#97b6c9 24% 58%,#698da8 59%);box-shadow:0 4px #102b42}
 .prize-grade{position:absolute;z-index:2;bottom:8%;left:50%;transform:translateX(-50%);color:#19374b;background:#e4eff4;border-radius:20px;padding:1px 10px;font:13px var(--pixel);white-space:nowrap}
 [data-rarity=advanced] .prize-stand{height:36%;border-radius:3px;clip-path:polygon(12% 0,88% 0,88% 37%,100% 37%,100% 100%,0 100%,0 37%,12% 37%);background:linear-gradient(#ffe5a3 0 20%,#bd8033 22% 39%,#ffcd5d 40% 72%,#9b6430 74%)}
