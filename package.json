@@ -33,7 +33,8 @@
     "prebuild": "npm run prepare:audio",
     "prepreview": "npm run prepare:audio",
     "test:v2:characters": "node scripts/test-v2-characters-browser.mjs",
-    "test:v2:audio": "node scripts/prepare-v2-audio.mjs && node scripts/test-v2-audio-browser.mjs"
+    "test:v2:audio": "node scripts/prepare-v2-audio.mjs && node scripts/test-v2-audio-browser.mjs",
+    "test:v2:desktop-cards": "node scripts/test-v2-desktop-cards-browser.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"

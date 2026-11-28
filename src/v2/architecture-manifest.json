@@ -5977,6 +5977,27 @@
           "implementation": "implemented"
         },
         {
+          "description": "modelProfileOptions",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "modelProfileOptions",
+          "args": [
+            {
+              "name": "difficulty",
+              "type": "untyped"
+            },
+            {
+              "name": "faction",
+              "type": "untyped"
+            }
+          ],
+          "result": "readonly string[]",
+          "implementation": "implemented",
+          "calls": []
+        },
+        {
           "name": "resolveModelProfileId",
           "args": [
             {
@@ -5995,6 +6016,7 @@
           "result": "Result<{ profileId: Id; next: RandomState }>",
           "description": "选择Haiku/Sonnet/Opus/Fable或Mythos及Astra/Sol/Terra/Luna对应阶段。",
           "calls": [
+            "domain/difficulty.js#modelProfileOptions",
             "domain/random.js#drawRandom"
           ],
           "rule": "",
@@ -8191,6 +8213,45 @@
       ]
     },
     {
+      "path": "domain/profile/receipts.js",
+      "layer": "domain",
+      "purpose": "对局小票与产生它的档案变更一起入账。",
+      "dependencies": [
+        "content/achievements.js"
+      ],
+      "functions": [
+        {
+          "description": "recordRunReceipt",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "recordRunReceipt",
+          "args": [
+            {
+              "name": "before",
+              "type": "untyped"
+            },
+            {
+              "name": "after",
+              "type": "untyped"
+            },
+            {
+              "name": "runId",
+              "type": "untyped"
+            },
+            {
+              "name": "settlement",
+              "type": "untyped"
+            }
+          ],
+          "result": "Profile",
+          "implementation": "implemented",
+          "calls": []
+        }
+      ]
+    },
+    {
       "path": "domain/profile/tree.js",
       "layer": "domain",
       "purpose": "27个永久节点、免费整树退款与DSH槽计算。",
@@ -8297,7 +8358,9 @@
       "layer": "domain",
       "purpose": "发现/彩蛋/Boss里程碑，独立幂等id。",
       "dependencies": [
-        "content/achievements.js"
+        "content/achievements.js",
+        "domain/profile/receipts.js",
+        "domain/settlement.js"
       ],
       "functions": [
         {
@@ -8318,7 +8381,9 @@
           ],
           "result": "Result<ProfilePlan>",
           "description": "发现/救助立即持久化计划，恢复旧检查点不撤销也不重发资源。",
-          "calls": [],
+          "calls": [
+            "domain/profile/receipts.js#recordRunReceipt"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
@@ -8343,7 +8408,9 @@
           ],
           "result": "Result<ProfilePlan>",
           "description": "数字难度首领触发DSH里程碑；API不发数字成就或为每阶段堆永久账本，仅保留Grok居民事实。",
-          "calls": [],
+          "calls": [
+            "domain/profile/receipts.js#recordRunReceipt"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
@@ -8368,7 +8435,9 @@
           ],
           "result": "Result<ProfilePlan>",
           "description": "LoRA/饭点/摸鱼等定义条件的唯一永久解锁计划，不需已开槽。",
-          "calls": [],
+          "calls": [
+            "domain/profile/receipts.js#recordRunReceipt"
+          ],
           "rule": "",
           "ownership": "只读输入，返回计划/值；不得修改调用者状态",
           "phase": "query",
@@ -8398,7 +8467,9 @@
           ],
           "result": "Result<ProfilePlan>",
           "implementation": "implemented",
-          "calls": []
+          "calls": [
+            "domain/profile/receipts.js#recordRunReceipt"
+          ]
         },
         {
           "description": "runReceiptStamps",
@@ -8423,7 +8494,9 @@
           ],
           "result": "string[]",
           "implementation": "implemented",
-          "calls": []
+          "calls": [
+            "domain/settlement.js#createDefaultProfile"
+          ]
         },
         {
           "description": "planEndlessClear",
@@ -8442,9 +8515,11 @@
               "type": "untyped"
             }
           ],
-          "result": "void",
+          "result": "Result<ProfilePlan>",
           "implementation": "implemented",
-          "calls": []
+          "calls": [
+            "domain/profile/receipts.js#recordRunReceipt"
+          ]
         }
       ]
     },
@@ -8964,6 +9039,7 @@
       "dependencies": [
         "domain/checkpoint.js",
         "domain/modScope.js",
+        "domain/profile/receipts.js",
         "domain/profile/tree.js",
         "domain/serialization.js",
         "versions.js"
@@ -9013,6 +9089,7 @@
           "calls": [
             "domain/modScope.js#createProfileModScope",
             "domain/modScope.js#equalModScopes",
+            "domain/profile/receipts.js#recordRunReceipt",
             "domain/settlement.js#validateProfileRecord"
           ],
           "rule": "",
@@ -12196,6 +12273,29 @@
           ]
         },
         {
+          "description": "createReplacementButton",
+          "rule": "",
+          "ownership": "只读输入、返回值/计划；不得写调用者状态",
+          "phase": "query",
+          "callMode": "sequence",
+          "name": "createReplacementButton",
+          "args": [
+            {
+              "name": "definition",
+              "type": "untyped"
+            },
+            {
+              "name": "rank",
+              "type": "untyped"
+            }
+          ],
+          "result": "HTMLButtonElement",
+          "implementation": "implemented",
+          "calls": [
+            "preview/arcadePanels.js#resolvePrizePresentation"
+          ]
+        },
+        {
           "description": "createShotLane",
           "rule": "",
           "ownership": "只读输入、返回值/计划；不得写调用者状态",
@@ -12377,7 +12477,6 @@
         "application/modProfile.js",
         "application/nest.js",
         "application/repository.js",
-        "content/achievements.js",
         "content/catalog.js",
         "content/registry.js",
         "content/skillCapabilities.js",
@@ -12386,6 +12485,7 @@
         "domain/clock.js",
         "domain/difficulty.js",
         "domain/dshCycle.js",
+        "domain/lora.js",
         "domain/modScope.js",
         "domain/profile/nest.js",
         "domain/profile/unlocks.js",
@@ -12439,8 +12539,8 @@
             "domain/clock.js#resumeClock",
             "domain/clock.js#scheduleFrame",
             "domain/difficulty.js#introducedMechanics",
+            "domain/difficulty.js#modelProfileOptions",
             "domain/difficulty.js#resolveDifficultySnapshot",
-            "domain/difficulty.js#resolveModelProfileId",
             "domain/dshCycle.js#readDshCycleTimers",
             "domain/modScope.js#scopePersistenceIntent",
             "domain/profile/nest.js#describeDifficultyAccess",
@@ -12464,6 +12564,7 @@
             "engine/session.js#stepSessionUi",
             "engine/session.js#stepSessionWorld",
             "preview/arcadePanels.js#createPrizeButton",
+            "preview/arcadePanels.js#createReplacementButton",
             "preview/arcadePanels.js#createShotLane",
             "preview/benchmarkStage.js#renderBenchmarkCast",
             "preview/modManager.js#mountModManager",
@@ -13769,9 +13870,9 @@
   ],
   "previewEntry": "preview/host.js#mountCombatPreview",
   "counts": {
-    "modules": 127,
-    "functions": 453,
-    "implemented": 413,
+    "modules": 128,
+    "functions": 456,
+    "implemented": 416,
     "placeholders": 40
   }
 }

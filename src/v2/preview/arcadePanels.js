@@ -2,8 +2,21 @@
 import { deriveWeaponStats } from '../domain/stats.js';
 import { planNativeProjectiles } from '../domain/projectiles.js';
 
-/** Display-only arcade prizes and paired firing lanes. Gameplay owns the candidates and equipped slots. */
-const prizes=['plugin_parallel','plugin_local_deploy','plugin_quant_int4','plugin_rollback_emergency','plugin_batch','plugin_compress','plugin_cache','plugin_retry','plugin_temperature','plugin_collect','plugin_cooldown','plugin_offload','plugin_keepalive','plugin_redirect','plugin_backoff','plugin_distill','plugin_5h','plugin_failover','plugin_sandbox','plugin_hallucination','plugin_chain','plugin_context','plugin_hotplug','plugin_guard','plugin_prefill','plugin_toolchain','plugin_mirror','plugin_recursion','plugin_moe','plugin_speculate','plugin_window','plugin_agent','plugin_breaker'];
+// Cell numbers are coordinates in the published 6 × 6 sheet.
+const prizeCells = new Map([
+  ['plugin_parallel', 0], ['plugin_local_deploy', 1], ['plugin_quant_int4', 2],
+  ['plugin_rollback_emergency', 3], ['plugin_batch', 4], ['plugin_compress', 5],
+  ['plugin_cache', 6], ['plugin_retry', 7], ['plugin_temperature', 8],
+  ['plugin_collect', 9], ['plugin_cooldown', 10], ['plugin_offload', 11],
+  ['plugin_keepalive', 12], ['plugin_redirect', 13], ['plugin_backoff', 14],
+  ['plugin_distill', 15], ['plugin_5h', 16], ['plugin_failover', 17],
+  ['plugin_sandbox', 18], ['plugin_hallucination', 19], ['plugin_chain', 20],
+  ['plugin_context', 21], ['plugin_hotplug', 22], ['plugin_guard', 23],
+  ['plugin_prefill', 24], ['plugin_toolchain', 25], ['plugin_mirror', 26],
+  ['plugin_recursion', 27], ['plugin_moe', 28], ['plugin_speculate', 29],
+  ['plugin_window', 30], ['plugin_agent', 31], ['plugin_breaker', 32],
+]);
+const gradeLabels = new Map([['common', '白银'], ['advanced', '黄金'], ['legendary', '棱彩']]);
 
 /** Resolve a prize toy by plugin id. Catalog order and rarity never choose the cell.
  * @calls 无内部公开函数。
@@ -11,32 +24,73 @@ const prizes=['plugin_parallel','plugin_local_deploy','plugin_quant_int4','plugi
  * @param {number} rank
  * @returns {{cell:number|'generic';rarity:string;badge:string;name:string;effect:string}}
  */
-export function resolvePrizePresentation(definition,rank){
-  const index=prizes.indexOf(definition.id);
-  const rarity=String(definition.parameters.rarity??'common');
-  const descriptions=/** @type {readonly string[]|undefined} */(definition.parameters.rankDescriptions);
-  return {cell:index>=0?index:'generic',rarity,badge:rarity==='legendary'?'棱彩':rarity==='advanced'?'黄金':'白银',name:`${definition.displayName} · ${rank}级`,effect:String(descriptions?.[rank-1]??'')};
+export function resolvePrizePresentation(definition, rank) {
+  const rarity = String(definition.parameters.rarity ?? 'common');
+  const effects = /** @type {readonly string[]|undefined} */ (definition.parameters.rankDescriptions);
+  return {
+    cell: prizeCells.get(definition.id) ?? 'generic',
+    rarity, badge: gradeLabels.get(rarity) ?? '白银',
+    name: `${definition.displayName} · ${rank}级`, effect: String(effects?.[rank - 1] ?? '')
+  };
 }
 
-/** Create a toy, rarity-specific pedestal and aligned description from one live candidate.
+/** @param {number|'generic'} cell */
+function prizeToy(cell) {
+  const toy = document.createElement('i');
+  toy.className = 'prize-toy';
+  toy.ariaHidden = 'true';
+  if (cell === 'generic') toy.classList.add('generic');
+  else toy.style.backgroundPosition = `${cell % 6 * 20}% ${Math.floor(cell / 6) * 20}%`;
+  return toy;
+}
+
+/** Build a candidate from its live rank and content definition.
  * @calls preview/arcadePanels.js#resolvePrizePresentation
  * @param {import('../contracts.d.ts').Definition} definition
  * @param {number} rank
  * @returns {HTMLButtonElement}
  */
-export function createPrizeButton(definition,rank){
-  const prize=resolvePrizePresentation(definition,rank);
-  const button=document.createElement('button');button.type='button';button.className='prize-button';
-  button.dataset.rarity=prize.rarity;button.dataset.pluginId=definition.id;button.dataset.prizeCell=String(prize.cell);
-  const display=document.createElement('span');display.className='prize-display';
-  const toy=document.createElement('i'),stand=document.createElement('i'),badge=document.createElement('b');
-  toy.className=prize.cell==='generic'?'prize-toy generic':'prize-toy';toy.ariaHidden='true';stand.className='prize-stand';stand.ariaHidden='true';badge.className='prize-grade';
-  if(typeof prize.cell==='number')toy.style.backgroundPosition=`${prize.cell%6*20}% ${Math.floor(prize.cell/6)*20}%`;
-  badge.textContent=prize.badge;
-  display.append(stand,toy,badge);
-  const name=document.createElement('strong');name.textContent=prize.name;
-  const desc=document.createElement('small');desc.textContent=prize.effect;
-  button.append(display,name,desc);return button;
+export function createPrizeButton(definition, rank) {
+  const prize = resolvePrizePresentation(definition, rank);
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'prize-button';
+  button.dataset.rarity = prize.rarity;
+  button.dataset.pluginId = definition.id;
+  button.dataset.prizeCell = String(prize.cell);
+
+  const display = document.createElement('span');
+  display.className = 'prize-display';
+  const stand = document.createElement('i');
+  stand.className = 'prize-stand';
+  stand.ariaHidden = 'true';
+  const badge = document.createElement('b');
+  badge.className = 'prize-grade';
+  badge.textContent = prize.badge;
+  display.append(stand, prizeToy(prize.cell), badge);
+
+  const name = document.createElement('strong');
+  name.textContent = prize.name;
+  const effect = document.createElement('small');
+  effect.textContent = prize.effect;
+  button.append(display, name, effect);
+  return button;
+}
+
+/** Show the same toy when choosing an occupied slot to give up.
+ * @calls preview/arcadePanels.js#resolvePrizePresentation
+ * @param {import('../contracts.d.ts').Definition} definition
+ * @param {number} rank
+ * @returns {HTMLButtonElement}
+ */
+export function createReplacementButton(definition, rank) {
+  const prize = resolvePrizePresentation(definition, rank);
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'prize-slot';
+  button.dataset.replacePlugin = definition.id;
+  button.append(prizeToy(prize.cell), document.createTextNode(prize.name));
+  return button;
 }
 
 /** Draw stationary targets and preview a planned native volley without applying its changes.

@@ -1,4 +1,5 @@
 // @ts-check
+import { recordRunReceipt } from './profile/receipts.js';
 import { validateCheckpoint } from './checkpoint.js';
 import { CORE_VERSION, SCHEMA_VERSION } from '../versions.js';
 import { serializeCanonical } from './serialization.js';
@@ -36,6 +37,7 @@ export function createSettlement(state, outcome) {
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * @calls domain/modScope.js#createProfileModScope
  * @calls domain/modScope.js#equalModScopes
+ * @calls domain/profile/receipts.js#recordRunReceipt
  * @calls domain/settlement.js#validateProfileRecord
  * @param {import('../contracts.d.ts').Profile} profile
  * @param {import('../contracts.d.ts').Settlement} settlement
@@ -75,9 +77,10 @@ export function planSettlementCommit(profile, settlement, catalog) {
       next.bestEndless={...profile.bestEndless,[benchmark]:structuredClone(result)};
     }
   }
-  const report = validateProfileRecord(next, catalog);
+  const accounted = recordRunReceipt(profile, next, settlement.runId, settlement);
+  const report = validateProfileRecord(accounted, catalog);
   if (!report.valid) return { ok: false, code: 'INVALID_SETTLEMENT', message: report.diagnostics.map(item => item.message).join('; ') };
-  return { ok: true, value: { expectedRevision: profile.revision, next, events: [] } };
+  return { ok: true, value: { expectedRevision: profile.revision, next: accounted, events: [] } };
 }
 
 /**
@@ -99,6 +102,7 @@ export function validateProfileRecord(profile, catalog) {
     serializeCanonical(profile);
     if(serializeCanonical(profile.modLock??[])!==serializeCanonical(catalog.modLock??[])||(catalog.modLock?.length?profile.modContentVersion!==catalog.version:profile.modContentVersion!==undefined))fail('Profile mod scope differs from the installed catalog');
     if (profile.version !== 1 || !['revision', 'gpuCards', 'gpuFragments', 'parts', 'highestDifficulty'].every(key => Number.isSafeInteger(profile[/** @type {'revision'|'gpuCards'|'gpuFragments'|'parts'|'highestDifficulty'} */ (key)]) && Number(profile[/** @type {'revision'|'gpuCards'|'gpuFragments'|'parts'|'highestDifficulty'} */ (key)]) >= 0) || profile.gpuFragments >= 5 || profile.highestDifficulty > 15 || typeof profile.apiUnlocked !== 'boolean' || profile.apiUnlocked !== (profile.highestDifficulty >= 15)) fail('Invalid profile version, balances or progression');
+    if (profile.receipts !== undefined && !validReceipts(profile)) fail('Invalid run receipt');
     if(profile.bestApi&&!validSurvivalRecord(profile.bestApi))fail('Invalid API personal best');
     if (profile.bestEndless!==undefined && (!profile.bestEndless||typeof profile.bestEndless!=='object'||Array.isArray(profile.bestEndless)
       ||Object.entries(profile.bestEndless).some(([level,record])=>!/^(?:[1-9]|1[0-5])$/.test(level)||!validSurvivalRecord(record)))) fail('Invalid Endless personal best');
@@ -125,4 +129,22 @@ export function createDefaultProfile() {
 /** @param {import('../contracts.d.ts').ApiRecord|undefined} record @returns {record is import('../contracts.d.ts').ApiRecord} */
 function validSurvivalRecord(record) {
   return !!record && [record.survivedTicks,record.bossKills,record.kills,record.maxLevel].every(value=>Number.isSafeInteger(value)&&value>=0);
+}
+
+/** @param {import('../contracts.d.ts').Profile} profile */
+function validReceipts(profile) {
+  const ledger = profile.receipts;
+  if (!ledger || !Number.isSafeInteger(ledger.legacyDiscoveryCount) || ledger.legacyDiscoveryCount < 0
+    || ledger.legacyDiscoveryCount > profile.discoveryLedger.length || !Array.isArray(ledger.runs)) return false;
+  const settled = new Set(profile.settlementLedger);
+  const seen = new Set();
+  for (const row of ledger.runs) {
+    if (typeof row.runId !== 'string' || !row.runId || seen.has(row.runId) || !Array.isArray(row.unlocks)
+      || new Set(row.unlocks).size !== row.unlocks.length || !row.unlocks.every((/** @type {unknown} */ id) => typeof id === 'string' && id)) return false;
+    seen.add(row.runId);
+    const paid = row.payment;
+    if (paid !== undefined && (!settled.has(`settlement:${row.runId}`) || !['defeat', 'victory', 'withdrawal'].includes(paid.outcome)
+      || ![paid.gpuFragments, paid.parts, paid.gpuCards].every(value => Number.isSafeInteger(value) && value >= 0))) return false;
+  }
+  return true;
 }

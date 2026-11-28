@@ -7,6 +7,8 @@
 import * as dependency1 from './random.js';
 import { derivePlayerStats } from './stats.js';
 
+export const LORA_TIMING = Object.freeze({ ticks: 120, perfectStart: 0.42, perfectEnd: 0.58 });
+
 /**
  * 装配DSH后为实际新等级建立trial队列，不对初始1级训练。
  * 调用阶段：query；下游模式：sequence。
@@ -55,8 +57,8 @@ export function createLoraTrial(context, level) {
 export function planLoraUiStep(context) {
   const active = context.state.lora.active;
   if (context.state.flow.phase !== 'loraTraining' || active?.phase !== 'running') return { changes: [], effects: [], events: [], persistence: [], diagnostics: [] };
-  const trial = { ...active, uiTick: Math.min(120, active.uiTick + 1) };
-  if (trial.uiTick >= 120) return planLoraOutcome(context, { ...trial, phase: 'resolved', result: 'overfit' });
+  const trial = { ...active, uiTick: Math.min(LORA_TIMING.ticks, active.uiTick + 1) };
+  if (trial.uiTick >= LORA_TIMING.ticks) return planLoraOutcome(context, { ...trial, phase: 'resolved', result: 'overfit' });
   return { changes: [{ target: 'runtime', id: 'dsh_lora', operation: 'advanceLoraTrial', payload: { uiTick: trial.uiTick } }], effects: [], events: [], persistence: [], diagnostics: [] };
 }
 
@@ -94,8 +96,8 @@ export function planLoraInput(context, command) {
  */
 export function resolveLoraOutcome(trial) {
   if (!Number.isSafeInteger(trial.uiTick) || trial.uiTick < 0) throw new RangeError('Invalid LoRA tick');
-  const position = trial.uiTick / 120;
-  return position < 0.42 ? 'underfit' : position <= 0.58 ? 'perfect' : 'overfit';
+  const position = trial.uiTick / LORA_TIMING.ticks;
+  return position < LORA_TIMING.perfectStart ? 'underfit' : position <= LORA_TIMING.perfectEnd ? 'perfect' : 'overfit';
 }
 
 /**
