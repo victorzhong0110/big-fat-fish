@@ -13,6 +13,40 @@ const server=await createServer({root,server:{host:'127.0.0.1',port:0,watch:null
 const url=`http://127.0.0.1:${server.httpServer.address().port}/v2.html`;
 const browser=await chromium.launch({executablePath,headless:true,args:['--no-sandbox','--disable-gpu']});
 const checks=[],errors=[];const check=(ok,message)=>{assert(ok,message);checks.push(message);};
+async function checkPrizeArtwork(page) {
+ const result = await page.evaluate(async () => {
+   const atlas = new Image();
+   atlas.src = '/art/interface/prize-toys.webp';
+   await atlas.decode();
+   const side = atlas.naturalWidth / 6;
+   if (!Number.isInteger(side) || side <= 0 || atlas.naturalHeight !== side * 6) throw Error('Invalid 6 × 6 atlas');
+   const canvas = document.createElement('canvas');
+   canvas.width = canvas.height = side;
+   const ctx = canvas.getContext('2d', {willReadFrequently:true});
+   return Array.from({length:36}, (_, index) => {
+     ctx.clearRect(0, 0, side, side);
+     ctx.drawImage(atlas, (index % 6) * side, Math.floor(index / 6) * side, side, side, 0, 0, side, side);
+     const pixels = ctx.getImageData(0, 0, side, side).data;
+     let opaque = 0;
+     for (let alpha = 3; alpha < pixels.length; alpha += 4) if (pixels[alpha] >= 128) opaque++;
+     return opaque / (side * side);
+   });
+ });
+ check(result.slice(0,33).every(coverage => coverage > 0.1) && result.slice(33).every(coverage => coverage === 0),
+   'The shipped WebP renders 33 visible toys and three empty reserve cells in Chromium');
+ const mystery = await page.evaluate(async () => {
+   const {createPrizeButton} = await import('/src/v2/preview/arcadePanels.js');
+   const button = createPrizeButton({id:'community:prize',displayName:'未知奖品',parameters:{}}, 1);
+   document.body.append(button);
+   try {
+     const image = new Image();
+     image.src = getComputedStyle(button.querySelector('.prize-toy')).backgroundImage.slice(5,-2);
+     await image.decode();
+     return button.dataset.prizeCell === 'generic' && image.src.endsWith('/mystery-capsule.webp') && image.naturalWidth > 0;
+   } finally { button.remove(); }
+ });
+ check(mystery, 'An unregistered prize visibly uses the sealed capsule asset');
+}
 async function battleFloor(page,label){
  const colors=await page.evaluate(()=>{
   const canvas=document.querySelector('#sea');const ctx=canvas.getContext('2d');if(!ctx)return [];
@@ -43,6 +77,7 @@ const overlaps=(a,b)=>a.x<b.x+b.width&&b.x<a.x+a.width&&a.y<b.y+b.height&&b.y<a.
 try{
  const page=await browser.newPage({viewport:{width:1280,height:800}});page.on('pageerror',e=>errors.push(e.message));await page.goto(url);
  await page.waitForFunction(()=>document.querySelector('#wallet').textContent.includes('算力卡'));
+ await checkPrizeArtwork(page);
  check(await page.evaluate(async()=>{await document.fonts.load('12px "Fusion Pixel"');return document.fonts.check('12px "Fusion Pixel"');}),'Bundled pixel font loads offline');
  check((await page.locator('#toast').evaluate(el=>getComputedStyle(el).top))==='156px','Desktop toast sits below the objective row');
  check(await page.locator('#home-screen').isVisible()&&await page.locator('#departure-screen').isHidden(),'Home is the first screen');

@@ -115,11 +115,17 @@ export interface ShieldResolution { absorbed: number; remainingDamage: number; p
 export interface DeathRecord { entityId: Id; sourceId: Id; creditOwner: EntityState['creditOwner']; faction: Faction | null; rewardPolicy: EntityState['rewardPolicy']; distillEligible: boolean; groupId: Id | null; }
 export interface RewardPlan { plan: SystemPlan; rewardIds: readonly Id[]; }
 export interface ApiRecord { survivedTicks:number; bossKills:number; kills:number; maxLevel:number; }
+export interface RunReceipt {
+  runId: Id;
+  unlocks: readonly Id[];
+  payment?: { outcome: Settlement['outcome']; gpuFragments: number; parts: number; gpuCards: number };
+}
 export interface Profile { bestEndless?:Readonly<Record<number, ApiRecord>>; bestApi?:ApiRecord; modLock?:readonly ModLockEntry[]; modContentVersion?:string;
   version: number; revision: number; gpuCards: number; gpuFragments: number; parts: number;
   purchasedTree: readonly Id[]; discovered: readonly Id[]; unlockedWeapons: readonly Id[]; unlockedSkills: readonly Id[];
   unlockedCompanions: readonly Id[]; unlockedDsh: readonly Id[]; equippedDsh: readonly DshSlot[];
   highestDifficulty: number; apiUnlocked: boolean; facilities: readonly Id[];
+  receipts?: { legacyDiscoveryCount: number; runs: readonly RunReceipt[] };
   discoveryLedger: readonly Id[]; unlockLedger: readonly Id[]; settlementLedger: readonly Id[];
   checkpoint: Checkpoint | null;
 }

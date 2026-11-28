@@ -24,7 +24,7 @@ export function introducedMechanics(catalog, level){
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
  * 约束：API使用M(15)；常驻机制不能轮换丢失；Pro自带5h仅1–5。
  * @calls 无内部公开函数。
- * @param {import('../contracts.d.ts').StartRequest} request
+ * @param {Pick<import('../contracts.d.ts').StartRequest, 'mode'|'difficulty'>} request
  * @param {Readonly<import('../contracts.d.ts').ContentCatalog>} catalog
  * @returns {import('../contracts.d.ts').Result<import('../contracts.d.ts').DifficultySnapshot>}
  */
@@ -42,10 +42,23 @@ export function resolveDifficultySnapshot(request, catalog) {
   } };
 }
 
+/** 所选难度可遇到的模型。选择页列出全部，战斗按原随机流抽取一个。
+ * @calls 无内部公开函数。
+ * @param {import('../contracts.d.ts').DifficultySnapshot} difficulty
+ * @param {import('../contracts.d.ts').Faction} faction
+ * @returns {readonly string[]}
+ */
+export function modelProfileOptions(difficulty, faction) {
+  const id = difficulty.modelProfileIds[faction];
+  if (!id) return [];
+  return faction === 'claude' && difficulty.level === 'api' ? ['claude_fable', 'claude_mythos'] : [id];
+}
+
 /**
  * 选择Haiku/Sonnet/Opus/Fable或Mythos及Luna/Sol/Astra/Terra对应阶段。
  * 调用阶段：query；下游模式：sequence。
  * 状态权限：只读输入，返回计划/值；不得修改调用者状态。
+ * @calls domain/difficulty.js#modelProfileOptions
  * @calls domain/random.js#drawRandom
  * @param {import('../contracts.d.ts').DifficultySnapshot} difficulty
  * @param {import('../contracts.d.ts').Faction} faction
@@ -53,11 +66,11 @@ export function resolveDifficultySnapshot(request, catalog) {
  * @returns {import('../contracts.d.ts').Result<{ profileId: import('../contracts.d.ts').Id; next: import('../contracts.d.ts').RandomState }>}
  */
 export function resolveModelProfileId(difficulty, faction, random) {
-  const profileId = difficulty.modelProfileIds[faction];
-  if (!profileId) return { ok: false, code: 'UNKNOWN_FACTION', message: 'No model profile for faction' };
-  if (faction !== 'claude' || difficulty.level !== 'api') return { ok: true, value: { profileId, next: { ...random } } };
+  const options = modelProfileOptions(difficulty, faction);
+  if (!options.length) return { ok: false, code: 'UNKNOWN_FACTION', message: 'No model profile for faction' };
+  if (options.length === 1) return { ok: true, value: { profileId: options[0], next: { ...random } } };
   const draw = dependency2.drawRandom(random);
-  return { ok: true, value: { profileId: draw.value < 0.5 ? 'claude_fable' : 'claude_mythos', next: draw.next } };
+  return { ok: true, value: { profileId: options[Math.floor(draw.value * options.length)], next: draw.next } };
 }
 
 /**

@@ -60,10 +60,32 @@ describe('permanent unlocks and one-transaction settlement',()=>{
   expect(runReceiptStamps(profile,'run:2',catalog)).toEqual([catalog.definitions.mcp_vector.displayName]);
   profile=discover('run:3','mcp_fan');
   expect(runReceiptStamps(profile,'run:3',catalog)).toEqual([]);
+  expect(runReceiptStamps(profile,'run:1',catalog)).toEqual([catalog.definitions.mcp_fan.displayName]);
   profile=planBossUnlock(profile,{id:'boss-event',runId:'run:1',tick:2,seq:0,type:'BossDefeated',sourceId:'fish',targetId:'boss:claude',payload:{faction:'claude',difficulty:1,mode:'short',entityId:'boss:claude'}},catalog).value.next;
   expect(runReceiptStamps(profile,'run:1',catalog)).toContain(catalog.definitions.dsh_claude_appeal.displayName);
   expect(runReceiptStamps(profile,'run:9',catalog)).toEqual([]);
   expect(RESET_ACHIEVEMENT.name).toBe('这是哪个‘重置’？');
+ });
+ it('keeps exact ownership for legacy discoveries after the first new-format write',()=>{
+  const profile=createDefaultProfile();
+  profile.discovered.push('mcp_fan','mcp_vector');
+  profile.discoveryLedger=['discovery:discovery:r:x:mcp_fan','discovery:discovery:r:mcp_fan','discovery:discovery:r:mcp_vector','discovery:discovery:r:mcp_bubble'];
+  const next=planEasterUnlock(profile,event('EasterCompleted',{easterId:'easter_sleep',satTicks:480}),catalog).value.next;
+  expect(next.receipts.legacyDiscoveryCount).toBe(4);
+  expect(runReceiptStamps(next,'r',catalog)).toEqual([catalog.definitions.mcp_vector.displayName]);
+  expect(runReceiptStamps(next,'r:x',catalog)).toEqual([catalog.definitions.mcp_fan.displayName]);
+  const boss=event('BossDefeated',{faction:'gpt',difficulty:10,mode:'expedition',entityId:'opaque-boss-id'});
+  const saved=planBossUnlock(next,boss,catalog).value.next;
+  expect(runReceiptStamps(saved,boss.runId,catalog)).toEqual(
+    ['dsh_sleep','dsh_gpt_preview','dsh_gpt_branch'].map(id=>catalog.definitions[id].displayName));
+ });
+ it('keeps a settled receipt immutable when another window turns in late evidence',()=>{
+  const p=createDefaultProfile(), settlement={id:'settlement:run:1',runId:'run:1',outcome:'defeat',gpuFragments:5,parts:2,survivedTicks:100,bossKills:0,discoveries:[]};
+  const paid=planSettlementCommit(p,settlement,catalog).value.next;
+  const late=planDiscoveryUnlock(paid,event('ContentDiscovered',{definitionId:'mcp_vector'}),catalog).value.next;
+  expect(late.receipts).toEqual(paid.receipts);
+  expect(late.receipts.runs[0].payment).toEqual({outcome:'defeat',gpuFragments:5,parts:2,gpuCards:1});
+  expect(runReceiptStamps(late,settlement.runId,catalog)).toEqual([]);
  });
  it('settles once, converts five fragments per GPU card, clears matching checkpoint in the same profile',()=>{let p=createDefaultProfile();p.gpuFragments=4;const s={id:'settlement:run:1',runId:'run:1',outcome:'defeat',gpuFragments:7,parts:3,survivedTicks:100,bossKills:1,discoveries:[]};p.checkpoint={state:{runId:'run:1'}};const result=planSettlementCommit(p,s,catalog);expect(result.ok).toBe(true);p=result.value.next;expect([p.gpuCards,p.gpuFragments,p.parts]).toEqual([2,1,3]);expect(p.checkpoint).toBeNull();expect(planSettlementCommit(p,s,catalog).value.next).toEqual(p);expect(planSettlementCommit({...p,settlementLedger:[],checkpoint:{state:{runId:'other'}}},s,catalog).code).toBe('ACTIVE_RUN_CONFLICT');});
  it('keeps intermediate boss DSH after defeat; only a complete formal victory opens LoRA and next level',()=>{let p=createDefaultProfile();p=planBossUnlock(p,event('BossDefeated',{faction:'claude',difficulty:10,mode:'expedition',entityId:'boss'}),catalog).value.next;const s={id:'settlement:run:1',runId:'run:1',outcome:'defeat',gpuFragments:0,parts:0,survivedTicks:100,bossKills:1,discoveries:[],difficulty:10,mode:'expedition'};p=planSettlementCommit(p,s,catalog).value.next;expect(p.unlockedDsh).toContain('dsh_claude_allowlist');expect(p.unlockedDsh).not.toContain('dsh_lora');expect(p.highestDifficulty).toBe(0);const victory=planSettlementCommit(p,{...s,id:'settlement:run:2',runId:'run:2',outcome:'victory',difficulty:6},catalog).value.next;expect(victory.highestDifficulty).toBe(6);expect(victory.unlockedDsh).toContain('dsh_lora');});

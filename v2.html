@@ -57,7 +57,7 @@
         </div>
         <button id="back-home" class="secondary pixel-pop bench-back" type="button">返回大厅</button>
         <div class="setup bench-setup"><label class="difficulty-field" hidden>难度<select id="difficulty-select" tabindex="-1"><option value="1">Benchmark 1</option></select></label><details id="advanced-settings" class="advanced-settings"><summary>练习 / 模组</summary><div class="bench-config"><div class="advanced-grid"><label>玩法模式<select id="mode-select"><option value="tutorial-guide">Free · 引导教学</option><option value="tutorial">Free · 自由练习 / 模组</option><option value="short">剧情</option><option value="expedition">三海域</option><option value="exploration">探索</option><option value="endless">无尽</option><option value="mod-short">模组冒险 · 短途</option><option value="mod-expedition">模组冒险 · 三海域</option></select></label><label>短途首领<select id="boss-select"><option value="claude">Claude · 封禁管理员</option><option value="gpt">ChatGPT · 重新生成</option><option value="grok">Grok · 发射窗口</option></select></label><label>练习 MCP 1<select id="practice-weapon-a"><option value="mcp_bubble">泡泡接口</option></select></label><label>练习 MCP 2<select id="practice-weapon-b"><option value="mcp_fan" selected>扇面接口</option></select></label><label>地图种子<input id="seed" inputmode="numeric" type="number" min="0" max="4294967295" value="19"></label><label>主动技能<select id="skill-select"><option value="skill_cache">缓存护盾</option><option value="skill_disconnect">断开连接</option></select></label><label>练习随行伙伴<select id="companion-select"><option value="">独自出门</option></select></label><label>练习关 DSH 试用<select id="dsh-select"><option value="">不试装</option><option value="dsh_lora">LoRA微调</option><option value="dsh_gpt_branch">“更新”还是“重置”？</option></select></label></div>
-          <div id="mod-profile-setup" class="scope-note hidden"><p>首次使用这组模组，请创建独立小窝；原版存档不会被覆盖。</p><label>小窝初始进度<select id="mod-profile-source"><option value="copy">复制当前原版进度</option><option value="new">从零开始</option></select></label><button id="mod-profile-create" type="button">创建模组小窝</button></div></div></details>
+          <p id="departure-scope" class="scope-note" role="status" hidden></p><div id="mod-profile-setup" class="scope-note hidden"><p>首次使用这组模组，请创建独立小窝；原版存档不会被覆盖。</p><label>小窝初始进度<select id="mod-profile-source"><option value="copy">复制当前原版进度</option><option value="new">从零开始</option></select></label><button id="mod-profile-create" type="button">创建模组小窝</button></div></div></details>
         </div>
       </div>
       <div id="launch-dock" class="launch-dock">
@@ -77,10 +77,10 @@
       <div class="menu-card compact pause-card">
         <div class="work-vignette" aria-hidden="true"><b class="work-sign">正在工作</b>
           <span class="sleep-fish"><img src="./art/interface/pause-fish.webp" alt=""><i class="paper-eye eye-left"></i><i class="paper-eye eye-right"></i><small>z Z</small></span></div>
-        <p id="receipt-benchmark" class="receipt-head"></p>
+        <header class="receipt-head"><span>大肥鱼 · 跑分小票</span><b id="receipt-benchmark"></b></header>
         <h1 id="pause-title">已暂停</h1>
         <ul id="loot-card" class="loot-card hidden"><li>算力碎片 <b id="loot-fragments">0</b></li><li>零件 <b id="loot-parts">0</b></li><li id="loot-cards-line" hidden>算力卡 <b id="loot-cards">0</b></li></ul>
-        <p id="receipt-stamp" hidden></p><p id="pause-description">战斗时间已冻结。</p>
+        <section id="receipt-stamp" hidden><h2>本局新解锁</h2><ul id="receipt-names"></ul></section><p id="pause-description">战斗时间已冻结。</p>
         <button id="resume" class="primary" type="button">继续整活</button>
         <details id="pause-extras"><summary>设置与操作</summary><label class="assist-setting"><input id="pause-simple-fx" type="checkbox"> 简化特效</label><div id="pause-audio"></div></details>
         <button id="abandon" class="secondary hidden" type="button">放弃冒险（按失败结算）</button>

@@ -15,11 +15,11 @@
 
 ## 1　选关数据只维护一份
 
-入口为 `src/v2/preview/host.js` 的 `updateWallet`、`renderBenchmarkBoard` 和 `begin`。解锁规则在 `src/v2/domain/profile/nest.js` 的 `isDifficultyUnlocked` 与 `validateStartRequest`，敌方强度在 `src/v2/domain/difficulty.js`，展示名在内容目录。当前菜单仍在构造数字档时单独判断最高通关等级。
+入口为 `src/v2/preview/host.js` 的 `updateWallet`、`renderBenchmarkBoard` 和 `begin`。解锁规则在 `src/v2/domain/profile/nest.js` 的 `isDifficultyUnlocked` 与 `validateStartRequest`，敌方强度在 `src/v2/domain/difficulty.js`，展示名在内容目录。菜单用 `describeDifficultyAccess` 读取解锁原因，和实际出发校验共用 `isDifficultyUnlocked`。
 
 - 给选择器提供同源的可玩状态及对应的解锁原因。Free 引导和自由练习是 0；剧情、三海域、无尽是 1–15；探索按档读取 `endlessClear:N`。API 入口沿用现有模式与 `apiUnlocked` 限制。模组冒险读取该组合的独立档案。
 - 每档的「新增机制」取 `catalog.mechanics.filter(m => m.unlockAt === level)`。战斗快照用累积机制。选到锁定档时传给舞台锁定状态，详情只显示问号，出发键显示解锁条件。
-- 在 `src/v2/domain/rewards.js` 抽出探索目标与补给箱共用的倍率查询，由 `planWorldReward` 和难度页共同调用。当前公式是 `1 + (N - 1) × 0.1`，发放时对各类基础数量分别取 `Math.round`。标注「宝箱与目标掉落」，敌方生命倍率另读 `resolveDifficultySnapshot`。API 的模型名称以 `resolveModelProfileId` 与内容目录为准。
+- 在 `src/v2/domain/rewards.js` 抽出探索目标与补给箱共用的倍率查询，由 `planWorldReward` 和难度页共同调用。当前公式是 `1 + (N - 1) × 0.1`，发放时对各类基础数量分别取 `Math.round`。标注「宝箱与目标掉落」，敌方生命倍率另读 `resolveDifficultySnapshot`。API 的可选模型与实战抽取共用 `modelProfileOptions`，名称取内容目录。
 - 验收可加入 `tests/v2/benchmark-modes.test.js`、`tests/v2/difficulty-mechanics.test.js`。验证 1、5/6、10/11、15/API、探索锁定及 Free。菜单可用和实际能开局须一致。
 
 | 桌面夹具 | 可观察结果 |
@@ -31,7 +31,7 @@
 
 ## 2　奖品身份、候选与重抽
 
-数据入口是 `src/v2/content/catalogData.js`、`src/v2/domain/draft.js`；表现入口是 `src/v2/preview/arcadePanels.js` 的 `createPrizeButton`。现有清晰可辨的三种台座分别对应 `common` 白银、`advanced` 黄金、`legendary` 棱彩。图集 `public/art/interface/prize-toys.webp` 为 6 × 6，按本分支的 ID 顺序排布。
+数据入口是 `src/v2/content/catalogData.js`、`src/v2/domain/draft.js`；表现入口是 `src/v2/preview/arcadePanels.js` 的 `createPrizeButton`。现有清晰可辨的三种台座分别对应 `common` 白银、`advanced` 黄金、`legendary` 棱彩。图集 `public/art/interface/prize-toys.webp` 为 6 × 6，33 个正式插件各有固定格号。未登记的插件使用独立扭蛋图。
 
 1. 给 33 个正式插件的 ID 与格号加完整性断言。每个 ID 指向唯一的非空格，换稀有度或调整目录顺序不会换错图；未登记的扩展使用可识别的通用图形。名称取 `displayName`，效果取 `rankDescriptions[rank - 1]`。
 2. 用运行时的 `createPluginChoice`、`planPluginSelection`、`planPluginReroll`、`planPluginSkip` 驱动界面。首个 Lv.2 候选含符合条件的蒸馏；普通局三选，有 `dsh_gpt_preview` 时首次 Lv.2 可有四选。第一次抽取与重抽使用领域层返回的不同 choice ID。
@@ -41,7 +41,7 @@
 
 ## 3　结算金额与解锁印章
 
-`src/v2/domain/settlement.js` 的 `createSettlement` 给出本局实际带回的碎片、零件和结果；`planSettlementCommit` 负责碎片换卡及结算去重。持久化经 `src/v2/application/repository.js`。当前界面使用 `flushProfile` 比较提交前后档案，并用内存中的集合显示本次见证的解锁。恢复检查点后，恢复前已经取得的印章仍需补齐。
+`src/v2/domain/settlement.js` 的 `createSettlement` 给出本局实际带回的碎片、零件和结果；`planSettlementCommit` 负责碎片换卡及结算去重。持久化经 `src/v2/application/repository.js`。档案提交在同一笔事务内按 runId 记录本局解锁和实际入账金额。小票在保存成功后读取这份记录。旧档可从带有对局身份的首发现记录恢复装备名称。
 
 - 给小票提供按 runId 归属的材料、折算卡数、明确的新增解锁名。复用成功提交的结果与稳定事件 ID；老检查点缺少某项依据时，仅显示可验证的内容。成就名称查 `src/v2/content/achievements.js`，装备、DSH、伙伴名称查内容目录。区分已有收藏与本局新增。
 - 使用同一个 `settlement:<runId>` 重试；档案写入失败时保留正常重试操作。验证同档案的另一窗口产生进度时，小票不会把对方的解锁印成本局成果。比较提交后的档案还可核对入账金额。
@@ -73,4 +73,5 @@ npm test
 npm run build
 # V2_CHROMIUM_EXECUTABLE 指向已安装的 Chromium
 npm run test:v2:interface -- --desktop
+npm run test:v2:desktop-cards
 ```

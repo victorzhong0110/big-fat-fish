@@ -108,6 +108,20 @@
 .bench-bar #start:disabled{background:#304c60;color:#e1ebd9;opacity:1;font-size:clamp(12px,1.35vw,18px)}
 .bench-affixes{color:#fff3d9}
 
+@media (min-width:801px) {
+  .benchmark-list .bench-row:not([aria-pressed=true]) {color:color-mix(in srgb,var(--accent) 60%,#57717b)}
+  .benchmark-list .bench-row[data-locked=true]:not([aria-pressed=true]) {opacity:.62}
+  .benchmark-list .bench-row[aria-pressed=true] {
+    background:linear-gradient(90deg,transparent 0%,color-mix(in srgb,var(--accent) 12%,transparent) 34%,color-mix(in srgb,var(--accent) 37%,transparent));
+    box-shadow:inset -5px 0 var(--accent);text-shadow:0 2px #183948;
+  }
+  .bench-row[aria-pressed=true] .bench-badge {text-shadow:none;scale:1.08}
+  .bench-bar #start:not(:disabled)::before {content:"";display:inline-block;margin-right:.55em;width:.66em;height:.76em;vertical-align:-.02em;background:currentColor;clip-path:polygon(0 0,100% 50%,0 100%)}
+  .bench-affixes {font-size:clamp(15px,1.45vw,23px);line-height:1.45}
+  .bench-summary {gap:10px clamp(16px,2.4vw,40px)}
+  #bench-reward {font-variant-numeric:tabular-nums;color:#a8cbca}
+}
+
 /* The tuning drawer uses actual rotary input at home and compact ranges during a run. */
 .lobby-corners #settings-panel[open] {
   position:fixed;inset:0 0 0 auto;width:min(382px,100vw);max-width:none;padding:clamp(22px,4vw,38px) 26px;
@@ -220,8 +234,7 @@
 .prize-display{position:relative;display:block;width:100%;height:clamp(98px,18vh,165px)}
 .prize-toy{position:absolute;width:min(65%,100px);aspect-ratio:1;left:50%;bottom:27%;transform:translateX(-50%);z-index:1;
   background:url('/art/interface/prize-toys.webp') 0 0/600% 600%;image-rendering:pixelated;filter:drop-shadow(0 3px 0 #13273880);animation:prize-land .42s ease-out both}
-.prize-toy.generic{background:#e7f3fb;border:3px solid #111;border-radius:6px;box-shadow:inset 0 3px #fff,inset 0 -3px #6f93a8}
-.prize-toy.generic::before{content:'?';position:absolute;inset:0;display:grid;place-items:center;color:#102838;font:28px var(--pixel)}
+.prize-toy.generic{background: url('/art/interface/mystery-capsule.webp') center / contain no-repeat}
 .prize-stand{position:absolute;inset:auto 9% 5%;height:28%;border-radius:50% / 25%;border:2px solid #1e3a51;background:linear-gradient(#e0eff6 0 23%,#97b6c9 24% 58%,#698da8 59%);box-shadow:0 4px #102b42}
 .prize-grade{position:absolute;z-index:2;bottom:8%;left:50%;transform:translateX(-50%);color:#19374b;background:#e4eff4;border-radius:20px;padding:1px 10px;font:13px var(--pixel);white-space:nowrap}
 [data-rarity=advanced] .prize-stand{height:36%;border-radius:3px;clip-path:polygon(12% 0,88% 0,88% 37%,100% 37%,100% 100%,0 100%,0 37%,12% 37%);background:linear-gradient(#ffe5a3 0 20%,#bd8033 22% 39%,#ffcd5d 40% 72%,#9b6430 74%)}
@@ -239,6 +252,28 @@
 .prize-button strong{font:clamp(13px,1.5vw,20px) var(--pixel)}
 .prize-button small{color:#d5e7e5;line-height:1.45}
 .growth-actions button{border:0;background:#33586a;box-shadow:none}
+
+@media (min-width:801px) {
+  .prize-lineup {gap:clamp(10px,1.3vw,20px)}
+  .plugin-options .prize-button {
+    background:transparent;border-bottom:2px solid #366173;padding:4px 5px 10px;
+    grid-template-rows:auto auto 1fr;
+  }
+  .plugin-options .prize-button:is(:hover,:focus-visible) {background:#204b61;border-color:#f2d59f}
+  .prize-button small {font-size:14px;line-height:1.55;text-wrap:pretty}
+  .prize-display {height:clamp(113px,17vh,152px);border-bottom:3px solid #638590;box-shadow:0 2px #092b3d}
+  .prize-grade {bottom:5%}
+  [data-rarity=legendary] .prize-stand {height:43%;inset-inline:8%}
+  .prize-lineup .prize-toy {width:min(68%,105px)}
+  .growth-actions button {border-radius:2px;background:transparent;border:1px solid #567687}
+  .growth-actions #plugin-reroll {color:#ffe4a8}
+  .growth-actions button:disabled {color:#99afb4}
+}
+.plugin-options.prize-slots {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 13px}
+.prize-slots .prize-slot {display:flex;align-items:center;gap:10px;min-height:52px;text-align:left;padding:5px 9px;background:#1b4356;border:0;border-left:3px solid #729fac;border-radius:0;color:#fff0ce;box-shadow:none}
+.prize-slot .prize-toy {position:static;width:40px;height:40px;flex:none;transform:none;animation:none}
+.prize-slots .prize-slot:is(:hover,:focus-visible) {background:#28596d;border-color:#ffd694}
+.prize-slots .prize-back {grid-column:1/-1;min-height:36px;background:transparent;border:0;box-shadow:none;color:#a9dccc;text-align:center}
 
 /* Both weapons fire from matching marks towards identical targets. */
 .equipment-card{width:min(740px,100%);background:#e2eedb;border:4px solid #284b5e;border-top:10px solid #62b5ba;color:#19394b;border-radius:8px;box-shadow:0 6px #2e6876}
@@ -274,8 +309,14 @@
 .pump-body::before{content:"";position:absolute;width:18%;height:85%;left:39%;bottom:100%;background:#779ca7;border-top:7px solid #d58666;box-shadow:0 -6px 0 4px #335969}
 .pump-body::after{content:"";position:absolute;left:100%;width:75%;height:40%;top:10%;border:5px solid #324e60;border-left:0;border-bottom:0;border-top-right-radius:14px}
 .pump-bubble{display:block;width:45px;aspect-ratio:1;border:3px solid #407e9e;border-radius:50%;background:radial-gradient(circle at 30% 24%,#f1fffb 0 11%,transparent 13%),radial-gradient(circle at 35% 30%,#b0f9e6,#65c2d7 65%,#81a8e3);box-shadow:inset -2px -4px #778fc5}
-.pump-machine .pump-bubble{position:absolute;bottom:23%;right:8%;scale:.72}
-.training-card .training-meter{border:3px solid #2e5060;border-radius:20px;background:repeating-linear-gradient(90deg,transparent 0 9%,#29495944 9% 9.5%,transparent 9.5% 10%),linear-gradient(90deg,#eec47a 0 42%,#82d39c 42% 58%,#ef987d 58%)}
+.pump-machine .pump-bubble{position:absolute;bottom:23%;right:8%;transform-origin:50% 85%;scale:calc(.72 + .55 * var(--pump-fill,0))}
+.pump-body::before{translate:0 calc(9px * var(--pump-fill,0))}
+.training-card .training-meter {
+  border:3px solid #2e5060;border-radius:18px;
+  background:repeating-linear-gradient(90deg,transparent 0 9%,#29495944 9% 9.5%,transparent 9.5% 10%),
+    linear-gradient(90deg,#eec47a var(--perfect-start),#82d39c var(--perfect-start) var(--perfect-end),#ef987d var(--perfect-end));
+}
+.training-card .training-perfect {left:var(--perfect-start);width:calc(var(--perfect-end) - var(--perfect-start));background:repeating-linear-gradient(135deg,transparent 0 7px,#24574024 7px 9px);border-color:#387254}
 .training-zones strong{color:#23664d}
 #pump-result{pointer-events:none;position:absolute;z-index:18;top:20%;left:50%;transform:translateX(-50%)}
 #pump-result[data-result=perfect] .pump-bubble{animation:bubble-perfect .85s ease-out both}
@@ -308,17 +349,31 @@
 #pause-extras{margin:4px auto;text-align:left}
 #pause-extras summary{cursor:pointer;padding:9px 6px;text-align:center;color:#c8dfd8}
 #pause-extras .sound-settings{margin:2px 0}.pause-card .secondary{background:transparent;border:1px solid #7aa4a9;box-shadow:none}
+/* The receipt owns save feedback; a fading battlefield notice must not sit over its ink or the training gauge. */
+.playfield:has(#pause-menu.receipt:not(.hidden)) > .toast,
+.playfield:has(#lora-menu:not(.hidden),#plugin-menu:not(.hidden)) > .toast:not(.visible) {visibility:hidden}
 #pause-menu.receipt{background:#15344ac7}
 .receipt .pause-card{width:min(400px,100%);color:#29434b;background:#fff4d9;border-radius:0;box-shadow:0 -8px #31586b;padding:23px clamp(15px,3vw,36px) 30px;
   clip-path:polygon(0 0,100% 0,100% 100%,95% 98.4%,90% 100%,85% 98.4%,80% 100%,75% 98.4%,70% 100%,65% 98.4%,60% 100%,55% 98.4%,50% 100%,45% 98.4%,40% 100%,35% 98.4%,30% 100%,25% 98.4%,20% 100%,15% 98.4%,10% 100%,5% 98.4%,0 100%);animation:receipt-print .4s steps(10)}
 @keyframes receipt-print{from{translate:0 -18px;opacity:.5}}
 .receipt .work-vignette,.receipt #pause-extras{display:none}
-.receipt .receipt-head,.receipt #pause-title{display:block;color:#234958}.receipt .receipt-head{font:21px var(--pixel);margin:0 0 12px}
-.receipt .pause-card p{color:#45616b}
-.receipt .loot-card{background:transparent;margin:14px 0;padding:10px 0;border:0;border-block:2px dashed #bac1a8;color:#2b4d54;border-radius:0;box-shadow:none}
-.receipt .loot-card li[hidden]{display:none}
-#receipt-stamp{width:fit-content;margin:12px auto;padding:3px 8px;font:14px var(--pixel);transform:rotate(-3deg);color:#9d4b39;border:3px double currentColor}
-.receipt .secondary{color:#1a5059;background:#c8e5d1;border:0}
+.receipt .receipt-head {display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1px solid #bac1a8;color:#536b69;font:14px var(--pixel)}
+.receipt-head b {color:#244951;font:inherit}
+.receipt #pause-title {display:block;margin:18px 0;color:#224751;font:clamp(23px,3vw,34px)/1.25 var(--pixel)}
+.receipt .pause-card p {color:#48646a}
+.receipt .loot-card {background:transparent;margin:12px 0;padding:9px 0;border:0;border-block:2px dashed #b5b99d;color:#2b4d54;border-radius:0;box-shadow:none}
+.receipt .loot-card li {gap:7px;min-height:30px}
+.receipt .loot-card li::before {content:"";order:1;flex:1;align-self:end;margin:0 2px 9px;border-bottom:1px dotted #a9b39e}
+.receipt .loot-card b {order:2;font:20px var(--pixel);font-variant-numeric:tabular-nums}
+.receipt .loot-card li[hidden],#receipt-stamp[hidden] {display:none}
+.receipt #loot-cards-line {margin-top:4px;color:#267263}
+#receipt-stamp {text-align:left;margin:14px 0}
+#receipt-stamp h2 {color:#695d4e;margin:0 0 6px;font:13px var(--pixel)}
+#receipt-names {display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:0}
+#receipt-names li {padding:3px 7px;border:2px double #a96346;border-radius:2px;color:#8f4734;font:14px/1.25 var(--pixel);overflow-wrap:anywhere}
+.receipt .secondary {color:#18504f;background:#c8e5d1;border:0;border-radius:2px;box-shadow:inset 0 -2px #99bcb2}
+.receipt #pause-description {font-size:13px;margin-block:12px}
+.receipt .pause-card {max-height:calc(100dvh - 36px);overflow-y:auto}
 
 /* Compact and reduced-motion variants retain the same ranking window and controls. */
 @media(max-width:800px){
